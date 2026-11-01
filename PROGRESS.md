@@ -107,9 +107,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: um teste por linha **e** coluna da matriz (permitido e negado), mais isolamento de organização.
   - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da política. Implementados ator e políticas puras para participação, tarefas, projetos, valores, agenda e dashboard, com isolamento por organização e entidades sem acesso. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 510 testes). Checkbox preservado para o laço.
 
-- [ ] M2.10 Custo e prazo
+- [x] M2.10 Custo e prazo
   - `rules/cost.ts` (subtotal, total; PLANO 6.2), `rules/deadline-label.ts` (frases da PLANO 6.3, recebe `today: DateOnly`).
   - Pronto: tabelas de casos, incluindo "Concluída" com prazo vencido.
+  - Notas da rodada: testes escritos primeiro e executados com falha pela ausência das regras. Implementados subtotal com arredondamento meio para cima em aritmética inteira, soma dos subtotais e frases de prazo por dias de calendário, priorizando tarefas concluídas. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 523 testes). Checkbox preservado para o laço.
 
 - [ ] M2.11 Linha do tempo
   - `rules/timeline.ts`: `diffTask(before, after)` → um evento por campo mudado; eventos de envolvimento; `describeEvent(event, viewer, names)` em pt-BR ("moveu de A fazer para Desenvolvendo"), omitindo R$ quando `canSeeRate` é falso.
