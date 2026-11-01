@@ -527,25 +527,30 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 
 ## M9 · Bandeja (HANDOFF "Bandeja"; PLANO 6.6, 9 · M9)
 
-- [ ] M9.1 Lógica pura da bandeja
+- [x] M9.1 Lógica pura da bandeja
   - `tray/auto-height.ts` (fórmula: Início `246 + max(min(n, 2), 1) × 64`; Atualizar/detalhes 560; Nova 316; mín. 260 e máx. 600 manual), `tray/tray-machine.ts` (telas início → atualizar, início → nova → atualizar; direção da animação).
   - Pronto: testes da fórmula e da máquina.
+  - Nota (Claude): auto-height.ts (246 + 64 × linhas de 1 a 2; 560 atualizar; 316 nova; 260 a 600 manual) e tray-machine.ts (reducer com direção da animação, aviso e destaque).
 
-- [ ] M9.2 Tela inicial
+- [x] M9.2 Tela inicial
   - `tray/screens/HomeScreen`, `SearchField` (filtra por título e projeto, sem acentos; "Nenhuma tarefa encontrada."), segmentado Recentes | Frequentes ("Nenhuma tarefa aberta ainda."), `TaskList`/`TaskRow` (64 px; título, chip, projeto, "há quanto tempo"; no máximo 2 linhas visíveis, barra de 3 px), botão "Nova tarefa".
   - Pronto: testes de busca, ordem de Recentes/Frequentes e vazios.
+  - Nota (Claude): HomeScreen com busca sem acentos (título e projeto), Recentes | Frequentes, TaskRow de 64 px e lista de no máximo 2 linhas com barra de 3 px; a altura da janela acompanha o número de linhas.
 
-- [ ] M9.3 Atualizar tarefa
+- [x] M9.3 Atualizar tarefa
   - `UpdateTaskScreen`: título e projeto, "O que será feito", grupo Status (menu), Prazo, Responsável, Envolvidos, Chamado; "Salvar" volta à lista com toast "Atualização salva" e a tarefa sobe para o topo de Recentes. `recordOpen` ao abrir.
   - Pronto: testes de salvar e de somente leitura.
+  - Nota (Claude): UpdateTaskScreen: 'O que será feito', Status (menu), Prazo, Responsável, Envolvidos e Chamado; Salvar grava só o que mudou (update + move), volta com 'Atualização salva' e destaca a linha. recordOpen ao abrir. Somente leitura desabilita tudo.
 
-- [ ] M9.4 Nova tarefa
+- [x] M9.4 Nova tarefa
   - `NewTaskScreen`: título, projeto (segmentado de 3), "Criar tarefa" cria e **abre o detalhe**; salvar ou voltar leva à lista com "Tarefa criada" e linha destacada.
   - Pronto: testes do fluxo.
+  - Nota (Claude): NewTaskScreen: título e projeto (segmentado para 2 a 3 projetos, seleção comum para os demais); criar abre a tela de atualizar; ao salvar ou voltar mostra 'Tarefa criada' e destaca a linha.
 
-- [ ] M9.5 Janela e redimensionar
+- [x] M9.5 Janela e redimensionar
   - `ResizeHandle` (arrastar; setas em passos de 24 px; Home e duplo clique voltam ao automático; sem transição durante o arraste), altura via `shell.setTrayHeight`, controles (minimizar recolhe para o cabeçalho de 52 px; expandir abre o painel; fechar anima e deixa o botão redondo de 52 px), `ClosedTrayButton`. Animações de entrada/saída do HANDOFF.
   - Pronto: testes do `ResizeHandle` (teclado) e dos controles com `shell` falso. Pendência `CONFERIR`/`TESTAR-NO-WINDOWS`: altura animada sem tremer (risco R1).
+  - Nota (Claude): ResizeHandle (arrastar, setas de 24 px, Home e duplo clique voltam ao automático), altura via shell.setTrayHeight com a borda inferior fixa, minimizar recolhe para 52 px, expandir abre o painel. NÃO FEITO: o botão redondo de 52 px depois de fechar (ClosedTrayButton) e a animação de saída: dependem do ícone de bandeja do M10.1, então fechar apenas esconde a bandeja. A altura muda sem animação (risco R1 ainda por avaliar no Windows).
 
 - [ ] PARADA M9: Pedro usa a bandeja: criar, atualizar, buscar, redimensionar; confere a sincronização com o painel aberto.
 

@@ -10,3 +10,6 @@
 - [ ] M6 · CONFERIR: abrir uma tarefa, editar descrição, prazo, horas e valor/hora, mudar o estado e conferir a linha do tempo; comparar com `design/Painel.dc.html`.
 - [ ] M7 · CONFERIR: trocar de perfil pela Conta (colaborador: sem Dashboard e sem R$; gestor: Dashboard, "Abrir projetos" e marca Gestor na linha do tempo).
 - [ ] M7.5 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.1): o botão "Membros" aparece para o projeto selecionado, só para o gestor e para quem criou o projeto.
+
+- [ ] M9 · CONFERIR: abrir a bandeja pelo botão ↙ do painel; buscar, alternar Recentes/Frequentes, abrir uma tarefa, salvar, criar uma nova e redimensionar pela barrinha (setas, Home, duplo clique); conferir que o painel atualiza sem recarregar.
+- [ ] M9.5 · PENDENTE: botão redondo de 52 px ao fechar a bandeja e animações de saída/altura (entram com o ícone de bandeja do M10.1).

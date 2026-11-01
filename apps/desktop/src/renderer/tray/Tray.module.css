@@ -1,0 +1,301 @@
+.window {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--glass-window-border);
+  border-radius: var(--radius-window);
+  background: var(--glass-window);
+  box-shadow: var(--glass-window-highlight);
+  color: var(--color-text-primary);
+  backdrop-filter: var(--glass-window-backdrop);
+  animation: trayOpen 0.6s var(--ease-ios) both;
+}
+
+:global(:root[data-glass='opaque']) .window {
+  border: 0;
+  border-radius: 0;
+}
+
+.resizeHandle {
+  display: grid;
+  flex: none;
+  height: 14px;
+  place-items: center;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.resizeHandle span {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.resizeHandle:hover span,
+.resizeHandle:focus-visible span {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.resizeHandle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  -webkit-app-region: drag;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: var(--font-size-title-small);
+  font-weight: 600;
+}
+
+.header button {
+  -webkit-app-region: no-drag;
+}
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.slideForward {
+  animation: slideFromRight 0.45s var(--ease-ios) both;
+}
+
+.slideBack {
+  animation: slideFromLeft 0.45s var(--ease-ios) both;
+}
+
+.screenBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  overflow-y: auto;
+}
+
+.list {
+  display: grid;
+  max-height: 128px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-group);
+  scrollbar-width: thin;
+}
+
+.list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.row {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 64px;
+  padding: 0 var(--space-4);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+li + li .row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.row:hover,
+.row:focus-visible {
+  background: var(--glass-control);
+  outline: none;
+}
+
+.rowHighlight {
+  animation: rowFlash 2s var(--ease-ios) both;
+  box-shadow: inset 3px 0 0 var(--color-accent-text);
+}
+
+.rowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.rowTitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.footer > button {
+  width: 100%;
+  min-height: var(--size-touch-target);
+}
+
+.taskHead {
+  display: grid;
+  gap: 2px;
+}
+
+.taskTitle {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-title-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectField {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.selectField select {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.selectField option {
+  background: #2a2d38;
+}
+
+.menuAnchor {
+  position: relative;
+}
+
+.menuPopover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: 5;
+}
+
+.statusButton {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.statusButton:focus-visible,
+.inlineInput:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.inlineInput {
+  width: 140px;
+  min-height: 36px;
+  padding: 0 var(--space-2);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+}
+
+.inlineInput:disabled {
+  opacity: 0.6;
+}
+
+.truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes trayOpen {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(18px) scale(0.96);
+  }
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes rowFlash {
+  from {
+    background: rgba(100, 168, 255, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window,
+  .slideForward,
+  .slideBack,
+  .rowHighlight {
+    animation: none;
+  }
+}
