@@ -664,3 +664,24 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M5.5 concluído. Implementei `StatusMenu`, `Modal`, `Toast`/`useToast`, `Tooltip` e `WindowControls`, com CSS Modules, exportações públicas e testes de comportamento e acessibilidade.
 >
 > `pnpm check` passou: 72 arquivos de teste e 684 testes. Registrei a revisão visual da galeria como pendência em `docs/laco/pendencias-do-pedro.md` e escrevi `DONE` em `.loop/status`.
+
+## 2026-11-01 01:35 · M5.6 Galeria de componentes (só desenvolvimento)
+
+- Alterações: 7 files changed, 312 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/package.json`
+  - `apps/desktop/src/renderer/panel/dev/Gallery.module.css`
+  - `apps/desktop/src/renderer/panel/dev/Gallery.test.tsx`
+  - `apps/desktop/src/renderer/panel/dev/Gallery.tsx`
+  - `apps/desktop/src/renderer/panel/main.tsx`
+  - `pnpm-lock.yaml`
+
+**Resumo do Codex:**
+
+> M5.6 concluído. A galeria agora demonstra segmentados com 2 e 3 opções e um campo desabilitado; os testes cobrem renderização e interações. A entrada continua restrita ao modo de desenvolvimento.
+>
+> `pnpm check` passou: 73 arquivos e 686 testes. A formatação também passou. Status registrado como `DONE`.
+>
+> Adicionei em `docs/laco/pendencias-do-pedro.md` a revisão visual da galeria com `?gallery`, para quando o painel estiver disponível.

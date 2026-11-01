@@ -353,9 +353,11 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Implementados os cinco componentes com CSS Modules, exportações públicas e testes de teclado, foco, papéis ARIA e duração do aviso.
   - Nota: `pnpm check` passou (72 arquivos, 684 testes); conferir visualmente menu, modal, toast, tooltip e controles na galeria M5.6.
 
-- [ ] M5.6 Galeria de componentes (só desenvolvimento)
+- [x] M5.6 Galeria de componentes (só desenvolvimento)
   - `apps/desktop/src/renderer/panel/dev/Gallery.tsx` mostrando todos os componentes e estados; entrada pelo parâmetro `?gallery` do painel (inativa no build de produção). `index.ts` do `ui` exportando tudo.
   - Pronto: teste de renderização da galeria sem erros; pendência `CONFERIR` ao Pedro: abrir a galeria e comparar com o protótipo.
+  - Nota: A galeria apresenta todos os componentes exportados, incluindo segmentado de 2 e 3 opções, campo desabilitado e estados interativos; `?gallery` continua condicionado a `import.meta.env.DEV`.
+  - Nota: Testes cobrem renderização, acessibilidade dos exemplos, troca de opção e abertura/fechamento do modal. `pnpm check` passou (73 arquivos, 686 testes), sem dependências novas.
 
 - [ ] M5.7 Main: composition root, sessão e notificador de mudanças
   - `main/paths.ts`, `main/composition-root.ts` (**único** lugar que liga portas às implementações: SQLite, relógio, IDs, notificador → `createUseCases`; devolve `{ useCases, close }`), `main/actor-session.ts` (ator atual em memória, persistido em `local_settings`; padrão: o usuário "Pedro" do seed; `switchUser`), `main/ipc/change-broadcaster.ts` (implementa `ChangeNotifier`, envia para as janelas por uma interface mínima). Se o banco estiver vazio, roda o seed (apenas fora de produção).

@@ -1,4 +1,8 @@
 import '@agilebox/ui'
+import { Gallery } from './dev/Gallery'
 import { createRoot } from 'react-dom/client'
 
-createRoot(document.getElementById('root')!).render(null)
+const showGallery =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).has('gallery')
+
+createRoot(document.getElementById('root')!).render(showGallery ? <Gallery /> : null)
