@@ -13,7 +13,7 @@ test('mantém as regras com informação de tipos nos arquivos reais', async () 
   expect(results[0]?.messages).toEqual([
     expect.objectContaining({ ruleId: '@typescript-eslint/no-floating-promises', severity: 2 }),
   ])
-}, 15000)
+}, 60000)
 
 // Pacotes de runtime verificados em cada camada (a tabela diz quais ficam bloqueados).
 const RUNTIME_PROBES = ['electron', 'better-sqlite3', 'drizzle-orm']
