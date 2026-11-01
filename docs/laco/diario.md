@@ -232,3 +232,20 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 36 arquivos de teste e 601 testes. Registrei as notas em `PROGRESS.md` e escrevi `DONE` em `.loop/status`.
 >
 > Arquivos principais: [create-contributor.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/application/src/use-cases/contributors/create-contributor.ts), [validation.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/core/src/entities/validation.ts).
+
+## 2026-10-31 23:34 · M3.11 Casos de uso: criar, ver, editar e mover tarefa
+
+- Alterações: 5 files changed, 432 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/use-cases/tasks/tasks.test.ts`
+  - `packages/application/src/use-cases/tasks/tasks.ts`
+
+**Resumo do Codex:**
+
+> M3.11 concluído. Implementei criar, consultar detalhe, editar e mover tarefas, com controle de acesso, eventos na mesma transação e rollback em caso de falha ao gravar eventos.
+>
+> `pnpm check` passou: 609 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.

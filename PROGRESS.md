@@ -202,9 +202,13 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Criar entidade agora usa tarifa inicial 0, origem `manual`, ator como autor e organização da sessão; qualquer papel pode criar e a mudança é notificada. O zero é aceito como padrão no domínio, mas definir tarifa zero continua inválido para usuários e entidades.
   - Nota: Testes de criação, validação, notificação, isolamento e tarifa padrão passaram; `pnpm check` passou (601 testes), sem dependências novas.
 
-- [ ] M3.11 Casos de uso: criar, ver, editar e mover tarefa
+- [x] M3.11 Casos de uso: criar, ver, editar e mover tarefa
   - `create-task` (evento `task_created`; responsável = criador), `get-task-detail` (+ `readOnly`), `update-task` (diff → eventos na mesma transação; `as_manager`), `move-task`.
   - Pronto: eventos verificados; transação desfeita se gravar evento falhar.
+  - Nota: Criar, consultar detalhe, editar e mover tarefa foram ligados ao `createUseCases`, com acesso por organização, participação/membresia e tarifa padrão do criador.
+  - Nota: Criação e diffs de edição/movimentação gravam tarefa e eventos na mesma transação; marcação `asManager` deriva sempre do papel do ator.
+  - Nota: Testes cobrem sucesso, negação, prazo/chamado via mapeamento, notificações, somente leitura e rollback quando a gravação do evento falha.
+  - Nota: `pnpm check` passou: 609 testes, sem dependências novas.
 
 - [ ] M3.12 Casos de uso: listas de tarefas
   - `list-board` ("Minhas tarefas", filtro por projeto, `forUserId` só gestor), `list-team-board`, `list-recent`, `list-frequent`, `search-tasks`, `record-open`.

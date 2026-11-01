@@ -13,6 +13,7 @@ import { SetDefaultRate } from './use-cases/users/set-default-rate'
 import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
+import { CreateTask, GetTaskDetail, MoveTask, UpdateTask } from './use-cases/tasks/tasks'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -35,6 +36,12 @@ export function createUseCases(deps: AppDeps) {
       listMembers: new ListProjectMembers(deps),
       addMember: new AddProjectMember(deps),
       removeMember: new RemoveProjectMember(deps),
+    },
+    tasks: {
+      create: new CreateTask(deps),
+      getDetail: new GetTaskDetail(deps),
+      update: new UpdateTask(deps),
+      move: new MoveTask(deps),
     },
   }
 }
