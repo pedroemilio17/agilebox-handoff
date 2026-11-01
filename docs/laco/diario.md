@@ -303,3 +303,19 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.14 concluído. Implementei `list-timeline` com controle de acesso, texto por viewer e ordem do mais recente ao mais antigo; e `get-dashboard`, restrito ao gestor, com estatísticas calculadas pelas regras do core. Liguei ambos ao `createUseCases`.
 >
 > `pnpm check` passou: **627 testes**. Também registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:225), a decisão provisória sobre o gestor no dashboard em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md) e o status `DONE` em `.loop/status`.
+
+## 2026-10-31 23:51 · M3.15 Casos de uso: agenda
+
+- Alterações: 4 files changed, 295 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/use-cases/meetings/meetings.test.ts`
+  - `packages/application/src/use-cases/meetings/meetings.ts`
+
+**Resumo do Codex:**
+
+> Passo **M3.15 concluído**. Implementei os cinco casos de uso da agenda e os conectei a `createUseCases`. Os testes cobrem consultas, permissões de gestor, gravações e notificações.
+>
+> `pnpm check` passou: **631 testes**. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.

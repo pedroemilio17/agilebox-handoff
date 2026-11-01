@@ -30,6 +30,13 @@ import {
 } from './use-cases/participations/participations'
 import { GetDashboard } from './use-cases/dashboard/get-dashboard'
 import { ListTimeline } from './use-cases/timeline/list-timeline'
+import {
+  CreateMeeting,
+  DeleteMeeting,
+  ListMonthMeetings,
+  ListUpcomingMeetings,
+  UpdateMeeting,
+} from './use-cases/meetings/meetings'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -76,6 +83,13 @@ export function createUseCases(deps: AppDeps) {
     },
     dashboard: {
       get: new GetDashboard(deps),
+    },
+    meetings: {
+      listMonth: new ListMonthMeetings(deps),
+      listUpcoming: new ListUpcomingMeetings(deps),
+      create: new CreateMeeting(deps),
+      update: new UpdateMeeting(deps),
+      delete: new DeleteMeeting(deps),
     },
   }
 }

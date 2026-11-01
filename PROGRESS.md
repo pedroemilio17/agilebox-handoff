@@ -229,9 +229,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Dashboard aceita somente gestor; distribuição global e estatísticas por participante reaproveitam as regras do core e omitem usuários sem tarefas.
   - Nota: Decisão provisória PLANO 12.4: incluir gestor na tabela quando participar de tarefas; `pnpm check` passou (627 testes).
 
-- [ ] M3.15 Casos de uso: agenda
+- [x] M3.15 Casos de uso: agenda
   - `list-month`, `list-upcoming`, `create`, `update`, `delete` (só gestor grava).
   - Pronto: idem.
+  - Nota: Os cinco casos foram ligados a `createUseCases`; consultas usam a organização do ator e a data de `Clock`.
+  - Nota: Gravações são exclusivas do gestor, usam `UnitOfWork` e publicam mudança de agenda; testes cobrem permissões, ordenação e ausência de registros.
+  - Nota: `pnpm check` passou: 631 testes, sem dependências novas.
 
 - [ ] M3.16 `createUseCases` e roteiro
   - `create-use-cases.ts` (DI manual), `index.ts`; teste "roteiro" da PLANO 9 · M3 ponta a ponta com fakes; cobertura ≥ 90% em `packages/application`.
