@@ -20,4 +20,6 @@ export const addProjectMemberOutputSchema = z.void()
 export const removeProjectMemberOutputSchema = z.void()
 
 export type CreateProjectInput = z.infer<typeof createProjectInputSchema>
+export type AddProjectMemberInput = z.infer<typeof addProjectMemberInputSchema>
+export type RemoveProjectMemberInput = z.infer<typeof removeProjectMemberInputSchema>
 export type ProjectDto = z.infer<typeof projectDtoSchema>

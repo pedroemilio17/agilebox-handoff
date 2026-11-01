@@ -1,4 +1,5 @@
 import type {
+  ActorSession,
   ChangeNotifier,
   Clock,
   ContributorRepository,
@@ -14,6 +15,7 @@ import type {
 } from './ports'
 
 export interface AppDeps {
+  readonly actorSession: ActorSession
   readonly changeNotifier: ChangeNotifier
   readonly clock: Clock
   readonly contributors: ContributorRepository

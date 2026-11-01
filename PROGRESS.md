@@ -185,9 +185,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: DTO de detalhe inclui `total` em reais ou `null`; cobertura verifica tarifas ocultas para colaborador, total apenas para gestor e detalhe somente leitura para membro.
   - Nota: `pnpm check` passou (579 testes), sem dependências novas.
 
-- [ ] M3.9 Casos de uso: sessão, usuários, projetos
+- [x] M3.9 Casos de uso: sessão, usuários, projetos
   - `session/*`, `users/set-default-rate`, `projects/*` (criar devolve existente pelo `nameKey`; criador vira membro; membros só por criador/gestor).
   - Pronto: para cada um, sucesso, negado, inválido e notificação.
+  - Nota: Casos de sessão, tarifa padrão, listagem/criação de projetos e gestão de membros implementados com testes de acesso, validação, notificações e isolamento por organização.
+  - Nota: `ActorSession` foi incluída como porta da aplicação; a troca de usuário publica `session`, e mudanças de tarifa e projeto publicam seus respectivos tipos.
+  - Nota: `pnpm check` passou (593 testes), sem dependências novas.
 
 - [ ] M3.10 Casos de uso: entidades
   - `contributors/*` (criar, listar, valor padrão só pelo gestor).

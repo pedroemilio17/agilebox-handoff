@@ -1,4 +1,12 @@
 export {}
 export * from './deps'
+export * from './create-use-cases'
 export * from './mappers'
 export * from './ports'
+export * from './use-cases/projects/create-project'
+export * from './use-cases/projects/list-projects'
+export * from './use-cases/projects/project-members'
+export * from './use-cases/session/get-current-actor'
+export * from './use-cases/session/list-users'
+export * from './use-cases/session/switch-user'
+export * from './use-cases/users/set-default-rate'

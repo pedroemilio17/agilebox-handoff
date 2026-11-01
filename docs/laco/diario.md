@@ -178,3 +178,34 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:181) e o status está `DONE`.
 >
 > Verificação: `pnpm check` passou — 579 testes. Sem dependências novas.
+
+## 2026-10-31 23:15 · M3.9 Casos de uso: sessão, usuários, projetos
+
+- Alterações: 19 files changed, 591 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/deps.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/ports/actor-session.ts`
+  - `packages/application/src/ports/index.ts`
+  - `packages/application/src/use-cases/projects/create-project.ts`
+  - `packages/application/src/use-cases/projects/list-projects.ts`
+  - `packages/application/src/use-cases/projects/project-members.ts`
+  - `packages/application/src/use-cases/projects/projects.test.ts`
+  - `packages/application/src/use-cases/session/get-current-actor.ts`
+  - `packages/application/src/use-cases/session/list-users.ts`
+  - `packages/application/src/use-cases/session/session.test.ts`
+  - `packages/application/src/use-cases/session/switch-user.ts`
+  - `packages/application/src/use-cases/users/set-default-rate.test.ts`
+  - `packages/application/src/use-cases/users/set-default-rate.ts`
+  - `packages/contract/src/changes.ts`
+  - `packages/contract/src/index.ts`
+  - `packages/contract/src/projects.ts`
+
+**Resumo do Codex:**
+
+> M3.9 concluído. Implementei os casos de uso de sessão, valor/hora padrão, projetos e membros, com testes de acesso, validação e notificações. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:188).
+>
+> `pnpm check` passou: 593 testes. Status: `DONE`.
