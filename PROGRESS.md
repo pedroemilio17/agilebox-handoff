@@ -373,10 +373,14 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Os 33 canais da API estão ligados explicitamente aos respectivos casos de uso; testes cobrem validação, erros, origem do ator e registro integral.
   - Nota: `pnpm check` passou (79 arquivos, 695 testes).
 
-- [ ] M5.9 Preload e camada de dados do renderer
+- [x] M5.9 Preload e camada de dados do renderer
   - `preload/index.ts` (`contextBridge` expondo `window.agilebox`: `invoke`, `onChanges`, `shell`), `renderer/shared/api/ipc-client.ts` (implementa `AgileBoxApi`; desembrulha `Result`, lança `ApiError`), `ApiProvider.tsx`, `query/QueryProvider.tsx`, `keys.ts`, `sync-changes.ts` (`onChanges` → invalida queries), `session/useActor.ts` (ator e capacidades), `lib/format-date.ts` ("Qui, 05 nov", "há 12 min"; `date-fns` pt-BR), `testing/fake-api.ts`. Hooks por recurso só nos passos das telas que os usam.
   - Deps: `@agilebox/desktop prod @tanstack/react-query`, `@agilebox/desktop prod date-fns`.
   - Pronto: testes do client com `invoke` falso, da invalidação e do `format-date`.
+  - Nota: Preload expõe a ponte tipada e removível para eventos; o cliente desembrulha os resultados e converte falhas em `ApiError`.
+  - Nota: API Context, Query Client, chaves, invalidação por mudança IPC, capacidades da sessão e fake-api implementados.
+  - Nota: Contrato anterior tipava a API do renderer com `ApiResult`; ajustado para refletir o PLANO 3.5: só o transporte IPC usa envelope.
+  - Nota: Formatadores pt-BR e testes de IPC, sincronização e datas adicionados; `pnpm check` passou (705 testes).
 
 - [ ] M5.10 Janelas, vidro e ciclo de vida
   - `main/windows/glass.ts` (**pura**: `resolveGlassMode(platform, env)` → `'css'` por padrão; `'native'` quando `AGILEBOX_GLASS=native` no Windows 11), `window-manager.ts`, `panel-window.ts` (sem moldura, 1280×780, mín. 900 de largura), `tray-window.ts` (360 px, sem moldura, sempre no topo, sem item na barra de tarefas, ancorada no canto inferior direito da área útil), `main/index.ts` (instância única, `whenReady` → composition root → handlers → janelas). Código que toca a API do Electron fica nestes arquivos finos; a lógica (modo de vidro, posição ancorada) em funções puras com teste.

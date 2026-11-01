@@ -1,6 +1,5 @@
 import type { z } from 'zod'
 import type { ChangeEvent } from './changes'
-import type { ApiResult } from './result'
 import {
   addProjectMemberInputSchema,
   addProjectMemberOutputSchema,
@@ -154,10 +153,10 @@ export const API_SCHEMA_REGISTRY = {
 
 type Method<Channel extends ApiChannel> =
   z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']> extends undefined
-    ? () => Promise<ApiResult<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>>
+    ? () => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
     : (
         input: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
-      ) => Promise<ApiResult<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>>
+      ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
 
 export interface AgileBoxApi {
   session: {
@@ -207,5 +206,12 @@ export interface AgileBoxApi {
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }
+
+export type ApiInput<Channel extends ApiChannel> = z.input<
+  (typeof API_SCHEMA_REGISTRY)[Channel]['input']
+>
+export type ApiOutput<Channel extends ApiChannel> = z.output<
+  (typeof API_SCHEMA_REGISTRY)[Channel]['output']
+>
 
 export const agileBoxApiChannels: readonly ApiChannel[] = API_CHANNELS

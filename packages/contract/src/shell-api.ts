@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import { SHELL_CHANNELS, type ShellChannel } from './channels'
+import type { ApiInput, ApiOutput } from './api'
+import type { ApiResult } from './result'
+import type { ApiChannel } from './channels'
+import type { ChangeEvent } from './changes'
 
 const voidSchema = z.void()
 const trayHeightInputSchema = z.object({ height: z.number().int().positive() })
@@ -18,6 +22,15 @@ export interface DesktopShellApi {
   toggleTray(): void
   openPanel(): void
   setTrayHeight(input: z.infer<typeof trayHeightInputSchema>): void
+}
+
+export interface AgileBoxBridge {
+  invoke<Channel extends ApiChannel>(
+    channel: Channel,
+    input: ApiInput<Channel>,
+  ): Promise<ApiResult<ApiOutput<Channel>>>
+  onChanges(callback: (change: ChangeEvent) => void): () => void
+  shell: DesktopShellApi
 }
 
 export const shellApiChannels: readonly ShellChannel[] = SHELL_CHANNELS

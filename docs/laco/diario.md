@@ -728,3 +728,36 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 79 arquivos e 695 testes. Status registrado como `DONE` em `.loop/status`.
 >
 > Arquivos principais: [handle.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/main/ipc/handle.ts), [register-handlers.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/main/ipc/register-handlers.ts) e [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md).
+
+## 2026-11-01 01:56 · M5.9 Preload e camada de dados do renderer
+
+- Alterações: 19 files changed, 458 insertions(+), 5 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/package.json`
+  - `apps/desktop/src/preload/index.test.ts`
+  - `apps/desktop/src/preload/index.ts`
+  - `apps/desktop/src/renderer/shared/api/ApiProvider.tsx`
+  - `apps/desktop/src/renderer/shared/api/ipc-client.test.ts`
+  - `apps/desktop/src/renderer/shared/api/ipc-client.ts`
+  - `apps/desktop/src/renderer/shared/api/window.d.ts`
+  - `apps/desktop/src/renderer/shared/lib/format-date.test.ts`
+  - `apps/desktop/src/renderer/shared/lib/format-date.ts`
+  - `apps/desktop/src/renderer/shared/query/QueryProvider.tsx`
+  - `apps/desktop/src/renderer/shared/query/keys.ts`
+  - `apps/desktop/src/renderer/shared/query/sync-changes.test.ts`
+  - `apps/desktop/src/renderer/shared/query/sync-changes.ts`
+  - `apps/desktop/src/renderer/shared/session/useActor.ts`
+  - `apps/desktop/src/renderer/shared/testing/fake-api.ts`
+  - `packages/contract/src/api.ts`
+  - `packages/contract/src/shell-api.ts`
+  - `pnpm-lock.yaml`
+
+**Resumo do Codex:**
+
+> M5.9 concluído; status registrado como `DONE` em `.loop/status`.
+>
+> Implementei a ponte preload, o cliente IPC com `ApiError`, os providers de API e queries, invalidação por mudanças, capacidades da sessão, formatadores pt-BR e `fake-api`. Ajustei o contrato do renderer para retornar dados desembrulhados, conforme o PLANO 3.5, e registrei a divergência em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md).
+>
+> `pnpm check` passou: 705 testes. Não há pendência específica para o Pedro neste passo.
