@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { resolveGlassMode } from './glass'
 
 describe('resolveGlassMode', () => {
-  it('usa vidro CSS por padrão', () => {
+  it('usa vidro CSS onde não há vidro do sistema', () => {
     expect(resolveGlassMode('win32', {})).toBe('css')
+    expect(resolveGlassMode('win32', { systemVersion: '10.0.19045' })).toBe('css')
     expect(resolveGlassMode('darwin', {})).toBe('css')
   })
 
@@ -13,7 +14,8 @@ describe('resolveGlassMode', () => {
     expect(resolveGlassMode('linux', { AGILEBOX_GLASS: 'css' })).toBe('css')
   })
 
-  it('usa vidro nativo somente quando solicitado no Windows 11', () => {
+  it('usa o Acrylic por padrão no Windows 11 e permite voltar ao CSS', () => {
+    expect(resolveGlassMode('win32', { systemVersion: '10.0.22631' })).toBe('native')
     expect(
       resolveGlassMode('win32', { AGILEBOX_GLASS: 'native', systemVersion: '10.0.22631' }),
     ).toBe('native')

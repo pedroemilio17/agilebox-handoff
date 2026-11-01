@@ -3,6 +3,7 @@ import { EmptyState, WindowControls } from '@agilebox/ui'
 import type { SessionUserDto } from '@agilebox/contract'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
+import { SettingsView } from '../settings/SettingsView'
 import styles from './PanelShell.module.css'
 
 export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
@@ -82,7 +83,7 @@ export function PanelShell({
           ) : visibleView === 'agenda' && agenda ? (
             agenda
           ) : visibleView === 'settings' ? (
-            <EmptyState title={panelCopy.comingSoon} />
+            <SettingsView />
           ) : visibleView === 'plugins' ? (
             <EmptyState title={panelCopy.comingSoon} />
           ) : (

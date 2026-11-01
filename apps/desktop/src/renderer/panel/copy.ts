@@ -60,6 +60,11 @@ export const panelCopy = {
   cancel: 'Cancelar',
   meetingError: 'Não foi possível salvar o agendamento.',
   moreEvents: (count: number) => `+${count} mais`,
+  appearance: 'Aparência',
+  windowOpacity: 'Opacidade da janela',
+  windowOpacityHint:
+    'Quanto do fundo aparece através do vidro. Mais alto deixa o texto mais legível; mais baixo, mais transparente.',
+  restoreDefault: 'Restaurar padrão',
   members: 'Membros',
   membersOf: (project: string) => `Membros de ${project}`,
   addMember: 'Adicionar membro',

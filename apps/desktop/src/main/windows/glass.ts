@@ -14,7 +14,8 @@ const LINUX_MODES: readonly string[] = ['css', 'opaque', 'compositor']
 export function resolveGlassMode(platform: string, env: GlassEnvironment): GlassMode {
   const version = env.systemVersion?.match(/^\d+\.\d+\.(\d+)/)?.[1]
   const isWindows11 = version !== undefined && Number(version) >= 22000
-  if (platform === 'win32' && isWindows11 && env.AGILEBOX_GLASS === 'native') return 'native'
+  // Windows 11: o vidro real é o Acrylic do sistema (desfoca o desktop); AGILEBOX_GLASS=css volta ao CSS.
+  if (platform === 'win32' && isWindows11 && env.AGILEBOX_GLASS !== 'css') return 'native'
   if (platform === 'linux') {
     if (env.AGILEBOX_GLASS && LINUX_MODES.includes(env.AGILEBOX_GLASS))
       return env.AGILEBOX_GLASS as GlassMode

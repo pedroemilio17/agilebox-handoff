@@ -9,6 +9,8 @@ export function createPanelWindow(glassMode: GlassMode): BrowserWindow {
     minWidth: 900,
     frame: false,
     transparent: glassMode === 'css' || glassMode === 'compositor',
+    // No Windows 11 o Acrylic preenche a janela inteira; os cantos arredondados vêm do próprio sistema.
+    roundedCorners: true,
     backgroundMaterial: glassMode === 'native' ? 'acrylic' : 'none',
     backgroundColor: glassMode === 'opaque' ? '#1e212a' : '#00000000',
     webPreferences: {

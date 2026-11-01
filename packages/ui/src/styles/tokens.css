@@ -14,7 +14,10 @@
   --color-manager-dot: #ff6482;
 
   --glass-window:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.12), transparent 45%), rgba(30, 33, 42, 0.5);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), transparent 45%),
+    rgba(30, 33, 42, var(--glass-window-alpha));
+  /* Opacidade do fundo da janela (Ajustes → Aparência). O HANDOFF usa 0,5; o padrão do app é um pouco mais opaco. */
+  --glass-window-alpha: 0.68;
   --glass-window-backdrop: blur(32px) saturate(170%);
   --glass-window-border: 1px solid rgba(255, 255, 255, 0.14);
   --glass-window-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -101,7 +104,9 @@
   --glass-window-backdrop: none;
 }
 
-/* Vidro desenhado pelo compositor (GNOME Shell + Liquid Glass): a página só deixa o fundo translúcido. */
-:root[data-glass='compositor'] {
+/* Vidro desenhado pelo sistema (GNOME Shell + Liquid Glass, ou Acrylic no Windows 11): a página só deixa
+   o fundo translúcido. */
+:root[data-glass='compositor'],
+:root[data-glass='native'] {
   --glass-window-backdrop: none;
 }

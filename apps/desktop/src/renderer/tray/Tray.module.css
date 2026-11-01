@@ -13,9 +13,16 @@
   animation: trayOpen 0.6s var(--ease-ios) both;
 }
 
-:global(:root[data-glass='compositor']) .window {
+:global(:root[data-glass='compositor']) .window,
+:global(:root[data-glass='native']) .window {
   inset: 0;
   box-shadow: var(--glass-window-highlight);
+}
+
+/* O Windows 11 já arredonda a janela; o fundo vai até a borda para casar com o Acrylic. */
+:global(:root[data-glass='native']) .window {
+  border: 0;
+  border-radius: 0;
 }
 
 :global(:root[data-glass='opaque']) .window {
