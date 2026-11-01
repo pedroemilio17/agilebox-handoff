@@ -809,3 +809,23 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 86 arquivos e 710 testes; o build gerou main, preload e renderers. O binário Electron não foi baixado por falta de rede, então a abertura via `pnpm dev` ficou registrada como conferência manual. A edição pela bandeja dependerá da tela prevista para o M9.
 >
 > Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e a pendência em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). Status: `DONE`.
+
+## 2026-11-01 10:26 · M6.1 Casca do painel
+
+- Alterações: 8 files changed, 585 insertions(+), 25 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+  - `apps/desktop/src/renderer/panel/layout/PanelShell.module.css`
+  - `apps/desktop/src/renderer/panel/layout/PanelShell.tsx`
+  - `packages/ui/src/styles/tokens.css`
+  - `scripts/ensure-native.mjs`
+
+**Resumo do Codex:**
+
+> M6.1 concluído. Implementei a casca do painel com navegação recolhível, controles de janela, alternância estática de escopo e Dashboard restrito a gestores. Também ajustei a resolução de `better-sqlite3` no helper de build.
+>
+> `pnpm check` passou: 86 arquivos de teste, 712 testes e build do desktop. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e as pendências de conferência visual e decisão provisória em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). O status da rodada está como `DONE`.

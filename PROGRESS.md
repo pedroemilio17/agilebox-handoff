@@ -408,9 +408,13 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
 
 Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem junto da tela que os usa.
 
-- [ ] M6.1 Casca do painel
+- [x] M6.1 Casca do painel
   - `layout/PanelShell`, `Rail`/`RailItem` (52 px recolhida, 204 px expandida, transição de largura; tooltip só recolhida; Dashboard só para gestor; Projetos; Agenda; Plug-ins "em breve"; Ajustes com `EmptyState` "em breve", PLANO 12.3; Conta na base), `TitleBar` (64 px: nome, segmentado "Minhas tarefas | Equipe · somente leitura" **estático**, botão "Nova tarefa", `WindowControls`), navegação entre visões em estado simples (animação `sobe 10 px + fade`).
   - Pronto: testes de navegação, de Dashboard oculto para colaborador e de `aria`.
+  - Nota: Criados `PanelShell`, barra lateral recolhível e barra de título acessível; a lista atual continua temporariamente em Projetos.
+  - Nota: Dashboard só é incluído para sessão de gestor; Plug-ins e Ajustes exibem "Em breve", conforme proposta provisória 12.3.
+  - Nota: `pnpm check` passou (86 arquivos, 712 testes e build do desktop); o helper nativo foi ajustado para resolver `better-sqlite3` pelo workspace correto.
+  - Nota: Pendente conferência visual do painel comparando a barra lateral e a barra de título com o protótipo.
 
 - [ ] M6.2 Projetos
   - `board/ProjectTitle` (seta que gira) e `ProjectDialog` (lista com check no atual, **"Todos os projetos"** como primeira opção, "Novo projeto" que vira campo + "Criar"; nome repetido seleciona o existente). Hooks `useProjects`, `useCreateProject`.

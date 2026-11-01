@@ -28,6 +28,14 @@
   --glass-popover-backdrop: blur(20px);
   --color-field-bg: rgba(118, 118, 128, 0.24);
   --color-rail-bg: rgba(0, 0, 0, 0.18);
+  --color-rail-border: rgba(255, 255, 255, 0.1);
+  --color-rail-hover: rgba(255, 255, 255, 0.08);
+  --color-rail-selected: rgba(255, 255, 255, 0.14);
+  --color-control-segment-selected: rgba(255, 255, 255, 0.2);
+  --color-control-segment-border: rgba(255, 255, 255, 0.08);
+  --color-primary-border: rgba(255, 255, 255, 0.22);
+  --color-focus-overlay: rgba(8, 10, 16, 0.45);
+  --color-account-avatar: #3e5f99;
 
   --color-status-planejamento: #bf5af2;
   --color-status-afazer: #c7c7cc;

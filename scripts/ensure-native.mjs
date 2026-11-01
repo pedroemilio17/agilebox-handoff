@@ -45,6 +45,7 @@ function loadNativeModule() {
 
   const result = spawnSync(electronPath, ['-e', "require('better-sqlite3')"], {
     encoding: 'utf8',
+    cwd: resolve('packages/infra-sqlite'),
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
   })
   return {

@@ -1,0 +1,308 @@
+.window {
+  position: absolute;
+  inset: 40px 48px;
+  display: flex;
+  overflow: hidden;
+  border: var(--glass-window-border);
+  border-radius: var(--radius-window);
+  background: var(--glass-window);
+  box-shadow: var(--glass-window-highlight), var(--shadow-window);
+  color: var(--color-text-primary);
+  backdrop-filter: var(--glass-window-backdrop);
+  animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) both;
+}
+
+.rail {
+  z-index: 1;
+  display: flex;
+  flex: 0 0 52px;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  width: 52px;
+  padding: var(--space-3) var(--space-1);
+  border-right: 1px solid var(--color-rail-border);
+  background: var(--color-rail-bg);
+  transition:
+    width 420ms var(--ease-ios),
+    flex-basis 420ms var(--ease-ios);
+}
+
+.expanded {
+  flex-basis: 204px;
+  width: 204px;
+}
+
+.railItem {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--size-touch-target);
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--size-touch-target);
+  padding: 0 var(--space-3);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 200ms ease,
+    background 200ms ease;
+}
+
+.railItem > span:first-child {
+  display: grid;
+  flex: 0 0 20px;
+  place-items: center;
+  font-size: var(--font-size-title-small);
+}
+
+.railItem:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-text-primary);
+}
+
+.selected {
+  background: var(--color-rail-selected);
+  color: var(--color-text-primary);
+}
+
+.railLabel {
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width 420ms var(--ease-ios),
+    opacity 300ms ease,
+    margin 420ms var(--ease-ios);
+}
+
+.expanded .railLabel {
+  max-width: 140px;
+  margin-left: var(--space-3);
+  opacity: 1;
+}
+
+.soon {
+  display: none;
+}
+
+.expanded .soon {
+  display: inline;
+  margin-left: auto;
+  color: var(--color-text-placeholder);
+  font-size: var(--font-size-label);
+}
+
+.rail:not(.expanded) .railItem:hover::after,
+.rail:not(.expanded) .railItem:focus-visible::after {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + var(--space-2));
+  z-index: 3;
+  padding: var(--space-2) var(--space-3);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-chip);
+  background: var(--glass-popover);
+  color: var(--color-text-primary);
+  content: attr(data-tip);
+  font-size: var(--font-size-label);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.divider {
+  flex: none;
+  height: 1px;
+  margin: 6px var(--space-2);
+  background: var(--color-rail-border);
+}
+
+.account {
+  padding: 0 var(--space-2);
+}
+
+.avatar {
+  display: grid;
+  flex: 0 0 28px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-account-avatar);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-chip);
+  font-weight: 600;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titleBar {
+  display: flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 0 var(--space-3) 0 var(--space-6);
+}
+
+.titleGroup,
+.titleActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.titleGroup {
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.titleBar h1 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-title-small);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmented {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  min-width: 340px;
+  height: var(--size-touch-target);
+  padding: 3px;
+  border: 1px solid var(--color-control-segment-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+}
+
+.segmented button {
+  flex: 1;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--color-control-segment-selected);
+  color: var(--color-text-primary);
+}
+
+.segmented span {
+  padding-right: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  white-space: nowrap;
+}
+
+.newTask {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--size-touch-target);
+  padding: 0 18px;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-button);
+  background: var(--color-primary-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.newTask:hover {
+  background: var(--color-primary-bg-hover);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-1) var(--space-6) var(--space-6);
+  animation: viewEnter var(--motion-duration-view) var(--ease-ios) both;
+}
+
+@keyframes windowOpen {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .rail,
+  .expanded {
+    flex-basis: 52px;
+    width: 52px;
+  }
+
+  .railLabel,
+  .soon {
+    display: none;
+  }
+
+  .segmented {
+    min-width: 270px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window,
+  .content,
+  .rail,
+  .railItem,
+  .railLabel {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
+}
