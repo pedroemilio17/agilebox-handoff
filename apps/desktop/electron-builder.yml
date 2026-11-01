@@ -4,6 +4,13 @@
 #   Teste sem instalar: pnpm --filter @agilebox/desktop run pack:dir  →  release/linux-unpacked (ou win-unpacked)
 appId: br.com.agilebox.app
 productName: AgileBox
+# Os instaladores e os arquivos de atualização (latest.yml, latest-linux.yml) vão para os Releases
+# do GitHub; o app instalado procura versões novas lá (.github/workflows/release.yml).
+publish:
+  provider: github
+  owner: pedroemilio17
+  repo: agilebox-handoff
+  releaseType: release
 directories:
   output: ../../release
 # Usa o Electron já baixado pelo `pnpm install` (no sistema atual) em vez de baixá-lo de novo.

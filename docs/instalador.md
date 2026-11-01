@@ -1,5 +1,27 @@
 # Instalador do AgileBox
 
+## Lançar uma versão (recomendado: pelo GitHub)
+
+Os instaladores são gerados pelo GitHub Actions (`.github/workflows/release.yml`) e publicados nos
+[Releases](https://github.com/pedroemilio17/agilebox-handoff/releases). Ninguém precisa de git, pnpm
+ou do código para instalar: baixa o `.exe` (Windows) ou o `.AppImage` (Linux) da página do Release.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+A versão do app vem da tag (`v0.2.0` → `0.2.0`). Em cerca de 10 minutos o Release aparece com
+`AgileBox-0.2.0-setup.exe`, `AgileBox-0.2.0.AppImage` e os arquivos `latest*.yml`, que o app
+instalado usa para se atualizar sozinho. Acompanhe em **Actions** no GitHub.
+
+O instalador **não é assinado**: o SmartScreen avisa na primeira vez ("Mais informações → Executar
+assim mesmo"); em PCs com o Controle de Aplicativos Inteligentes ligado ele não instala. Para
+remover o aviso é preciso um certificado de assinatura de código (Azure Trusted Signing ou um
+certificado comprado); o pipeline já está pronto para receber a assinatura depois.
+
+## Gerar no próprio PC
+
 Cada instalador é gerado **no sistema de destino**, porque o `better-sqlite3` é um módulo nativo.
 A configuração está em `apps/desktop/electron-builder.yml`; a saída vai para `release/` (fora do git).
 

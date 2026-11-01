@@ -1,0 +1,65 @@
+# Gera os instaladores do AgileBox e publica nos Releases do GitHub.
+# Para lançar uma versão: git tag v0.2.0 && git push origin v0.2.0
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Instalador ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            target: --win
+          - os: ubuntu-latest
+            label: Linux
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Versão a partir da tag
+        shell: bash
+        run: pnpm --filter @agilebox/desktop exec npm pkg set version="${GITHUB_REF_NAME#v}"
+
+      - name: Verificar (formatação, lint, tipos e testes)
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
+
+      - name: Compilar
+        run: pnpm --filter @agilebox/desktop run build
+
+      - name: Gerar e publicar o instalador
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm --filter @agilebox/desktop exec electron-builder ${{ matrix.target }} --publish always
+
+      - name: Guardar o instalador também como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgileBox-${{ matrix.label }}
+          path: |
+            release/*.exe
+            release/*.AppImage
+            release/*.yml
+          if-no-files-found: ignore

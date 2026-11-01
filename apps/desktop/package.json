@@ -14,7 +14,8 @@
     "pack:dir": "pnpm build && electron-builder --dir"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.0.3",
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
     "@agilebox/application": "workspace:*",
