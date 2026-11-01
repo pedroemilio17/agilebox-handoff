@@ -50,6 +50,7 @@ describe('schemas de tarefas', () => {
         ...task,
         id: 'tarefa-1',
         participations: [],
+        total: null,
         canEdit: true,
         readOnly: false,
       }).success,
@@ -70,6 +71,7 @@ describe('schemas de tarefas', () => {
           rate: null,
         },
       ],
+      total: null,
       canEdit: true,
       readOnly: false,
     }

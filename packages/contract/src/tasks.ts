@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isoDateTimeSchema, nameSchema, ulidSchema } from './shared-schemas'
+import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
 export const taskDeadlineSchema = z.iso.date().nullable()
@@ -29,6 +29,7 @@ export const getTaskInputSchema = z.object({ taskId: ulidSchema })
 export const getTaskOutputSchema = taskDtoSchema
   .extend({
     participations: z.array(z.lazy(() => participationSummaryDtoSchema)),
+    total: visibleRateSchema,
     canEdit: z.boolean(),
     readOnly: z.boolean(),
   })

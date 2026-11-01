@@ -178,9 +178,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: suíte verde nos fakes.
   - Nota: Contrato reutilizável criado e executado nos repositórios em memória; cobre gravação/leitura, remoção, Recentes, Frequentes, busca sem acentos, chave de projeto por organização e isolamento. `pnpm check` passou (576 testes), sem dependências novas.
 
-- [ ] M3.8 Mappers
+- [x] M3.8 Mappers
   - `mappers/*`: entidade → DTO, aplicando `canSeeRate` e `canSeeTaskTotal` (R$ = `null`), `canEdit`/`readOnly`.
   - Pronto: testes de que o colaborador nunca recebe R$ de outro nem o total.
+  - Nota: Mappers de usuário, entidade, projeto, tarefa, envolvimento, agenda, linha do tempo e dashboard exportados pela aplicação; tarifas e total em reais são filtrados pelas políticas do domínio.
+  - Nota: DTO de detalhe inclui `total` em reais ou `null`; cobertura verifica tarifas ocultas para colaborador, total apenas para gestor e detalhe somente leitura para membro.
+  - Nota: `pnpm check` passou (579 testes), sem dependências novas.
 
 - [ ] M3.9 Casos de uso: sessão, usuários, projetos
   - `session/*`, `users/set-default-rate`, `projects/*` (criar devolve existente pelo `nameKey`; criador vira membro; membros só por criador/gestor).

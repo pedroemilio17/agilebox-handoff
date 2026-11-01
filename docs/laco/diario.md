@@ -158,3 +158,23 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Passo M3.7 concluído. Criei a suíte reutilizável de contrato e rodei-a contra os fakes em memória, cobrindo gravação e leitura, remoção, ordenação, busca sem acentos e isolamento por organização.
 >
 > `pnpm check` passou: 576 testes. Registrei a nota em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:176) e gravei `DONE` em `.loop/status`.
+
+## 2026-10-31 23:11 · M3.8 Mappers
+
+- Alterações: 6 files changed, 260 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/mappers/index.ts`
+  - `packages/application/src/mappers/mappers.test.ts`
+  - `packages/contract/src/tasks.test.ts`
+  - `packages/contract/src/tasks.ts`
+
+**Resumo do Codex:**
+
+> M3.8 concluído. Criei os mappers de entidades para DTOs, com filtros de valor/hora, total da tarefa e permissões de edição/leitura. O DTO de detalhe agora inclui `total` em reais ou `null`.
+>
+> Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:181) e o status está `DONE`.
+>
+> Verificação: `pnpm check` passou — 579 testes. Sem dependências novas.
