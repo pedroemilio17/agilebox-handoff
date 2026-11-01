@@ -16,6 +16,7 @@ function stub(check: UpdateStatus, apply: UpdateStatus = { state: 'ready' }) {
     apply: vi.fn(() => Promise.resolve(apply)),
     restart: vi.fn((): Promise<UpdateStatus> => Promise.resolve({ state: 'started' })),
     lastRun: vi.fn((): Promise<UpdateRun | null> => Promise.resolve(null)),
+    info: vi.fn(() => Promise.resolve({ version: '0.2.0', mode: 'release' as const })),
     onProgress: vi.fn((callback: (step: UpdateStep) => void) => {
       progress = callback
       return () => undefined
@@ -84,5 +85,11 @@ describe('Ajustes: atualizações', () => {
     render(<UpdatesSection />)
     expect(await screen.findByText(/falhou/)).toBeTruthy()
     expect(screen.getByText('C:\\agilebox\\update.log')).toBeTruthy()
+  })
+
+  it('mostra a versão instalada e de onde vem a atualização', async () => {
+    stub({ state: 'up-to-date', commit: '0.2.0' })
+    render(<UpdatesSection />)
+    expect(await screen.findByText(/Versão 0\.2\.0 · instalada/)).toBeTruthy()
   })
 })

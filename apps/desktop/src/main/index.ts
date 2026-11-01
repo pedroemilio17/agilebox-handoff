@@ -6,6 +6,8 @@ import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
 import { registerUpdateHandlers } from './updates/register-update-handlers'
 import { createSourceUpdater } from './updates/source-updater'
+import { createReleaseUpdater } from './updates/release-updater'
+import electronUpdater from 'electron-updater'
 import { needsX11Relaunch } from './linux-display'
 import {
   acquireInstanceLock,
@@ -107,18 +109,26 @@ function startApp(): void {
   })
 
   registerShellHandlers(ipcMain, windows)
+  const notifyUpdate = (step: Parameters<typeof windows.broadcast>[1]) =>
+    windows.broadcast(UPDATE_CHANNELS.progress, step)
+  const sourceUpdater = createSourceUpdater({
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    userDataPath,
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+    appImage: process.env.APPIMAGE,
+    quit: () => app.quit(),
+    notify: notifyUpdate,
+  })
+  // Dentro do repositório (pnpm dev, win-unpacked) atualiza pelo código; instalado, pelos Releases.
+  const useReleases = app.isPackaged && !sourceUpdater.insideRepository()
   registerUpdateHandlers(
     ipcMain,
-    createSourceUpdater({
-      appPath: app.getAppPath(),
-      resourcesPath: process.resourcesPath,
-      userDataPath,
-      isPackaged: app.isPackaged,
-      platform: process.platform,
-      appImage: process.env.APPIMAGE,
-      quit: () => app.quit(),
-      notify: (step) => windows.broadcast(UPDATE_CHANNELS.progress, step),
-    }),
+    useReleases
+      ? createReleaseUpdater({ updater: electronUpdater.autoUpdater, notify: notifyUpdate })
+      : sourceUpdater,
+    { version: app.getVersion(), mode: useReleases ? 'release' : 'source' },
   )
 
   void app

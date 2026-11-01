@@ -83,6 +83,7 @@ export const panelCopy = {
     install: 'Instalando dependências (pnpm install)…',
     build: 'Compilando o app…',
     package: 'Montando a versão nova (pode levar alguns minutos)…',
+    download: 'Baixando a versão nova…',
   },
   updatesHint:
     'Baixa o código novo do GitHub, instala as dependências e monta a versão nova com o app aberto. No fim, é só reiniciar.',
@@ -97,6 +98,10 @@ export const panelCopy = {
   lastUpdate: (when: string, ok: boolean) =>
     `Última atualização em ${when}: ${ok ? 'concluída' : 'falhou'}.`,
   updateLog: 'Registro:',
+  installedVersion: (version: string, mode: 'source' | 'release') =>
+    `Versão ${version} · ${mode === 'release' ? 'instalada (atualiza pelo GitHub Releases)' : 'código-fonte (atualiza com git pull)'}`,
+  updatesHintRelease:
+    'Procura a versão nova no GitHub e baixa em segundo plano, com o app aberto. No fim, é só reiniciar.',
   members: 'Membros',
   membersOf: (project: string) => `Membros de ${project}`,
   addMember: 'Adicionar membro',

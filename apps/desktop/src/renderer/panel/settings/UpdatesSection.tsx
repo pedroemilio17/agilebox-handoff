@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { UpdateRun, UpdateStatus, UpdateStep } from '@agilebox/contract'
+import type { UpdateInfo, UpdateRun, UpdateStatus, UpdateStep } from '@agilebox/contract'
 import { Button, GlassSurface } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import styles from './SettingsView.module.css'
@@ -35,9 +35,11 @@ export function UpdatesSection() {
   const [busy, setBusy] = useState<Action | null>(null)
   const [step, setStep] = useState<UpdateStep | null>(null)
   const [lastRun, setLastRun] = useState<UpdateRun | null>(null)
+  const [info, setInfo] = useState<UpdateInfo | null>(null)
 
   useEffect(() => {
     void window.agilebox.updates.lastRun().then(setLastRun)
+    void window.agilebox.updates.info().then(setInfo)
     return window.agilebox.updates.onProgress(setStep)
   }, [])
 
@@ -67,7 +69,12 @@ export function UpdatesSection() {
   return (
     <GlassSurface variant="group" className={styles.section} aria-label={panelCopy.updates}>
       <h2 className={styles.sectionTitle}>{panelCopy.updates}</h2>
-      <p className={styles.hint}>{panelCopy.updatesHint}</p>
+      {info ? (
+        <p className={styles.label}>{panelCopy.installedVersion(info.version, info.mode)}</p>
+      ) : null}
+      <p className={styles.hint}>
+        {info?.mode === 'release' ? panelCopy.updatesHintRelease : panelCopy.updatesHint}
+      </p>
       <div role="status" className={styles.updateStatus}>
         {working ? (
           <p className={styles.label}>

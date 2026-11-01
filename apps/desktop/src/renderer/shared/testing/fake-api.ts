@@ -17,6 +17,7 @@ const bridge: AgileBoxBridge = {
     apply: () => Promise.resolve({ state: 'unsupported', reason: 'fake' }),
     restart: () => Promise.resolve({ state: 'unsupported', reason: 'fake' }),
     lastRun: () => Promise.resolve(null),
+    info: () => Promise.resolve({ version: '0.0.0', mode: 'source' }),
     onProgress: () => () => undefined,
   },
 }

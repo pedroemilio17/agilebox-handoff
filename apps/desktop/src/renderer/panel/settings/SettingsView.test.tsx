@@ -9,6 +9,7 @@ const updates = {
   apply: () => Promise.resolve({ state: 'ready' }),
   restart: () => Promise.resolve({ state: 'started' }),
   lastRun: () => Promise.resolve(null),
+  info: () => Promise.resolve({ version: '0.2.0', mode: 'source' }),
   onProgress: () => () => undefined,
 }
 

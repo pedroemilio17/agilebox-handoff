@@ -4,10 +4,22 @@ export const UPDATE_CHANNELS = {
   apply: 'update.apply',
   restart: 'update.restart',
   lastRun: 'update.lastRun',
+  info: 'update.info',
   progress: 'update.progress',
 } as const
 
-export type UpdateStep = 'pull' | 'install' | 'build' | 'package'
+export type UpdateStep = 'pull' | 'install' | 'build' | 'package' | 'download'
+
+/**
+ * `source`: o app roda de dentro do repositório e se atualiza pelo código (git pull + reconstruir).
+ * `release`: app instalado; baixa a versão nova dos Releases do GitHub.
+ */
+export type UpdateMode = 'source' | 'release'
+
+export interface UpdateInfo {
+  readonly version: string
+  readonly mode: UpdateMode
+}
 
 export type UpdateStatus =
   /** O app não roda de dentro de um repositório com git e pnpm (ex.: instalado pelo setup). */
@@ -38,5 +50,6 @@ export interface DesktopUpdatesApi {
   /** Troca pela versão já construída e reabre. */
   restart(): Promise<UpdateStatus>
   lastRun(): Promise<UpdateRun | null>
+  info(): Promise<UpdateInfo>
   onProgress(callback: (step: UpdateStep) => void): () => void
 }

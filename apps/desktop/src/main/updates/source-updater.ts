@@ -164,7 +164,7 @@ export function createSourceUpdater(options: SourceUpdaterOptions) {
     }
   }
 
-  return { check, apply, restart, lastRun }
+  return { check, apply, restart, lastRun, insideRepository: () => repoRoot() !== null }
 }
 
 export type SourceUpdater = ReturnType<typeof createSourceUpdater>
