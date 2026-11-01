@@ -6,6 +6,8 @@ appId: br.com.agilebox.app
 productName: AgileBox
 directories:
   output: ../../release
+# Usa o Electron já baixado pelo `pnpm install` (no sistema atual) em vez de baixá-lo de novo.
+electronDist: node_modules/electron/dist
 files:
   - out/**
   - resources/**
