@@ -117,9 +117,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: um teste por tipo de evento; teste explícito de que o colaborador não vê o valor de outra pessoa.
   - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da regra. Implementados diffs dos campos e envolvimentos, incluindo troca de responsável e comparação de chamados por conteúdo, além de descrições em pt-BR com filtro de valores pela política de acesso e organização. Testados os onze tipos e a ocultação de valores de terceiros. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 525 testes). Checkbox preservado para o laço.
 
-- [ ] M2.12 Dashboard
+- [x] M2.12 Dashboard
   - `rules/dashboard.ts`: % por estado somando 100 (maior resto), estatísticas por colaborador (nº de tarefas de que participa, distribuição, % concluído).
   - Pronto: casos com 0 tarefas, 1 tarefa, arredondamentos difíceis (ex.: 3 tarefas em 3 estados).
+  - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da regra. Implementadas distribuições percentuais pelo maior resto, com desempate pela ordem dos estados, e estatísticas por usuário usando a política de participação e isolamento por organização. A decisão sobre incluir gestores na tabela permanece em aberto para a etapa de interface. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 528 testes). Checkbox preservado para o laço.
 
 - [ ] M2.13 Fechamento do core
   - `src/index.ts` exportando a API pública; limite de cobertura ≥ 95% de linhas para `packages/core` no Vitest; remover `sanity.test.ts`.
