@@ -77,9 +77,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: tabelas de casos (vírgula, ponto, vazio, negativo, muitos decimais com arredondamento meio para cima).
   - Notas da rodada: testes escritos e executados antes da implementação, com falha inicial pela ausência dos módulos. Implementados conversão e formatação de dinheiro em centavos e horas em centésimos, arredondamento decimal meio para cima, validação de valores seguros e soma de dinheiro. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 426 testes), após corrigir espaço não separável sinalizado pelo lint. Checkbox preservado para o laço.
 
-- [ ] M2.4 Datas
+- [x] M2.4 Datas
   - `values/date-only.ts`: `DateOnly` (`YYYY-MM-DD`), validação, comparação, `diffInDays(a, b)`, `toDateOnly(date, timeZone)` para obter a data local a partir de um instante.
   - Pronto: viradas de mês/ano, ano bissexto, data inválida rejeitada.
+  - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência do módulo. Implementados validação de datas gregorianas, comparação, diferença em dias de calendário (de `a` até `b`) e conversão de instante no fuso informado; cobertas viradas, anos bissextos e entradas inválidas. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 449 testes). Checkbox preservado para o laço.
 
 - [ ] M2.5 Chamado e papéis
   - `values/ticket.ts` (ID numérico positivo obrigatório; `url` opcional, só `http(s)`), `values/role.ts` (`UserRole`: `collaborator` | `manager`; `ParticipationRole`: `responsible` | `support`).
