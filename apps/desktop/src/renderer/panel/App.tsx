@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { StatusChip } from '@agilebox/ui'
 import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
@@ -8,6 +7,7 @@ import { panelCopy } from './copy'
 import { useProjects } from './hooks/use-projects'
 import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
+import { BoardView } from './board/BoardView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import styles from './App.module.css'
 
@@ -19,8 +19,8 @@ export function App() {
   const actor = useActor()
   const projects = useProjects()
   const tasks = useQuery({
-    queryKey: queryKeys.tasks.board(),
-    queryFn: () => api.tasks.listBoard({}),
+    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined),
+    queryFn: () => api.tasks.listBoard(selectedProjectId ? { projectId: selectedProjectId } : {}),
   })
 
   return (
@@ -45,25 +45,12 @@ export function App() {
             />
             {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
           </div>
-          {tasks.isPending ? <p role="status">{panelCopy.loading}</p> : null}
-          {tasks.isError ? <p role="alert">{panelCopy.error}</p> : null}
-          {tasks.isSuccess && tasks.data.length === 0 ? <p>{panelCopy.empty}</p> : null}
-          {tasks.isSuccess && tasks.data.length > 0 ? (
-            <ul className={styles.taskList} aria-label={panelCopy.heading}>
-              {tasks.data.map((task) => (
-                <li className={styles.task} key={task.id}>
-                  <div className={styles.taskHeading}>
-                    <h2>{task.title}</h2>
-                    <StatusChip status={task.status} />
-                  </div>
-                  <p>
-                    <span>{panelCopy.projectLabel}: </span>
-                    {task.projectName}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          <BoardView
+            error={tasks.isError}
+            loading={tasks.isPending}
+            onOpenTask={(taskId) => void api.tasks.recordOpen({ taskId })}
+            tasks={tasks.data}
+          />
           <ProjectDialog
             open={projectDialogOpen}
             projects={projects.data ?? []}

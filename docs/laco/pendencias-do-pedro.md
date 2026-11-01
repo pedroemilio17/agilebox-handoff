@@ -1,3 +1,5 @@
 - [ ] M6.1 · CONFERIR: abrir o painel e comparar barra lateral recolhida/expandida, navegação, barra de título e placeholder de Ajustes com `design/Painel.dc.html`.
 - [ ] M6.1 · DECIDIR: DECISÃO PROVISÓRIA (12.3): confirmar o placeholder "Em breve" em Ajustes; alternativa: remover o item da barra lateral.
 - [ ] M6.2 · CONFERIR: abrir o painel, abrir o seletor de projetos e comparar título, seta, lista, seleção e campo de criação com `design/Painel.dc.html`.
+- [ ] M6.3 · CONFERIR: abrir o painel, trocar entre Todos os projetos e um projeto, e comparar cinco colunas, cards, prazos, iniciais e estados vazios com `design/Painel.dc.html`.
+- [ ] M6.3 · DECIDIR: DECISÃO PROVISÓRIA (12.6): confirmar esqueleto e mensagem curta de erro no quadro; alternativa: usar um estado estático sem esqueleto e oferecer ação explícita para tentar de novo.

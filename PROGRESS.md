@@ -423,9 +423,12 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota: Testes cobrem lista, troca, criação, repetição, Escape e restauração de foco.
   - Nota: `pnpm check` passou (86 arquivos, 718 testes e build do desktop).
 
-- [ ] M6.3 Quadro kanban (somente leitura de layout)
+- [x] M6.3 Quadro kanban (somente leitura de layout)
   - `board/BoardView`, `KanbanColumn` (5 colunas iguais, gap 12 px, "Sem tarefas"), `TaskCard` (botão que abre o detalhe; título, prazo, iniciais do responsável). Dados de `tasks.listBoard` com filtro por projeto ("Todos os projetos" por padrão, PLANO 1). Estados de carregando (esqueleto), vazio e erro curto (PLANO 12.6; registrar `DECISÃO PROVISÓRIA`).
   - Pronto: testes de agrupamento por estado, filtro e estados vazios.
+  - Nota: Quadro com cinco colunas na ordem definida, filtro `projectId`, cards com prazo e iniciais do responsável obtidas pelo detalhe da tarefa; o botão registra abertura e será ligado à tela no M6.6.
+  - Nota: Cada coluna mantém "Sem tarefas"; carregamento usa esqueleto e falha mostra mensagem curta, conforme proposta provisória 12.6.
+  - Nota: `pnpm check` passou (86 arquivos, 721 testes e build do desktop).
 
 - [ ] M6.4 Arrastar e soltar
   - `dnd-kit` no `KanbanColumn`/`TaskCard`: coluna de destino azulada, ao soltar chama `tasks.move`; **alternativa por teclado** (sensor de teclado e/ou menu de estado no card); ordem dentro da coluna por `updated_at` (PLANO 12.2, `DECISÃO PROVISÓRIA`).

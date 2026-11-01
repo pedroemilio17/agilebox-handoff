@@ -49,10 +49,73 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    expect(await screen.findByRole('heading', { name: 'Revisar integração' })).toBeTruthy()
-    expect(screen.getByText('Projeto Aurora')).toBeTruthy()
-    expect(screen.getByText('Revisar')).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /Revisar integração/u })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Revisar, tarefas' })).toBeTruthy()
     expect(listBoard).toHaveBeenCalledWith({})
+  })
+
+  it('agrupa as tarefas nas cinco colunas na ordem do fluxo', async () => {
+    const api = createFakeApi()
+    const statuses = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(
+      statuses.map((status, index) => ({ ...task, id: `${task.id.slice(0, -1)}${index}`, status })),
+    )
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    const columns = await screen.findAllByRole('region', { name: /tarefas$/i })
+    expect(columns.map((column) => column.getAttribute('aria-label'))).toEqual([
+      'Planejamento, tarefas',
+      'A fazer, tarefas',
+      'Desenvolvendo, tarefas',
+      'Revisar, tarefas',
+      'Concluído, tarefas',
+    ])
+    expect(screen.getAllByRole('button', { name: /Revisar integração/u })).toHaveLength(5)
+  })
+
+  it('filtra a consulta do quadro pelo projeto escolhido', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Projeto atual: Todos os projetos. Trocar de projeto',
+      }),
+    )
+    await user.click(await screen.findByRole('option', { name: 'Projeto Boreal' }))
+    expect(listBoard).toHaveBeenLastCalledWith({ projectId: projects[1]?.id })
+  })
+
+  it('mostra o estado vazio em cada coluna sem tarefas', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    expect(await screen.findAllByText('Sem tarefas')).toHaveLength(5)
   })
 
   it('navega entre visões e mantém os rótulos acessíveis', async () => {

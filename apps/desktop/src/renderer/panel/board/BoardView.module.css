@@ -1,0 +1,162 @@
+.board {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-2);
+  margin: calc(-1 * var(--space-2)) 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-group);
+}
+
+.columnHeading {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.columnHeading h2 {
+  margin: 0;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.columnHeading span {
+  flex: none;
+  font-weight: 400;
+}
+
+.cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 80px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.card {
+  flex: none;
+  overflow: hidden;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-group);
+  animation: cardEnter var(--motion-duration-card) var(--ease-ios) both;
+  transition:
+    background 200ms ease,
+    transform 250ms var(--ease-ios);
+}
+
+.card:hover {
+  background: var(--glass-control);
+  transform: translateY(-2px);
+}
+
+.cardButton {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: var(--size-touch-target);
+  gap: var(--space-2);
+  padding: 14px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.taskTitle {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+}
+
+.cardMeta {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}
+
+.cardMeta time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 14px var(--space-2);
+  border: 1px dashed var(--color-rail-border);
+  border-radius: var(--radius-field);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.skeletonCard {
+  min-height: 88px;
+}
+
+.error {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-group);
+  color: var(--color-text-muted);
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .columnHeading {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
+}

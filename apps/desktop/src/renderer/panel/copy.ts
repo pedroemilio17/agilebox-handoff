@@ -30,4 +30,8 @@ export const panelCopy = {
   team: 'Equipe',
   readOnly: 'somente leitura',
   newTask: 'Nova tarefa',
+  boardLoading: 'Carregando quadro',
+  boardError: 'Não foi possível carregar o quadro.',
+  boardLabel: 'Quadro kanban',
+  boardColumnEmpty: 'Sem tarefas',
 } as const

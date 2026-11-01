@@ -852,3 +852,21 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M6.2 concluído: adicionei o seletor de projetos, criação, troca e seleção de nomes repetidos. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
 >
 > `pnpm check` passou: 86 arquivos de teste, 718 testes e build do desktop. A conferência visual com o protótipo ficou registrada como pendência para o Pedro.
+
+## 2026-11-01 11:16 · M6.3 Quadro kanban (somente leitura de layout)
+
+- Alterações: 6 files changed, 374 insertions(+), 26 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/board/BoardView.module.css`
+  - `apps/desktop/src/renderer/panel/board/BoardView.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+
+**Resumo do Codex:**
+
+> M6.3 concluído. Implementei o quadro com cinco colunas, filtro por projeto, cards com prazo e iniciais, e estados de carregamento, vazio e erro em [BoardView.tsx](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/renderer/panel/board/BoardView.tsx). Registrei as notas e a conferência visual pendente nos documentos do laço.
+>
+> `pnpm check` passou: 86 arquivos, 721 testes e build do desktop. O status está como `DONE`. Os cards registram a abertura; a navegação para a tela de detalhe fica para o M6.6, quando ela será implementada.
