@@ -1,0 +1,81 @@
+.dialogContent {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.projectList {
+  display: grid;
+  max-height: min(45vh, 360px);
+  overflow: auto;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-group);
+}
+
+.projectOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-bottom: var(--glass-group-border);
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.projectOption:last-child {
+  border-bottom: 0;
+}
+
+.projectOption:hover,
+.projectOption[aria-selected='true'] {
+  background: var(--color-rail-hover);
+}
+
+.projectOption[aria-selected='true'] > span:last-child {
+  color: var(--color-accent-text);
+}
+
+.projectOption:focus-visible,
+.nameField:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.createRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nameField {
+  flex: 1;
+  min-width: 0;
+  height: var(--size-touch-target);
+  padding: 0 var(--space-3);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.newProject {
+  justify-content: flex-start;
+  min-height: var(--size-touch-target);
+}

@@ -829,3 +829,26 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M6.1 concluído. Implementei a casca do painel com navegação recolhível, controles de janela, alternância estática de escopo e Dashboard restrito a gestores. Também ajustei a resolução de `better-sqlite3` no helper de build.
 >
 > `pnpm check` passou: 86 arquivos de teste, 712 testes e build do desktop. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e as pendências de conferência visual e decisão provisória em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). O status da rodada está como `DONE`.
+
+## 2026-11-01 11:07 · M6.2 Projetos
+
+- Alterações: 11 files changed, 499 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/App.module.css`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/board/ProjectDialog.module.css`
+  - `apps/desktop/src/renderer/panel/board/ProjectDialog.tsx`
+  - `apps/desktop/src/renderer/panel/board/ProjectTitle.module.css`
+  - `apps/desktop/src/renderer/panel/board/ProjectTitle.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+  - `apps/desktop/src/renderer/panel/hooks/use-create-project.ts`
+  - `apps/desktop/src/renderer/panel/hooks/use-projects.ts`
+
+**Resumo do Codex:**
+
+> M6.2 concluído: adicionei o seletor de projetos, criação, troca e seleção de nomes repetidos. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
+>
+> `pnpm check` passou: 86 arquivos de teste, 718 testes e build do desktop. A conferência visual com o protótipo ficou registrada como pendência para o Pedro.

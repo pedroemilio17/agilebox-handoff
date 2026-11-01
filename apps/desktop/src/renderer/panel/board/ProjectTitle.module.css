@@ -1,0 +1,38 @@
+.heading {
+  margin: 0;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-heading);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.title:hover {
+  background: var(--color-rail-hover);
+}
+
+.title:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.arrow {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-title);
+  transition: transform var(--motion-duration-project-menu) var(--ease-ios);
+}
+
+.rotated {
+  transform: rotate(180deg);
+}

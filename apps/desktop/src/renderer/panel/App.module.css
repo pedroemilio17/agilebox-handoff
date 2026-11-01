@@ -11,6 +11,14 @@
   color: var(--color-text-muted);
 }
 
+.projectHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
 .header h1 {
   margin: var(--space-1) 0 0;
 }

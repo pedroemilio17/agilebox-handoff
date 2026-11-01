@@ -5,13 +5,19 @@ import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
 import { panelCopy } from './copy'
+import { useProjects } from './hooks/use-projects'
+import { ProjectTitle } from './board/ProjectTitle'
+import { ProjectDialog } from './board/ProjectDialog'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import styles from './App.module.css'
 
 export function App() {
   const api = useApi()
   const [view, setView] = useState<PanelView>('projects')
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const actor = useActor()
+  const projects = useProjects()
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(),
     queryFn: () => api.tasks.listBoard({}),
@@ -28,6 +34,17 @@ export function App() {
     >
       {view === 'projects' ? (
         <>
+          <div className={styles.projectHeader}>
+            <ProjectTitle
+              expanded={projectDialogOpen}
+              onClick={() => setProjectDialogOpen(true)}
+              projectName={
+                projects.data?.find((project) => project.id === selectedProjectId)?.name ??
+                panelCopy.allProjects
+              }
+            />
+            {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
+          </div>
           {tasks.isPending ? <p role="status">{panelCopy.loading}</p> : null}
           {tasks.isError ? <p role="alert">{panelCopy.error}</p> : null}
           {tasks.isSuccess && tasks.data.length === 0 ? <p>{panelCopy.empty}</p> : null}
@@ -47,6 +64,13 @@ export function App() {
               ))}
             </ul>
           ) : null}
+          <ProjectDialog
+            open={projectDialogOpen}
+            projects={projects.data ?? []}
+            selectedProjectId={selectedProjectId}
+            onSelect={setSelectedProjectId}
+            onClose={() => setProjectDialogOpen(false)}
+          />
         </>
       ) : null}
     </PanelShell>

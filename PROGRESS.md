@@ -416,9 +416,12 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota: `pnpm check` passou (86 arquivos, 712 testes e build do desktop); o helper nativo foi ajustado para resolver `better-sqlite3` pelo workspace correto.
   - Nota: Pendente conferência visual do painel comparando a barra lateral e a barra de título com o protótipo.
 
-- [ ] M6.2 Projetos
+- [x] M6.2 Projetos
   - `board/ProjectTitle` (seta que gira) e `ProjectDialog` (lista com check no atual, **"Todos os projetos"** como primeira opção, "Novo projeto" que vira campo + "Criar"; nome repetido seleciona o existente). Hooks `useProjects`, `useCreateProject`.
   - Pronto: testes do fluxo (criar, repetir, trocar, Esc, foco).
+  - Nota: Implementados ProjectTitle, ProjectDialog e hooks ligados à API; nome repetido normalizado seleciona o projeto existente sem nova chamada.
+  - Nota: Testes cobrem lista, troca, criação, repetição, Escape e restauração de foco.
+  - Nota: `pnpm check` passou (86 arquivos, 718 testes e build do desktop).
 
 - [ ] M6.3 Quadro kanban (somente leitura de layout)
   - `board/BoardView`, `KanbanColumn` (5 colunas iguais, gap 12 px, "Sem tarefas"), `TaskCard` (botão que abre o detalhe; título, prazo, iniciais do responsável). Dados de `tasks.listBoard` com filtro por projeto ("Todos os projetos" por padrão, PLANO 1). Estados de carregando (esqueleto), vazio e erro curto (PLANO 12.6; registrar `DECISÃO PROVISÓRIA`).
