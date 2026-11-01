@@ -11,7 +11,8 @@ MAX_ROUNDS="${MAX_ROUNDS:-30}"        # rodadas do Codex nesta execução
 MAX_FAILS="${MAX_FAILS:-3}"           # falhas seguidas no mesmo passo antes de parar
 MAX_DEP_ROUNDS="${MAX_DEP_ROUNDS:-3}" # pedidos de dependência seguidos no mesmo passo
 CODEX_BIN="${CODEX_BIN:-codex}"
-CODEX_FLAGS="${CODEX_FLAGS:---full-auto}"
+# workspace-write: escreve só na pasta do projeto, sem rede. approval_policy=never: nunca para esperando aprovação.
+CODEX_FLAGS="${CODEX_FLAGS:---sandbox workspace-write -c approval_policy=\"never\"}"
 CODEX_MODEL="${CODEX_MODEL:-}"
 
 LOOP_DIR="$ROOT/.loop"
@@ -153,6 +154,12 @@ main() {
     local status=""
     [[ -f "$LOOP_DIR/status" ]] && status="$(tr -d '[:space:]' < "$LOOP_DIR/status")"
     log "Status informado pelo Codex: ${status:-<nenhum>}"
+
+    # Codex saiu com erro sem escrever status: problema de execução (opção inválida, login, limite),
+    # não do código. Repetir só gastaria rodadas.
+    if (( codex_ok == 0 )) && [[ -z "$status" ]]; then
+      die "O Codex não conseguiu rodar (veja $run_dir/codex.log). Confira CODEX_FLAGS, o login e os limites da conta."
+    fi
 
     case "$status" in
       NEEDS_DEPS)

@@ -16,7 +16,7 @@ O laço **para** quando:
 - existe o arquivo `.loop/STOP` (`touch .loop/STOP` para parar com calma ao fim da rodada atual).
 
 ## Pré-requisitos
-- Node 22+ e pnpm 10+.
+- Node 22+ e pnpm 10+. Sem sudo: `npm install -g pnpm --prefix ~/.local` (instala em `~/.local/bin`).
 - Compilador C/C++ para o `better-sqlite3` (M4). Fedora: `sudo dnf install gcc-c++ make python3`. WSL/Ubuntu: `sudo apt install build-essential python3`.
 - Codex CLI instalado e logado (`codex login`).
 - **No Windows**: rode no **WSL2**, com o repositório dentro do Linux (ex.: `~/projetos/agilebox`), não em `/mnt/c`.
@@ -28,7 +28,7 @@ git init
 git add -A
 git commit -m "docs: plano, AGENTS e laço do Codex"
 git switch -c codex/m1-m4
-codex exec --help   # confira se --full-auto e --output-last-message existem na sua versão
+codex exec --help   # confira se --sandbox, -c e --output-last-message existem na sua versão
 scripts/codex-loop/run.sh
 ```
 
@@ -50,7 +50,7 @@ Para refazer um passo: `git revert` (ou `git reset`) do commit dele, desmarque o
 | `MAX_FAILS` | 3 | falhas seguidas no mesmo passo |
 | `MAX_DEP_ROUNDS` | 3 | pedidos de dependência seguidos no mesmo passo |
 | `CODEX_BIN` | `codex` | caminho do executável |
-| `CODEX_FLAGS` | `--full-auto` | opções do `codex exec` (sandbox com escrita na pasta, rede bloqueada) |
+| `CODEX_FLAGS` | `--sandbox workspace-write -c approval_policy="never"` | opções do `codex exec` (escrita só na pasta, rede bloqueada, sem pedir aprovação) |
 | `CODEX_MODEL` | (padrão do Codex) | modelo, se quiser fixar |
 
 Exemplo: `MAX_ROUNDS=5 scripts/codex-loop/run.sh`.
