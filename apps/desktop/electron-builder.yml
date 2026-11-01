@@ -1,0 +1,36 @@
+# Empacotamento do AgileBox. Gere cada instalador no sistema de destino (o better-sqlite3 é nativo):
+#   Windows: pnpm --filter @agilebox/desktop dist:win     →  release/AgileBox-<versão>-setup.exe
+#   Linux:   pnpm --filter @agilebox/desktop dist:linux   →  release/AgileBox-<versão>.AppImage
+#   Teste sem instalar: pnpm --filter @agilebox/desktop pack  →  release/linux-unpacked (ou win-unpacked)
+appId: br.com.agilebox.app
+productName: AgileBox
+directories:
+  output: ../../release
+files:
+  - out/**
+  - resources/**
+  - package.json
+extraResources:
+  - from: ../../packages/infra-sqlite/migrations
+    to: migrations
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+# O `pnpm build` já deixa o better-sqlite3 na ABI do Electron (scripts/ensure-native.mjs).
+npmRebuild: false
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: resources/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: AgileBox-${version}-setup.${ext}
+linux:
+  executableName: agilebox
+  target:
+    - AppImage
+  category: Office
+  icon: resources/icon.png
+  artifactName: AgileBox-${version}.${ext}

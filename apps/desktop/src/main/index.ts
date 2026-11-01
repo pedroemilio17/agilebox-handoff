@@ -3,15 +3,28 @@ import { app, ipcMain } from 'electron'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
-import { getDatabasePath } from './paths'
+import { needsX11Relaunch } from './linux-display'
+import { getDatabasePath, getMigrationsFolder } from './paths'
 import { resolveGlassMode } from './windows/glass'
 import { createTrayIcon } from './tray/tray-icon'
 import { shouldHideOnClose } from './tray/tray-menu'
 import { WindowManager } from './windows/window-manager'
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock()
+const relaunchInX11 = needsX11Relaunch({
+  platform: process.platform,
+  env: process.env,
+  ozonePlatform: app.commandLine.getSwitchValue('ozone-platform'),
+})
+if (relaunchInX11) {
+  app.relaunch({ args: [...process.argv.slice(1), '--ozone-platform=x11'] })
+  app.exit(0)
+}
 
-if (!gotSingleInstanceLock) {
+const gotSingleInstanceLock = relaunchInX11 || app.requestSingleInstanceLock()
+
+if (relaunchInX11) {
+  // O processo novo assume; este só encerra.
+} else if (!gotSingleInstanceLock) {
   app.quit()
 } else {
   const glassMode = resolveGlassMode(process.platform, {
@@ -63,7 +76,12 @@ if (!gotSingleInstanceLock) {
     .then(async () => {
       const compositionRoot = await createCompositionRoot({
         databasePath: getDatabasePath(app.getPath('userData')),
-        isProduction: app.isPackaged,
+        // O app ainda não tem cadastro nem login (PLANO 12): a primeira execução, inclusive a do
+        // instalador, cria os dados de demonstração.
+        isProduction: false,
+        ...(getMigrationsFolder(app.isPackaged, process.resourcesPath) === undefined
+          ? {}
+          : { migrationsFolder: getMigrationsFolder(app.isPackaged, process.resourcesPath)! }),
         windows,
       })
       closeCompositionRoot = compositionRoot.close

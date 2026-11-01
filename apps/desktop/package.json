@@ -7,9 +7,16 @@
     "dev": "pnpm --workspace-root native:electron && node ../../scripts/run-electron-vite.mjs dev",
     "build": "pnpm --workspace-root native:electron && node ../../scripts/run-electron-vite.mjs build",
     "preview": "node ../../scripts/run-electron-vite.mjs preview",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "pack": "pnpm build && electron-builder --dir",
+    "dist": "pnpm build && electron-builder",
+    "dist:win": "pnpm build && electron-builder --win",
+    "dist:linux": "pnpm build && electron-builder --linux"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
     "@agilebox/application": "workspace:*",
     "@agilebox/contract": "workspace:*",
     "@agilebox/core": "workspace:*",
@@ -18,17 +25,17 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@tanstack/react-query": "^5.105.0",
-    "better-sqlite3": "^13.0.3",
-    "date-fns": "^4.4.0",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  },
-  "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "date-fns": "^4.4.0",
     "electron": "^45.2.1",
     "electron-vite": "^6.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "vite": "^8.3.5"
-  }
+  },
+  "version": "0.1.0",
+  "description": "AgileBox: organização de tarefas para times de TI",
+  "author": "Pedro"
 }

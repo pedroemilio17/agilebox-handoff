@@ -20,3 +20,6 @@
 - [ ] M10.1 · CONFERIR (Linux): instalar a extensão AppIndicator do GNOME, ver se o ícone aparece, e então decidir se o fechar do painel também recolhe no Linux (hoje `shouldHideOnClose` é falso no Linux).
 - [ ] M10.1 · TESTAR-NO-WINDOWS: ícone na bandeja, clique abre/fecha a bandeja no canto certo (barra de tarefas em qualquer borda, vários monitores), fechar o painel recolhe e "Sair" encerra.
 - [ ] M10.1 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.7): o app não inicia sozinho com o Windows.
+
+- [ ] M10.2 · TESTAR-NO-WINDOWS: `pnpm --filter @agilebox/desktop dist:win`, instalar o `.exe`, abrir, trocar de perfil, fechar e reabrir (os dados persistem) e desinstalar.
+- [ ] M10.2 · DECIDIR: DECISÃO PROVISÓRIA: o app empacotado cria dados de demonstração na primeira execução até existir cadastro/login.

@@ -568,11 +568,14 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota (Claude): DECISÃO DO PEDRO (opção 1): no Windows/macOS fechar o painel o recolhe para o ícone; no Linux fechar o painel encerra o app, porque o GNOME só mostra o ícone com a extensão AppIndicator (shouldHideOnClose).
   - Nota (Claude): DECISÃO PROVISÓRIA (PLANO 12.7): o app NÃO inicia com o Windows.
 
-- [ ] M10.2 Instalador
+- [x] M10.2 Instalador
   - `apps/desktop/electron-builder.yml` (NSIS para Windows; alvo Linux AppImage como bônus), `resources/` com ícones gerados por script (`scripts/make-icons.mjs`, sem dependência nova), scripts `pack` e `dist`, `better-sqlite3` reconstruído para o Electron (`scripts/ensure-native.mjs`, M4.8), banco em `%APPDATA%/AgileBox` (Windows) ou o diretório de dados do usuário (Linux), migrações ao iniciar.
   - Linux: o app precisa iniciar com `--ozone-platform=x11` (`linux.executableArgs` do electron-builder), senão no Wayland a bandeja não ancora no canto e cresce para baixo (ver `scripts/run-electron-vite.mjs`). Copiar também a pasta `migrations/` do `infra-sqlite` para os recursos do app e apontar `composition-root.ts` para ela quando empacotado.
   - Deps: `root dev electron-builder`, `root dev @electron/rebuild`.
   - Pronto: `pnpm check`. Pendência `TESTAR-NO-WINDOWS`: gerar o instalador (`pnpm dist`) e instalar.
+  - Nota (Claude): electron-builder.yml (NSIS x64 para Windows, AppImage para Linux), scripts pack/dist/dist:win/dist:linux, ícones gerados por script, migrações copiadas para os recursos (getMigrationsFolder) e better-sqlite3 fora do asar. Dependências de renderer movidas para devDependencies do desktop (só better-sqlite3 é de execução). Ver docs/instalador.md.
+  - Nota (Claude): Verificado no Fedora: pack (linux-unpacked) e o AppImage (extraído) abrem painel e bandeja, criam o banco e iniciam em X11. NÃO verificado: instalador do Windows (precisa ser gerado e testado no Windows) e AppImage montado por FUSE.
+  - Nota (Claude): DECISÃO PROVISÓRIA: a primeira execução do app empacotado cria os dados de demonstração (isProduction passou a false), porque ainda não há cadastro nem login.
 
 - [ ] M10.3 Testes de ponta a ponta e checklist
   - `apps/desktop/e2e/` (Playwright `_electron` com banco temporário): criar tarefa → mover → editar → fechar e reabrir (persiste); troca de perfil (colaborador sem R$); criar pela bandeja e ver no painel. Script `test:e2e` **fora** do `check`. `docs/checklist-windows.md` (instalar, vidro, bandeja, reiniciar o Windows e ver os dados).

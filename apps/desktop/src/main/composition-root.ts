@@ -40,13 +40,18 @@ const systemClock: Clock = {
 export interface CompositionRootOptions {
   readonly databasePath: string
   readonly isProduction: boolean
+  /** Pasta das migrações; omitida, vale a do pacote `infra-sqlite` (desenvolvimento). */
+  readonly migrationsFolder?: string
   readonly windows: ConstructorParameters<typeof ChangeBroadcaster>[0]
 }
 
 export async function createCompositionRoot(options: CompositionRootOptions) {
   if (options.databasePath !== ':memory:')
     await mkdir(dirname(options.databasePath), { recursive: true })
-  const adapters = createSqliteAdapters(options.databasePath, migrationsFolder)
+  const adapters = createSqliteAdapters(
+    options.databasePath,
+    options.migrationsFolder ?? migrationsFolder,
+  )
   try {
     if (!(await adapters.hasOrganizations())) {
       if (options.isProduction) throw new Error('O banco não contém dados iniciais')

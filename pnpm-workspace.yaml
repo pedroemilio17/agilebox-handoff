@@ -7,6 +7,7 @@ packages:
 allowBuilds:
   better-sqlite3: true
   electron: true
+  electron-winstaller: set this to true or false
   esbuild: true
 
 # Script de build de pacote não aprovado vira aviso em vez de derrubar a instalação (e o laço).
