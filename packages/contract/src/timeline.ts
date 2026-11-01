@@ -1,0 +1,31 @@
+import { z } from 'zod'
+import { isoDateTimeSchema, ulidSchema } from './shared-schemas'
+
+export const timelineEventTypeSchema = z.enum([
+  'task_created',
+  'status_changed',
+  'deadline_changed',
+  'renamed',
+  'description_edited',
+  'responsible_changed',
+  'ticket_changed',
+  'hours_changed',
+  'rate_changed',
+  'participant_added',
+  'participant_removed',
+])
+
+export const timelineEventDtoSchema = z.object({
+  id: ulidSchema,
+  taskId: ulidSchema,
+  at: isoDateTimeSchema,
+  actorUserId: ulidSchema,
+  asManager: z.boolean(),
+  type: timelineEventTypeSchema,
+  text: z.string().trim().min(1),
+})
+
+export const listTimelineInputSchema = z.object({ taskId: ulidSchema })
+export const listTimelineOutputSchema = z.array(timelineEventDtoSchema)
+
+export type TimelineEventDto = z.infer<typeof timelineEventDtoSchema>

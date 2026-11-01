@@ -147,9 +147,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: schemas e DTOs inferidos para sessão, usuários, projetos, membros e entidades; setters recebem centavos e DTOs usam valores em R$ ou `null`.
   - Nota: testes de aceitação/rejeição adicionados antes da implementação. `pnpm check` passou (formatação, lint, tipos e 547 testes); sem dependências novas.
 
-- [ ] M3.3 Schemas: tarefas, envolvimentos, linha do tempo
+- [x] M3.3 Schemas: tarefas, envolvimentos, linha do tempo
   - Inclui `listTeamBoard`, participante discriminado (`kind`), `canEdit`/`readOnly` no detalhe.
   - Pronto: testes de aceitar/rejeitar (vírgula, vazio, IDs inválidos).
+  - Nota: Criados schemas de tarefas, filtros de quadros, detalhe com permissões, envolvimentos discriminados e eventos da linha do tempo; exportados pela entrada do contrato.
+  - Nota: Testes escritos antes da implementação cobrem IDs inválidos, campos vazios, horas com vírgula, visibilidade de valor/hora e validações de papel. `pnpm check` passou (560 testes), sem dependências novas.
 
 - [ ] M3.4 Schemas: dashboard e agenda; `AgileBoxApi` e `DesktopShellApi`
   - `api.ts` com todos os métodos da PLANO 7; `shell-api.ts`.

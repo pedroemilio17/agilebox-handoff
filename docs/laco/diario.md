@@ -47,3 +47,23 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.2 concluído. Adicionei schemas de entrada e saída e DTOs inferidos para sessão, usuários, projetos, membros e entidades. Os campos de valor/hora aceitam `number | null`; entradas dos setters usam centavos.
 >
 > `pnpm check` passou: formatação, lint, tipos e 547 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status `DONE` em `.loop/status`.
+
+## 2026-10-31 22:55 · M3.3 Schemas: tarefas, envolvimentos, linha do tempo
+
+- Alterações: 8 files changed, 417 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/contract/src/index.ts`
+  - `packages/contract/src/participations.test.ts`
+  - `packages/contract/src/participations.ts`
+  - `packages/contract/src/tasks.test.ts`
+  - `packages/contract/src/tasks.ts`
+  - `packages/contract/src/timeline.test.ts`
+  - `packages/contract/src/timeline.ts`
+
+**Resumo do Codex:**
+
+> M3.3 concluído. Adicionei e exportei schemas para tarefas, envolvimentos e linha do tempo, com testes de aceitação e rejeição escritos primeiro.
+>
+> `pnpm check` passou: formatação, lint, tipos e 560 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:150) e o status está como `DONE`.
