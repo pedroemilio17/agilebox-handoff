@@ -12,7 +12,7 @@ Lido pelo laço do Codex (`scripts/codex-loop/run.sh`). Regras:
 ## M1 · Esqueleto do monorepo (PLANO 9 · M1, 10)
 
 - [x] M1.1 Raiz do workspace
-  - Arquivos: `package.json` (privado, `"type": "module"`, `engines.node >= 22`, scripts `format` e `format:check`), `pnpm-workspace.yaml` (`apps/*`, `packages/*`, `onlyBuiltDependencies: [better-sqlite3, electron, esbuild]`), `.npmrc` (`node-linker=hoisted`), `.editorconfig`, `.prettierrc` (aspas simples, sem ponto e vírgula, largura 100), `.prettierignore` (`design/`, `node_modules`, `.loop/`, `migrations/`, `pnpm-lock.yaml`), completar `.gitignore`.
+  - Arquivos: `package.json` (privado, `"type": "module"`, `engines.node >= 22`, scripts `format` e `format:check`), `pnpm-workspace.yaml` (`apps/*`, `packages/*`, `allowBuilds` para `better-sqlite3`, `electron` e `esbuild` (pnpm 11+; `onlyBuiltDependencies` é ignorado) e `strictDepBuilds: false`), `.npmrc` (`node-linker=hoisted`), `.editorconfig`, `.prettierrc` (aspas simples, sem ponto e vírgula, largura 100), `.prettierignore` (`design/`, `node_modules`, `.loop/`, `migrations/`, `pnpm-lock.yaml`), completar `.gitignore`.
   - Deps: `root dev typescript`, `root dev prettier`.
   - Pronto: `pnpm format:check` passa.
   - Notas da rodada: criadas as configurações de raiz do workspace, formatação e editor; `.gitignore` ampliado para cache do TypeScript e empacotamento. Solicitadas as dependências `typescript` e `prettier` via `.loop/deps.txt`. Validações pendentes até a instalação pelo laço; scripts de lint, tipos e testes pertencem aos próximos passos do M1. Checkbox mantido pendente.
@@ -253,6 +253,7 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - `client.ts` (abre o arquivo ou `:memory:`, pragmas WAL e `foreign_keys`), `drizzle.config.ts`.
   - Deps: `@agilebox/infra-sqlite prod drizzle-orm`, `@agilebox/infra-sqlite prod better-sqlite3`, `@agilebox/infra-sqlite dev drizzle-kit`, `@agilebox/infra-sqlite dev @types/better-sqlite3`.
   - Pronto: teste abre banco em memória e confere os pragmas.
+  - Nota: As quatro dependências do passo não estão instaladas; registradas em `.loop/deps.txt` para retomada pelo laço.
 
 - [ ] M4.2 Schema: organização, usuários, entidades, projetos, membros
   - Pronto: `pnpm typecheck`.

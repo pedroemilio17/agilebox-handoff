@@ -337,7 +337,7 @@ Tamanho: P (uma ou duas sessões), M (algumas sessões), G (várias sessões). C
 ### M1 · Esqueleto do monorepo · P
 
 - **Meta**: estrutura de pacotes e ferramentas funcionando, sem regra de negócio.
-- **Entregas**: arquivos de raiz (`package.json`, `pnpm-workspace.yaml` com `onlyBuiltDependencies` para `better-sqlite3`, `electron` e `esbuild`, `.npmrc`, `tsconfig.base.json`, `eslint.config.js` com fronteiras, `.prettierrc`, `vitest.config.ts`, `.editorconfig`, `.gitignore`); cada pacote com `package.json`, `tsconfig.json`, `src/index.ts`; um teste trivial no `core`.
+- **Entregas**: arquivos de raiz (`package.json`, `pnpm-workspace.yaml` com `allowBuilds` para `better-sqlite3`, `electron` e `esbuild` (no pnpm 11+ `onlyBuiltDependencies` é ignorado) e `strictDepBuilds: false`, `.npmrc`, `tsconfig.base.json`, `eslint.config.js` com fronteiras, `.prettierrc`, `vitest.config.ts`, `.editorconfig`, `.gitignore`); cada pacote com `package.json`, `tsconfig.json`, `src/index.ts`; um teste trivial no `core`.
 - **Testes**: `pnpm test`, `pnpm lint`, `pnpm typecheck` e `pnpm format:check` passam.
 - **Pronto quando**: os quatro comandos ficam verdes, e o lint **falha** se o renderer importar `infra-sqlite` (verificado com um import proposital, depois removido). Seção "Convenções" do `CLAUDE.md` preenchida.
 

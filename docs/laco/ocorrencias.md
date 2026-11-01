@@ -18,3 +18,7 @@ O Codex bloqueou o passo. As mudanças da rodada ficaram sem commit.
 > 2. Definir uma tarifa padrão fixa, por exemplo R$ 45/h conforme aparece nos dados de demonstração. A criação fica simples, mas esse valor passa a ser regra de produto e pode não refletir cada entidade.
 >
 > `pnpm check` passou para o trabalho implementado: 36 arquivos de teste, 598 testes.
+
+## 2026-11-01 00:08 · M4.1 Cliente e configuração
+
+O script terminou com erro inesperado (código 1): linha 136: pnpm --filter "$target" add "${flags[@]}" "${pkgs[@]}".

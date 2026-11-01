@@ -9,7 +9,11 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@agilebox/core": "workspace:*",
-    "@agilebox/application": "workspace:*"
+    "@agilebox/application": "workspace:*",
+    "@agilebox/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "drizzle-kit": "^0.31.11"
   }
 }

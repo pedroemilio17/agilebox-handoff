@@ -2,7 +2,12 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
-onlyBuiltDependencies:
-  - better-sqlite3
-  - electron
-  - esbuild
+# pnpm 11+: `onlyBuiltDependencies` foi substituído por `allowBuilds` (a lista antiga é ignorada).
+# Só estes pacotes podem rodar scripts de instalação (compilar o SQLite, baixar o binário do Electron).
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  esbuild: true
+
+# Script de build de pacote não aprovado vira aviso em vez de derrubar a instalação (e o laço).
+strictDepBuilds: false
