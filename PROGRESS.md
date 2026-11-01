@@ -216,9 +216,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Casos de uso de listas e registro de abertura ligados ao `createUseCases`; acesso, participação, projeto e busca cobertos por testes.
   - Nota: Fakes ordenam estados na ordem do produto e Frequentes pela última abertura (desempate por contagem); `pnpm check` passou (615 testes).
 
-- [ ] M3.13 Casos de uso: envolvimentos
+- [x] M3.13 Casos de uso: envolvimentos
   - `add` (copia o valor padrão, PLANO 2.4), `remove`, `set-hours`, `set-rate` (atualiza o padrão do envolvido; permissão PLANO 2.3). Todos geram eventos.
   - Pronto: idem M3.11.
+  - Nota: Os quatro casos foram implementados e ligados a `createUseCases`; testes cobrem cópia de tarifa, permissões por participante, horas, tarifa padrão, marca Gestor e rollback.
+  - Nota: `pnpm check` passou (623 testes), sem dependências novas.
 
 - [ ] M3.14 Casos de uso: linha do tempo e dashboard
   - `list-timeline` (texto por viewer, mais recente primeiro), `get-dashboard` (só gestor).

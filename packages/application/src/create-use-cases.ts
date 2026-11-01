@@ -22,6 +22,12 @@ import {
   RecordTaskOpen,
   SearchTasks,
 } from './use-cases/tasks/list-tasks'
+import {
+  AddParticipation,
+  RemoveParticipation,
+  SetParticipationHours,
+  SetParticipationRate,
+} from './use-cases/participations/participations'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -56,6 +62,12 @@ export function createUseCases(deps: AppDeps) {
       listFrequent: new ListFrequentTasks(deps),
       search: new SearchTasks(deps),
       recordOpen: new RecordTaskOpen(deps),
+    },
+    participations: {
+      add: new AddParticipation(deps),
+      remove: new RemoveParticipation(deps),
+      setHours: new SetParticipationHours(deps),
+      setRate: new SetParticipationRate(deps),
     },
   }
 }

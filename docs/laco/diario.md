@@ -267,3 +267,21 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.12 concluído. Implementei e conectei os casos de uso das listas de tarefas e do registro de abertura. Os testes cobrem filtros de acesso, ordenação e isolamento por organização.
 >
 > `pnpm check` passou: 615 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status ficou `DONE`.
+
+## 2026-10-31 23:43 · M3.13 Casos de uso: envolvimentos
+
+- Alterações: 4 files changed, 576 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/use-cases/participations/participations.test.ts`
+  - `packages/application/src/use-cases/participations/participations.ts`
+
+**Resumo do Codex:**
+
+> M3.13 concluído. Implementei e conectei os casos `add`, `remove`, `set-hours` e `set-rate`, com eventos na linha do tempo, regras de acesso e atualização do valor padrão do envolvido na mesma transação.
+>
+> Os testes cobrem cópia de tarifa, permissões, marcação de edições do gestor e rollback. `pnpm check` passou com 623 testes; `pnpm format:check` também passou após a documentação. Não foram necessárias dependências novas.
+>
+> Atualizei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.
