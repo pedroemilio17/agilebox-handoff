@@ -326,7 +326,11 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Configurado o Electron/Vite 6.0.0 com entradas main/preload e páginas painel/bandeja; dependências internas ficam empacotadas. Adicionados tipos, scripts desktop/raiz e projetos Vitest para main/preload (Node) e renderer (jsdom), com jest-dom no setup.
   - Nota: `pnpm check` passou (654 testes). O build do desktop gerou as três saídas; `native:electron` não baixou o binário por indisponibilidade de rede, portanto a execução do app não foi verificada. O typecheck agregado usa `skipLibCheck` para ignorar declarações externas incompatíveis/faltantes, mantendo as verificações do código-fonte.
 
-- [ ] M5.2 Tokens, estilos base e fonte
+- [x] M5.2 Tokens, estilos base e fonte
+  - Nota: Tokens, reset, foco visível, rolagem de 3 px e fonte Inter local foram ligados às entradas do painel e da bandeja.
+  - Nota: Animações do HANDOFF, `prefers-reduced-motion`, fallback de vidro e hooks de foco/movimento estão implementados e cobertos.
+  - Nota: O projeto Vitest de UI resolve `?raw` de CSS por plugin de teste, pois o resolver padrão retornava string vazia; o teste verifica todos os tokens.
+  - Nota: `pnpm check` passou (658 testes); conferir visualmente a fonte, o foco, a rolagem e movimento reduzido, inclusive no Windows.
   - `packages/ui/src/styles/tokens.css` (**todos** os tokens da tabela "Design Tokens Used" do HANDOFF, como variáveis CSS: cores, vidros, raios, espaços, tipografia, `--ease-ios`), `base.css` (reset, fonte, foco visível 2 px `#64A8FF` offset 2, barra de rolagem de 3 px), `motion.css` (animações nomeadas do HANDOFF e `prefers-reduced-motion`), `fallback.css` (`@supports not (backdrop-filter)` → fundo sólido `rgba(30,33,42,.92)`). Fonte Inter local por pacote npm. Hooks `useReducedMotion`, `useFocusTrap`, `useRestoreFocus`.
   - Deps: `@agilebox/ui prod @fontsource-variable/inter`.
   - Pronto: testes dos hooks; teste que lê `tokens.css` via `?raw` e confere que cada token do HANDOFF existe.

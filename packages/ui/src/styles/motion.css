@@ -1,0 +1,251 @@
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes window-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+    filter: blur(6px);
+  }
+}
+
+@keyframes tray-icon-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes screen-enter-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes screen-enter-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes item-highlight {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+    background-color: var(--color-accent-text);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes status-menu-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.motion-window-open {
+  animation: window-open var(--motion-duration-window-open) var(--ease-ios) both;
+}
+
+.motion-window-close {
+  animation: window-close var(--motion-duration-close) var(--ease-ios) both;
+}
+
+.motion-tray-icon-enter {
+  animation: tray-icon-enter var(--motion-duration-view) var(--ease-ios) both;
+}
+
+.motion-screen-enter-from-right {
+  animation: screen-enter-from-right var(--motion-duration-screen) var(--ease-ios) both;
+}
+
+.motion-screen-enter-from-left {
+  animation: screen-enter-from-left var(--motion-duration-screen) var(--ease-ios) both;
+}
+
+.motion-fade-enter {
+  animation: fade-enter var(--motion-duration-fade) ease both;
+}
+
+.motion-item-highlight {
+  animation: item-highlight var(--motion-duration-highlight) var(--ease-ios) both;
+}
+
+.motion-toast-enter {
+  animation: toast-enter var(--motion-duration-toast) var(--ease-ios) both;
+}
+
+.motion-toast-check-draw {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: toast-check-draw var(--motion-duration-toast-check) ease forwards;
+  animation-delay: var(--motion-delay-toast-check);
+}
+
+.motion-status-menu-enter {
+  transform-origin: top left;
+  animation: status-menu-enter var(--motion-duration-menu) var(--ease-ios) both;
+}
+
+.motion-project-menu-enter {
+  transform-origin: top right;
+  animation: status-menu-enter var(--motion-duration-menu) var(--ease-ios) both;
+}
+
+.motion-chevron-toggle {
+  transition: transform var(--motion-duration-project-menu) var(--ease-ios);
+}
+
+.motion-chevron-toggle[aria-expanded='true'] {
+  transform: rotate(180deg);
+}
+
+.motion-view-enter {
+  animation: view-enter var(--motion-duration-view) var(--ease-ios) both;
+}
+
+.motion-card-enter {
+  animation: card-enter var(--motion-duration-card) var(--ease-ios) both;
+}
+
+.motion-modal-enter {
+  animation: modal-enter var(--motion-duration-modal) var(--ease-ios) both;
+}
+
+.motion-tray-resize {
+  transition:
+    height var(--motion-duration-screen) var(--ease-ios),
+    width var(--motion-duration-screen) var(--ease-ios);
+}
+
+.motion-tray-resize[data-dragging='true'] {
+  transition: none;
+}
+
+.motion-form-expand {
+  transition: grid-template-rows var(--motion-duration-form) var(--ease-ios);
+}
+
+.motion-chart-update {
+  transition: width var(--motion-duration-chart) var(--ease-ios);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,10 @@
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-window,
+  .glass-group,
+  .glass-control,
+  .glass-popover {
+    background: var(--color-glass-fallback);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

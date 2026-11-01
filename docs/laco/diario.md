@@ -540,3 +540,35 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Configurados Electron/Vite 6 com entradas main, preload, painel e bandeja; scripts de desenvolvimento, build e preview; typecheck para desktop e projetos Vitest para Node e jsdom. As dependências internas são empacotadas. Registrei as notas em [PROGRESS.md](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md>).
 >
 > Verificações: `pnpm check` passou com 654 testes, e `pnpm --filter @agilebox/desktop build` gerou as três saídas. O binário do Electron não pôde ser baixado por falta de rede, então a execução do aplicativo não foi verificada.
+
+## 2026-11-01 01:11 · M5.2 Tokens, estilos base e fonte
+
+- Alterações: 18 files changed, 702 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 4
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/main.tsx`
+  - `apps/desktop/src/renderer/tray/main.tsx`
+  - `packages/ui/package.json`
+  - `packages/ui/src/hooks/use-focus-trap.test.tsx`
+  - `packages/ui/src/hooks/use-focus-trap.ts`
+  - `packages/ui/src/hooks/use-reduced-motion.test.tsx`
+  - `packages/ui/src/hooks/use-reduced-motion.ts`
+  - `packages/ui/src/hooks/use-restore-focus.test.tsx`
+  - `packages/ui/src/hooks/use-restore-focus.ts`
+  - `packages/ui/src/index.ts`
+  - `packages/ui/src/styles/base.css`
+  - `packages/ui/src/styles/fallback.css`
+  - `packages/ui/src/styles/motion.css`
+  - `packages/ui/src/styles/tokens.css`
+  - `packages/ui/src/styles/tokens.test.ts`
+  - `pnpm-lock.yaml`
+  - `vitest.config.ts`
+
+**Resumo do Codex:**
+
+> M5.2 concluído. Tokens e estilos base agora carregam no painel e na bandeja, com Inter local, foco visível, rolagem de 3 px, animações com suporte a movimento reduzido e fallback de vidro. O teste verifica os tokens via `?raw`.
+>
+> `pnpm check` passou: 658 testes. O status está como `DONE`. Registrei conferências visuais e no Windows em `pendencias-do-pedro.md`.
+>
+> Arquivos principais: [tokens.css](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/styles/tokens.css), [motion.css](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/styles/motion.css), [vitest.config.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/vitest.config.ts).
