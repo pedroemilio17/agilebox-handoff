@@ -341,9 +341,11 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Implementados os oito componentes com CSS Modules, exportações públicas e testes específicos por componente para rótulos, estados e acessibilidade.
   - Nota: `pnpm check` passou (64 arquivos, 671 testes); conferir o acabamento visual na galeria quando M5.6 estiver disponível.
 
-- [ ] M5.4 Componentes de base II
+- [x] M5.4 Componentes de base II
   - `SegmentedControl` (2 ou 3 opções, polegar deslizante `aria-hidden`, `aria-pressed`), `GroupedList`/`FieldRow` (linhas de 48 px), `TextField`, `TextArea`, `DateField`, `NumberField` (aceita vírgula decimal), todos com `<label>` ou `aria-label`.
   - Pronto: testes de teclado e rótulos.
+  - Nota: Implementados os componentes e exportações públicas; testes cobrem rótulos, seleção por teclado, estados acessíveis e entrada decimal com vírgula.
+  - Nota: `pnpm check` passou (67 arquivos, 676 testes); conferir visualmente os componentes na galeria M5.6.
 
 - [ ] M5.5 Componentes de base III
   - `StatusMenu` (`role="menu"` + `menuitemradio`, 224 px, itens de 44 px, check no atual, fecha com Esc, devolve o foco), `Modal` (`role="dialog"`, `aria-modal`, prende o foco, fecha com Esc e clique no fundo, devolve o foco ao botão que abriu), `Toast` + `useToast` (`role="status"`, some em ~2,6 s), `Tooltip` (só quando recolhida/solicitada), `WindowControls` (minimizar, expandir/recolher, fechar; 40×44 px).

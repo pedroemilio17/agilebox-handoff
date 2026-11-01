@@ -610,3 +610,28 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M5.3 concluído: os oito componentes foram implementados com CSS Modules, exportados pelo pacote `ui` e cobertos por testes individuais. O fallback de vidro também cobre as variantes do `GlassSurface`.
 >
 > `pnpm check` passou: 64 arquivos de teste, 671 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e a conferência visual para quando a galeria estiver pronta em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). O status ficou `DONE`.
+
+## 2026-11-01 01:23 · M5.4 Componentes de base II
+
+- Alterações: 11 files changed, 405 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/ui/src/components/Fields.module.css`
+  - `packages/ui/src/components/Fields.test.tsx`
+  - `packages/ui/src/components/Fields.tsx`
+  - `packages/ui/src/components/GroupedList.module.css`
+  - `packages/ui/src/components/GroupedList.test.tsx`
+  - `packages/ui/src/components/GroupedList.tsx`
+  - `packages/ui/src/components/SegmentedControl.module.css`
+  - `packages/ui/src/components/SegmentedControl.test.tsx`
+  - `packages/ui/src/components/SegmentedControl.tsx`
+  - `packages/ui/src/index.ts`
+
+**Resumo do Codex:**
+
+> M5.4 concluído. Implementei e exportei `SegmentedControl`, `GroupedList`/`FieldRow` e os quatro campos. Os testes cobrem rótulos, seleção por teclado e vírgula decimal.
+>
+> `pnpm check` passou: 67 arquivos e 676 testes. Registrei a conferência visual para a galeria M5.6 e escrevi `DONE` em `.loop/status`.
+>
+> Arquivos: [componentes da UI](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/components), [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md), [pendências do Pedro](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).
