@@ -68,9 +68,11 @@ it('distingue os oito tipos de ID e impede atribuição de strings sem conversã
     EventId,
     MeetingId,
   ]
-  type ConvertedIds = { [Index in keyof typeof converters]: ReturnType<(typeof converters)[Index]> }
+  type ConvertedIds<T extends readonly ((value: string) => string)[]> = {
+    [Index in keyof T]: ReturnType<T[Index]>
+  }
 
-  expectTypeOf<ConvertedIds>().toEqualTypeOf<Readonly<Ids>>()
+  expectTypeOf<ConvertedIds<typeof converters>>().toEqualTypeOf<Readonly<Ids>>()
   expectTypeOf<string>().not.toExtend<Ids[number]>()
   expectTypeOf<Ids[number]>().toExtend<string>()
   expectTypeOf<OrganizationId>().not.toExtend<Exclude<Ids[number], OrganizationId>>()

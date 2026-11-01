@@ -62,9 +62,10 @@ Lido pelo laço do Codex (`scripts/codex-loop/run.sh`). Regras:
 
 Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
 
-- [ ] M2.1 IDs e erros
+- [x] M2.1 IDs e erros
   - `shared/ids.ts`: tipos marcados (`OrganizationId`, `UserId`, `ContributorId`, `ProjectId`, `TaskId`, `ParticipationId`, `EventId`, `MeetingId`) e conversores. `shared/errors.ts`: `DomainError` com `code` (`VALIDATION`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`) e subclasses.
   - Pronto: testes de criação e de `code` de cada erro.
+  - Notas da rodada: implementados os oito IDs marcados e conversores com validação de ULID, além dos erros tipados com seus quatro códigos. Os testes existentes foram executados antes da implementação e falharam pela ausência dos módulos; corrigido também o tipo auxiliar da tupla de conversores nos testes. Não há falha anterior nem dependência nova. Validação: `pnpm check` passou (formatação, lint, tipos e 372 testes). Checkbox mantido para o laço.
 
 - [ ] M2.2 Estado da tarefa
   - `values/task-status.ts`: `TASK_STATUSES` em ordem (`planning`, `todo`, `in_progress`, `review`, `done`), rótulos pt-BR (Planejamento, A fazer, Desenvolvendo, Revisar, Concluído), `isTaskStatus`, `parseTaskStatus`.
