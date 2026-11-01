@@ -8,5 +8,6 @@ export interface UpdateIpcMainLike {
 export function registerUpdateHandlers(ipcMain: UpdateIpcMainLike, updater: SourceUpdater): void {
   ipcMain.handle(UPDATE_CHANNELS.check, () => updater.check())
   ipcMain.handle(UPDATE_CHANNELS.apply, () => updater.apply())
+  ipcMain.handle(UPDATE_CHANNELS.restart, () => updater.restart())
   ipcMain.handle(UPDATE_CHANNELS.lastRun, () => updater.lastRun())
 }

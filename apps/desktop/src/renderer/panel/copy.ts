@@ -74,16 +74,24 @@ export const panelCopy = {
   updates: 'Atualizações',
   checkUpdates: 'Procurar atualizações',
   checkingUpdates: 'Procurando…',
-  applyUpdate: 'Atualizar e reiniciar',
+  applyUpdate: 'Baixar e instalar',
   applyingUpdate: 'Atualizando…',
+  restartNow: 'Reiniciar agora',
+  updateReady: 'Versão nova pronta. Reinicie o AgileBox para usá-la.',
+  updateSteps: {
+    pull: 'Baixando o código novo (git pull)…',
+    install: 'Instalando dependências (pnpm install)…',
+    build: 'Compilando o app…',
+    package: 'Montando a versão nova (pode levar alguns minutos)…',
+  },
   updatesHint:
-    'Baixa o código novo do GitHub (git pull), instala as dependências e reconstrói o app. O app fecha e reabre sozinho.',
+    'Baixa o código novo do GitHub, instala as dependências e monta a versão nova com o app aberto. No fim, é só reiniciar.',
   updateUpToDate: (commit: string) => `Você já está na versão mais nova (${commit}).`,
   updateAvailable: (count: number) =>
     count === 1 ? 'Há 1 atualização disponível:' : `Há ${count} atualizações disponíveis:`,
   updateDirty: (files: number) =>
     `Há ${files} arquivo(s) alterado(s) neste computador. Commite ou descarte antes de atualizar.`,
-  updateStarted: 'Atualizando… o AgileBox vai fechar e reabrir em alguns minutos.',
+  updateStarted: 'Reiniciando… o AgileBox reabre em alguns segundos.',
   updateDoneDev: 'Código atualizado. Reinicie o pnpm dev para ver as mudanças.',
   updateError: (message: string) => `Não foi possível atualizar: ${message}`,
   lastUpdate: (when: string, ok: boolean) =>

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { countLines, findRepoRoot, relaunchPlan } from './source-update'
+import { countLines, findRepoRoot, STAGING_OUTPUT, updatePlan } from './source-update'
 
 const repo = join('/', 'dev', 'agilebox')
 const existing = new Set([join(repo, 'pnpm-workspace.yaml'), join(repo, '.git')])
@@ -22,27 +22,35 @@ describe('findRepoRoot', () => {
   })
 })
 
-describe('relaunchPlan', () => {
-  it('Windows reempacota e reabre o AgileBox.exe da pasta win-unpacked', () => {
-    expect(relaunchPlan({ platform: 'win32', repoRoot: repo })).toEqual({
-      script: 'pack:dir',
+describe('updatePlan', () => {
+  it('Windows constrói a pasta nova em release/next e troca a win-unpacked', () => {
+    expect(updatePlan({ platform: 'win32', repoRoot: repo })).toEqual({
+      builderArgs: ['--dir', '--win', `--config.directories.output=${STAGING_OUTPUT}`],
+      current: join(repo, 'release', 'win-unpacked'),
+      staged: join(repo, 'release', 'next', 'win-unpacked'),
+      kind: 'dir',
       exe: join(repo, 'release', 'win-unpacked', 'AgileBox.exe'),
       args: [],
     })
   })
 
-  it('Linux: AppImage é regerado; a pasta desempacotada abre sem sandbox', () => {
+  it('Linux: AppImage é regerado e substituído; a pasta desempacotada abre sem sandbox', () => {
     expect(
-      relaunchPlan({ platform: 'linux', repoRoot: repo, appImage: '/x/AgileBox.AppImage' }),
-    ).toEqual({
-      script: 'dist:linux',
-      exe: '/x/AgileBox.AppImage',
-      args: [],
+      updatePlan({ platform: 'linux', repoRoot: repo, appImage: '/x/AgileBox.AppImage' }),
+    ).toMatchObject({
+      builderArgs: ['--linux', 'AppImage', `--config.directories.output=${STAGING_OUTPUT}`],
+      current: '/x/AgileBox.AppImage',
+      kind: 'appimage',
     })
-    expect(relaunchPlan({ platform: 'linux', repoRoot: repo })).toMatchObject({
-      script: 'pack:dir',
+    expect(updatePlan({ platform: 'linux', repoRoot: repo })).toMatchObject({
+      current: join(repo, 'release', 'linux-unpacked'),
+      staged: join(repo, 'release', 'next', 'linux-unpacked'),
       args: ['--no-sandbox'],
     })
+  })
+
+  it('a pasta de saída é relativa e sem espaços (vai pela linha de comando do Windows)', () => {
+    expect(STAGING_OUTPUT).not.toMatch(/\s/)
   })
 })
 

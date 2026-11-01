@@ -1,7 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { UpdateRun, UpdateStatus } from '@agilebox/contract'
+import type { UpdateRun, UpdateStatus, UpdateStep } from '@agilebox/contract'
 import { UpdatesSection } from './UpdatesSection'
 
 afterEach(() => {
@@ -9,28 +9,55 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function stub(check: UpdateStatus, apply: UpdateStatus = { state: 'started' }) {
+function stub(check: UpdateStatus, apply: UpdateStatus = { state: 'ready' }) {
+  let progress: ((step: UpdateStep) => void) | undefined
   const updates = {
     check: vi.fn(() => Promise.resolve(check)),
     apply: vi.fn(() => Promise.resolve(apply)),
+    restart: vi.fn((): Promise<UpdateStatus> => Promise.resolve({ state: 'started' })),
     lastRun: vi.fn((): Promise<UpdateRun | null> => Promise.resolve(null)),
+    onProgress: vi.fn((callback: (step: UpdateStep) => void) => {
+      progress = callback
+      return () => undefined
+    }),
+    emit: (step: UpdateStep) => progress?.(step),
   }
   vi.stubGlobal('agilebox', { updates })
   return updates
 }
 
 describe('Ajustes: atualizações', () => {
-  it('procura, lista os commits novos e atualiza', async () => {
+  it('procura, baixa e instala com o app aberto e depois reinicia', async () => {
     const updates = stub({ state: 'available', behind: 2, commits: ['feat: a', 'fix: b'] })
     const user = userEvent.setup()
     render(<UpdatesSection />)
-    expect(screen.queryByRole('button', { name: 'Atualizar e reiniciar' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
     expect(await screen.findByText('Há 2 atualizações disponíveis:')).toBeTruthy()
     expect(screen.getByText('fix: b')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Atualizar e reiniciar' }))
+    expect(screen.queryByRole('button', { name: 'Reiniciar agora' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Baixar e instalar' }))
     expect(updates.apply).toHaveBeenCalledTimes(1)
-    expect(await screen.findByText(/vai fechar e reabrir/)).toBeTruthy()
+    expect(updates.restart).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Versão nova pronta/)).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Reiniciar agora' }))
+    expect(updates.restart).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/reabre em alguns segundos/)).toBeTruthy()
+  })
+
+  it('mostra a etapa em andamento enquanto atualiza', async () => {
+    const updates = stub({ state: 'available', behind: 1, commits: ['feat: a'] })
+    let finish: (status: UpdateStatus) => void = () => undefined
+    updates.apply.mockImplementation(() => new Promise((resolve) => (finish = resolve)))
+    const user = userEvent.setup()
+    render(<UpdatesSection />)
+    await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
+    await user.click(await screen.findByRole('button', { name: 'Baixar e instalar' }))
+    act(() => updates.emit('install'))
+    expect(await screen.findByText(/Instalando dependências/)).toBeTruthy()
+    act(() => finish({ state: 'ready' }))
+    expect(await screen.findByRole('button', { name: 'Reiniciar agora' })).toBeTruthy()
   })
 
   it('avisa quando já está atualizado ou quando há alterações locais', async () => {

@@ -1,5 +1,6 @@
 import console from 'node:console'
 import { app, ipcMain } from 'electron'
+import { UPDATE_CHANNELS } from '@agilebox/contract'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
@@ -95,6 +96,7 @@ if (relaunchInX11) {
       platform: process.platform,
       appImage: process.env.APPIMAGE,
       quit: () => app.quit(),
+      notify: (step) => windows.broadcast(UPDATE_CHANNELS.progress, step),
     }),
   )
 

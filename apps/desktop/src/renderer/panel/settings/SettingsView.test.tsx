@@ -6,8 +6,10 @@ import { SettingsView } from './SettingsView'
 
 const updates = {
   check: () => Promise.resolve({ state: 'up-to-date', commit: 'x' }),
-  apply: () => Promise.resolve({ state: 'started' }),
+  apply: () => Promise.resolve({ state: 'ready' }),
+  restart: () => Promise.resolve({ state: 'started' }),
   lastRun: () => Promise.resolve(null),
+  onProgress: () => () => undefined,
 }
 
 beforeEach(() => {

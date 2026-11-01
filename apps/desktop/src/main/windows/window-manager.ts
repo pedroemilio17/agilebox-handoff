@@ -154,6 +154,13 @@ export class WindowManager implements ShellWindows {
     )
   }
 
+  /** Envia um aviso a todas as janelas abertas (ex.: progresso da atualização). */
+  broadcast(channel: string, payload: unknown): void {
+    for (const window of [this.panel, this.tray]) {
+      if (window && !window.isDestroyed()) window.webContents.send(channel, payload)
+    }
+  }
+
   getAll(): readonly ChangeWindow[] {
     return [this.panel, this.tray]
       .filter((window): window is BrowserWindow => window !== undefined && !window.isDestroyed())

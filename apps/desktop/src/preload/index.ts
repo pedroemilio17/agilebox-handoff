@@ -25,7 +25,14 @@ const bridge: AgileBoxBridge = {
   updates: {
     check: () => ipcRenderer.invoke(UPDATE_CHANNELS.check),
     apply: () => ipcRenderer.invoke(UPDATE_CHANNELS.apply),
+    restart: () => ipcRenderer.invoke(UPDATE_CHANNELS.restart),
     lastRun: () => ipcRenderer.invoke(UPDATE_CHANNELS.lastRun),
+    onProgress: (callback) => {
+      const listener = (_event: Electron.IpcRendererEvent, step: Parameters<typeof callback>[0]) =>
+        callback(step)
+      ipcRenderer.on(UPDATE_CHANNELS.progress, listener)
+      return () => ipcRenderer.removeListener(UPDATE_CHANNELS.progress, listener)
+    },
   },
 }
 
