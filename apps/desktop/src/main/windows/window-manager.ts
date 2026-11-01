@@ -101,7 +101,9 @@ export class WindowManager implements ShellWindows {
     this.panel?.hide()
   }
 
-  openPanel(): void {
+  // Pedido pela bandeja ("Expandir"): o painel assume o lugar dela, então a bandeja se esconde.
+  openPanel(sender?: unknown): void {
+    if (sender !== undefined && this.windowOf(sender) === this.tray) this.tray?.hide()
     const panel = this.createPanel()
     if (panel.isMinimized()) panel.restore()
     panel.show()

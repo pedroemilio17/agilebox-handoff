@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { TaskDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
@@ -42,9 +43,25 @@ export function App() {
   })
   const moveTask = useMutation({
     mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+    // O card muda de coluna na hora; se o servidor recusar, a lista volta ao que era.
+    onMutate: async ({ taskId, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
+      const snapshot = queryClient.getQueriesData<TaskDto[]>({ queryKey: queryKeys.tasks.all })
+      const movedAt = new Date().toISOString()
+      queryClient.setQueriesData<TaskDto[]>({ queryKey: queryKeys.tasks.all }, (current) =>
+        Array.isArray(current)
+          ? current.map((task) =>
+              task.id === taskId ? { ...task, status, updatedAt: movedAt } : task,
+            )
+          : current,
+      )
+      return { snapshot }
+    },
+    onError: (_error, _input, context) => {
+      for (const [key, data] of context?.snapshot ?? []) queryClient.setQueryData(key, data)
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
   })
-
   const switchUser = useMutation({
     mutationFn: (userId: string) => api.session.switchUser({ userId }),
     onSuccess: () => {

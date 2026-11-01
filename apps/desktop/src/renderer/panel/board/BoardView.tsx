@@ -1,20 +1,24 @@
 import { useQueries } from '@tanstack/react-query'
+import { useLayoutEffect, useRef, useState } from 'react'
 import {
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import {
   sortableKeyboardCoordinates,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import type { ReactNode } from 'react'
+import type { KeyboardEventHandler, PointerEventHandler, ReactNode } from 'react'
 import { TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import type { TaskStatus } from '@agilebox/core'
@@ -24,6 +28,12 @@ import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
 import { panelCopy } from '../copy'
 import styles from './BoardView.module.css'
+
+// O destino é a coluna sob o cursor; só sem cursor (teclado) vale a sobreposição do card.
+const detectCollisions: CollisionDetection = (args) => {
+  const underPointer = pointerWithin(args)
+  return underPointer.length > 0 ? underPointer : rectIntersection(args)
+}
 
 export interface BoardViewProps {
   readonly tasks: readonly TaskDto[] | undefined
@@ -35,6 +45,10 @@ export interface BoardViewProps {
 
 export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: BoardViewProps) {
   const api = useApi()
+  const [activeTask, setActiveTask] = useState<{ task: TaskDto; width: number } | null>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
+  const lastDroppedId = useRef<string | null>(null)
+  useLayoutAnimation(boardRef, tasks, activeTask !== null, lastDroppedId)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -75,13 +89,25 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
       </p>
     )
 
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const task = (tasks ?? []).find((item) => item.id === active.id)
+    if (task) setActiveTask({ task, width: active.rect.current.initial?.width ?? 240 })
+  }
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    lastDroppedId.current = String(active.id)
+    setActiveTask(null)
     moveTaskAfterDrop(active.id, over?.id, tasks ?? [], onMoveTask)
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
-      <div aria-label={panelCopy.boardLabel} className={styles.board}>
+    <DndContext
+      collisionDetection={detectCollisions}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveTask(null)}
+      sensors={sensors}
+    >
+      <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
         {TASK_STATUSES.map((status) => (
           <KanbanColumn
             key={status}
@@ -97,8 +123,55 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
           />
         ))}
       </div>
+      {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
+      <DragOverlay dropAnimation={{ duration: 350, easing: 'cubic-bezier(.32, .72, 0, 1)' }}>
+        {activeTask ? (
+          <div className={styles.overlay} style={{ width: activeTask.width }}>
+            <TaskCard onOpen={() => undefined} responsibleName={undefined} task={activeTask.task} />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   )
+}
+
+/**
+ * Anima (FLIP) os cards que mudam de lugar quando as tarefas mudam: quem foi empurrado ou subiu
+ * desliza até a nova posição. O card recém-solto é ignorado, porque o DragOverlay já o anima.
+ */
+function useLayoutAnimation(
+  rootRef: { readonly current: HTMLElement | null },
+  tasks: readonly TaskDto[] | undefined,
+  dragging: boolean,
+  droppedId: { current: string | null },
+) {
+  const previous = useRef(new Map<string, DOMRect>())
+
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root || dragging) return
+    const reduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const next = new Map<string, DOMRect>()
+    const dropped = droppedId.current
+    for (const element of root.querySelectorAll<HTMLElement>('[data-task-id]')) {
+      const id = element.dataset.taskId!
+      const rect = element.getBoundingClientRect()
+      next.set(id, rect)
+      const before = previous.current.get(id)
+      if (!before || reduced || id === dropped || typeof element.animate !== 'function') continue
+      const dx = before.left - rect.left
+      const dy = before.top - rect.top
+      if (dx === 0 && dy === 0) continue
+      element.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+        { duration: 450, easing: 'cubic-bezier(.32, .72, 0, 1)' },
+      )
+    }
+    droppedId.current = null
+    previous.current = next
+  }, [rootRef, tasks, dragging, droppedId])
 }
 
 export function moveTaskAfterDrop(
@@ -185,21 +258,26 @@ function SortableTaskCard({
   const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
     id: task.id,
   })
+  // O card inteiro arrasta com o mouse (o clique simples ainda abre a tarefa: o arraste só começa
+  // depois de 6 px). O teclado fica no botão ⠿, que segue sendo o único elemento focável do arraste.
+  const onPointerDown = listeners?.onPointerDown as PointerEventHandler<HTMLLIElement> | undefined
+  const onKeyDown = listeners?.onKeyDown as KeyboardEventHandler<HTMLButtonElement> | undefined
   return (
     <li
       ref={setNodeRef}
-      className={styles.card}
+      className={`${styles.card} ${isDragging ? styles.cardGhost : ''}`}
+      data-task-id={task.id}
+      onPointerDown={onPointerDown}
       style={{
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
-        opacity: isDragging ? 0.5 : undefined,
       }}
     >
       <button
         className={styles.dragHandle}
         type="button"
         {...attributes}
-        {...listeners}
+        onKeyDown={onKeyDown}
         aria-label={`${panelCopy.moveTask} ${task.title}`}
         title={panelCopy.moveTask}
       >

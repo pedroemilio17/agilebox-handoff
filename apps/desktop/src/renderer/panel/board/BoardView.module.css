@@ -73,6 +73,34 @@
     transform 250ms var(--ease-ios);
 }
 
+.card {
+  cursor: grab;
+  user-select: none;
+}
+
+/* Lugar vazio deixado pelo card que está sendo arrastado. */
+.cardGhost {
+  border-style: dashed;
+  background: transparent;
+  animation: none;
+  opacity: 0.45;
+}
+
+.cardGhost > * {
+  visibility: hidden;
+}
+
+/* Cópia que flutua sobre o quadro durante o arraste. */
+.overlay {
+  overflow: hidden;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-popover);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+  transform: rotate(2deg) scale(1.03);
+}
+
 .card:hover {
   background: var(--glass-control);
   transform: translateY(-2px);

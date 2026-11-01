@@ -16,11 +16,13 @@ O instalador não é assinado: o SmartScreen avisa na primeira execução ("Mais
 
 ## Linux (AppImage, testado no Fedora)
 
+Troque `0.1.0` pela versão do `apps/desktop/package.json`.
+
 ```bash
 pnpm install
 pnpm --filter @agilebox/desktop dist:linux
-chmod +x release/AgileBox-<versão>.AppImage
-./release/AgileBox-<versão>.AppImage
+chmod +x release/AgileBox-0.1.0.AppImage
+./release/AgileBox-0.1.0.AppImage
 ```
 
 - O AppImage não precisa de instalação nem de `sudo`. Se o Fedora reclamar de FUSE: `sudo dnf install fuse fuse-libs`.

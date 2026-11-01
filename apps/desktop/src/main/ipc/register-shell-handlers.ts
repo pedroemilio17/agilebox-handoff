@@ -5,7 +5,7 @@ export interface ShellWindows {
   minimize(sender: unknown): void
   close(sender: unknown): void
   toggleTray(sender: unknown): void
-  openPanel(): void
+  openPanel(sender?: unknown): void
   setTrayHeight(height: number): void
 }
 
@@ -24,7 +24,7 @@ export function registerShellHandlers(ipcMain: ShellIpcMainLike, windows: ShellW
   register('window.minimize', (sender) => windows.minimize(sender))
   register('window.close', (sender) => windows.close(sender))
   register('window.toggleTray', (sender) => windows.toggleTray(sender))
-  register('window.openPanel', () => windows.openPanel())
+  register('window.openPanel', (sender) => windows.openPanel(sender))
   register('window.setTrayHeight', (_sender, input) =>
     windows.setTrayHeight((input as { height: number }).height),
   )
