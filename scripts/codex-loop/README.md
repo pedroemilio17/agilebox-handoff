@@ -27,6 +27,7 @@ Se as verificações do marco falharem, o laço para (e registra em `docs/laco/o
 - as verificações finais de um marco falham;
 - encontra um passo `[manual]`;
 - atinge `MAX_ROUNDS` (padrão 300; rode de novo para continuar);
+- o processo é interrompido de fora (terminal fechado, Ctrl+C, `kill`) ou o script tem um erro inesperado: **nunca é silencioso**, o motivo, o passo e o comando vão para `docs/laco/ocorrencias.md`. Rode de novo para continuar (o passo e o fechamento de marco são refeitos com segurança);
 - existe o arquivo `.loop/STOP` (`touch .loop/STOP` para parar ao fim da rodada atual);
 - acabam os passos: escreve `docs/laco/RESUMO-FINAL.md` e termina.
 
@@ -52,13 +53,29 @@ Mais: notas por passo no `PROGRESS.md`, decisões em `docs/decisoes/` e as tags 
 
 ## Rodar
 
+**Recomendado: desacoplado do terminal** (continua se você fechar o terminal ou o editor):
+
+```bash
+scripts/codex-loop/start.sh    # inicia em segundo plano, saída em .loop/loop.out
+scripts/codex-loop/status.sh   # rodando ou parado, passo atual, commits, marcos
+tail -f .loop/loop.out         # acompanhar ao vivo
+touch .loop/STOP               # parar com calma, ao fim do passo atual
+```
+
+Direto no terminal (morre se o terminal fechar):
+
 ```bash
 scripts/codex-loop/run.sh                   # modo contínuo, até o fim
 STOP_AT_PARADA=1 scripts/codex-loop/run.sh  # para em cada marco
 MAX_ROUNDS=20 scripts/codex-loop/run.sh     # limita a execução
 ```
 
-Para deixar rodando sem prender o terminal: `nohup scripts/codex-loop/run.sh > .loop/loop.out 2>&1 &` e acompanhar com `tail -f .loop/loop.out` ou `git log --oneline`.
+O `start.sh` repassa as variáveis de ambiente e os argumentos ao `run.sh`, por exemplo `ON_BLOCKED=provisional scripts/codex-loop/start.sh`.
+
+### Bloqueios: parar ou decidir provisoriamente
+
+- `ON_BLOCKED=stop` (padrão): o laço para no `BLOCKED` e espera a sua decisão.
+- `ON_BLOCKED=provisional`: o laço roda **mais uma rodada** do mesmo passo, pedindo ao Codex que escolha a opção mais conservadora e reversível, implemente e registre uma linha `DECIDIR: DECISÃO PROVISÓRIA` em `docs/laco/pendencias-do-pedro.md` (com a alternativa descartada). Se bloquear de novo, o laço para. Use quando preferir terminar tudo e revisar as decisões depois; isso significa o Codex decidindo requisito, então leia as pendências `DECIDIR` ao final.
 
 ## Se parar
 
@@ -68,15 +85,16 @@ Para deixar rodando sem prender o terminal: `nohup scripts/codex-loop/run.sh > .
 
 ## Variáveis
 
-| Variável         | Padrão                                                 | Uso                                            |
-| ---------------- | ------------------------------------------------------ | ---------------------------------------------- |
-| `MAX_ROUNDS`     | 300                                                    | rodadas por execução                           |
-| `MAX_FAILS`      | 3                                                      | falhas seguidas no mesmo passo                 |
-| `MAX_DEP_ROUNDS` | 3                                                      | pedidos de dependência seguidos no mesmo passo |
-| `STOP_AT_PARADA` | 0                                                      | 1 = parar em cada PARADA                       |
-| `CODEX_BIN`      | `codex`                                                | executável                                     |
-| `CODEX_FLAGS`    | `--sandbox workspace-write -c approval_policy="never"` | opções do `codex exec`                         |
-| `CODEX_MODEL`    | (padrão do Codex)                                      | modelo, se quiser fixar                        |
+| Variável         | Padrão                                                 | Uso                                                           |
+| ---------------- | ------------------------------------------------------ | ------------------------------------------------------------- |
+| `MAX_ROUNDS`     | 300                                                    | rodadas por execução                                          |
+| `MAX_FAILS`      | 3                                                      | falhas seguidas no mesmo passo                                |
+| `MAX_DEP_ROUNDS` | 3                                                      | pedidos de dependência seguidos no mesmo passo                |
+| `STOP_AT_PARADA` | 0                                                      | 1 = parar em cada PARADA                                      |
+| `ON_BLOCKED`     | `stop`                                                 | `provisional` = decisão provisória em vez de parar no BLOCKED |
+| `CODEX_BIN`      | `codex`                                                | executável                                                    |
+| `CODEX_FLAGS`    | `--sandbox workspace-write -c approval_policy="never"` | opções do `codex exec`                                        |
+| `CODEX_MODEL`    | (padrão do Codex)                                      | modelo, se quiser fixar                                       |
 
 ## Segurança
 

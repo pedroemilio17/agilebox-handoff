@@ -5,13 +5,14 @@
 # tag `marco-<Mx>` e segue. Só para em BLOCKED, falhas seguidas, [manual] ou fim dos passos.
 # STOP_AT_PARADA=1 volta ao modo antigo (parar em cada marco).
 # Uso e pré-requisitos: scripts/codex-loop/README.md
-set -euo pipefail
+set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 MAX_ROUNDS="${MAX_ROUNDS:-300}"       # rodadas do Codex nesta execução
 STOP_AT_PARADA="${STOP_AT_PARADA:-0}" # 1 = parar em cada PARADA (revisão a cada marco)
+ON_BLOCKED="${ON_BLOCKED:-stop}"      # stop = parar no BLOCKED; provisional = o Codex decide e registra
 MAX_FAILS="${MAX_FAILS:-3}"           # falhas seguidas no mesmo passo antes de parar
 MAX_DEP_ROUNDS="${MAX_DEP_ROUNDS:-3}" # pedidos de dependência seguidos no mesmo passo
 CODEX_BIN="${CODEX_BIN:-codex}"
@@ -27,7 +28,44 @@ FAILURE_LOG="$LOOP_DIR/last-failure.log"
 
 log()  { printf '\n\033[1;34m[laço]\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m[laço]\033[0m %s\n' "$*"; }
-die()  { printf '\n\033[1;31m[laço]\033[0m %s\n' "$*" >&2; exit 1; }
+CURRENT_STEP="início"
+EXPECTED_EXIT=""
+INCIDENT_LOGGED=""
+LAST_ERR=""
+
+die() {
+  printf '\n\033[1;31m[laço]\033[0m %s\n' "$*" >&2
+  EXPECTED_EXIT=1
+  # Todo encerramento fica registrado em docs/laco/ocorrencias.md (exceto falhas antes do primeiro passo).
+  if [[ -z "$INCIDENT_LOGGED" && "$CURRENT_STEP" != "início" ]] && declare -F log_incident > /dev/null; then
+    log_incident "$CURRENT_STEP" "$*"
+  fi
+  exit 1
+}
+
+# Sinais (Ctrl+C, terminal fechado, kill) e erros inesperados nunca passam em silêncio.
+on_signal() {
+  EXPECTED_EXIT=1
+  printf '\n\033[1;31m[laço]\033[0m Interrompido por sinal %s no passo: %s\n' "$1" "$CURRENT_STEP" >&2
+  if declare -F log_incident > /dev/null; then
+    log_incident "$CURRENT_STEP" "Laço interrompido por sinal $1 (terminal fechado, Ctrl+C ou kill). Rode de novo para continuar; use start.sh para desacoplar do terminal."
+  fi
+  exit 130
+}
+on_exit() {
+  local code=$1
+  if (( code != 0 )) && [[ -z "$EXPECTED_EXIT" ]]; then
+    printf '\n\033[1;31m[laço]\033[0m Erro inesperado (código %s): %s\n' "$code" "${LAST_ERR:-desconhecido}" >&2
+    if declare -F log_incident > /dev/null; then
+      log_incident "$CURRENT_STEP" "O script terminou com erro inesperado (código $code): ${LAST_ERR:-desconhecido}."
+    fi
+  fi
+}
+trap 'LAST_ERR="linha $LINENO: $BASH_COMMAND"' ERR
+trap 'on_exit $?' EXIT
+trap 'on_signal INT' INT
+trap 'on_signal TERM' TERM
+trap 'on_signal HUP' HUP
 
 # shellcheck source=scripts/codex-loop/docs.sh
 source "$ROOT/scripts/codex-loop/docs.sh"
@@ -117,6 +155,11 @@ build_prompt() { # $1 = linha, $2 = texto do passo
   printf '\n'
   cat "$RULES_FILE"
   printf '\n## Passo desta rodada\n\n`%s` (linha %s do PROGRESS.md). Leia o bloco completo do passo, com os subitens.\n' "$2" "$1"
+  if [[ -s "$LOOP_DIR/resolve.md" ]]; then
+    printf '\n## Resolução provisória (o Pedro autorizou)\n\nA rodada anterior deste passo terminou em BLOCKED com este relatório:\n\n'
+    sed 's/^/> /' "$LOOP_DIR/resolve.md"
+    printf '\nO Pedro quer que o laço continue. Escolha a opção **mais conservadora, reversível e coerente com os documentos** (nunca invente valores de negócio sem sinalizar; prefira o que preserva dados e permissões). Implemente, e acrescente em `docs/laco/pendencias-do-pedro.md` uma linha `- [ ] <passo> · DECIDIR: DECISÃO PROVISÓRIA — <o que escolheu>; alternativa: <a outra opção>`. Termine com `DONE`. Só use BLOCKED de novo se for impossível seguir.\n'
+  fi
   if [[ -s "$FAILURE_LOG" ]]; then
     printf '\n## Atenção\n\nA rodada anterior deste passo falhou nas verificações. A saída está em `.loop/last-failure.log`. Corrija isso primeiro.\n'
   fi
@@ -154,7 +197,7 @@ checkpoint() { # $1 = linha, $2 = texto da PARADA
 main() {
   preflight
 
-  local round=0 fails=0 dep_rounds=0 attempts=0 last_step=""
+  local round=0 fails=0 dep_rounds=0 attempts=0 blocked_retry=0 last_step=""
   while (( round < MAX_ROUNDS )); do
     [[ -f "$LOOP_DIR/STOP" ]] && { log "Arquivo .loop/STOP encontrado. Parando."; rm -f "$LOOP_DIR/STOP"; exit 0; }
 
@@ -170,6 +213,7 @@ main() {
     fi
     IFS=$'\t' read -r line mark text <<< "$info"
     step_id="${text%% *}"
+    CURRENT_STEP="$text"
 
     if [[ "$mark" == "!" ]]; then
       die "Passo bloqueado: $text. Veja .loop/blocked.md, resolva e troque [!] por [ ] no PROGRESS.md."
@@ -190,7 +234,7 @@ main() {
     fi
 
     if [[ "$step_id" != "$last_step" ]]; then
-      fails=0; dep_rounds=0; attempts=0; rm -f "$FAILURE_LOG"; last_step="$step_id"
+      fails=0; dep_rounds=0; attempts=0; blocked_retry=0; rm -f "$FAILURE_LOG" "$LOOP_DIR/resolve.md"; last_step="$step_id"
     fi
 
     round=$((round + 1))
@@ -228,8 +272,16 @@ main() {
         continue
         ;;
       BLOCKED)
-        set_mark "$line" "!"
         cp -f "$LOOP_DIR/blocked.md" "$run_dir/" 2>/dev/null || true
+        if [[ "$ON_BLOCKED" == "provisional" && "$blocked_retry" -lt 1 && -s "$LOOP_DIR/blocked.md" ]]; then
+          blocked_retry=1
+          cp -f "$LOOP_DIR/blocked.md" "$LOOP_DIR/resolve.md"
+          log_incident "$text" "O Codex bloqueou o passo. ON_BLOCKED=provisional: nova rodada com decisão provisória (ver pendências)."
+          INCIDENT_LOGGED=""
+          warn "Bloqueio em $step_id: tentando de novo com decisão provisória."
+          continue
+        fi
+        set_mark "$line" "!"
         log_incident "$text" "O Codex bloqueou o passo. As mudanças da rodada ficaram sem commit."
         die "Codex bloqueou em $step_id. Leia .loop/blocked.md. As mudanças ficaram sem commit para você revisar."
         ;;
@@ -237,7 +289,7 @@ main() {
 
     if (( codex_ok == 1 )) && [[ "$status" == "DONE" ]] && run_checks; then
       set_mark "$line" "x"
-      rm -f "$FAILURE_LOG"
+      rm -f "$FAILURE_LOG" "$LOOP_DIR/resolve.md"
       git add -A
       append_diary "$text" "$run_dir" "$attempts"
       format_docs

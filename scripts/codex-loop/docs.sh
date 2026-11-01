@@ -44,6 +44,7 @@ append_diary() {
 
 # $1 = passo/marco, $2 = o que aconteceu
 log_incident() {
+  INCIDENT_LOGGED=1
   ensure_docs
   {
     printf '\n## %s · %s\n\n%s\n' "$(date '+%Y-%m-%d %H:%M')" "$1" "$2"
@@ -70,8 +71,8 @@ write_milestone_report() {
   prev="$(git describe --tags --abbrev=0 --match 'marco-*' 2>/dev/null || true)"
   commits="$(git log --reverse --format='- `%h` %s' --grep="^${ms}\\.")"
   count="$(printf '%s\n' "$commits" | grep -c . || true)"
-  tests="$(grep -E 'Test Files|Tests ' "$LOOP_DIR/checks.log" 2>/dev/null | tail -n 2 | sed 's/^ *//' || true)"
-  cover="$(tail -n 45 "$LOOP_DIR/coverage.log" 2>/dev/null || true)"
+  tests="$(grep -E 'Test Files|Tests ' "$LOOP_DIR/checks.log" 2>/dev/null | tail -n 2 | sed -E 's/\x1b\[[0-9;]*m//g; s/^ *//' || true)"
+  cover="$(tail -n 45 "$LOOP_DIR/coverage.log" 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g' || true)"
   deps="$(git diff "$base" HEAD -- '*package.json' 2>/dev/null |
     grep -E '^\+ +"[^"]+": "[^"]*[0-9][^"]*",?$' | grep -v '"version"\|workspace:' |
     sed -E 's/^\+ +//; s/,$//' | sort -u || true)"
