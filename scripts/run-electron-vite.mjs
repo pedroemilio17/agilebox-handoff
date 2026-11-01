@@ -7,7 +7,16 @@ import process from 'node:process'
 const env = { ...process.env }
 delete env.ELECTRON_RUN_AS_NODE
 
-const child = spawn('pnpm', ['exec', 'electron-vite', ...process.argv.slice(2)], {
+// No Wayland o aplicativo não pode posicionar a própria janela: a bandeja não fica ancorada no canto
+// e cresce para baixo. No Linux usamos X11 (XWayland); AGILEBOX_WAYLAND=1 mantém o Wayland.
+// A plataforma precisa ser escolhida na linha de comando do Electron, antes de o main executar.
+const args = process.argv.slice(2)
+const runsElectron = args[0] === 'dev' || args[0] === 'preview'
+if (runsElectron && process.platform === 'linux' && env.AGILEBOX_WAYLAND !== '1') {
+  args.push('--', '--ozone-platform=x11')
+}
+
+const child = spawn('pnpm', ['exec', 'electron-vite', ...args], {
   stdio: 'inherit',
   env,
   shell: process.platform === 'win32',

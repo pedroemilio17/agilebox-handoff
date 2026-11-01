@@ -7,6 +7,7 @@ import { panelCopy } from './copy'
 import { useProjects } from './hooks/use-projects'
 import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
+import { AgendaView } from './agenda/AgendaView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
 import { ProjectMembersDialog } from './board/ProjectMembersDialog'
@@ -67,6 +68,7 @@ export function App() {
         currentUserId: actor.actor?.userId,
         onSwitch: (userId) => switchUser.mutate(userId),
       }}
+      agenda={<AgendaView />}
       dashboard={
         <DashboardView
           onOpenProjects={(user) => {

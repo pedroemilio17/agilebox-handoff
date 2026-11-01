@@ -1,0 +1,260 @@
+.view {
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 20%);
+  gap: var(--space-4);
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-5);
+}
+
+.calendar {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.monthTitle {
+  margin: 0;
+  font-size: 24px;
+  text-transform: capitalize;
+}
+
+.monthNav {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.weekdays,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekdays {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.grid {
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  min-height: 0;
+}
+
+.day {
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 2px;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-group);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.day:hover {
+  background: var(--glass-control);
+}
+
+.day:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.outside {
+  color: var(--color-text-placeholder);
+  opacity: 0.6;
+}
+
+.selected {
+  border-color: var(--color-accent-text);
+  background: var(--glass-control);
+}
+
+.dayNumber {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  font-size: var(--font-size-body-small);
+}
+
+.today .dayNumber {
+  border-radius: 50%;
+  background: var(--color-primary-bg);
+  color: #fff;
+  font-weight: 600;
+}
+
+.event,
+.more {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-chip);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(100, 168, 255, 0.2);
+  color: var(--color-accent-text);
+}
+
+.more {
+  color: var(--color-text-muted);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+}
+
+.helper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.upcoming {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.upcomingList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upcomingItem {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--size-touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-group);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.upcomingItem:disabled {
+  cursor: default;
+}
+
+.upcomingItem:not(:disabled):hover {
+  background: var(--glass-control);
+}
+
+.upcomingTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s var(--ease-ios);
+}
+
+.formOpen {
+  grid-template-rows: 1fr;
+}
+
+.formInner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-1);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.field input {
+  min-height: 36px;
+  padding: 0 var(--space-2);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.participants {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-primary);
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formWrap {
+    transition: none;
+  }
+}

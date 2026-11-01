@@ -509,17 +509,20 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 
 ## M8 · Agenda (HANDOFF "Agenda", "Calendário"; PLANO 9 · M8)
 
-- [ ] M8.1 Grade do calendário
+- [x] M8.1 Grade do calendário
   - `renderer/shared/lib/calendar-grid.ts` (6 semanas × 7 dias, começa no domingo, dias de fora do mês, hoje).
   - Pronto: testes de viradas de ano e meses de 28 a 31 dias.
+  - Nota (Claude): calendar-grid.ts: 6 semanas × 7 dias, domingo primeiro, dias de fora do mês, hoje, virada de ano e meses de 28 a 31 dias (cálculo em UTC, sem depender do fuso).
 
-- [ ] M8.2 Calendário
+- [x] M8.2 Calendário
   - `agenda/Calendar` e `DayCell` (normal, hoje com círculo azul, selecionado, fora do mês; até 2 eventos + "+N mais"; texto com reticências, a célula nunca cresce); mês anterior/próximo com `aria-label`; clicar no dia seleciona e define a data do formulário sem abri-lo.
   - Pronto: testes de seleção, "+N mais" e teclado.
+  - Nota (Claude): Calendar: mês anterior/próximo com aria-label, dia selecionado (clique ou setas, com o foco acompanhando), hoje com círculo azul, até 2 eventos + '+N mais' com reticências e célula de tamanho fixo. Clicar no dia não abre o formulário.
 
-- [ ] M8.3 Lista e formulário
+- [x] M8.3 Lista e formulário
   - `agenda/UpcomingList` ("Próximos agendamentos", "Nada marcado."), `MeetingForm` (expande no lugar `0fr→1fr`; criar, editar, excluir; participantes são usuários, PLANO 12.5 `DECISÃO PROVISÓRIA`), `AgendaView` (painel direito de 20%, mín. 260 px). Colaborador: botões desabilitados + "Só o gestor cria e edita agendamentos."
   - Pronto: testes do fluxo completo e das permissões.
+  - Nota (Claude): AgendaView com painel direito (20%, mín. 260 px), UpcomingList ('Nada marcado.') e MeetingForm que expande 0fr→1fr em 500 ms; criar, editar e excluir só para o gestor (colaborador: botões desabilitados + 'Só o gestor cria e edita agendamentos.'). DECISÃO PROVISÓRIA (PLANO 12.5): participantes são só usuários.
 
 - [ ] PARADA M8: Pedro cria, edita e exclui agendamentos como gestor e confere o aviso como colaborador.
 
@@ -564,6 +567,7 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 
 - [ ] M10.2 Instalador
   - `apps/desktop/electron-builder.yml` (NSIS para Windows; alvo Linux AppImage como bônus), `resources/` com ícones gerados por script (`scripts/make-icons.mjs`, sem dependência nova), scripts `pack` e `dist`, `better-sqlite3` reconstruído para o Electron (`scripts/ensure-native.mjs`, M4.8), banco em `%APPDATA%/AgileBox` (Windows) ou o diretório de dados do usuário (Linux), migrações ao iniciar.
+  - Linux: o app precisa iniciar com `--ozone-platform=x11` (`linux.executableArgs` do electron-builder), senão no Wayland a bandeja não ancora no canto e cresce para baixo (ver `scripts/run-electron-vite.mjs`). Copiar também a pasta `migrations/` do `infra-sqlite` para os recursos do app e apontar `composition-root.ts` para ela quando empacotado.
   - Deps: `root dev electron-builder`, `root dev @electron/rebuild`.
   - Pronto: `pnpm check`. Pendência `TESTAR-NO-WINDOWS`: gerar o instalador (`pnpm dist`) e instalar.
 

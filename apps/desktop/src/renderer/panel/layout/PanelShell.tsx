@@ -21,6 +21,7 @@ export interface PanelShellProps {
     readonly onSwitch: (userId: string) => void
   }
   readonly dashboard?: ReactNode
+  readonly agenda?: ReactNode
   readonly children?: ReactNode
 }
 
@@ -42,6 +43,7 @@ export function PanelShell({
   onNewTask,
   account,
   dashboard,
+  agenda,
   children,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(false)
@@ -77,6 +79,8 @@ export function PanelShell({
             children
           ) : visibleView === 'dashboard' && dashboard ? (
             dashboard
+          ) : visibleView === 'agenda' && agenda ? (
+            agenda
           ) : visibleView === 'settings' ? (
             <EmptyState title={panelCopy.comingSoon} />
           ) : visibleView === 'plugins' ? (

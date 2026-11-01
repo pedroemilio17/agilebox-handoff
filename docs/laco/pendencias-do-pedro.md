@@ -13,3 +13,6 @@
 
 - [ ] M9 · CONFERIR: abrir a bandeja pelo botão ↙ do painel; buscar, alternar Recentes/Frequentes, abrir uma tarefa, salvar, criar uma nova e redimensionar pela barrinha (setas, Home, duplo clique); conferir que o painel atualiza sem recarregar.
 - [ ] M9.5 · PENDENTE: botão redondo de 52 px ao fechar a bandeja e animações de saída/altura (entram com o ícone de bandeja do M10.1).
+
+- [ ] M8 · CONFERIR: como gestor, criar, editar e excluir um agendamento; como colaborador, ver a agenda e o aviso "Só o gestor cria e edita agendamentos."; comparar o calendário com `design/Painel.dc.html`.
+- [ ] M8.3 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.5): os participantes do agendamento são só usuários (sem entidades).
