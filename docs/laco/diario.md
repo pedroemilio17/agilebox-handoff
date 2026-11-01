@@ -142,3 +142,19 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.6 concluído. Implementei os fakes das portas, o `InMemoryUnitOfWork` com rollback, os builders e a exportação `@agilebox/application/testing`.
 >
 > `pnpm check` passou: 30 arquivos de teste e 571 testes. Registrei o resultado em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
+
+## 2026-10-31 23:08 · M3.7 Suíte de contrato dos repositórios
+
+- Alterações: 4 files changed, 211 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/testing/index.ts`
+  - `packages/application/src/testing/repository-contract.test.ts`
+  - `packages/application/src/testing/repository-contract.ts`
+
+**Resumo do Codex:**
+
+> Passo M3.7 concluído. Criei a suíte reutilizável de contrato e rodei-a contra os fakes em memória, cobrindo gravação e leitura, remoção, ordenação, busca sem acentos e isolamento por organização.
+>
+> `pnpm check` passou: 576 testes. Registrei a nota em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:176) e gravei `DONE` em `.loop/status`.

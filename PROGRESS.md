@@ -173,9 +173,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Fakes em memória para as portas, relógio, IDs sequenciais, notificações gravadas e builders de usuários, projetos, entidades, tarefas, envolvimentos e reuniões; exportação separada `@agilebox/application/testing`.
   - Nota: Testes cobrem relógio, sequência de IDs, notificação, isolamento por organização e rollback do `UnitOfWork`; `pnpm check` passou (571 testes), sem dependências novas.
 
-- [ ] M3.7 Suíte de contrato dos repositórios
+- [x] M3.7 Suíte de contrato dos repositórios
   - `testing/repository-contract.ts`: `describeRepositoryContract(name, makeAdapters)`, com CRUD, ordenações (Recentes, Frequentes), busca sem acentos, unicidade por organização e **isolamento entre organizações**. Rodar contra os fakes.
   - Pronto: suíte verde nos fakes.
+  - Nota: Contrato reutilizável criado e executado nos repositórios em memória; cobre gravação/leitura, remoção, Recentes, Frequentes, busca sem acentos, chave de projeto por organização e isolamento. `pnpm check` passou (576 testes), sem dependências novas.
 
 - [ ] M3.8 Mappers
   - `mappers/*`: entidade → DTO, aplicando `canSeeRate` e `canSeeTaskTotal` (R$ = `null`), `canEdit`/`readOnly`.
