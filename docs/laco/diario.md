@@ -709,3 +709,22 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M5.7 concluído. O composition root conecta SQLite, casos de uso, relógio, IDs, sessão e notificador; banco vazio recebe o seed apenas fora de produção. A sessão inicia em Pedro e persiste trocas em `local_settings`.
 >
 > `pnpm check` passou: 77 arquivos e 690 testes. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.
+
+## 2026-11-01 01:49 · M5.8 Main: IPC com validação
+
+- Alterações: 5 files changed, 235 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/main/ipc/handle.test.ts`
+  - `apps/desktop/src/main/ipc/handle.ts`
+  - `apps/desktop/src/main/ipc/register-handlers.test.ts`
+  - `apps/desktop/src/main/ipc/register-handlers.ts`
+
+**Resumo do Codex:**
+
+> M5.8 concluído. O IPC valida as entradas, injeta o ator da sessão, converte falhas em `Result` e registra os 33 canais da API nos respectivos casos de uso.
+>
+> `pnpm check` passou: 79 arquivos e 695 testes. Status registrado como `DONE` em `.loop/status`.
+>
+> Arquivos principais: [handle.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/main/ipc/handle.ts), [register-handlers.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/main/ipc/register-handlers.ts) e [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md).

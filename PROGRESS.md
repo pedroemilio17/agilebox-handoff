@@ -366,9 +366,12 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Sessão começa em Pedro e persiste a troca de usuário em `local_settings`; broadcaster envia mudanças a todas as janelas abertas.
   - Nota: `pnpm check` passou (77 arquivos, 690 testes). `skipLibCheck` no desktop contorna declarações incompletas de dependências opcionais do Drizzle.
 
-- [ ] M5.8 Main: IPC com validação
+- [x] M5.8 Main: IPC com validação
   - `main/ipc/handle.ts` (valida a entrada com zod do `contract`, injeta o ator **da sessão**, converte erros para o envelope `Result`), `main/ipc/register-handlers.ts` (um handler por canal de `channels.ts`, ligado a um caso de uso).
   - Pronto: testes com casos de uso falsos: entrada inválida, `FORBIDDEN`, `NOT_FOUND`, ator nunca vindo do renderer, e um teste que garante **todo canal registrado**.
+  - Nota: O handler valida antes da execução, injeta o ator da sessão e converte erros tipados em `Result`; exceções inesperadas retornam mensagem genérica com `CONFLICT`, único código contratual disponível para esse caso.
+  - Nota: Os 33 canais da API estão ligados explicitamente aos respectivos casos de uso; testes cobrem validação, erros, origem do ator e registro integral.
+  - Nota: `pnpm check` passou (79 arquivos, 695 testes).
 
 - [ ] M5.9 Preload e camada de dados do renderer
   - `preload/index.ts` (`contextBridge` expondo `window.agilebox`: `invoke`, `onChanges`, `shell`), `renderer/shared/api/ipc-client.ts` (implementa `AgileBoxApi`; desembrulha `Result`, lança `ApiError`), `ApiProvider.tsx`, `query/QueryProvider.tsx`, `keys.ts`, `sync-changes.ts` (`onChanges` → invalida queries), `session/useActor.ts` (ator e capacidades), `lib/format-date.ts` ("Qui, 05 nov", "há 12 min"; `date-fns` pt-BR), `testing/fake-api.ts`. Hooks por recurso só nos passos das telas que os usam.
