@@ -271,8 +271,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Gerada a migração inicial pelo script `db:generate`; `createSqliteClient` agora aplica as migrações ao abrir o banco.
   - Nota: Teste confirma as 12 tabelas do schema após migração em memória; `pnpm check` passou (633 testes).
 
-- [ ] M4.4 Mappers e repositórios: organização, usuários, entidades, projetos
+- [x] M4.4 Mappers e repositórios: organização, usuários, entidades, projetos
   - Pronto: a parte correspondente da suíte de contrato passa no SQLite.
+  - Nota: Implementados mappers de organização, usuário, entidade e projeto, além dos repositórios SQLite de usuários, entidades, projetos e membros.
+  - Nota: Testes cobrem persistência, membros, isolamento por organização e nome de projeto repetido entre organizações; `pnpm check` passou (637 testes).
 
 - [ ] M4.5 Repositórios: tarefas, envolvimentos, linha do tempo, aberturas
   - Pronto: idem.

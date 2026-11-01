@@ -400,3 +400,21 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.3 concluído. Foram adicionados os schemas e a migração inicial; `createSqliteClient` aplica migrações ao abrir o banco. O teste confirma as 12 tabelas após migrar um banco em memória.
 >
 > `pnpm check` passou: 43 arquivos de teste, 633 testes. Registrei as notas no `PROGRESS.md` e escrevi `DONE` em `.loop/status`.
+
+## 2026-11-01 00:29 · M4.4 Mappers e repositórios: organização, usuários, entidades, projetos
+
+- Alterações: 6 files changed, 357 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/infra-sqlite/src/index.ts`
+  - `packages/infra-sqlite/src/mappers/core-mappers.test.ts`
+  - `packages/infra-sqlite/src/mappers/core-mappers.ts`
+  - `packages/infra-sqlite/src/repositories/core-repositories.test.ts`
+  - `packages/infra-sqlite/src/repositories/core-repositories.ts`
+
+**Resumo do Codex:**
+
+> M4.4 concluído. Implementei os mappers de organização, usuário, entidade e projeto, além dos repositórios SQLite de usuários, entidades, projetos e membros. Como o plano não define uma porta de repositório para organizações, implementei apenas o mapper dessa tabela.
+>
+> `pnpm check` passou: 637 testes. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
