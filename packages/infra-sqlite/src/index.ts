@@ -1,5 +1,6 @@
 export { createSqliteClient } from './client.js'
-export { createSqliteAdapters } from './create-sqlite-adapters.js'
+export { seedDemo } from './seed/seed.js'
+export { createSqliteAdapters, createSqliteAdaptersForDatabase } from './create-sqlite-adapters.js'
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 export { createSqliteTaskRepositories } from './repositories/task-repositories.js'

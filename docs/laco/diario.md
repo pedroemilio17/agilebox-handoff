@@ -685,3 +685,27 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 73 arquivos e 686 testes. A formatação também passou. Status registrado como `DONE`.
 >
 > Adicionei em `docs/laco/pendencias-do-pedro.md` a revisão visual da galeria com `?gallery`, para quando o painel estiver disponível.
+
+## 2026-11-01 01:42 · M5.7 Main: composition root, sessão e notificador de mudanças
+
+- Alterações: 12 files changed, 273 insertions(+), 3 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/main/actor-session.test.ts`
+  - `apps/desktop/src/main/actor-session.ts`
+  - `apps/desktop/src/main/composition-root.test.ts`
+  - `apps/desktop/src/main/composition-root.ts`
+  - `apps/desktop/src/main/ipc/change-broadcaster.test.ts`
+  - `apps/desktop/src/main/ipc/change-broadcaster.ts`
+  - `apps/desktop/src/main/paths.test.ts`
+  - `apps/desktop/src/main/paths.ts`
+  - `apps/desktop/tsconfig.json`
+  - `packages/infra-sqlite/src/create-sqlite-adapters.ts`
+  - `packages/infra-sqlite/src/index.ts`
+
+**Resumo do Codex:**
+
+> M5.7 concluído. O composition root conecta SQLite, casos de uso, relógio, IDs, sessão e notificador; banco vazio recebe o seed apenas fora de produção. A sessão inicia em Pedro e persiste trocas em `local_settings`.
+>
+> `pnpm check` passou: 77 arquivos e 690 testes. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.

@@ -359,9 +359,12 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: A galeria apresenta todos os componentes exportados, incluindo segmentado de 2 e 3 opções, campo desabilitado e estados interativos; `?gallery` continua condicionado a `import.meta.env.DEV`.
   - Nota: Testes cobrem renderização, acessibilidade dos exemplos, troca de opção e abertura/fechamento do modal. `pnpm check` passou (73 arquivos, 686 testes), sem dependências novas.
 
-- [ ] M5.7 Main: composition root, sessão e notificador de mudanças
+- [x] M5.7 Main: composition root, sessão e notificador de mudanças
   - `main/paths.ts`, `main/composition-root.ts` (**único** lugar que liga portas às implementações: SQLite, relógio, IDs, notificador → `createUseCases`; devolve `{ useCases, close }`), `main/actor-session.ts` (ator atual em memória, persistido em `local_settings`; padrão: o usuário "Pedro" do seed; `switchUser`), `main/ipc/change-broadcaster.ts` (implementa `ChangeNotifier`, envia para as janelas por uma interface mínima). Se o banco estiver vazio, roda o seed (apenas fora de produção).
   - Pronto: testes com SQLite em memória (ator padrão, troca de usuário persiste, notificação chega ao broadcaster).
+  - Nota: Composition root conecta SQLite, relógio, gerador de IDs, sessão e broadcaster; semeia banco vazio apenas fora de produção.
+  - Nota: Sessão começa em Pedro e persiste a troca de usuário em `local_settings`; broadcaster envia mudanças a todas as janelas abertas.
+  - Nota: `pnpm check` passou (77 arquivos, 690 testes). `skipLibCheck` no desktop contorna declarações incompletas de dependências opcionais do Drizzle.
 
 - [ ] M5.8 Main: IPC com validação
   - `main/ipc/handle.ts` (valida a entrada com zod do `contract`, injeta o ator **da sessão**, converte erros para o envelope `Result`), `main/ipc/register-handlers.ts` (um handler por canal de `channels.ts`, ligado a um caso de uso).
