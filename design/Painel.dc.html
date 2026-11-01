@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AgileBox — Painel principal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.stage{position:relative;overflow:hidden;box-sizing:border-box;background:#0A0C11;color:#F5F5F7;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Inter',system-ui,sans-serif;font-size:15px;line-height:1.3;-webkit-font-smoothing:antialiased}
+.stage button,.stage input,.stage select,.stage textarea{font:inherit;color:inherit}
+.stage button{cursor:pointer}
+.stage button:focus-visible,.stage a:focus-visible,.stage input:focus-visible,.stage select:focus-visible,.stage textarea:focus-visible{outline:2px solid #64A8FF;outline-offset:2px}
+
+.wall{position:absolute;inset:0}
+.blob{position:absolute;border-radius:50%;filter:blur(90px)}
+.b1{left:-100px;top:40px;width:460px;height:460px;background:#2457E6;opacity:.6}
+.b2{right:-80px;bottom:-40px;width:420px;height:420px;background:#8A44E8;opacity:.5}
+.win{position:absolute;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+.w1{left:12px;top:12px;width:340px;height:200px}
+.w2{right:20px;bottom:16px;width:380px;height:260px}
+.ln{height:9px;border-radius:5px;background:rgba(255,255,255,.18)}
+
+.appwin{position:absolute;left:48px;top:40px;right:48px;bottom:40px;display:flex;flex-direction:row;box-sizing:border-box;overflow:hidden;border-radius:22px;
+  background:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,0) 45%),rgba(30,33,42,.5);
+  backdrop-filter:blur(32px) saturate(170%);-webkit-backdrop-filter:blur(32px) saturate(170%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 28px 64px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3);
+  animation:winIn .6s cubic-bezier(.32,.72,0,1) both}
+
+/* barra lateral */
+.rail{position:relative;z-index:5;flex:none;width:52px;box-sizing:border-box;padding:12px 4px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,.18);border-right:1px solid rgba(255,255,255,.1);transition:width .42s cubic-bezier(.32,.72,0,1)}
+.rail.open{width:204px}
+.rsp{flex:1}
+.rdiv{height:1px;margin:6px 8px;background:rgba(255,255,255,.1)}
+.ri{position:relative;display:flex;align-items:center;width:100%;height:44px;box-sizing:border-box;padding:0 12px;border:0;border-radius:12px;background:none;color:#D1D1D6;text-align:left;transition:background .2s,color .2s}
+.ri:hover{background:rgba(255,255,255,.08);color:#fff}
+.ri.on{background:rgba(255,255,255,.14);color:#fff}
+.ri svg{flex:none}
+.ri.acct{padding:0 8px}
+.lb{max-width:0;opacity:0;overflow:hidden;white-space:nowrap;font-size:15px;font-weight:500;transition:max-width .42s cubic-bezier(.32,.72,0,1),opacity .3s,margin .42s}
+.rail.open .lb{max-width:140px;opacity:1;margin-left:12px}
+.av{flex:none;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#3E5F99;color:#fff;font-size:11px;font-weight:600;letter-spacing:.2px}
+.av.c2{background:#7A4FA8}
+.av.c3{background:#2F7D6B}
+.av.c4{background:#A5683A}
+.av.ge{background:#B04A6A}
+.rail:not(.open) .ri:hover::after,.rail:not(.open) .ri:focus-visible::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);padding:6px 10px;border-radius:8px;background:rgba(48,52,64,.94);border:1px solid rgba(255,255,255,.14);font-size:12px;font-weight:500;color:#F5F5F7;white-space:nowrap;z-index:30;pointer-events:none}
+.acctwrap{position:relative}
+.catch{position:absolute;inset:0;z-index:34}
+.menu{position:absolute;left:calc(100% + 8px);bottom:0;z-index:36;width:244px;box-sizing:border-box;padding:12px;border-radius:16px;background:rgba(48,52,64,.94);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 44px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18);transform-origin:bottom left;animation:popIn .28s cubic-bezier(.32,.72,0,1) both}
+.mh{margin:0 4px 8px;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:#AEAEB2}
+.opt{display:flex;align-items:center;justify-content:space-between;width:100%;height:44px;padding:0 10px;border:0;border-radius:10px;background:none;text-align:left}
+.opt:hover{background:rgba(255,255,255,.1)}
+.opt.on{color:#64A8FF}
+
+.mainc{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+.tbar{display:flex;align-items:center;justify-content:space-between;height:64px;flex:none;padding:0 12px 0 24px;box-sizing:border-box}
+.lft{display:flex;align-items:center;gap:24px}
+.rgt{display:flex;align-items:center;gap:12px}
+.ttl{font-size:17px;font-weight:600;letter-spacing:-.2px}
+
+.segc{position:relative;display:flex;width:400px;height:44px;box-sizing:border-box;padding:3px;border-radius:12px;background:rgba(118,118,128,.24)}
+.thumb{position:absolute;left:3px;top:3px;width:calc(50% - 3px);height:38px;border-radius:9px;background:rgba(255,255,255,.2);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sb{position:relative;z-index:1;flex:1;height:38px;border:0;border-radius:9px;background:none;color:#AEAEB2;font-size:15px;font-weight:500}
+.sb.on{color:#F5F5F7;font-weight:600}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,255,255,.22);background:rgba(11,102,228,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font-size:15px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.28);transition:transform .18s cubic-bezier(.32,.72,0,1),background .2s}
+.btn:hover{background:rgba(30,118,238,.94)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{background:rgba(118,118,128,.3);color:#9A9AA0;box-shadow:none;cursor:not-allowed;transform:none}
+.btn.wide{width:100%;height:48px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.12);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:15px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.16);transition:transform .18s cubic-bezier(.32,.72,0,1),background .2s}
+.gbtn:hover{background:rgba(255,255,255,.18)}
+.gbtn:active{transform:scale(.97)}
+.gbtn.sm{width:auto;height:44px;padding:0 16px;font-size:14px}
+.gbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.wc{display:flex;align-items:center}
+.wb{display:inline-flex;align-items:center;justify-content:center;width:40px;height:44px;border:0;border-radius:10px;background:none;color:#D1D1D6;text-decoration:none;transition:background .2s,color .2s}
+.wb:hover{background:rgba(255,255,255,.12);color:#fff}
+.wb.close:hover{background:rgba(255,69,58,.9)}
+
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px;padding:4px 24px 24px;animation:viewIn .45s cubic-bezier(.32,.72,0,1) both}
+.content.scroll{overflow-y:auto}
+.content::-webkit-scrollbar,.cards::-webkit-scrollbar,.plist::-webkit-scrollbar,.scrl::-webkit-scrollbar,.alist::-webkit-scrollbar,.dta2::-webkit-scrollbar{width:3px}
+.content::-webkit-scrollbar-track,.cards::-webkit-scrollbar-track,.plist::-webkit-scrollbar-track,.scrl::-webkit-scrollbar-track,.alist::-webkit-scrollbar-track,.dta2::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb,.cards::-webkit-scrollbar-thumb,.plist::-webkit-scrollbar-thumb,.scrl::-webkit-scrollbar-thumb,.alist::-webkit-scrollbar-thumb,.dta2::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:2px}
+h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.5px}
+.phead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex:none}
+.ptitle{display:inline-flex;align-items:center;gap:8px;height:44px;margin:0 0 0 -12px;padding:0 12px;border:0;border-radius:12px;background:none;font-size:28px;font-weight:700;letter-spacing:-.5px;transition:background .2s}
+.ptitle:hover{background:rgba(255,255,255,.08)}
+.ptitle .chev{color:#AEAEB2;transition:transform .32s cubic-bezier(.32,.72,0,1)}
+.ptitle .chev.open{transform:rotate(180deg)}
+.sub{margin:6px 0 0;color:#AEAEB2;font-size:14px}
+.viewing{display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:14px;background:rgba(10,132,255,.16);border:1px solid rgba(100,168,255,.35);font-size:14px;animation:fadeIn .35s ease both}
+
+/* quadro */
+.board{flex:1;min-height:0;display:flex;gap:12px}
+.col{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:10px;padding:8px;margin:-8px 0;border-radius:16px;border:1px solid transparent;transition:background .2s,border-color .2s}
+.col.over{background:rgba(100,168,255,.1);border-color:rgba(100,168,255,.5)}
+.ch{display:flex;align-items:center;justify-content:space-between;height:28px;padding:0 4px}
+.ct{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#AEAEB2;letter-spacing:.4px;text-transform:uppercase}
+.cdot{width:8px;height:8px;border-radius:50%}
+.cn{font-size:12px;color:#AEAEB2}
+.cards{display:flex;flex-direction:column;gap:10px;flex:1;min-height:80px;overflow-y:auto}
+.card{border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);animation:cardIn .45s cubic-bezier(.32,.72,0,1) both;transition:background .2s,transform .25s cubic-bezier(.32,.72,0,1),opacity .2s}
+.card:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+.card[draggable="true"]{cursor:grab}
+.card.drag{opacity:.45}
+.cbtn{display:flex;flex-direction:column;gap:8px;width:100%;box-sizing:border-box;padding:14px;border:0;border-radius:14px;background:none;text-align:left;cursor:inherit}
+.emp{margin:0;padding:14px;border-radius:14px;border:1px dashed rgba(255,255,255,.14);color:#AEAEB2;font-size:13px;text-align:center}
+.ctt{font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:#AEAEB2;font-size:12px}
+
+/* cores de estado */
+.s-planejamento{color:#BF5AF2}
+.s-afazer{color:#C7C7CC}
+.s-desenvolvendo{color:#64A8FF}
+.s-revisar{color:#FF9F0A}
+.s-concluido{color:#32D74B}
+.bg-planejamento{background:#BF5AF2}
+.bg-afazer{background:#C7C7CC}
+.bg-desenvolvendo{background:#64A8FF}
+.bg-revisar{background:#FF9F0A}
+.bg-concluido{background:#32D74B}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;font-size:11px;font-weight:500;border:1px solid currentColor}
+
+/* cartões de vidro internos */
+.gc{border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);flex:none}
+.gh2{display:flex;align-items:center;justify-content:space-between;margin:0;height:36px;padding:0 16px;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:#AEAEB2}
+.muted{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:#AEAEB2}
+.r52{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;box-sizing:border-box;padding:0 16px;border-top:1px solid rgba(255,255,255,.08)}
+.fl{flex:none;font-size:15px;color:#AEAEB2}
+.sel,.fi2{height:44px;box-sizing:border-box;padding:0 12px;border:0;border-radius:10px;background:rgba(118,118,128,.24);font-size:15px;color-scheme:dark}
+.sel{min-width:180px}
+.fi2::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6}
+.sel:disabled,.fi2:disabled,.num:disabled,.tinput:disabled,.dta2:disabled{opacity:.6;cursor:not-allowed}
+
+/* detalhe da tarefa */
+.dhead{display:flex;align-items:center;gap:12px;flex:none;height:52px}
+.back{display:inline-flex;align-items:center;gap:2px;height:44px;padding:0 10px 0 4px;border:0;border-radius:12px;background:none;color:#64A8FF;font-size:15px;font-weight:500;flex:none}
+.back:hover{background:rgba(255,255,255,.08)}
+.tinput{flex:1;min-width:0;height:48px;padding:0 12px;border:0;border-radius:12px;background:none;font-size:26px;font-weight:700;letter-spacing:-.4px}
+.tinput:hover:not(:disabled){background:rgba(255,255,255,.06)}
+.rotag{flex:none;padding:6px 12px;border-radius:12px;background:rgba(255,159,10,.16);border:1px solid rgba(255,159,10,.4);color:#FFB340;font-size:13px;font-weight:500}
+.dgrid{flex:1;min-height:0;display:flex;gap:16px}
+.lcol{flex:1.15;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.lcol::-webkit-scrollbar{width:3px}
+.lcol::-webkit-scrollbar-track{background:transparent}
+.lcol::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:2px}
+.rcol{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px}
+.dwrap{border-top:1px solid rgba(255,255,255,.08);padding:12px 16px}
+.dta2{display:block;width:100%;box-sizing:border-box;height:84px;padding:10px 12px;border:0;border-radius:10px;background:rgba(118,118,128,.24);font-size:15px;line-height:1.35;resize:none}
+.dta2::placeholder,.num::placeholder,.pin::placeholder{color:#9A9AA0}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) 76px 92px 104px;align-items:center;gap:8px;min-height:52px;box-sizing:border-box;padding:0 16px;border-top:1px solid rgba(255,255,255,.08)}
+.crow.chead{min-height:28px;font-size:12px;color:#AEAEB2}
+.rt2{text-align:right}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.num{width:100%;height:40px;box-sizing:border-box;padding:0 10px;border:0;border-radius:10px;background:rgba(118,118,128,.24);text-align:right;font-size:15px}
+.sub2{text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.sub2.big{font-size:20px;font-weight:700}
+.prow2{display:flex;align-items:center;gap:12px;min-height:56px;box-sizing:border-box;padding:0 8px 0 16px;border-top:1px solid rgba(255,255,255,.08)}
+.pinfo{flex:1;min-width:0;display:flex;flex-direction:column}
+.prole{font-size:12px;color:#AEAEB2}
+.xs{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:12px;background:none;color:#AEAEB2}
+.xs:hover{background:rgba(255,255,255,.12);color:#fff}
+.addrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px 12px;border-top:1px solid rgba(255,255,255,.08)}
+.chipbtn{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.1);font-size:14px;font-weight:500;transition:background .2s,transform .18s}
+.chipbtn:hover{background:rgba(255,255,255,.16)}
+.chipbtn:active{transform:scale(.96)}
+.chipbtn.on{background:rgba(11,102,228,.85);border-color:rgba(255,255,255,.28)}
+.tl{flex:1;min-height:0;display:flex;flex-direction:column}
+.scrl{flex:1;min-height:0;overflow-y:auto;margin:0;padding:4px 16px 12px;list-style:none}
+.te{position:relative;display:flex;gap:12px;padding:0 0 14px 0}
+.te::before{content:"";position:absolute;left:4px;top:14px;bottom:-2px;width:1px;background:rgba(255,255,255,.14)}
+.te:last-child::before{display:none}
+.tdot{flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:#64A8FF;box-shadow:0 0 0 3px rgba(100,168,255,.2)}
+.tdot.mg{background:#FF6482;box-shadow:0 0 0 3px rgba(255,100,130,.22)}
+.tline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px}
+.uname{font-weight:600}
+.uname.mgr{padding:1px 8px;border-radius:10px;background:rgba(255,100,130,.2);border:1px solid rgba(255,100,130,.5);color:#FF8FA6;font-size:12px}
+.tts{display:block;margin-top:2px;font-size:12px;color:#AEAEB2}
+
+/* dashboard */
+.dashrow{display:flex;gap:12px;flex:none}
+.sc{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08)}
+.pct{font-size:30px;font-weight:700;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:#AEAEB2}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.08)}
+.bar.sm{height:10px;border-radius:5px}
+.seg{height:100%;transition:width .5s cubic-bezier(.32,.72,0,1)}
+.ovr{padding:16px;display:flex;flex-direction:column;gap:12px}
+.trow{display:grid;grid-template-columns:minmax(0,1.1fr) 70px minmax(0,1.6fr) 90px 150px;align-items:center;gap:16px;min-height:56px;box-sizing:border-box;padding:0 8px 0 16px;border-top:1px solid rgba(255,255,255,.08)}
+.trow.chead{min-height:32px;font-size:12px;color:#AEAEB2}
+
+/* modais e folhas */
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(8,10,16,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fadeIn .3s ease both}
+.dlg{width:420px;max-height:560px;display:flex;flex-direction:column;box-sizing:border-box;padding:20px;border-radius:22px;background:linear-gradient(150deg,rgba(255,255,255,.14),rgba(255,255,255,0) 45%),rgba(40,44,56,.82);backdrop-filter:blur(32px) saturate(170%);-webkit-backdrop-filter:blur(32px) saturate(170%);border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 30px 70px rgba(0,0,0,.55);animation:dlgIn .42s cubic-bezier(.32,.72,0,1) both}
+.dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex:none}
+.dt{margin:0;font-size:20px;font-weight:600;letter-spacing:-.3px}
+.xbtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-6px -8px -6px 0;border:0;border-radius:12px;background:none;color:#D1D1D6}
+.xbtn:hover{background:rgba(255,255,255,.12);color:#fff}
+.plist{min-height:0;overflow-y:auto;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.prow{display:flex;align-items:center;justify-content:space-between;width:100%;height:52px;box-sizing:border-box;padding:0 14px;border:0;background:none;text-align:left;font-weight:500;transition:background .2s}
+.prow+.prow{border-top:1px solid rgba(255,255,255,.08)}
+.prow:hover{background:rgba(255,255,255,.08)}
+.prow.on{color:#64A8FF}
+.newrow{display:flex;gap:8px}
+.pin{flex:1;min-width:0;height:48px;box-sizing:border-box;padding:0 14px;border-radius:14px;border:0;background:rgba(118,118,128,.24);font-size:15px}
+.newrow .btn{height:48px}
+.mt{flex:none;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:#64A8FF}
+.mi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hint2{margin:8px 4px 0;font-size:12px;color:#AEAEB2;text-align:center}
+.fgrp{border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.fgrp .r52:first-child{border-top:0}
+.fin{flex:1;min-width:0;height:44px;text-align:right;border:0;background:none;font-size:15px;color-scheme:dark}
+.fin::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6}
+.fchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.frow{display:flex;gap:8px;margin-top:auto}
+.frow .gbtn,.frow .btn{flex:1;width:auto}
+.danger{color:#FF6B60}
+
+/* agenda */
+.content.agenda{flex-direction:row;gap:0;padding:4px 0 0 24px}
+.calcol{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;padding:0 16px 24px 0}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;height:52px}
+.calnav{display:flex;align-items:center;gap:4px}
+.calt{margin:0;min-width:210px;text-align:center;font-size:24px;font-weight:700;letter-spacing:-.4px}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;flex:none;padding:0 2px;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:#AEAEB2}
+.wk span{padding:0 6px}
+.cal{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:6px}
+.cell{display:flex;flex-direction:column;align-items:stretch;width:100%;height:100%;min-width:0;min-height:0;max-width:100%;contain:layout paint;gap:3px;min-height:0;overflow:hidden;box-sizing:border-box;padding:6px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);text-align:left;transition:background .2s,border-color .2s}
+.cell:hover{background:rgba(255,255,255,.1)}
+.cell.dim{opacity:.6}
+.cell.sel{border-color:#64A8FF;background:rgba(100,168,255,.13)}
+.dn{display:flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;border-radius:12px;font-size:13px;font-weight:600}
+.cell.today .dn{background:#0B66E4;color:#fff}
+.evp{display:block;flex:none;width:100%;max-width:100%;min-width:0;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;border-radius:6px;background:rgba(100,168,255,.22);color:#D6E7FF;font-size:11px;font-weight:500}
+.more{flex:none;padding:0 4px;font-size:11px;color:#AEAEB2}
+.aside2{flex:0 0 20%;min-width:260px;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;border-left:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.14)}
+.upcoming{flex:1;min-height:0;display:flex;flex-direction:column;padding-top:8px}
+.uplist{flex:1;min-height:0;overflow-y:auto}
+.uplist::-webkit-scrollbar{width:3px}
+.uplist::-webkit-scrollbar-track{background:transparent}
+.uplist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:2px}
+.up{display:flex;flex-direction:column;gap:3px;width:100%;box-sizing:border-box;padding:10px 16px;border:0;border-top:1px solid rgba(255,255,255,.08);background:none;text-align:left;transition:background .2s;animation:cardIn .4s cubic-bezier(.32,.72,0,1) both}
+.up:hover:not(:disabled){background:rgba(255,255,255,.08)}
+.up:disabled{opacity:1;cursor:default}
+.upd{font-size:12px;font-weight:600;color:#64A8FF}
+.fpanel{flex:none;border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
+.newbar{padding:8px 16px 16px;animation:fadeIn .35s ease both}
+.fwrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s cubic-bezier(.32,.72,0,1)}
+.fwrap.open{grid-template-rows:1fr}
+.finner{min-height:0;overflow:hidden;visibility:hidden;transition:visibility 0s .5s}
+.fwrap.open .finner{visibility:visible;transition:visibility 0s}
+.fpanel.pulse{animation:pulse .8s ease}
+.fbody{display:flex;flex-direction:column;gap:8px;padding:0 16px 16px}
+.pin2{width:100%;height:44px;box-sizing:border-box;padding:0 12px;border:0;border-radius:10px;background:rgba(118,118,128,.24);font-size:15px;color-scheme:dark}
+.pin2::placeholder{color:#9A9AA0}
+.pin2::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6}
+.pin2:disabled{opacity:.6;cursor:not-allowed}
+.who2{display:flex;flex-wrap:wrap;gap:6px}
+.chipbtn.ini{width:44px;padding:0;justify-content:center;border-radius:22px;font-size:13px;font-weight:600}
+.chipbtn:disabled{opacity:.5;cursor:not-allowed}
+@keyframes pulse{from{background:rgba(100,168,255,.3)}to{background:transparent}}
+@keyframes winIn{from{opacity:0;transform:translateY(18px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes dlgIn{from{opacity:0;transform:translateY(14px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(6px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.stage *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+<div class="stage" style="width: 1280px; height: 780px">
+
+  <div class="wall" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="win w1">
+      <div class="ln" style="width: 70%"></div>
+      <div class="ln" style="width: 90%"></div>
+      <div class="ln" style="width: 55%"></div>
+      <div class="ln" style="width: 80%"></div>
+    </div>
+    <div class="win w2">
+      <div class="ln" style="width: 40%"></div>
+      <div class="ln" style="width: 85%"></div>
+      <div class="ln" style="width: 75%"></div>
+      <div class="ln" style="width: 92%"></div>
+      <div class="ln" style="width: 60%"></div>
+    </div>
+  </div>
+
+  <section class="appwin" aria-label="AgileBox">
+
+    <nav class="rail {{ railCls }}" aria-label="Navegação principal">
+      <button class="ri" data-tip="{{ railTip }}" aria-label="{{ railLabel }}" aria-expanded="{{ railOpen }}" onClick="{{ toggleRail }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="3"></rect><path d="M9 5v14"></path></svg>
+        <span class="lb">Recolher</span>
+      </button>
+      <div class="rdiv"></div>
+      <sc-if value="{{ isGestor }}" hint-placeholder-val="{{ true }}">
+        <button class="ri {{ dashCls }}" data-tip="Dashboard" onClick="{{ goDash }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>
+          <span class="lb">Dashboard</span>
+        </button>
+      </sc-if>
+      <button class="ri {{ projCls }}" data-tip="Projetos" onClick="{{ goBoard }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M9.5 8v8M14.5 8v5"></path></svg>
+        <span class="lb">Projetos</span>
+      </button>
+      <button class="ri {{ agCls }}" data-tip="Agenda" onClick="{{ goAgenda }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></svg>
+        <span class="lb">Agenda</span>
+      </button>
+      <button class="ri" data-tip="Plug-ins · em breve">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0V8zM12 17v4"></path></svg>
+        <span class="lb">Plug-ins</span>
+      </button>
+      <button class="ri" data-tip="Ajustes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h8M17 8h2M5 16h2M11 16h8"></path><circle cx="15" cy="8" r="2"></circle><circle cx="9" cy="16" r="2"></circle></svg>
+        <span class="lb">Ajustes</span>
+      </button>
+      <div class="rsp"></div>
+      <div class="acctwrap">
+        <button class="ri acct" data-tip="Conta · {{ roleName }}" aria-haspopup="menu" aria-expanded="{{ menuOpen }}" aria-label="Conta: {{ roleName }}" onClick="{{ toggleMenu }}">
+          <span class="av {{ avCls }}">{{ avIni }}</span>
+          <span class="lb">{{ roleName }}</span>
+        </button>
+        <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+          <div class="menu" role="menu" aria-label="Conta">
+            <p class="mh">Perfil de demonstração</p>
+            <button class="opt {{ colabCls }}" role="menuitemradio" aria-checked="{{ isColab }}" onClick="{{ setColab }}">
+              <span>Colaborador</span>
+              <sc-if value="{{ isColab }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            </button>
+            <button class="opt {{ gestCls }}" role="menuitemradio" aria-checked="{{ isGestor }}" onClick="{{ setGestor }}">
+              <span>Gestor</span>
+              <sc-if value="{{ isGestor }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+            </button>
+          </div>
+        </sc-if>
+      </div>
+    </nav>
+
+    <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+      <div class="catch" onClick="{{ closeMenu }}"></div>
+    </sc-if>
+
+    <div class="mainc">
+
+      <header class="tbar">
+        <div class="lft">
+          <span class="ttl">AgileBox</span>
+          <div class="segc" role="group" aria-label="Visão">
+            <span class="thumb"></span>
+            <button class="sb on" aria-pressed="true">Minhas tarefas</button>
+            <button class="sb" aria-pressed="false">Equipe · somente leitura</button>
+          </div>
+        </div>
+        <div class="rgt">
+          <button class="btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            <span>Nova tarefa</span>
+          </button>
+          <div class="wc" role="group" aria-label="Controles da janela">
+            <button class="wb" aria-label="Minimizar o painel">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14"></path></svg>
+            </button>
+            <a class="wb" href="Main.dc.html" aria-label="Recolher para a bandeja">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="3"></rect><path d="M16 5H8.5A3.5 3.5 0 0 0 5 8.5V16"></path></svg>
+            </a>
+            <button class="wb close" aria-label="Fechar o painel">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- QUADRO -->
+      <sc-if value="{{ boardOn }}" hint-placeholder-val="{{ true }}">
+        <div class="content">
+          <div class="phead">
+            <div>
+              <h1>
+                <button class="ptitle" aria-haspopup="dialog" aria-expanded="{{ modalOpen }}" aria-label="Projeto atual: {{ current }}. Trocar de projeto" onClick="{{ openModal }}">
+                  <span>{{ current }}</span>
+                  <svg class="chev {{ chevCls }}" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                </button>
+              </h1>
+              <p class="sub">{{ subText }}</p>
+            </div>
+            <sc-if value="{{ othersOn }}" hint-placeholder-val="{{ false }}">
+              <div class="viewing">
+                <span>Tarefas de {{ viewName }} · editando como Gestor</span>
+                <button class="gbtn sm" onClick="{{ backMine }}">Voltar às minhas</button>
+              </div>
+            </sc-if>
+          </div>
+
+          <div class="board">
+            <sc-for list="{{ columns }}" as="col" hint-placeholder-count="5">
+              <div class="col {{ col.overCls }}" onDragOver="{{ col.over }}" onDrop="{{ col.drop }}">
+                <div class="ch"><span class="ct"><span class="cdot {{ col.dotCls }}"></span>{{ col.label }}</span><span class="cn">{{ col.count }}</span></div>
+                <div class="cards">
+                  <sc-for list="{{ col.cards }}" as="card" hint-placeholder-count="1">
+                    <div class="card {{ card.dragCls }}" draggable="{{ card.canDrag }}" onDragStart="{{ card.dragStart }}" onDragEnd="{{ dragEnd }}">
+                      <button class="cbtn" onClick="{{ card.open }}">
+                        <span class="ctt">{{ card.title }}</span>
+                        <span class="meta"><span>{{ card.deadline }}</span></span>
+                      </button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ col.empty }}" hint-placeholder-val="{{ false }}">
+                    <p class="emp">Sem tarefas</p>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DETALHE DA TAREFA -->
+      <sc-if value="{{ taskOn }}" hint-placeholder-val="{{ false }}">
+        <div class="content">
+          <div class="dhead">
+            <button class="back" aria-label="Voltar ao quadro de {{ sel.project }}" onClick="{{ goBoard }}">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+              <span>{{ sel.project }}</span>
+            </button>
+            <input class="tinput" type="text" aria-label="Título da tarefa" value="{{ sel.title }}" disabled="{{ ro }}" onInput="{{ setTitle }}" onBlur="{{ titleBlur }}">
+            <sc-if value="{{ ro }}" hint-placeholder-val="{{ false }}">
+              <span class="rotag">Somente leitura</span>
+            </sc-if>
+          </div>
+
+          <div class="dgrid">
+            <div class="lcol">
+
+              <section class="gc" aria-labelledby="h-det">
+                <h2 class="gh2" id="h-det">Detalhes</h2>
+                <label class="r52">
+                  <span class="fl">Status</span>
+                  <select class="sel" value="{{ sel.status }}" disabled="{{ ro }}" onChange="{{ pickStatus }}">
+                    <sc-for list="{{ statusList }}" as="o" hint-placeholder-count="5">
+                      <option value="{{ o.key }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+                <div class="dwrap">
+                  <textarea class="dta2" aria-label="Descrição: o que será feito" placeholder="O que será feito? Adicione detalhes" value="{{ sel.desc }}" disabled="{{ ro }}" onInput="{{ setDesc }}" onBlur="{{ descBlur }}"></textarea>
+                </div>
+              </section>
+
+              <section class="gc" aria-labelledby="h-prazo">
+                <h2 class="gh2" id="h-prazo">Prazo</h2>
+                <label class="r52">
+                  <span class="fl">Entrega</span>
+                  <input class="fi2" type="date" value="{{ sel.deadline }}" disabled="{{ ro }}" onInput="{{ setDeadline }}">
+                  <span class="muted">{{ daysText }}</span>
+                </label>
+              </section>
+
+              <section class="gc" aria-labelledby="h-custo">
+                <h2 class="gh2" id="h-custo"><span>Custo</span><span class="muted">Valor/hora padrão: {{ lastRateText }}</span></h2>
+                <div class="crow chead"><span>Pessoa</span><span class="rt2">Horas</span><span class="rt2">R$/hora</span><span class="rt2">Subtotal</span></div>
+                <sc-for list="{{ costRows }}" as="c" hint-placeholder-count="2">
+                  <div class="crow">
+                    <span class="who"><span class="av {{ c.avCls }}">{{ c.ini }}</span><span class="nm">{{ c.name }}</span></span>
+                    <input class="num" type="text" inputmode="decimal" aria-label="Horas de {{ c.name }}" placeholder="0" value="{{ c.hours }}" disabled="{{ ro }}" onInput="{{ c.setHours }}" onBlur="{{ c.hoursBlur }}">
+                    <input class="num" type="text" inputmode="decimal" aria-label="Valor por hora de {{ c.name }}" placeholder="0" value="{{ c.rate }}" disabled="{{ ro }}" onInput="{{ c.setRate }}" onBlur="{{ c.rateBlur }}">
+                    <span class="sub2">{{ c.sub }}</span>
+                  </div>
+                </sc-for>
+                <div class="crow">
+                  <span class="fl">Total</span><span></span><span></span>
+                  <span class="sub2 big">{{ totalText }}</span>
+                </div>
+              </section>
+
+            </div>
+
+            <div class="rcol">
+
+              <section class="gc" aria-labelledby="h-env">
+                <h2 class="gh2" id="h-env">Envolvidos</h2>
+                <sc-for list="{{ people }}" as="p" hint-placeholder-count="2">
+                  <div class="prow2">
+                    <span class="av {{ p.avCls }}">{{ p.ini }}</span>
+                    <span class="pinfo"><span class="ctt">{{ p.name }}</span><span class="prole">{{ p.role }}</span></span>
+                    <sc-if value="{{ p.canRemove }}" hint-placeholder-val="{{ false }}">
+                      <button class="xs" aria-label="Remover {{ p.name }}" onClick="{{ p.remove }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                      </button>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ hasAvail }}" hint-placeholder-val="{{ false }}">
+                  <div class="addrow">
+                    <span class="fl">Adicionar</span>
+                    <sc-for list="{{ avail }}" as="a" hint-placeholder-count="2">
+                      <button class="chipbtn" disabled="{{ ro }}" onClick="{{ a.add }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                        <span>{{ a.name }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </section>
+
+              <section class="gc tl" aria-labelledby="h-tl">
+                <h2 class="gh2" id="h-tl">Linha do tempo</h2>
+                <ol class="scrl">
+                  <sc-for list="{{ timeline }}" as="e" hint-placeholder-count="3">
+                    <li class="te">
+                      <span class="tdot {{ e.dotCls }}"></span>
+                      <div>
+                        <div class="tline"><span class="uname {{ e.uCls }}">{{ e.user }}</span><span>{{ e.what }}</span></div>
+                        <span class="tts">{{ e.ts }}</span>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DASHBOARD DO GESTOR -->
+      <sc-if value="{{ dashOn }}" hint-placeholder-val="{{ false }}">
+        <div class="content scroll">
+          <div class="phead">
+            <div>
+              <h1>Dashboard</h1>
+              <p class="sub">{{ dashSub }}</p>
+            </div>
+          </div>
+
+          <section class="gc ovr" aria-label="Distribuição por estado">
+            <div class="bar" role="img" aria-label="{{ barLabel }}">
+              <sc-for list="{{ segs }}" as="g" hint-placeholder-count="5">
+                <span class="seg {{ g.bg }}" style="width: {{ g.w }}%"></span>
+              </sc-for>
+            </div>
+          </section>
+
+          <div class="dashrow">
+            <sc-for list="{{ segs }}" as="g" hint-placeholder-count="5">
+              <div class="sc">
+                <span class="sl"><span class="cdot {{ g.bg }}"></span>{{ g.label }}</span>
+                <span class="pct">{{ g.pct }}%</span>
+                <span class="sl">{{ g.countText }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <section class="gc" aria-labelledby="h-eq">
+            <h2 class="gh2" id="h-eq">Por colaborador</h2>
+            <div class="trow chead"><span>Pessoa</span><span class="rt2">Itens</span><span>Estados</span><span class="rt2">Concluído</span><span></span></div>
+            <sc-for list="{{ team }}" as="m" hint-placeholder-count="4">
+              <div class="trow">
+                <span class="who"><span class="av {{ m.avCls }}">{{ m.ini }}</span><span class="nm">{{ m.name }}</span></span>
+                <span class="rt2">{{ m.count }}</span>
+                <div class="bar sm" role="img" aria-label="{{ m.label }}">
+                  <sc-for list="{{ m.segs }}" as="g" hint-placeholder-count="5">
+                    <span class="seg {{ g.bg }}" style="width: {{ g.w }}%"></span>
+                  </sc-for>
+                </div>
+                <span class="rt2 ctt">{{ m.done }}%</span>
+                <button class="gbtn sm" aria-label="Abrir projetos de {{ m.name }}" onClick="{{ m.open }}">Abrir projetos</button>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+      </sc-if>
+
+      <!-- AGENDA -->
+      <sc-if value="{{ agendaOn }}" hint-placeholder-val="{{ false }}">
+        <div class="content agenda">
+          <div class="calcol">
+            <div class="calhead">
+              <div class="calnav">
+                <button class="xs" aria-label="Mês anterior" onClick="{{ prevMonth }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+                </button>
+                <h1 class="calt">{{ monthTitle }}</h1>
+                <button class="xs" aria-label="Próximo mês" onClick="{{ nextMonth }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+                </button>
+                <button class="gbtn sm" onClick="{{ goToday }}">Hoje</button>
+              </div>
+              <button class="btn" disabled="{{ notGestor }}" onClick="{{ addEvent }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                <span>Adicionar evento</span>
+              </button>
+            </div>
+            <div class="wk" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+            <div class="cal">
+              <sc-for list="{{ cells }}" as="c" hint-placeholder-count="42">
+                <button class="cell {{ c.cls }}" aria-label="{{ c.aria }}" onClick="{{ c.pick }}">
+                  <span class="dn">{{ c.day }}</span>
+                  <sc-for list="{{ c.events }}" as="ev" hint-placeholder-count="1">
+                    <span class="evp">{{ ev.text }}</span>
+                  </sc-for>
+                  <sc-if value="{{ c.hasMore }}" hint-placeholder-val="{{ false }}">
+                    <span class="more">{{ c.more }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <aside class="aside2" aria-label="Agendamentos">
+            <section class="upcoming" aria-labelledby="h-up">
+              <h2 class="gh2" id="h-up">Próximos agendamentos</h2>
+              <div class="uplist">
+                <sc-for list="{{ upcoming }}" as="u" hint-placeholder-count="3">
+                  <button class="up" disabled="{{ notGestor }}" aria-label="{{ u.aria }}" onClick="{{ u.edit }}">
+                    <span class="upd">{{ u.day }} · {{ u.time }}</span>
+                    <span class="ctt">{{ u.title }}</span>
+                    <span class="meta">{{ u.peopleText }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ noUpcoming }}" hint-placeholder-val="{{ false }}">
+                  <p class="emp" style="margin: 8px 16px">Nada marcado.</p>
+                </sc-if>
+              </div>
+            </section>
+
+            <section class="fpanel" aria-label="Agendamento">
+              <sc-if value="{{ formClosed }}" hint-placeholder-val="{{ true }}">
+                <div class="newbar">
+                  <button class="btn wide" disabled="{{ notGestor }}" onClick="{{ addEvent }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    <span>Novo agendamento</span>
+                  </button>
+                  <sc-if value="{{ notGestor }}" hint-placeholder-val="{{ false }}">
+                    <p class="hint2">Só o gestor cria e edita agendamentos.</p>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <div class="fwrap {{ fwCls }}">
+                <div class="finner">
+                  <h2 class="gh2" id="h-nv">{{ formTitleText }}</h2>
+                  <div class="fbody">
+                    <input class="pin2" type="text" aria-label="Título do agendamento" placeholder="Título" value="{{ form.title }}" onInput="{{ setFTitle }}">
+                    <input class="pin2" type="date" aria-label="Data" value="{{ form.date }}" onInput="{{ setFDate }}">
+                    <input class="pin2" type="time" aria-label="Hora" value="{{ form.time }}" onInput="{{ setFTime }}">
+                    <div class="who2" role="group" aria-label="Participantes">
+                      <sc-for list="{{ formPeople }}" as="p" hint-placeholder-count="4">
+                        <button class="chipbtn ini {{ p.cls }}" aria-label="{{ p.name }}" aria-pressed="{{ p.on }}" onClick="{{ p.toggle }}">{{ p.ini }}</button>
+                      </sc-for>
+                    </div>
+                    <div class="frow">
+                      <button class="gbtn" onClick="{{ cancelForm }}">Cancelar</button>
+                      <button class="btn" disabled="{{ formInvalid }}" onClick="{{ saveForm }}">Salvar</button>
+                    </div>
+                    <sc-if value="{{ canDelete }}" hint-placeholder-val="{{ false }}">
+                      <button class="gbtn danger" onClick="{{ deleteForm }}">Excluir</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </sc-if>
+
+    </div>
+
+    <!-- MODAL DE PROJETOS -->
+    <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+      <div class="scrim" onClick="{{ closeModal }}">
+        <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t" onClick="{{ stop }}" onKeyDown="{{ dlgKey }}">
+          <div class="dh">
+            <h2 class="dt" id="dlg-t">Projetos</h2>
+            <button class="xbtn" aria-label="Fechar" onClick="{{ closeModal }}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+          <div class="plist">
+            <sc-for list="{{ projects }}" as="p" hint-placeholder-count="3">
+              <button class="prow {{ p.cls }}" aria-current="{{ p.current }}" onClick="{{ p.pick }}">
+                <span>{{ p.name }}</span>
+                <sc-if value="{{ p.current }}" hint-placeholder-val="{{ false }}">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ creating }}" hint-placeholder-val="{{ false }}">
+            <div class="newrow">
+              <input class="pin" type="text" aria-label="Nome do novo projeto" placeholder="Nome do projeto" value="{{ newName }}" onInput="{{ setName }}">
+              <button class="btn" disabled="{{ createDisabled }}" onClick="{{ createProject }}">Criar</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ notCreating }}" hint-placeholder-val="{{ true }}">
+            <button class="gbtn" onClick="{{ startCreate }}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              <span>Novo projeto</span>
+            </button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.KEYS = ['planejamento', 'afazer', 'desenvolvendo', 'revisar', 'concluido'];
+    this.LABELS = { planejamento: 'Planejamento', afazer: 'A fazer', desenvolvendo: 'Desenvolvendo', revisar: 'Revisar', concluido: 'Concluído' };
+    this.ROSTER = {
+      pe: { id: 'pe', name: 'Pedro', ini: 'PE', cls: '' },
+      c2: { id: 'c2', name: 'Colaborador 2', ini: 'C2', cls: 'c2' },
+      c3: { id: 'c3', name: 'Colaborador 3', ini: 'C3', cls: 'c3' },
+      c4: { id: 'c4', name: 'Colaborador 4', ini: 'C4', cls: 'c4' }
+    };
+    this.IDS = ['pe', 'c2', 'c3', 'c4'];
+    this.MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    this.WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    this._dirty = {};
+
+    const mk = (id, title, project, status, owner, deadline, more, desc) => {
+      const who = this.ROSTER[owner].name;
+      const log = [{ ts: '28 out, 10:05', user: who, mgr: false, what: 'criou a tarefa' }];
+      if (status !== 'planejamento') {
+        log.unshift({ ts: '30 out, 16:40', user: who, mgr: false, what: 'alterou o status para ' + this.LABELS[status] });
+      }
+      return {
+        id: id, title: title, project: project, status: status, owner: owner, deadline: deadline, desc: desc || '',
+        involved: [{ pid: owner, role: 'Responsável', hours: '6', rate: '45' }].concat(more || []),
+        log: log
+      };
+    };
+
+    const t1 = mk(1, 'Atualizar documentação da API', 'Projeto A', 'desenvolvendo', 'pe', '2026-11-05',
+      [{ pid: 'c2', role: 'Apoio', hours: '2', rate: '45' }], 'Atualizar os endpoints e os exemplos da documentação.');
+    t1.log.unshift({ ts: '30 out, 18:02', user: 'Gestor', mgr: true, what: 'alterou o prazo para 05/11/2026' });
+
+    this.state = {
+      role: 'gestor',
+      railOpen: false,
+      menuOpen: false,
+      view: 'board',
+      viewUser: 'pe',
+      modalOpen: false,
+      creating: false,
+      newName: '',
+      current: 'Projeto A',
+      projects: ['Projeto A', 'Projeto B', 'Projeto C'],
+      selectedId: 0,
+      dragId: 0,
+      overKey: '',
+      lastRate: 45,
+      calY: 2026,
+      calM: 10,
+      selDay: '2026-11-02',
+      pulse: false,
+      formOpen: false,
+      form: { id: 0, title: '', date: '2026-11-02', time: '09:00', people: ['pe'] },
+      nextMeeting: 4,
+      meetings: [
+        { id: 1, title: 'Alinhamento semanal', date: '2026-11-02', time: '09:00', people: ['pe', 'c2', 'c3', 'c4'] },
+        { id: 2, title: 'Revisão de entrega', date: '2026-11-06', time: '14:30', people: ['pe', 'c3'] },
+        { id: 3, title: 'Planejamento da próxima entrega', date: '2026-11-09', time: '11:00', people: ['pe', 'c2'] }
+      ],
+      tasks: [
+        t1,
+        mk(2, 'Publicar versão de teste', 'Projeto A', 'concluido', 'pe', '2026-11-03'),
+        mk(3, 'Definir escopo da integração', 'Projeto A', 'planejamento', 'c2', '2026-11-12'),
+        mk(4, 'Revisar integração de chamados', 'Projeto B', 'revisar', 'pe', '2026-11-06'),
+        mk(5, 'Planejar próxima entrega', 'Projeto B', 'planejamento', 'pe', '2026-11-09'),
+        mk(6, 'Configurar ambiente de homologação', 'Projeto B', 'desenvolvendo', 'c2', '2026-11-10'),
+        mk(7, 'Mapear fluxo de aprovação', 'Projeto B', 'afazer', 'c4', ''),
+        mk(8, 'Responder pendências do suporte', 'Projeto C', 'afazer', 'pe', ''),
+        mk(9, 'Organizar fila de chamados', 'Projeto C', 'desenvolvendo', 'c3', '2026-11-07'),
+        mk(10, 'Atualizar manual do suporte', 'Projeto C', 'concluido', 'c4', '2026-10-30')
+      ]
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._p); }
+
+  /* ---------- utilidades ---------- */
+  pad(n) { return (n < 10 ? '0' : '') + n; }
+  who() { return this.state.role === 'gestor' ? { name: 'Gestor', mgr: true } : { name: 'Pedro', mgr: false }; }
+  stamp() {
+    const d = new Date();
+    return d.getDate() + ' ' + this.MONTHS[d.getMonth()] + ', ' + this.pad(d.getHours()) + ':' + this.pad(d.getMinutes());
+  }
+  num(v) { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; }
+  money(n) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  fmtDay(iso) {
+    if (!iso) return 'Sem prazo';
+    const d = new Date(iso + 'T12:00:00');
+    return this.WEEK[d.getDay()] + ', ' + this.pad(d.getDate()) + ' ' + this.MONTHS[d.getMonth()];
+  }
+  fmtFull(iso) {
+    if (!iso) return 'sem prazo';
+    const p = iso.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+  daysLeft(t) {
+    if (t.status === 'concluido') return 'Concluída';
+    if (!t.deadline) return 'Sem prazo definido';
+    const a = new Date('2026-10-31T12:00:00');
+    const b = new Date(t.deadline + 'T12:00:00');
+    const d = Math.round((b - a) / 86400000);
+    if (d < 0) return 'Venceu há ' + (-d) + (d === -1 ? ' dia' : ' dias');
+    if (d === 0) return 'Vence hoje';
+    if (d === 1) return 'Vence amanhã';
+    return 'Em ' + d + ' dias';
+  }
+
+  /* ---------- edições de tarefa (com linha do tempo) ---------- */
+  updateTask(id, patch, text) {
+    const u = this.who();
+    const stamp = this.stamp();
+    const tasks = this.state.tasks.map((t) => {
+      if (t.id !== id) return t;
+      const nt = Object.assign({}, t, patch);
+      if (text) nt.log = [{ ts: stamp, user: u.name, mgr: u.mgr, what: text }].concat(t.log);
+      return nt;
+    });
+    this.setState({ tasks: tasks });
+  }
+  patchInv(id, pid, field, value) {
+    const tasks = this.state.tasks.map((t) => {
+      if (t.id !== id) return t;
+      return Object.assign({}, t, { involved: t.involved.map((p) => (p.pid !== pid ? p : Object.assign({}, p, { [field]: value }))) });
+    });
+    this.setState({ tasks: tasks });
+  }
+  blurLog(key, id, text) {
+    if (this._dirty[key]) {
+      delete this._dirty[key];
+      this.updateTask(id, {}, text);
+    }
+  }
+  moveTask(id, key) {
+    const t = this.state.tasks.find((x) => x.id === id);
+    if (t && t.status !== key) {
+      this.updateTask(id, { status: key }, 'moveu de ' + this.LABELS[t.status] + ' para ' + this.LABELS[key]);
+    }
+    this.setState({ dragId: 0, overKey: '' });
+  }
+  addPerson(id, pid) {
+    const t = this.state.tasks.find((x) => x.id === id);
+    if (!t) return;
+    this.updateTask(id, { involved: t.involved.concat([{ pid: pid, role: 'Apoio', hours: '', rate: String(this.state.lastRate) }]) }, 'adicionou ' + this.ROSTER[pid].name + ' aos envolvidos');
+  }
+  removePerson(id, pid) {
+    const t = this.state.tasks.find((x) => x.id === id);
+    if (!t) return;
+    this.updateTask(id, { involved: t.involved.filter((p) => p.pid !== pid) }, 'removeu ' + this.ROSTER[pid].name + ' dos envolvidos');
+  }
+
+  /* ---------- projetos ---------- */
+  closeModal() { this.setState({ modalOpen: false, creating: false, newName: '' }); }
+  createProject() {
+    const s = this.state;
+    const name = s.newName.trim();
+    if (!name) return;
+    const exists = s.projects.indexOf(name) !== -1;
+    this.setState({ projects: exists ? s.projects : s.projects.concat([name]), current: name, view: 'board', modalOpen: false, creating: false, newName: '' });
+  }
+
+  /* ---------- agenda ---------- */
+  blankForm(date) { return { id: 0, title: '', date: date || '', time: '09:00', people: ['pe'] }; }
+  setForm(patch) { this.setState({ form: Object.assign({}, this.state.form, patch) }); }
+  shiftMonth(d) {
+    const dt = new Date(this.state.calY, this.state.calM + d, 1);
+    this.setState({ calY: dt.getFullYear(), calM: dt.getMonth() });
+  }
+  pickDay(iso) {
+    const s = this.state;
+    this.setState({ selDay: iso, form: s.form.id ? s.form : Object.assign({}, s.form, { date: iso }) });
+  }
+  pulseForm() {
+    clearTimeout(this._p);
+    this.setState({ pulse: true });
+    this._p = setTimeout(() => this.setState({ pulse: false }), 800);
+  }
+  saveForm() {
+    const s = this.state;
+    const f = s.form;
+    if (!f.title.trim() || !f.date) return;
+    const item = { id: f.id || s.nextMeeting, title: f.title.trim(), date: f.date, time: f.time || '09:00', people: f.people };
+    const meetings = f.id ? s.meetings.map((m) => (m.id === f.id ? item : m)) : s.meetings.concat([item]);
+    this.setState({
+      meetings: meetings, nextMeeting: f.id ? s.nextMeeting : s.nextMeeting + 1,
+      form: this.blankForm(f.date), formOpen: false, selDay: f.date,
+      calY: parseInt(f.date.slice(0, 4), 10), calM: parseInt(f.date.slice(5, 7), 10) - 1
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const self = this;
+    const gestor = s.role === 'gestor';
+    const R = this.ROSTER;
+
+    /* ----- quadro ----- */
+    const mine = s.tasks.filter((t) => t.project === s.current && t.owner === s.viewUser);
+    const canDrag = gestor || s.viewUser === 'pe';
+    const columns = this.KEYS.map((k) => {
+      const cards = mine.filter((t) => t.status === k).map((t) => ({
+        title: t.title,
+        deadline: t.deadline ? 'Prazo: ' + this.fmtDay(t.deadline) : 'Sem prazo',
+        canDrag: canDrag,
+        dragCls: s.dragId === t.id ? 'drag' : '',
+        dragStart: (e) => {
+          try { e.dataTransfer.setData('text/plain', String(t.id)); e.dataTransfer.effectAllowed = 'move'; } catch (err) {}
+          this.setState({ dragId: t.id });
+        },
+        open: () => this.setState({ view: 'task', selectedId: t.id, menuOpen: false })
+      }));
+      return {
+        label: this.LABELS[k], count: cards.length, cards: cards, empty: cards.length === 0,
+        dotCls: 'bg-' + k,
+        overCls: s.dragId && s.overKey === k ? 'over' : '',
+        over: (e) => { if (!canDrag) return; e.preventDefault(); if (s.overKey !== k) this.setState({ overKey: k }); },
+        drop: (e) => { e.preventDefault(); if (canDrag && s.dragId) this.moveTask(s.dragId, k); }
+      };
+    });
+
+    /* ----- detalhe ----- */
+    const found = s.tasks.find((t) => t.id === s.selectedId);
+    const sel = found || { id: 0, title: '', project: '', status: 'afazer', owner: 'pe', deadline: '', desc: '', involved: [], log: [] };
+    const ro = !gestor && sel.owner !== 'pe';
+    const costRows = sel.involved.map((p) => {
+      const h = this.num(p.hours);
+      const r = this.num(p.rate);
+      const per = R[p.pid];
+      return {
+        ini: per.ini, avCls: per.cls, name: per.name, hours: p.hours, rate: p.rate, sub: this.money(h * r),
+        setHours: (e) => { this._dirty['h' + sel.id + p.pid] = true; this.patchInv(sel.id, p.pid, 'hours', e.target.value); },
+        hoursBlur: () => this.blurLog('h' + sel.id + p.pid, sel.id, 'ajustou as horas de ' + per.name),
+        setRate: (e) => {
+          this._dirty['r' + sel.id + p.pid] = true;
+          this.patchInv(sel.id, p.pid, 'rate', e.target.value);
+          const n = this.num(e.target.value);
+          if (n > 0) this.setState({ lastRate: n });
+        },
+        rateBlur: () => this.blurLog('r' + sel.id + p.pid, sel.id, 'ajustou o valor/hora de ' + per.name)
+      };
+    });
+    const total = sel.involved.reduce((a, p) => a + this.num(p.hours) * this.num(p.rate), 0);
+    const people = sel.involved.map((p) => ({
+      ini: R[p.pid].ini, avCls: R[p.pid].cls, name: R[p.pid].name, role: p.role,
+      canRemove: !ro && p.pid !== sel.owner,
+      remove: () => this.removePerson(sel.id, p.pid)
+    }));
+    const taken = sel.involved.map((p) => p.pid);
+    const avail = this.IDS.filter((id) => taken.indexOf(id) === -1).map((id) => ({ name: R[id].name, add: () => this.addPerson(sel.id, id) }));
+    const timeline = sel.log.map((e) => ({ user: e.user, what: e.what, ts: e.ts, uCls: e.mgr ? 'mgr' : '', dotCls: e.mgr ? 'mg' : '' }));
+
+    /* ----- dashboard ----- */
+    const all = s.tasks;
+    const total10 = all.length;
+    const mkSegs = (list) => this.KEYS.map((k) => {
+      const c = list.filter((t) => t.status === k).length;
+      const w = list.length ? (c * 100) / list.length : 0;
+      return { key: k, label: this.LABELS[k], bg: 'bg-' + k, count: c, w: w, pct: Math.round(w), countText: c + (c === 1 ? ' item' : ' itens') };
+    });
+    const segs = mkSegs(all);
+    const team = this.IDS.map((id) => {
+      const list = all.filter((t) => t.owner === id);
+      const sg = mkSegs(list);
+      const done = list.length ? Math.round((list.filter((t) => t.status === 'concluido').length * 100) / list.length) : 0;
+      return {
+        name: R[id].name, ini: R[id].ini, avCls: R[id].cls, count: list.length, segs: sg, done: done,
+        label: R[id].name + ': ' + sg.map((g) => g.label + ' ' + g.pct + '%').join(', '),
+        open: () => {
+          const first = list[0];
+          this.setState({ view: 'board', viewUser: id, current: first ? first.project : s.current });
+        }
+      };
+    });
+
+    /* ----- agenda ----- */
+    const TODAY = '2026-10-31';
+    const MN = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const offset = new Date(s.calY, s.calM, 1).getDay();
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(s.calY, s.calM, 1 - offset + i);
+      const iso = d.getFullYear() + '-' + this.pad(d.getMonth() + 1) + '-' + this.pad(d.getDate());
+      const evs = s.meetings.filter((m) => m.date === iso).sort((a, b) => (a.time < b.time ? -1 : 1));
+      cells.push({
+        day: d.getDate(),
+        cls: [d.getMonth() === s.calM ? '' : 'dim', iso === TODAY ? 'today' : '', iso === s.selDay ? 'sel' : ''].join(' '),
+        aria: this.fmtDay(iso) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' evento' : ' eventos') : ''),
+        events: evs.slice(0, 2).map((m) => ({ text: m.time + ' ' + m.title })),
+        hasMore: evs.length > 2,
+        more: '+' + (evs.length - 2) + ' mais',
+        pick: () => this.pickDay(iso)
+      });
+    }
+    const upcoming = s.meetings.filter((m) => m.date >= TODAY).sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1)).map((m) => ({
+      day: this.fmtDay(m.date), time: m.time, title: m.title,
+      peopleText: m.people.map((p) => R[p].ini).join(' · '),
+      aria: m.title + ', ' + this.fmtDay(m.date) + ' às ' + m.time + (gestor ? '. Editar' : ''),
+      edit: () => {
+        if (!gestor) return;
+        this.setState({
+          form: { id: m.id, title: m.title, date: m.date, time: m.time, people: m.people.slice() },
+          formOpen: true,
+          selDay: m.date, calY: parseInt(m.date.slice(0, 4), 10), calM: parseInt(m.date.slice(5, 7), 10) - 1
+        });
+      }
+    }));
+    const f = s.form;
+    const formPeople = this.IDS.map((id) => {
+      const on = f.people.indexOf(id) !== -1;
+      return { name: R[id].name, ini: R[id].ini, on: on, cls: on ? 'on' : '', toggle: () => this.setForm({ people: on ? f.people.filter((x) => x !== id) : f.people.concat([id]) }) };
+    });
+
+    const viewName = R[s.viewUser].name;
+    return {
+      isGestor: gestor,
+      notGestor: !gestor,
+      isColab: !gestor,
+      roleName: gestor ? 'Gestor' : 'Pedro',
+      avIni: gestor ? 'GE' : 'PE',
+      avCls: gestor ? 'ge' : '',
+      colabCls: gestor ? '' : 'on',
+      gestCls: gestor ? 'on' : '',
+      menuOpen: s.menuOpen,
+      toggleMenu: () => this.setState({ menuOpen: !s.menuOpen }),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      setColab: () => this.setState({ role: 'colaborador', menuOpen: false, viewUser: 'pe', view: s.view === 'dashboard' ? 'board' : s.view }),
+      setGestor: () => this.setState({ role: 'gestor', menuOpen: false }),
+
+      railOpen: s.railOpen,
+      railCls: s.railOpen ? 'open' : '',
+      railTip: 'Expandir barra lateral',
+      railLabel: s.railOpen ? 'Recolher a barra lateral' : 'Expandir a barra lateral',
+      toggleRail: () => this.setState({ railOpen: !s.railOpen }),
+      dashCls: s.view === 'dashboard' ? 'on' : '',
+      projCls: s.view === 'board' || s.view === 'task' ? 'on' : '',
+      goDash: () => this.setState({ view: 'dashboard' }),
+      goBoard: () => this.setState({ view: 'board' }),
+
+      boardOn: s.view === 'board',
+      taskOn: s.view === 'task',
+      dashOn: s.view === 'dashboard' && gestor,
+      current: s.current,
+      subText: s.viewUser === 'pe' ? 'Você vê o que é seu. Arraste os cards entre as colunas para mudar o estado.' : 'Você pode ver e editar; cada edição aparece na linha do tempo como Gestor.',
+      othersOn: s.viewUser !== 'pe',
+      viewName: viewName,
+      backMine: () => this.setState({ viewUser: 'pe' }),
+      columns: columns,
+      dragEnd: () => this.setState({ dragId: 0, overKey: '' }),
+
+      modalOpen: s.modalOpen,
+      chevCls: s.modalOpen ? 'open' : '',
+      openModal: () => this.setState({ modalOpen: true, creating: false, newName: '' }),
+      closeModal: () => this.closeModal(),
+      stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      dlgKey: (e) => { if (e && e.key === 'Escape') this.closeModal(); },
+      projects: s.projects.map((p) => ({
+        name: p, current: p === s.current, cls: p === s.current ? 'on' : '',
+        pick: () => this.setState({ current: p, view: 'board', modalOpen: false, creating: false, newName: '' })
+      })),
+      creating: s.creating,
+      notCreating: !s.creating,
+      startCreate: () => this.setState({ creating: true }),
+      newName: s.newName,
+      setName: (e) => this.setState({ newName: e.target.value }),
+      createDisabled: !s.newName.trim(),
+      createProject: () => this.createProject(),
+
+      sel: sel,
+      ro: ro,
+      statusList: this.KEYS.map((k) => ({ key: k, label: this.LABELS[k] })),
+      setTitle: (e) => { this._dirty['t' + sel.id] = true; this.updateTask(sel.id, { title: e.target.value }); },
+      titleBlur: () => this.blurLog('t' + sel.id, sel.id, 'renomeou a tarefa'),
+      pickStatus: (e) => {
+        const k = e.target.value;
+        if (k !== sel.status) this.updateTask(sel.id, { status: k }, 'alterou o status de ' + this.LABELS[sel.status] + ' para ' + this.LABELS[k]);
+      },
+      setDesc: (e) => { this._dirty['d' + sel.id] = true; this.updateTask(sel.id, { desc: e.target.value }); },
+      descBlur: () => this.blurLog('d' + sel.id, sel.id, 'editou a descrição'),
+      setDeadline: (e) => {
+        const v = e.target.value;
+        if (v !== sel.deadline) this.updateTask(sel.id, { deadline: v }, 'alterou o prazo de ' + this.fmtFull(sel.deadline) + ' para ' + this.fmtFull(v));
+      },
+      daysText: this.daysLeft(sel),
+      lastRateText: this.money(s.lastRate) + '/h',
+      costRows: costRows,
+      totalText: this.money(total),
+      people: people,
+      avail: avail,
+      hasAvail: avail.length > 0,
+      timeline: timeline,
+
+      dashSub: 'Todos os projetos e colaboradores · ' + total10 + ' itens',
+      segs: segs,
+      barLabel: segs.map((g) => g.label + ' ' + g.pct + '%').join(', '),
+      team: team,
+
+      agendaOn: s.view === 'agenda',
+      agCls: s.view === 'agenda' ? 'on' : '',
+      goAgenda: () => this.setState({ view: 'agenda', menuOpen: false }),
+      monthTitle: MN[s.calM] + ' de ' + s.calY,
+      prevMonth: () => this.shiftMonth(-1),
+      nextMonth: () => this.shiftMonth(1),
+      goToday: () => this.setState({ calY: 2026, calM: 9, selDay: TODAY, form: f.id ? f : Object.assign({}, f, { date: TODAY }) }),
+      cells: cells,
+      addEvent: () => this.setState({ form: this.blankForm(s.selDay), formOpen: true }),
+      upcoming: upcoming,
+      noUpcoming: upcoming.length === 0,
+      form: f,
+      formTitleText: f.id ? 'Editar agendamento' : 'Novo agendamento',
+      formClosed: !s.formOpen,
+      fwCls: s.formOpen ? 'open' : '',
+      setFTitle: (e) => this.setForm({ title: e.target.value }),
+      setFDate: (e) => this.setForm({ date: e.target.value }),
+      setFTime: (e) => this.setForm({ time: e.target.value }),
+      formPeople: formPeople,
+      cancelForm: () => this.setState({ form: this.blankForm(s.selDay), formOpen: false }),
+      saveForm: () => this.saveForm(),
+      formInvalid: !gestor || !f.title.trim() || !f.date,
+      canDelete: gestor && !!f.id,
+      deleteForm: () => this.setState({ meetings: s.meetings.filter((m) => m.id !== f.id), form: this.blankForm(s.selDay), formOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>
