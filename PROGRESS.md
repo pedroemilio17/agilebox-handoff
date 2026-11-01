@@ -222,9 +222,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Os quatro casos foram implementados e ligados a `createUseCases`; testes cobrem cópia de tarifa, permissões por participante, horas, tarifa padrão, marca Gestor e rollback.
   - Nota: `pnpm check` passou (623 testes), sem dependências novas.
 
-- [ ] M3.14 Casos de uso: linha do tempo e dashboard
+- [x] M3.14 Casos de uso: linha do tempo e dashboard
   - `list-timeline` (texto por viewer, mais recente primeiro), `get-dashboard` (só gestor).
   - Pronto: testes de permissão e de texto.
+  - Nota: Linha do tempo valida acesso à tarefa, resolve nomes na organização, ordena do evento mais recente e aplica o filtro de tarifa por viewer.
+  - Nota: Dashboard aceita somente gestor; distribuição global e estatísticas por participante reaproveitam as regras do core e omitem usuários sem tarefas.
+  - Nota: Decisão provisória PLANO 12.4: incluir gestor na tabela quando participar de tarefas; `pnpm check` passou (627 testes).
 
 - [ ] M3.15 Casos de uso: agenda
   - `list-month`, `list-upcoming`, `create`, `update`, `delete` (só gestor grava).

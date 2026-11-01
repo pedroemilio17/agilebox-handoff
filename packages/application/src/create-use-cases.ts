@@ -28,6 +28,8 @@ import {
   SetParticipationHours,
   SetParticipationRate,
 } from './use-cases/participations/participations'
+import { GetDashboard } from './use-cases/dashboard/get-dashboard'
+import { ListTimeline } from './use-cases/timeline/list-timeline'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -68,6 +70,12 @@ export function createUseCases(deps: AppDeps) {
       remove: new RemoveParticipation(deps),
       setHours: new SetParticipationHours(deps),
       setRate: new SetParticipationRate(deps),
+    },
+    timeline: {
+      list: new ListTimeline(deps),
+    },
+    dashboard: {
+      get: new GetDashboard(deps),
     },
   }
 }

@@ -285,3 +285,21 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Os testes cobrem cópia de tarifa, permissões, marcação de edições do gestor e rollback. `pnpm check` passou com 623 testes; `pnpm format:check` também passou após a documentação. Não foram necessárias dependências novas.
 >
 > Atualizei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.
+
+## 2026-10-31 23:47 · M3.14 Casos de uso: linha do tempo e dashboard
+
+- Alterações: 6 files changed, 259 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/use-cases/dashboard/get-dashboard.ts`
+  - `packages/application/src/use-cases/timeline-dashboard.test.ts`
+  - `packages/application/src/use-cases/timeline/list-timeline.ts`
+
+**Resumo do Codex:**
+
+> M3.14 concluído. Implementei `list-timeline` com controle de acesso, texto por viewer e ordem do mais recente ao mais antigo; e `get-dashboard`, restrito ao gestor, com estatísticas calculadas pelas regras do core. Liguei ambos ao `createUseCases`.
+>
+> `pnpm check` passou: **627 testes**. Também registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:225), a decisão provisória sobre o gestor no dashboard em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md) e o status `DONE` em `.loop/status`.
