@@ -72,9 +72,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: ordem e rótulos testados.
   - Notas da rodada: implementados os cinco estados ordenados, rótulos em pt-BR, tipo `TaskStatus`, validação e conversão com erro `VALIDATION` para valores inválidos. Testes escritos primeiro e executados antes da implementação, falhando pela ausência do módulo. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 384 testes). Checkbox preservado para o laço.
 
-- [ ] M2.3 Dinheiro e horas
+- [x] M2.3 Dinheiro e horas
   - `values/money.ts` (centavos; `parseMoney("45,50")`, aceita `"45"`, `"45.5"`, `"R$ 45,50"`; rejeita negativo e texto inválido; `formatBRL`), `values/hours.ts` (centésimos; `parseHours("1,5") = 150`; formatação `1,5 h`).
   - Pronto: tabelas de casos (vírgula, ponto, vazio, negativo, muitos decimais com arredondamento meio para cima).
+  - Notas da rodada: testes escritos e executados antes da implementação, com falha inicial pela ausência dos módulos. Implementados conversão e formatação de dinheiro em centavos e horas em centésimos, arredondamento decimal meio para cima, validação de valores seguros e soma de dinheiro. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 426 testes), após corrigir espaço não separável sinalizado pelo lint. Checkbox preservado para o laço.
 
 - [ ] M2.4 Datas
   - `values/date-only.ts`: `DateOnly` (`YYYY-MM-DD`), validação, comparação, `diffInDays(a, b)`, `toDateOnly(date, timeZone)` para obter a data local a partir de um instante.
