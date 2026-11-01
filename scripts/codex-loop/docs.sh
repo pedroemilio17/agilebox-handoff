@@ -57,6 +57,7 @@ log_incident() {
       printf '```\n'
     fi
   } >> "$LACO_DOCS/ocorrencias.md"
+  format_docs
 }
 
 # $1 = marco (ex.: M2), $2 = pontos de revisão sugeridos (texto do PARADA)

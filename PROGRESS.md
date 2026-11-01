@@ -192,9 +192,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: `ActorSession` foi incluída como porta da aplicação; a troca de usuário publica `session`, e mudanças de tarifa e projeto publicam seus respectivos tipos.
   - Nota: `pnpm check` passou (593 testes), sem dependências novas.
 
-- [!] M3.10 Casos de uso: entidades
+- [ ] M3.10 Casos de uso: entidades
   - `contributors/*` (criar, listar, valor padrão só pelo gestor).
-  - Pronto: idem.
+  - **Decisão do Pedro (desbloqueio, PLANO 6.2):** valor/hora padrão **0 = "não definido"**. A criação continua `create({ name })` (qualquer usuário cria; o contrato não muda), com origem `manual`, `createdBy` = ator e valor padrão 0. Custo é R$ 0 até o gestor definir o valor. O domínio passa a **aceitar 0** no valor padrão (`validateDefaultRate` vale para entidade **e** usuário; continua rejeitando negativo e fracionário). A exigência de **maior que zero** fica só em **definir ou alterar** o valor padrão (`setDefaultRate`, `rateCentsSchema` do contrato e valor digitado na tarefa). Atualizar os testes do `core` que hoje exigem rejeição de 0 na criação, e acrescentar casos: criar com 0 funciona; `setDefaultRate` com 0 continua inválido. O trabalho já feito (listar e alterar valor) está commitado: complete só a criação e esse ajuste.
+  - Pronto: idem, mais criação (sucesso, entrada inválida, notificação `contributor`, isolamento por organização).
   - Nota: Listagem por organização e alteração de tarifa restrita ao gestor implementadas, com filtro no mapper, validação e notificação; testes incluídos.
   - Nota: Criação ficou pendente: o contrato recebe só nome, mas o domínio exige tarifa padrão positiva; não há valor inicial definido nos documentos.
   - Nota: `pnpm check` passou (598 testes); retomada depende da decisão registrada em `.loop/blocked.md`.
