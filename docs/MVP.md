@@ -1,10 +1,13 @@
 # Plano do MVP
 
 ## Objetivo
+
 Um MVP **funcional que o Pedro consiga rodar e testar sozinho** na própria máquina, com dados reais salvos, antes de pensar em multiusuário e integrações.
 
 ## Escopo do MVP
+
 **Dentro**
+
 - Projetos (criar, trocar), tarefas (criar, editar, mudar estado, arrastar no kanban).
 - Detalhe da tarefa: descrição, estado, prazo, custo (horas × valor/hora), envolvidos, linha do tempo.
 - Bandeja: lista (recentes/frequentes), busca, criar tarefa (e abrir detalhes), atualizar tarefa.
@@ -13,11 +16,13 @@ Um MVP **funcional que o Pedro consiga rodar e testar sozinho** na própria máq
 - Perfis **Colaborador** e **Gestor** com permissões. No começo, troca manual de perfil (como no protótipo); login real vem depois.
 
 **Fora** (não implementar agora)
+
 - Plug-ins, webhooks, integração com commits, avisos de atualização vinda de plug-in, aviso diário.
 - Visão "Equipe".
 - IA embarcada.
 
 ## Fases sugeridas
+
 1. **Fundação**: repositório, stack, banco, dados de exemplo, tema (tokens do `HANDOFF.md`) e componentes base (janela de vidro, controle segmentado, grupo de campos, botões).
 2. **Painel**: barra lateral, quadro kanban com dados reais, modal de projetos, detalhe da tarefa com linha do tempo e custo.
 3. **Permissões e gestor**: perfis, dashboard, abrir projetos de um colaborador, marcação "Gestor" na linha do tempo.
@@ -28,6 +33,7 @@ Um MVP **funcional que o Pedro consiga rodar e testar sozinho** na própria máq
 Critério de pronto por fase: o Pedro consegue abrir, usar o fluxo e ver os dados persistirem depois de fechar e abrir de novo.
 
 ## Modelo de dados (proposta inicial)
+
 - `users`: id, nome, email, iniciais, perfil (`colaborador` | `gestor`)
 - `projects`: id, nome
 - `tasks`: id, project_id, owner_id, título, descrição, estado, prazo (data, opcional), criada_em, atualizada_em
@@ -41,14 +47,18 @@ Critério de pronto por fase: o Pedro consegue abrir, usar o fluxo e ver os dado
 Observação: o campo "Frequentes" da bandeja ainda não tem regra (no protótipo são tarefas "fixadas"). Veja decisões em aberto.
 
 ## Stack: sugestão para discutir (não decidir sozinho)
+
 Como o produto vai ser um aplicativo de Windows com janelas sem moldura e ícone de bandeja, uma boa linha é começar pela interface e pelos dados e só depois empacotar:
+
 - **Interface**: React + TypeScript + Vite, CSS próprio (os tokens de vidro são simples de manter em variáveis CSS).
 - **Dados**: SQLite local (por exemplo via `better-sqlite3` ou Prisma), com uma camada de acesso isolada, para trocar por um servidor depois.
 - **Empacotamento**: Electron (mais simples para ícone de bandeja, várias janelas e efeito de vidro no Windows) **ou** Tauri (mais leve, usa WebView2). Apresente prós e contras ao Pedro antes de escolher.
 - **Testes**: começar com testes das regras (custo, porcentagens, permissões, linha do tempo), que são a parte mais fácil de errar.
 
 ## Decisões tomadas (2026-10-31)
+
 A stack, a arquitetura, o modelo de dados revisado e os marcos estão em **`docs/PLANO.md`**, que substitui o "Modelo de dados (proposta inicial)" acima e a "Stack: sugestão".
+
 1. **"Plano"** é outro nome para projeto.
 2. **Valor/hora**: cada entidade (envolvido) tem o seu próprio valor/hora padrão; só o gestor vê valores (detalhes em `PLANO.md` 2.3 e 2.4).
 3. **Frequentes**: tarefas abertas mais recentemente pelo usuário. Vazio: "Nenhuma tarefa aberta ainda."
@@ -61,8 +71,10 @@ A stack, a arquitetura, o modelo de dados revisado e os marcos estão em **`docs
 10. **Projetos** têm vários membros; só quem criou e o gestor gerenciam membros. Edição de gestor é sempre marcada como Gestor.
 
 ## Decisões em aberto
+
 Ver `docs/PLANO.md`, seções 2 (interpretações a confirmar) e 12.
 
 ## Contexto para decisões futuras (fora do MVP)
+
 - O time já usa uma plataforma de chamados (GLPI) e controle de versão no Azure DevOps; integrações com eles e com webhooks de commit serão a base dos plug-ins.
 - Fluxo planejado para plug-ins: quando chegar uma informação (ex.: commit), a pessoa certa recebe um aviso na tela para indicar a que tarefa pertence; se a mensagem citar a tarefa, vincula sozinho e só avisa; o que ficar "para depois" vai para uma caixa de pendências.

@@ -3,6 +3,7 @@
 Você roda sem supervisão. Siga o `AGENTS.md` (já carregado) e faça **somente** o passo indicado abaixo.
 
 Lembrete do fluxo:
+
 1. Leia o passo completo em `PROGRESS.md` e as seções do `docs/PLANO.md` que ele cita.
 2. Se houver `.loop/last-failure.log`, corrija essa falha primeiro.
 3. Testes primeiro em `core` e `application`.

@@ -1,0 +1,5 @@
+design/
+node_modules/
+.loop/
+migrations/
+pnpm-lock.yaml
