@@ -283,8 +283,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Suíte de contrato ampliada para conferir linha do tempo mais recente primeiro; fake alinhado à mesma ordem. Testes SQLite cobrem persistência, isolamento e contagem de aberturas.
   - Nota: `pnpm check` passou (641 testes); nenhuma dependência nova. Status `DONE`.
 
-- [ ] M4.6 Repositório de agenda, `SqliteUnitOfWork`, `createSqliteAdapters`
+- [x] M4.6 Repositório de agenda, `SqliteUnitOfWork`, `createSqliteAdapters`
   - Pronto: suíte de contrato **inteira** passa no SQLite em memória; teste de rollback.
+  - Nota: Implementados o repositório SQLite de agenda e `createSqliteAdapters`, que reúne todos os repositórios, `UnitOfWork` e fechamento do banco.
+  - Nota: `SqliteUnitOfWork` envolve a operação assíncrona em `BEGIN`/`COMMIT` e desfaz gravações em erro; teste cobre rollback e commit.
+  - Nota: Contrato completo executado em SQLite em memória com `foreign_keys` habilitado; ajustes nos fixtures usam IDs e relações válidos para SQL.
+  - Nota: `pnpm check` passou: formatação, lint, tipos e 651 testes.
 
 - [ ] M4.7 Seed e scripts
   - `seed/data.ts` (PLANO 9 · M4; nomes do protótipo), `seed/seed.ts` usando os **casos de uso** (para gerar linha do tempo real), `scripts/` e comandos `db:migrate`, `db:seed`, `db:reset` (banco em `./.data/agilebox.db`, no `.gitignore`).

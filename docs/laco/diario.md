@@ -438,3 +438,27 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.5 concluído. Implementei os repositórios SQLite de tarefas, envolvimentos, linha do tempo e aberturas, com isolamento por organização. Também alinhei o fake e o contrato para ordenar eventos do mais recente ao mais antigo.
 >
 > `pnpm check` passou: 641 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:279) e marquei `.loop/status` como `DONE`.
+
+## 2026-11-01 00:45 · M4.6 Repositório de agenda, `SqliteUnitOfWork`, `createSqliteAdapters`
+
+- Alterações: 10 files changed, 412 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/testing/repository-contract.ts`
+  - `packages/infra-sqlite/src/create-sqlite-adapters.test.ts`
+  - `packages/infra-sqlite/src/create-sqlite-adapters.ts`
+  - `packages/infra-sqlite/src/index.ts`
+  - `packages/infra-sqlite/src/repositories/meeting-repository.test.ts`
+  - `packages/infra-sqlite/src/repositories/meeting-repository.ts`
+  - `packages/infra-sqlite/src/repository-contract.test.ts`
+  - `packages/infra-sqlite/src/unit-of-work.test.ts`
+  - `packages/infra-sqlite/src/unit-of-work.ts`
+
+**Resumo do Codex:**
+
+> M4.6 concluído. Implementei o repositório de agenda, `SqliteUnitOfWork` com rollback e `createSqliteAdapters`. Ajustei fixtures compartilhados para que a suíte de contrato use IDs e relações válidos no SQLite.
+>
+> `pnpm check` passou: 50 arquivos de teste, 651 testes. O status está como `DONE` em `.loop/status`.
+>
+> Arquivos principais: [repositório de agenda](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/repositories/meeting-repository.ts>), [SqliteUnitOfWork](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/unit-of-work.ts>), [fábrica dos adaptadores](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/create-sqlite-adapters.ts>) e [notas do M4.6](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md>).

@@ -3,6 +3,7 @@ import {
   renameTask,
   toEventId,
   toOrganizationId,
+  toParticipationId,
   toProjectId,
   toTaskId,
   toUserId,
@@ -49,7 +50,16 @@ export function describeRepositoryContract(
       const project = aProject().with({ id: projectId, organizationId }).build()
       const contributor = aContributor().with({ organizationId }).build()
       const task = aTask().with({ id: taskId, organizationId }).build()
-      const participation = aParticipation(task).build()
+      const participationTask = aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB8'),
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB9'),
+          organizationId,
+        })
+        .build()
+      const participation = aParticipation(participationTask)
+        .with({ participant: { kind: 'contributor', contributorId: contributor.id } })
+        .build()
       const meeting = aMeeting().with({ organizationId }).build()
       const event: TimelineEvent = {
         id: toEventId('01ARZ3NDEKTSV4RRFFQ69G5FB0'),
@@ -65,6 +75,7 @@ export function describeRepositoryContract(
       await repositories.projects.save(organizationId, project)
       await repositories.contributors.save(organizationId, contributor)
       await repositories.tasks.save(organizationId, task)
+      await repositories.tasks.save(organizationId, participationTask)
       await repositories.participations.save(organizationId, participation)
       await repositories.meetings.save(organizationId, meeting)
       const laterEvent: TimelineEvent = {
@@ -100,6 +111,7 @@ export function describeRepositoryContract(
         aTask()
           .with({
             id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB1'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
             organizationId,
             createdBy: userId,
             createdAt: '2026-01-01T00:00:00.000Z',
@@ -111,6 +123,7 @@ export function describeRepositoryContract(
         aTask()
           .with({
             id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB2'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB7'),
             organizationId,
             createdBy: userId,
             createdAt: '2026-01-03T00:00:00.000Z',

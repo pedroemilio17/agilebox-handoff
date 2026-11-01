@@ -1,3 +1,6 @@
 export { createSqliteClient } from './client.js'
+export { createSqliteAdapters } from './create-sqlite-adapters.js'
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'
+export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 export { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+export { createSqliteUnitOfWork, SqliteUnitOfWork } from './unit-of-work.js'
