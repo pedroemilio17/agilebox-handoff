@@ -63,7 +63,11 @@ describe('entidades de organização', () => {
     expect(() => createContributor({ ...contributor, name })).toThrow(ValidationError)
     expect(() => createProject({ ...project, name })).toThrow(ValidationError)
   })
-  it.each([0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+  it('aceita valor/hora padrão zero como não definido', () => {
+    expect(createUser({ ...user, defaultRateCents: 0 }).defaultRateCents).toBe(0)
+    expect(createContributor({ ...contributor, defaultRateCents: 0 }).defaultRateCents).toBe(0)
+  })
+  it.each([-1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
     'rejeita valor/hora padrão inválido %s',
     (defaultRateCents) => {
       expect(() => createUser({ ...user, defaultRateCents })).toThrow(ValidationError)

@@ -9,5 +9,4 @@ export function validateName(name: string): string {
 
 export function validateDefaultRate(rate: number): void {
   validateHundredths(rate)
-  if (rate === 0) throw new ValidationError('Valor/hora padrão deve ser maior que zero')
 }

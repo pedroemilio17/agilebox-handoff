@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toUserId } from '@agilebox/core'
+import { toContributorId, toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aContributor } from '../../testing/builders'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
@@ -40,6 +40,53 @@ function setup() {
 }
 
 describe('casos de uso de entidades', () => {
+  it('cria entidade manual com tarifa não definida e notifica a organização', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+
+    const result = await useCases.contributors.create.execute(actor, { name: '  Cliente Novo  ' })
+    expect(result).toMatchObject({ name: 'Cliente Novo', defaultRate: null })
+    await expect(
+      unitOfWork.repositories.contributors.findById(organizationId, toContributorId(result.id)),
+    ).resolves.toMatchObject({
+      source: 'manual',
+      defaultRateCents: 0,
+      createdBy: actor.userId,
+      organizationId,
+    })
+    await expect(
+      unitOfWork.repositories.contributors.findById(
+        otherOrganizationId,
+        toContributorId(result.id),
+      ),
+    ).resolves.toBeNull()
+    expect(notifier.changes).toHaveLength(1)
+    expect(notifier.changes[0]).toMatchObject({
+      organizationId,
+      change: { kind: 'contributor' },
+    })
+    expect(notifier.changes[0]?.change.ids).toHaveLength(1)
+  })
+
+  it('permite que qualquer papel crie entidade', async () => {
+    const { useCases } = setup()
+
+    await expect(
+      useCases.contributors.create.execute({ ...actor, role: 'manager' }, { name: 'Fornecedor' }),
+    ).resolves.toMatchObject({ name: 'Fornecedor' })
+  })
+
+  it('rejeita nome inválido sem salvar ou notificar', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+
+    await expect(useCases.contributors.create.execute(actor, { name: '  ' })).rejects.toMatchObject(
+      {
+        code: 'VALIDATION',
+      },
+    )
+    await expect(unitOfWork.repositories.contributors.list(organizationId)).resolves.toEqual([])
+    expect(notifier.changes).toEqual([])
+  })
+
   it('lista entidades apenas da organização do ator', async () => {
     const { useCases, unitOfWork } = setup()
     await unitOfWork.repositories.contributors.save(organizationId, aContributor().build())

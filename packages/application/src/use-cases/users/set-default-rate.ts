@@ -4,6 +4,7 @@ import {
   NotFoundError,
   PermissionDeniedError,
   toUserId,
+  ValidationError,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import type { SetDefaultRateInput, UserDto } from '@agilebox/contract'
@@ -14,6 +15,9 @@ export class SetDefaultRate {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor, input: SetDefaultRateInput): Promise<UserDto> {
+    if (input.rateCents <= 0) {
+      throw new ValidationError('Valor/hora padrão deve ser maior que zero')
+    }
     const userId = toUserId(input.userId)
     const user = await this.deps.users.findById(actor.organizationId, userId)
     if (!user) throw new NotFoundError('Usuário não encontrado')

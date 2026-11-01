@@ -12,6 +12,7 @@ import { SwitchUser } from './use-cases/session/switch-user'
 import { SetDefaultRate } from './use-cases/users/set-default-rate'
 import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
+import { CreateContributor } from './use-cases/contributors/create-contributor'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -25,6 +26,7 @@ export function createUseCases(deps: AppDeps) {
     },
     contributors: {
       list: new ListContributors(deps.contributors),
+      create: new CreateContributor(deps),
       setDefaultRate: new SetContributorDefaultRate(deps),
     },
     projects: {

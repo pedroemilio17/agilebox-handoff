@@ -209,3 +209,26 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.9 concluído. Implementei os casos de uso de sessão, valor/hora padrão, projetos e membros, com testes de acesso, validação e notificações. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:188).
 >
 > `pnpm check` passou: 593 testes. Status: `DONE`.
+
+## 2026-10-31 23:31 · M3.10 Casos de uso: entidades
+
+- Alterações: 9 files changed, 96 insertions(+), 4 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/use-cases/contributors/contributors.test.ts`
+  - `packages/application/src/use-cases/contributors/create-contributor.ts`
+  - `packages/application/src/use-cases/contributors/set-default-rate.ts`
+  - `packages/application/src/use-cases/users/set-default-rate.ts`
+  - `packages/core/src/entities/entities.test.ts`
+  - `packages/core/src/entities/validation.ts`
+
+**Resumo do Codex:**
+
+> M3.10 concluído. Criação, listagem e alteração de tarifa de entidades estão implementadas; tarifa padrão zero é aceita na criação, mas continua inválida ao definir ou alterar o valor. A criação grava na organização do ator e notifica a mudança.
+>
+> `pnpm check` passou: 36 arquivos de teste e 601 testes. Registrei as notas em `PROGRESS.md` e escrevi `DONE` em `.loop/status`.
+>
+> Arquivos principais: [create-contributor.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/application/src/use-cases/contributors/create-contributor.ts), [validation.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/core/src/entities/validation.ts).

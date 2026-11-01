@@ -3,6 +3,7 @@ import {
   createContributor,
   NotFoundError,
   PermissionDeniedError,
+  ValidationError,
   toContributorId,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -14,6 +15,9 @@ export class SetContributorDefaultRate {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor, input: SetContributorDefaultRateInput): Promise<ContributorDto> {
+    if (input.rateCents <= 0) {
+      throw new ValidationError('Valor/hora padrão deve ser maior que zero')
+    }
     const contributorId = toContributorId(input.contributorId)
     const contributor = await this.deps.contributors.findById(actor.organizationId, contributorId)
     if (!contributor) throw new NotFoundError('Entidade não encontrada')
