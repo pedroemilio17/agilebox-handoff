@@ -11,12 +11,13 @@ Lido pelo laço do Codex (`scripts/codex-loop/run.sh`). Regras:
 
 ## M1 · Esqueleto do monorepo (PLANO 9 · M1, 10)
 
-- [ ] M1.1 Raiz do workspace
+- [x] M1.1 Raiz do workspace
   - Arquivos: `package.json` (privado, `"type": "module"`, `engines.node >= 22`, scripts `format` e `format:check`), `pnpm-workspace.yaml` (`apps/*`, `packages/*`, `onlyBuiltDependencies: [better-sqlite3, electron, esbuild]`), `.npmrc` (`node-linker=hoisted`), `.editorconfig`, `.prettierrc` (aspas simples, sem ponto e vírgula, largura 100), `.prettierignore` (`design/`, `node_modules`, `.loop/`, `migrations/`, `pnpm-lock.yaml`), completar `.gitignore`.
   - Deps: `root dev typescript`, `root dev prettier`.
   - Pronto: `pnpm format:check` passa.
   - Notas da rodada: criadas as configurações de raiz do workspace, formatação e editor; `.gitignore` ampliado para cache do TypeScript e empacotamento. Solicitadas as dependências `typescript` e `prettier` via `.loop/deps.txt`. Validações pendentes até a instalação pelo laço; scripts de lint, tipos e testes pertencem aos próximos passos do M1. Checkbox mantido pendente.
   - Notas da retomada: configurações do M1.1 conferidas com PLANO 9 · M1 e 10; `typescript` e `prettier` já instalados. Aplicada a formatação do Prettier aos documentos existentes para atender ao `format:check` da raiz. Validação: `pnpm format:check` passou; verificações de lint, tipos e testes executadas com `--if-present`, pois seus scripts serão criados em M1.2, M1.4 e M1.5. Nenhum pacote adicional necessário; checkbox mantido pendente para o laço.
+  - Notas desta conferência: todos os arquivos e subitens do M1.1 já atendem ao passo; nenhuma alteração de configuração ou dependência necessária. Não há `.loop/last-failure.log`. `pnpm format:check` passou; `lint`, `typecheck` e `test` foram invocados com `pnpm run --if-present`, conforme o script do laço, e não executaram verificações porque ainda não existem nesta etapa. Status `DONE`; checkbox preservado para o laço.
 
 - [ ] M1.2 TypeScript base e pacotes de domínio
   - Arquivos: `tsconfig.base.json` (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `module: ESNext`, `moduleResolution: Bundler`, `target: ES2022`, `verbatimModuleSyntax`, `noEmit`); `packages/{core,contract,application,infra-sqlite}/` com `package.json` (nome `@agilebox/<pasta>`, `"exports": { ".": "./src/index.ts" }`, script `typecheck: tsc -p .`), `tsconfig.json` e `src/index.ts` (só `export {}`). Script de raiz `typecheck: pnpm -r --if-present typecheck`.
