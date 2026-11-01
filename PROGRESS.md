@@ -127,7 +127,7 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: `pnpm check` e `pnpm coverage` passam.
   - Notas da rodada: API pública do core exporta valores, entidades, políticas, regras e erros; teste da entrada escrito antes da implementação e confirmado com falha inicial. Configurado limite de 95% de linhas para o core; `sanity.test.ts` já havia sido removido. O teste existente de ESLint precisou de prazo maior para analisar a nova entrada durante a cobertura. Sem falha anterior ou dependência nova. Validação: `pnpm check` e `pnpm coverage` passaram (529 testes; 99,58% de linhas no relatório atual). Checkbox preservado para o laço.
 
-- [ ] PARADA M2: Pedro revisa a matriz de acesso nos testes do M2.9 e as frases da linha do tempo.
+- [x] PARADA M2: Pedro revisa a matriz de acesso nos testes do M2.9 e as frases da linha do tempo.
 
 ---
 
