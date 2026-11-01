@@ -97,9 +97,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: todas as invariantes com teste.
   - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência dos módulos. Implementadas tarefa e participação imutáveis, responsável inicial criador, troca entre usuários participantes, validação e prevenção de duplicatas, campos editáveis e busca normalizada por título e projeto. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 495 testes). Checkbox preservado para o laço.
 
-- [ ] M2.8 Eventos e agendamento
+- [x] M2.8 Eventos e agendamento
   - `entities/timeline-event.ts`: união discriminada dos tipos da PLANO 6.4 com payloads tipados. `entities/meeting.ts`: título obrigatório, data `DateOnly`, hora `HH:mm`, participantes (usuários).
   - Pronto: construção e validação testadas.
+  - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência das entidades. Criados os onze tipos de evento com payloads tipados e metadados de autoria, e agendamentos com título obrigatório, data validada, hora local HH:mm e participantes usuários. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 505 testes). Checkbox preservado para o laço.
 
 - [ ] M2.9 Ator e política de acesso
   - `policies/actor.ts` (`{ userId, organizationId, role }`), `policies/access-policy.ts`: **toda** a matriz PLANO 6.1 (`participates`, `canViewTask`, `canEditTask`, `isReadOnlyFor`, `canCreateTask`, `canManageMembers`, `canSeeProject`, `canSeeRate`, `canEditRate`, `canSeeTaskTotal`, `canManageMeetings`, `canSeeDashboard`) + `isManagerEdit` (sempre verdadeiro para gestor). Entidades nunca concedem acesso. Organização diferente = sem acesso.
