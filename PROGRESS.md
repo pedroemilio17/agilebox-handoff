@@ -53,7 +53,8 @@ Lido pelo laço do Codex (`scripts/codex-loop/run.sh`). Regras:
   - Comandos disponíveis: `pnpm format` aplica a formatação; `pnpm format:check` confere a formatação; `pnpm lint` verifica código e fronteiras; `pnpm typecheck` confere os tipos dos pacotes; `pnpm test` executa os testes; `pnpm test:watch` acompanha os testes; `pnpm coverage` mede cobertura; `pnpm check` executa `format:check`, `lint`, `typecheck` e `test`, nessa ordem, interrompendo na primeira falha.
   - Notas da rodada: adicionado o script de raiz `check` com as quatro verificações em sequência. Removido `packages/core/src/sanity.test.ts`, pois a suíte de fronteiras já cobre a execução real do Vitest; nenhuma lógica de domínio ou aplicação alterada. Sem `.loop/last-failure.log` e sem necessidade de dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 181 testes). Verificação automática de dependências do pnpm desativada durante a execução, sem comandos de instalação ou git. Convenções do `CLAUDE.md` reservadas à parada manual seguinte. Status `DONE`; checkbox preservado para o laço.
 
-- [ ] PARADA M1: revisão do Pedro (estrutura, configs, fronteiras). Preencher "Convenções" do `CLAUDE.md` com os comandos.
+- [x] PARADA M1: revisão do Pedro (estrutura, configs, fronteiras). Preencher "Convenções" do `CLAUDE.md` com os comandos.
+  - Revisão: `pnpm check` verde. Fechadas as lacunas das fronteiras (import relativo que sai da camada, `electron`/`better-sqlite3`/`drizzle-orm` e módulos do Node nas camadas puras e no renderer); tabela de camadas única em `tooling/layers.js`, usada pelo ESLint e pelos testes. TypeScript fixado em 6.0 (`docs/decisoes/0003-typescript-6.md`). Convenções do `CLAUDE.md` preenchidas.
 
 ---
 

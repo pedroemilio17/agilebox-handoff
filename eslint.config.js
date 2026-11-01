@@ -2,25 +2,13 @@ import js from '@eslint/js'
 import { defineConfig } from 'eslint/config'
 import prettier from 'eslint-config-prettier'
 import globals from 'globals'
+import { builtinModules } from 'node:module'
+import path from 'node:path'
 import tseslint from 'typescript-eslint'
+import { layers } from './tooling/layers.js'
+import { noEscapingImports } from './tooling/no-escaping-imports.js'
 
-const layers = [
-  { directory: 'packages/core', allowed: [] },
-  { directory: 'packages/contract', allowed: [] },
-  { directory: 'packages/application', allowed: ['core', 'contract'] },
-  { directory: 'packages/infra-sqlite', allowed: ['core', 'application'] },
-  { directory: 'packages/ui', allowed: ['core'] },
-  {
-    directory: 'apps/desktop/src/main',
-    allowed: ['core', 'contract', 'application', 'infra-sqlite'],
-  },
-  { directory: 'apps/desktop/src/preload', allowed: ['contract'] },
-  { directory: 'apps/desktop/src/renderer', allowed: ['core', 'contract', 'ui'] },
-  {
-    directory: 'apps/server',
-    allowed: ['core', 'contract', 'application', 'infra-sqlite', 'infra-postgres'],
-  },
-]
+const nodeBuiltins = builtinModules.filter((name) => !name.startsWith('_'))
 
 export default defineConfig([
   {
@@ -63,18 +51,46 @@ export default defineConfig([
     files: ['packages/ui/**', 'apps/desktop/src/renderer/**'],
     languageOptions: { globals: globals.browser },
   },
-  ...layers.map(({ directory, allowed }) => ({
+  ...layers.map(({ directory, allowed, forbiddenRuntime, forbidNodeBuiltins }) => ({
     files: [`${directory}/**/*.{js,mjs,cjs,ts,tsx}`],
+    plugins: { agilebox: { rules: { 'no-escaping-imports': noEscapingImports } } },
     rules: {
+      'agilebox/no-escaping-imports': [
+        'error',
+        { root: path.join(import.meta.dirname, directory) },
+      ],
       'no-restricted-imports': [
         'error',
         {
+          paths: [
+            ...forbiddenRuntime
+              .filter((name) => !name.endsWith('*'))
+              .map((name) => ({
+                name,
+                message: 'Pacote de runtime não permitido nesta camada (PLANO 3.1).',
+              })),
+            ...(forbidNodeBuiltins
+              ? nodeBuiltins.map((name) => ({
+                  name,
+                  message: 'Módulos do Node não são permitidos nesta camada (PLANO 3.1).',
+                }))
+              : []),
+          ],
           patterns: [
             {
               // A lista de permissões também bloqueia pacotes internos futuros.
               regex: `^@agilebox/${allowed.length ? `(?!(?:${allowed.join('|')})(?:/|$))` : ''}`,
               message: 'Importação entre camadas não permitida pela tabela 3.1 do PLANO.',
             },
+            ...forbiddenRuntime
+              .filter((name) => name.endsWith('*'))
+              .map((group) => ({
+                group: [group],
+                message: 'Pacote de runtime não permitido nesta camada (PLANO 3.1).',
+              })),
+            ...(forbidNodeBuiltins
+              ? [{ group: ['node:*'], message: 'Módulos do Node não são permitidos nesta camada.' }]
+              : []),
           ],
         },
       ],
