@@ -102,9 +102,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: construção e validação testadas.
   - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência das entidades. Criados os onze tipos de evento com payloads tipados e metadados de autoria, e agendamentos com título obrigatório, data validada, hora local HH:mm e participantes usuários. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 505 testes). Checkbox preservado para o laço.
 
-- [ ] M2.9 Ator e política de acesso
+- [x] M2.9 Ator e política de acesso
   - `policies/actor.ts` (`{ userId, organizationId, role }`), `policies/access-policy.ts`: **toda** a matriz PLANO 6.1 (`participates`, `canViewTask`, `canEditTask`, `isReadOnlyFor`, `canCreateTask`, `canManageMembers`, `canSeeProject`, `canSeeRate`, `canEditRate`, `canSeeTaskTotal`, `canManageMeetings`, `canSeeDashboard`) + `isManagerEdit` (sempre verdadeiro para gestor). Entidades nunca concedem acesso. Organização diferente = sem acesso.
   - Pronto: um teste por linha **e** coluna da matriz (permitido e negado), mais isolamento de organização.
+  - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da política. Implementados ator e políticas puras para participação, tarefas, projetos, valores, agenda e dashboard, com isolamento por organização e entidades sem acesso. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 510 testes). Checkbox preservado para o laço.
 
 - [ ] M2.10 Custo e prazo
   - `rules/cost.ts` (subtotal, total; PLANO 6.2), `rules/deadline-label.ts` (frases da PLANO 6.3, recebe `today: DateOnly`).
