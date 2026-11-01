@@ -1,12 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import { createSqliteClient } from './client.js'
 
-describe('cliente SQLite', () => {
-  it('abre um banco em memória com as chaves estrangeiras habilitadas', () => {
+describe('createSqliteClient', () => {
+  it('aplica as migrações e cria todas as tabelas num banco vazio', () => {
     const database = createSqliteClient(':memory:')
+    const rows = database.$client
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all() as { name: string }[]
 
-    expect(database.$client.pragma('foreign_keys', { simple: true })).toBe(1)
-    expect(database.$client.pragma('journal_mode', { simple: true })).toBe('memory')
+    expect(rows.map((row) => row.name).sort()).toEqual(
+      [
+        '__drizzle_migrations',
+        'organizations',
+        'users',
+        'contributors',
+        'projects',
+        'project_members',
+        'tasks',
+        'task_participations',
+        'task_events',
+        'task_opens',
+        'meetings',
+        'meeting_participants',
+        'local_settings',
+      ].sort(),
+    )
 
     database.$client.close()
   })

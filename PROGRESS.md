@@ -264,9 +264,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Email de usuário e `name_key` de projeto têm unicidade por organização, conforme o plano; nenhuma unicidade adicional foi definida para entidades.
   - Nota: `pnpm check` passou: formatação, lint, typecheck e 633 testes.
 
-- [ ] M4.3 Schema: tarefas, envolvimentos, eventos, aberturas, agenda, `local_settings`; migração inicial
+- [x] M4.3 Schema: tarefas, envolvimentos, eventos, aberturas, agenda, `local_settings`; migração inicial
   - CHECKs e índices da PLANO 5 (inclusive índice parcial de um `responsible`). Gerar `migrations/` com `drizzle-kit generate` (script `db:generate`). Aplicar migrações em `client.ts`.
   - Pronto: teste aplica as migrações num banco vazio e confere as tabelas.
+  - Nota: Criados os schemas de tarefas, envolvimentos, eventos, aberturas, agenda e `local_settings`, com CHECKs, chaves e índices definidos na seção 5 do plano.
+  - Nota: Gerada a migração inicial pelo script `db:generate`; `createSqliteClient` agora aplica as migrações ao abrir o banco.
+  - Nota: Teste confirma as 12 tabelas do schema após migração em memória; `pnpm check` passou (633 testes).
 
 - [ ] M4.4 Mappers e repositórios: organização, usuários, entidades, projetos
   - Pronto: a parte correspondente da suíte de contrato passa no SQLite.

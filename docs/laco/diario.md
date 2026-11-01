@@ -373,3 +373,30 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.2 concluído. Criei os schemas Drizzle de organizações, usuários, entidades, projetos e membros de projeto, incluindo chaves estrangeiras e as unicidades por organização definidas no plano.
 >
 > `pnpm check` passou: formatação, lint, typecheck e 633 testes. Registrei as notas no `PROGRESS.md` e o status da rodada é `DONE`.
+
+## 2026-11-01 00:25 · M4.3 Schema: tarefas, envolvimentos, eventos, aberturas, agenda, `local_settings`; migração inicial
+
+- Alterações: 15 files changed, 1462 insertions(+), 7 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/infra-sqlite/migrations/0000_harsh_miek.sql`
+  - `packages/infra-sqlite/migrations/meta/0000_snapshot.json`
+  - `packages/infra-sqlite/migrations/meta/_journal.json`
+  - `packages/infra-sqlite/package.json`
+  - `packages/infra-sqlite/src/client.test.ts`
+  - `packages/infra-sqlite/src/client.ts`
+  - `packages/infra-sqlite/src/schema/index.ts`
+  - `packages/infra-sqlite/src/schema/local-settings.ts`
+  - `packages/infra-sqlite/src/schema/meeting-participants.ts`
+  - `packages/infra-sqlite/src/schema/meetings.ts`
+  - `packages/infra-sqlite/src/schema/task-events.ts`
+  - `packages/infra-sqlite/src/schema/task-opens.ts`
+  - `packages/infra-sqlite/src/schema/task-participations.ts`
+  - `packages/infra-sqlite/src/schema/tasks.ts`
+
+**Resumo do Codex:**
+
+> M4.3 concluído. Foram adicionados os schemas e a migração inicial; `createSqliteClient` aplica migrações ao abrir o banco. O teste confirma as 12 tabelas após migrar um banco em memória.
+>
+> `pnpm check` passou: 43 arquivos de teste, 633 testes. Registrei as notas no `PROGRESS.md` e escrevi `DONE` em `.loop/status`.
