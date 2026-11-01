@@ -21,7 +21,7 @@
     "lint": "eslint . --max-warnings 0",
     "dev": "pnpm --filter @agilebox/desktop dev",
     "build": "pnpm --filter @agilebox/desktop build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.1",

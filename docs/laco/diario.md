@@ -786,3 +786,26 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Implementei a seleção de vidro, o posicionamento da bandeja, o gerenciador de janelas e o ciclo de vida com instância única. Registrei a decisão provisória e a comparação manual pendente no Windows em [0001-vidro.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/docs/decisoes/0001-vidro.md) e [pendencias-do-pedro.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).
 >
 > `pnpm check` passou: 85 arquivos e 709 testes. O build do desktop gerou main, preload e renderers; como a rede estava indisponível, o binário Electron não foi baixado e a recompilação nativa foi ignorada. Registrar esse resultado e a pendência em [PROGRESS.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md).
+
+## 2026-11-01 02:08 · M5.11 Painel esqueleto ponta a ponta
+
+- Alterações: 9 files changed, 170 insertions(+), 4 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/App.module.css`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+  - `apps/desktop/src/renderer/panel/main.tsx`
+  - `apps/desktop/src/renderer/tray/App.tsx`
+  - `apps/desktop/src/renderer/tray/main.tsx`
+  - `package.json`
+
+**Resumo do Codex:**
+
+> M5.11 implementado. O painel usa os providers existentes e lista tarefas de `tasks.listBoard`, mostrando título, estado e projeto; a bandeja tem uma casca mínima. Também acrescentei o build do desktop ao `pnpm check`.
+>
+> `pnpm check` passou: 86 arquivos e 710 testes; o build gerou main, preload e renderers. O binário Electron não foi baixado por falta de rede, então a abertura via `pnpm dev` ficou registrada como conferência manual. A edição pela bandeja dependerá da tela prevista para o M9.
+>
+> Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e a pendência em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). Status: `DONE`.

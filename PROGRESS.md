@@ -392,9 +392,13 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: A bandeja usa 360×640 px conforme protótipo/HANDOFF; pendente comparar os dois modos de vidro no Windows 11.
   - Nota: `pnpm check` passou (85 arquivos, 709 testes) e o build do desktop gerou main, preload e renderers; o binário Electron não pôde ser baixado sem rede, então a recompilação nativa foi ignorada.
 
-- [ ] M5.11 Painel esqueleto ponta a ponta
+- [x] M5.11 Painel esqueleto ponta a ponta
   - `renderer/panel/{main.tsx,App.tsx,copy.ts}` com providers e uma tela temporária que lista as tarefas de `tasks.listBoard` (título, `StatusChip`, projeto); `renderer/tray/{main.tsx,App.tsx}` com casca mínima. Acrescentar o build do desktop ao script `check` da raiz.
   - Pronto: teste do `App` com `fake-api`; `pnpm check` (agora com build) passa. Pendência `CONFERIR`: `pnpm dev` abre o painel com as tarefas do seed; editar na bandeja atualiza o painel.
+  - Nota: Painel ligado à API IPC com providers e lista de tarefas; bandeja recebeu uma casca mínima.
+  - Nota: Teste do App confirmou chamada a `tasks.listBoard` e exibição de título, estado e projeto.
+  - Nota: `pnpm check` passou (86 arquivos, 710 testes) e o build gerou main, preload e renderers; binário Electron não baixou sem rede.
+  - Nota: A edição pela bandeja citada na conferência depende da tela de edição do M9; a casca deste passo ainda não edita tarefas.
 
 - [ ] PARADA M5: Pedro roda `pnpm dev` (no Windows e no Linux), confere a galeria e o painel esqueleto, e decide o vidro (0001-vidro.md).
 
