@@ -418,3 +418,23 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.4 concluído. Implementei os mappers de organização, usuário, entidade e projeto, além dos repositórios SQLite de usuários, entidades, projetos e membros. Como o plano não define uma porta de repositório para organizações, implementei apenas o mapper dessa tabela.
 >
 > `pnpm check` passou: 637 testes. Registrei as notas no [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
+
+## 2026-11-01 00:37 · M4.5 Repositórios: tarefas, envolvimentos, linha do tempo, aberturas
+
+- Alterações: 8 files changed, 649 insertions(+), 4 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/testing/fakes/in-memory-repositories.ts`
+  - `packages/application/src/testing/repository-contract.ts`
+  - `packages/application/src/use-cases/tasks/tasks.test.ts`
+  - `packages/infra-sqlite/src/index.ts`
+  - `packages/infra-sqlite/src/mappers/task-mappers.ts`
+  - `packages/infra-sqlite/src/repositories/task-repositories.test.ts`
+  - `packages/infra-sqlite/src/repositories/task-repositories.ts`
+
+**Resumo do Codex:**
+
+> M4.5 concluído. Implementei os repositórios SQLite de tarefas, envolvimentos, linha do tempo e aberturas, com isolamento por organização. Também alinhei o fake e o contrato para ordenar eventos do mais recente ao mais antigo.
+>
+> `pnpm check` passou: 641 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:279) e marquei `.loop/status` como `DONE`.

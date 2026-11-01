@@ -151,8 +151,8 @@ describe('casos de uso de tarefas', () => {
     expect(
       await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
     ).toMatchObject([
-      { type: 'renamed', asManager: true },
       { type: 'description_edited', asManager: true },
+      { type: 'renamed', asManager: true },
     ])
     expect(notifier.changes).toHaveLength(1)
   })

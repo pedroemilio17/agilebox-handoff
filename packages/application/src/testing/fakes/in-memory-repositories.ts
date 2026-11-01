@@ -265,7 +265,7 @@ export class InMemoryTimelineRepository implements TimelineRepository {
     await Promise.resolve()
     return [...bucket(this.state.timeline, org).values()]
       .filter((item) => item.taskId === taskId)
-      .sort((a, b) => a.at.localeCompare(b.at))
+      .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))
   }
   async saveMany(org: OrganizationId, events: readonly TimelineEvent[]) {
     await Promise.resolve()

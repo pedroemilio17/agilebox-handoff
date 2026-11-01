@@ -276,8 +276,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Implementados mappers de organização, usuário, entidade e projeto, além dos repositórios SQLite de usuários, entidades, projetos e membros.
   - Nota: Testes cobrem persistência, membros, isolamento por organização e nome de projeto repetido entre organizações; `pnpm check` passou (637 testes).
 
-- [ ] M4.5 Repositórios: tarefas, envolvimentos, linha do tempo, aberturas
+- [x] M4.5 Repositórios: tarefas, envolvimentos, linha do tempo, aberturas
   - Pronto: idem.
+  - Nota: Criados mappers e repositórios SQLite para tarefas, envolvimentos, eventos da linha do tempo e aberturas; tarefas carregam participantes e nome do projeto.
+  - Nota: Leituras e gravações validam a organização do registro pai e dos usuários/entidades relacionados; Recentes, Frequentes, busca e linha do tempo seguem a ordenação e o escopo do plano.
+  - Nota: Suíte de contrato ampliada para conferir linha do tempo mais recente primeiro; fake alinhado à mesma ordem. Testes SQLite cobrem persistência, isolamento e contagem de aberturas.
+  - Nota: `pnpm check` passou (641 testes); nenhuma dependência nova. Status `DONE`.
 
 - [ ] M4.6 Repositório de agenda, `SqliteUnitOfWork`, `createSqliteAdapters`
   - Pronto: suíte de contrato **inteira** passa no SQLite em memória; teste de rollback.

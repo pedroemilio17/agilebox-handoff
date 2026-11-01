@@ -67,7 +67,12 @@ export function describeRepositoryContract(
       await repositories.tasks.save(organizationId, task)
       await repositories.participations.save(organizationId, participation)
       await repositories.meetings.save(organizationId, meeting)
-      await repositories.timeline.saveMany(organizationId, [event])
+      const laterEvent: TimelineEvent = {
+        ...event,
+        id: toEventId('01ARZ3NDEKTSV4RRFFQ69G5FB4'),
+        at: '2026-01-02T00:00:00.000Z',
+      }
+      await repositories.timeline.saveMany(organizationId, [event, laterEvent])
 
       await expect(repositories.users.findById(organizationId, user.id)).resolves.toEqual(user)
       await expect(repositories.projects.findById(organizationId, project.id)).resolves.toEqual(
@@ -84,6 +89,7 @@ export function describeRepositoryContract(
         meeting,
       )
       await expect(repositories.timeline.listByTask(organizationId, task.id)).resolves.toEqual([
+        laterEvent,
         event,
       ])
     })
