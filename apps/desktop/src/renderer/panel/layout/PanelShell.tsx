@@ -12,6 +12,7 @@ export interface PanelShellProps {
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
+  readonly onNewTask: () => void
   readonly children?: ReactNode
 }
 
@@ -30,6 +31,7 @@ export function PanelShell({
   onMinimize,
   onToggleExpand,
   onClose,
+  onNewTask,
   children,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(false)
@@ -57,6 +59,7 @@ export function PanelShell({
           onMinimize={onMinimize}
           onToggleExpand={onToggleExpand}
           onClose={onClose}
+          onNewTask={onNewTask}
         />
         <div className={styles.content} key={visibleView}>
           {visibleView === 'projects' ? (
@@ -135,9 +138,10 @@ interface TitleBarProps {
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
+  readonly onNewTask: () => void
 }
 
-function TitleBar({ title, onMinimize, onToggleExpand, onClose }: TitleBarProps) {
+function TitleBar({ title, onMinimize, onToggleExpand, onClose, onNewTask }: TitleBarProps) {
   return (
     <header className={styles.titleBar}>
       <div className={styles.titleGroup}>
@@ -153,7 +157,7 @@ function TitleBar({ title, onMinimize, onToggleExpand, onClose }: TitleBarProps)
         </div>
       </div>
       <div className={styles.titleActions}>
-        <button className={styles.newTask} type="button">
+        <button className={styles.newTask} onClick={onNewTask} type="button">
           <span aria-hidden="true">＋</span> {panelCopy.newTask}
         </button>
         <WindowControls

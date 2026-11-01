@@ -5,3 +5,4 @@
 - [ ] M6.3 · DECIDIR: DECISÃO PROVISÓRIA (12.6): confirmar esqueleto e mensagem curta de erro no quadro; alternativa: usar um estado estático sem esqueleto e oferecer ação explícita para tentar de novo.
 - [ ] M6.4 · CONFERIR: abrir o painel, arrastar um card entre colunas e confirmar o destaque azul da coluna de destino e a atualização do estado.
 - [ ] M6.4 · DECIDIR: DECISÃO PROVISÓRIA (12.2): confirmar mudança apenas de estado com ordenação por `updated_at` mais recente primeiro; alternativa: permitir reordenar cards manualmente dentro da coluna.
+- [ ] M6.5 · CONFERIR: abrir o painel, criar uma tarefa em cada projeto disponível, confirmar que o projeto selecionado vem pré-selecionado, que título vazio não permite criar e que a tarefa criada abre com opção de voltar ao quadro.

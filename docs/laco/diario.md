@@ -891,3 +891,24 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M6.4 concluído. O quadro agora permite arrastar cards entre colunas, destaca o destino em azul e chama `tasks.move`. Também há um seletor de estado acessível por teclado; os cards são ordenados pelos mais recentemente atualizados.
 >
 > `pnpm check` passou: 87 arquivos de teste, 723 testes e build do desktop. As notas do passo estão em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:433), e registrei em [pendências do Pedro](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md) a conferência visual e a decisão provisória 12.2. Status: `DONE`.
+
+## 2026-11-01 11:31 · M6.5 Nova tarefa
+
+- Alterações: 9 files changed, 270 insertions(+), 10 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/renderer/panel/App.module.css`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/board/NewTaskDialog.module.css`
+  - `apps/desktop/src/renderer/panel/board/NewTaskDialog.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+  - `apps/desktop/src/renderer/panel/hooks/use-create-task.ts`
+  - `apps/desktop/src/renderer/panel/layout/PanelShell.tsx`
+
+**Resumo do Codex:**
+
+> M6.5 concluído. O botão **Nova tarefa** abre um diálogo para escolher projeto e título; o envio fica desabilitado sem título ou projeto. Ao criar, o painel invalida o quadro, registra a abertura e mostra a tarefa com opção de voltar. A vista é provisória até M6.6.
+>
+> `pnpm check` passou: formatação, lint, tipos, **725 testes** e build do desktop. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:441), a conferência visual pendente em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md) e o status `DONE` em `.loop/status`.

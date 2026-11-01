@@ -268,6 +268,58 @@ describe('Painel', () => {
     ).toBeTruthy()
   })
 
+  it('cria tarefa no projeto selecionado e abre seu detalhe', async () => {
+    const createdTask: TaskDto = {
+      ...task,
+      id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC99',
+      projectId: projects[1]!.id,
+      projectName: projects[1]!.name,
+      title: 'Preparar release',
+    }
+    const api = createFakeApi()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    const create = vi.spyOn(api.tasks, 'create').mockResolvedValue(createdTask)
+    const recordOpen = vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+    const user = userEvent.setup()
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Nova tarefa' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Projeto' }), projects[1]!.id)
+    await user.type(screen.getByRole('textbox', { name: 'Título' }), 'Preparar release')
+    await user.click(screen.getByRole('button', { name: 'Criar tarefa' }))
+
+    expect(create).toHaveBeenCalledWith({ projectId: projects[1]!.id, title: 'Preparar release' })
+    expect(await screen.findByRole('region', { name: 'Detalhe da tarefa' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Preparar release' })).toBeTruthy()
+    expect(recordOpen).toHaveBeenCalledWith({ taskId: createdTask.id })
+  })
+
+  it('mantém a criação desabilitada enquanto o título estiver vazio', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    const user = userEvent.setup()
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Nova tarefa' }))
+
+    expect(screen.getByRole('button', { name: 'Criar tarefa' }).hasAttribute('disabled')).toBe(true)
+  })
+
   it('seleciona projeto com nome repetido sem criar outro', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)

@@ -438,9 +438,12 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota: Controle de estado por card oferece alternativa acessível por teclado; cards ficam ordenados por `updated_at` mais recente primeiro (proposta provisória 12.2).
   - Nota: `pnpm check` passou: formatação, lint, tipos, 723 testes e build do desktop.
 
-- [ ] M6.5 Nova tarefa
+- [x] M6.5 Nova tarefa
   - Botão "Nova tarefa" da `TitleBar`: escolhe projeto (padrão: o selecionado), título, cria com `tasks.create` e **abre o detalhe**. Colaborador só vê projetos de que é membro.
   - Pronto: teste do fluxo e do estado desabilitado sem título.
+  - Nota: Diálogo lista apenas projetos disponíveis pela API; usa o selecionado ou, sem seleção, o primeiro projeto disponível.
+  - Nota: Criar invalida o quadro, registra `recordOpen` e abre a tarefa; a vista transitória mostra título e retorno ao quadro até M6.6.
+  - Nota: `pnpm check` passou: formatação, lint, tipos, 725 testes e build do desktop.
 
 - [ ] M6.6 Detalhe da tarefa: estrutura e card Detalhes
   - `task-detail/TaskDetailView` (cabeçalho: voltar + título editável; colunas 1,15 × 1; gap 16 px), `DetailsCard` (descrição, estado via `StatusMenu`, responsável, chamado: ID + link opcional), `useBlurSave` (**grava ao sair do campo**, um `update` por blur, só se mudou), `recordOpen` ao abrir. Campos desabilitados + `ReadOnlyBadge` quando `readOnly`.
