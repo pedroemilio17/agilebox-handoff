@@ -8,9 +8,11 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
+    "test": "pnpm native:node && vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
+    "native:node": "node scripts/ensure-native.mjs node",
+    "native:electron": "node scripts/ensure-native.mjs electron",
     "db:generate": "pnpm --filter @agilebox/infra-sqlite db:generate",
     "db:migrate": "pnpm --filter @agilebox/infra-sqlite db:migrate",
     "db:seed": "pnpm --filter @agilebox/infra-sqlite db:seed",
@@ -20,6 +22,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
     "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.14.0",

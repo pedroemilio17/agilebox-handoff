@@ -485,3 +485,26 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.7 conferido e concluído; registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:293) e defini `.loop/status` como `DONE`.
 >
 > O teste do seed confirmou as contagens esperadas e eventos na linha do tempo, incluindo edição de gestor. `pnpm check` passou: 652 testes. Não rodei `git` nem comandos de instalação.
+
+## 2026-11-01 00:56 · M4.8 ABI do better-sqlite3 (Node × Electron)
+
+- Alterações: 8 files changed, 326 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `docs/decisoes/0002-better-sqlite3-abi.md`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `scripts/ensure-native.mjs`
+  - `tooling/native-rebuild-plan.d.mts`
+  - `tooling/native-rebuild-plan.mjs`
+  - `tooling/native-rebuild-plan.test.ts`
+
+**Resumo do Codex:**
+
+> Passo M4.8 concluído, com status `DONE`.
+>
+> - Adicionei a verificação e reconstrução do ABI em [ensure-native.mjs](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/scripts/ensure-native.mjs) e os scripts `native:node` e `native:electron`. O `test` verifica o alvo Node antes do Vitest.
+> - Registrei a estratégia e o custo de alternar o binário em [0002-better-sqlite3-abi.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/decisoes/0002-better-sqlite3-abi.md), e anotei o passo no `PROGRESS.md`.
+> - `pnpm check` passou: formatação, lint, tipos e 654 testes.
+> - O teste no Windows de `native:electron` seguido de `native:node` ficou registrado como pendência para o Pedro.

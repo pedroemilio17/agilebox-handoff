@@ -297,13 +297,17 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Teste do seed passou e conferiu 5 usuários, 3 projetos, 2 entidades, 10 tarefas, 3 agendamentos e eventos de linha do tempo, incluindo edição de gestor.
   - Nota: `pnpm check` passou (formatação, lint, tipos e 652 testes); sem dependências novas ou pendências externas deste passo.
 
-- [ ] M4.8 ABI do better-sqlite3 (Node × Electron)
+- [x] M4.8 ABI do better-sqlite3 (Node × Electron)
   - O módulo nativo é um só em `node_modules` (hoisted): compilado para o Node (Vitest) **ou** para o Electron (app). Escrever `scripts/ensure-native.mjs <node|electron>`: tenta carregar o `better-sqlite3` no alvo (para `electron`, com `ELECTRON_RUN_AS_NODE=1` e o binário do Electron, se instalado); se falhar por `NODE_MODULE_VERSION`, reconstrói (`npm rebuild better-sqlite3` para o Node, `@electron/rebuild` para o Electron) e sai com código ≠ 0 e mensagem clara se não conseguir (sem rede, sem compilador). Se o pacote ou o Electron ainda não estiverem instalados, sai com 0 sem fazer nada.
   - Scripts de raiz: `native:node`, `native:electron`; o `test` passa a chamar `pnpm native:node` antes do Vitest (o pnpm não executa `pretest` sozinho). Os scripts `dev` e `build` do desktop (M5.1) chamarão `native:electron`.
   - Escrever `docs/decisoes/0002-better-sqlite3-abi.md` (PLANO 11 · R2): a estratégia, o custo de alternar o binário e a alternativa de ter dois diretórios de instalação.
   - Testes: a lógica de decisão (qual comando, qual alvo) em função pura com teste; o script em si não é executado nos testes.
   - Deps: `root dev @electron/rebuild`.
   - Pronto: `pnpm check` passa; documento escrito. Pendência `TESTAR-NO-WINDOWS`: rodar `pnpm native:electron` e depois `pnpm native:node` no Windows.
+  - Nota: Criado `scripts/ensure-native.mjs`; detecta pacote/alvo ausente como no-op, tenta carregar no alvo e reconstrói somente diante de incompatibilidade de ABI.
+  - Nota: `native:node` usa `npm rebuild` no workspace SQLite, `native:electron` usa `@electron/rebuild`; o `test` chama a verificação Node antes do Vitest.
+  - Nota: Estratégia, custo da alternância do binário hoisted e alternativa de instalações separadas registrados em `docs/decisoes/0002-better-sqlite3-abi.md`.
+  - Nota: Testes da decisão de rebuild cobrem os comandos de Node e Electron; a validação no Windows segue como pendência do Pedro.
 
 - [ ] PARADA M4: Pedro roda `pnpm db:reset && pnpm db:seed` e confere o banco.
 
