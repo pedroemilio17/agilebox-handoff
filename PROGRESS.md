@@ -236,9 +236,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Gravações são exclusivas do gestor, usam `UnitOfWork` e publicam mudança de agenda; testes cobrem permissões, ordenação e ausência de registros.
   - Nota: `pnpm check` passou: 631 testes, sem dependências novas.
 
-- [ ] M3.16 `createUseCases` e roteiro
+- [x] M3.16 `createUseCases` e roteiro
   - `create-use-cases.ts` (DI manual), `index.ts`; teste "roteiro" da PLANO 9 · M3 ponta a ponta com fakes; cobertura ≥ 90% em `packages/application`.
   - Pronto: `pnpm check` e `pnpm coverage`.
+  - Nota: Adicionado roteiro ponta a ponta com fakes desde a criação do projeto até a edição do gestor e conferência da linha do tempo.
+  - Nota: Índice público agora exporta os casos de uso de participações e agenda junto da composição `createUseCases`.
+  - Nota: `pnpm check` passou (632 testes); cobertura em `packages/application`: 92,96% statements e 96,51% linhas.
 
 - [ ] PARADA M3: Pedro revisa os casos de uso e o roteiro.
 

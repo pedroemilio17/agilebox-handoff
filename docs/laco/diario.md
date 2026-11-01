@@ -319,3 +319,18 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Passo **M3.15 concluído**. Implementei os cinco casos de uso da agenda e os conectei a `createUseCases`. Os testes cobrem consultas, permissões de gestor, gravações e notificações.
 >
 > `pnpm check` passou: **631 testes**. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
+
+## 2026-10-31 23:55 · M3.16 `createUseCases` e roteiro
+
+- Alterações: 3 files changed, 92 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.test.ts`
+  - `packages/application/src/index.ts`
+
+**Resumo do Codex:**
+
+> M3.16 concluído. O roteiro com fakes cobre o fluxo até a edição do gestor e verifica a linha do tempo. Também completei os exports públicos dos casos de uso de participações e agenda em [index.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/application/src/index.ts).
+>
+> `pnpm check` passou com 632 testes; `pnpm coverage` passou. Em `packages/application`, a cobertura ficou em 92,96% de statements e 96,51% de linhas. Registrei as notas no `PROGRESS.md` e marquei `.loop/status` como `DONE`.
