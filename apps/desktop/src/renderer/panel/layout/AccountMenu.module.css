@@ -1,0 +1,67 @@
+.root {
+  position: relative;
+  display: grid;
+}
+
+.menu {
+  position: absolute;
+  bottom: 0;
+  left: calc(100% + var(--space-2));
+  z-index: 20;
+  display: grid;
+  min-width: 260px;
+  padding: var(--space-2);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-popover);
+  backdrop-filter: var(--glass-popover-backdrop);
+  box-shadow: var(--shadow-window);
+}
+
+.hint {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--glass-control);
+  outline: none;
+}
+
+.initials {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--glass-control);
+  font-size: var(--font-size-chip);
+  font-weight: 600;
+}
+
+.name {
+  flex: 1;
+}
+
+.role {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { EmptyState, WindowControls } from '@agilebox/ui'
+import type { SessionUserDto } from '@agilebox/contract'
 import { panelCopy } from '../copy'
+import { AccountMenu } from './AccountMenu'
 import styles from './PanelShell.module.css'
 
 export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
@@ -13,6 +15,12 @@ export interface PanelShellProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
+  readonly account?: {
+    readonly users: readonly SessionUserDto[]
+    readonly currentUserId: string | undefined
+    readonly onSwitch: (userId: string) => void
+  }
+  readonly dashboard?: ReactNode
   readonly children?: ReactNode
 }
 
@@ -32,6 +40,8 @@ export function PanelShell({
   onToggleExpand,
   onClose,
   onNewTask,
+  account,
+  dashboard,
   children,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(false)
@@ -52,6 +62,7 @@ export function PanelShell({
         selected={visibleView}
         onExpandChange={setRailExpanded}
         onSelect={onViewChange}
+        account={account}
       />
       <section className={styles.main}>
         <TitleBar
@@ -64,6 +75,8 @@ export function PanelShell({
         <div className={styles.content} key={visibleView}>
           {visibleView === 'projects' ? (
             children
+          ) : visibleView === 'dashboard' && dashboard ? (
+            dashboard
           ) : visibleView === 'settings' ? (
             <EmptyState title={panelCopy.comingSoon} />
           ) : visibleView === 'plugins' ? (
@@ -83,9 +96,10 @@ interface RailProps {
   readonly selected: PanelView
   readonly onExpandChange: (expanded: boolean) => void
   readonly onSelect: (view: PanelView) => void
+  readonly account: PanelShellProps['account']
 }
 
-function Rail({ expanded, items, selected, onExpandChange, onSelect }: RailProps) {
+function Rail({ expanded, items, selected, onExpandChange, onSelect, account }: RailProps) {
   return (
     <nav
       className={`${styles.rail} ${expanded ? styles.expanded : ''}`}
@@ -119,16 +133,14 @@ function Rail({ expanded, items, selected, onExpandChange, onSelect }: RailProps
       ))}
       <span className={styles.spacer} />
       <div className={styles.divider} />
-      <button
-        className={`${styles.railItem} ${styles.account}`}
-        type="button"
-        aria-label={panelCopy.account}
-      >
-        <span className={styles.avatar} aria-hidden="true">
-          AG
-        </span>
-        <span className={styles.railLabel}>{panelCopy.account}</span>
-      </button>
+      <AccountMenu
+        users={account?.users ?? []}
+        currentUserId={account?.currentUserId}
+        onSwitch={account?.onSwitch ?? (() => undefined)}
+        buttonClassName={`${styles.railItem} ${styles.account}`}
+        avatarClassName={styles.avatar}
+        labelClassName={styles.railLabel}
+      />
     </nav>
   )
 }

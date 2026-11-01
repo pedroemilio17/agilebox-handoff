@@ -73,7 +73,12 @@ export function toContributorDto(contributor: Contributor, actor: Actor): Contri
 }
 
 export function toProjectDto(project: Project): ProjectDto {
-  return { id: project.id, name: project.name, createdAt: project.createdAt }
+  return {
+    id: project.id,
+    name: project.name,
+    createdBy: project.createdBy,
+    createdAt: project.createdAt,
+  }
 }
 
 export function toParticipationSummaryDto(

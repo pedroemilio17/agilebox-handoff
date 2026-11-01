@@ -20,6 +20,7 @@ describe('schemas de projetos', () => {
     const project = {
       id: projectId,
       name: 'Projeto Ágil',
+      createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
       createdAt: '2026-10-31T12:00:00.000Z',
     }
     expect(createProjectOutputSchema.parse(project)).toEqual(project)

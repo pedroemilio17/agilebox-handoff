@@ -10,6 +10,7 @@ export const removeProjectMemberInputSchema = addProjectMemberInputSchema
 export const projectDtoSchema = z.object({
   id: ulidSchema,
   name: nameSchema,
+  createdBy: ulidSchema,
   createdAt: isoDateTimeSchema,
 })
 

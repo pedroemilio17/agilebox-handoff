@@ -51,20 +51,3 @@
   margin: 0;
   font-size: var(--font-size-body);
 }
-
-.taskDetail {
-  display: grid;
-  align-content: start;
-  justify-items: start;
-  gap: var(--space-4);
-  padding: var(--space-5);
-}
-
-.taskDetail h2,
-.taskDetail p {
-  margin: 0;
-}
-
-.taskDetail p {
-  color: var(--color-text-muted);
-}

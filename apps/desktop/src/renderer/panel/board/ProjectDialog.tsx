@@ -11,6 +11,8 @@ export interface ProjectDialogProps {
   readonly selectedProjectId: string | null
   readonly onSelect: (projectId: string | null) => void
   readonly onClose: () => void
+  readonly canManageMembers?: (project: ProjectDto) => boolean
+  readonly onManageMembers?: (project: ProjectDto) => void
 }
 
 function projectNameKey(name: string): string {
@@ -28,10 +30,17 @@ export function ProjectDialog({
   selectedProjectId,
   onSelect,
   onClose,
+  canManageMembers,
+  onManageMembers,
 }: ProjectDialogProps) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const createProject = useCreateProject()
+  const selectedProject = projects.find((project) => project.id === selectedProjectId)
+  const membersAllowed =
+    selectedProject !== undefined &&
+    onManageMembers !== undefined &&
+    canManageMembers?.(selectedProject)
   const existing = projects.find((project) => projectNameKey(project.name) === projectNameKey(name))
 
   function close() {
@@ -98,6 +107,18 @@ export function ProjectDialog({
             </button>
           ))}
         </div>
+        {membersAllowed ? (
+          <Button
+            className={styles.newProject}
+            onClick={() => {
+              close()
+              onManageMembers(selectedProject)
+            }}
+            type="button"
+          >
+            {panelCopy.members}
+          </Button>
+        ) : null}
         {creating ? (
           <div className={styles.createRow}>
             <input

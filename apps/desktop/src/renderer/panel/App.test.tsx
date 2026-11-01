@@ -27,11 +27,13 @@ const projects = [
   {
     id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC1',
     name: 'Projeto Aurora',
+    createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
     createdAt: '2026-10-31T12:00:00.000Z',
   },
   {
     id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC2',
     name: 'Projeto Boreal',
+    createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
     createdAt: '2026-10-31T12:00:00.000Z',
   },
 ]
@@ -298,7 +300,7 @@ describe('Painel', () => {
 
     expect(create).toHaveBeenCalledWith({ projectId: projects[1]!.id, title: 'Preparar release' })
     expect(await screen.findByRole('region', { name: 'Detalhe da tarefa' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Preparar release' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Voltar ao quadro/ })).toBeTruthy()
     expect(recordOpen).toHaveBeenCalledWith({ taskId: createdTask.id })
   })
 

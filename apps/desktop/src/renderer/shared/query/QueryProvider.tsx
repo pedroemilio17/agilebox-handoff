@@ -5,7 +5,9 @@ import { createChangeSync } from './sync-changes'
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const api = useApi()
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  )
 
   useEffect(
     () => createChangeSync(queryClient, (callback) => api.onChanges(callback)),

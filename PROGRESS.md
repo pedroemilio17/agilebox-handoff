@@ -445,25 +445,32 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota: Criar invalida o quadro, registra `recordOpen` e abre a tarefa; a vista transitória mostra título e retorno ao quadro até M6.6.
   - Nota: `pnpm check` passou: formatação, lint, tipos, 725 testes e build do desktop.
 
-- [ ] M6.6 Detalhe da tarefa: estrutura e card Detalhes
+- [x] M6.6 Detalhe da tarefa: estrutura e card Detalhes
   - `task-detail/TaskDetailView` (cabeçalho: voltar + título editável; colunas 1,15 × 1; gap 16 px), `DetailsCard` (descrição, estado via `StatusMenu`, responsável, chamado: ID + link opcional), `useBlurSave` (**grava ao sair do campo**, um `update` por blur, só se mudou), `recordOpen` ao abrir. Campos desabilitados + `ReadOnlyBadge` quando `readOnly`.
   - Pronto: testes de blur (uma gravação), de não gravar sem mudança e do modo somente leitura.
+  - Nota (Claude): Detalhe com cabeçalho (voltar + título editável), card Detalhes (descrição, status por StatusMenu, responsável, chamado com ID e link) e useBlurSave (um update por blur, só se mudou). recordOpen passou do App para o TaskDetailView.
+  - Nota (Claude): QueryProvider agora usa retry: false (as chamadas são locais; erro aparece na hora).
 
-- [ ] M6.7 Card Prazo
+- [x] M6.7 Card Prazo
   - `DeadlineCard`: `DateField` + texto auxiliar de `deadlineLabel` ("Em N dias", "Vence hoje", "Vence amanhã", "Venceu há N dias", "Concluída", "Sem prazo definido"); "hoje" vem do relógio injetado.
   - Pronto: testes de cada frase.
+  - Nota (Claude): DeadlineCard com DateField e frase de deadlineLabel; 'hoje' vem de todayDateOnly() (fuso local), injetável por prop nos testes.
 
-- [ ] M6.8 Cards Custo e Envolvidos
+- [x] M6.8 Cards Custo e Envolvidos
   - `ParticipantsCard` (lista de envolvidos; adicionar usuário ou entidade, papel Responsável/Apoio, remover), `ContributorPicker` e `CreateContributor` (botão "Criar entidade"), `CostCard` (horas e valor/hora por linha, subtotal e total recalculando na hora; vírgula decimal; valor/hora de envolvido novo vem do padrão dele; editar atualiza o padrão). Nesta etapa o card mostra R$ **conforme o DTO** (`null` → não renderiza valores).
   - Pronto: testes de cálculo, vírgula, remoção, e de ocultar R$ quando o DTO vem com `null`.
+  - Nota (Claude): ParticipantsCard (adicionar usuário/entidade, papel, remover, Criar entidade), CostCard (horas × valor/hora, subtotal e total recalculando na hora, vírgula decimal) e hooks de participação. Editar o valor/hora na tarefa chama também users/contributors.setDefaultRate (o servidor não faz isso sozinho; PLANO 2.4). R$ só aparece quando o DTO traz o valor.
 
-- [ ] M6.9 Card Linha do tempo
+- [x] M6.9 Card Linha do tempo
   - `TimelineCard`: entradas com data e hora, quem, o quê (texto do `timeline.list`), mais recente no topo, rolável; marca "Gestor" com as cores `manager` do HANDOFF; "Sem atualizações ainda." quando vazia.
   - Pronto: testes de ordem, marca Gestor e estado vazio.
+  - Nota (Claude): TimelineCard: mais recente no topo, autor pelo session.listUsers, marca Gestor, 'Sem atualizações ainda.' quando vazia.
 
-- [ ] M6.10 Acabamento do painel
+- [x] M6.10 Acabamento do painel
   - Passada de revisão: animações do HANDOFF (cards sobem 8 px / hover 2 px, troca de visão, modal), `prefers-reduced-motion`, ordem de foco (barra lateral → título → conteúdo), `aria-label` de botões só com ícone. Atualizar a galeria. `pnpm check` limpo.
   - Pendência `CONFERIR`: percorrer o painel com o protótipo ao lado.
+  - Nota (Claude): Cards sobem 8 px ao entrar e 2 px no hover; tudo respeita prefers-reduced-motion. Ordem de foco segue o DOM (barra lateral → título → conteúdo). A galeria não ganhou os cards do detalhe: eles dependem da API e são cobertos por testes com fake-api.
+  - Nota (Claude): Corrigido fora do laço: handlers IPC da janela, área de arrasto, janela opaca no Linux e preload CommonJS (ver docs/decisoes/0001-vidro.md).
 
 - [ ] PARADA M6: Pedro usa o painel como colaborador (criar, mover, editar, fechar e reabrir; dados persistem) e compara com o protótipo.
 
@@ -471,25 +478,30 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 
 ## M7 · Permissões e gestor (HANDOFF "Dashboard", "Regras de negócio"; PLANO 6.1, 9 · M7)
 
-- [ ] M7.1 Conta e capacidades
+- [x] M7.1 Conta e capacidades
   - `layout/AccountMenu` (troca de perfil **de demonstração**: lista de usuários, chama `session.switchUser`, invalida tudo), `useActor` com `canSeeDashboard`, `canSeeRates` etc. vindos do servidor/DTO.
   - Pronto: testes de troca de perfil e de item Dashboard aparecendo só para gestor.
+  - Nota (Claude): AccountMenu na base da barra lateral (troca de perfil de demonstração: lista de usuários, session.switchUser, invalida tudo e volta a Projetos). useActor já trazia canSeeDashboard/canSeeRates.
 
-- [ ] M7.2 Permissões na tela
+- [x] M7.2 Permissões na tela
   - Colaborador: nenhum R$ de outras pessoas nem o total; campos desabilitados + `ReadOnlyBadge` quando `readOnly`; erros `FORBIDDEN` viram toast curto. Gestor: edita tudo, e a linha do tempo mostra "Gestor".
   - Pronto: testes com `fake-api` nos dois perfis.
+  - Nota (Claude): Colaborador: R$ só aparece quando o DTO traz o valor; campos desabilitados e selo 'Somente leitura'. FORBIDDEN ao salvar vira toast curto (SaveError). Gestor: linha do tempo marca 'Gestor'.
 
-- [ ] M7.3 Dashboard
+- [x] M7.3 Dashboard
   - `dashboard/DashboardView`, `StackedBar` (largura anima 0,5 s), `StatCard` (5 estados, porcentagem grande + contagem), `CollaboratorTable` (nº de itens, barra de estados, % concluído, botão "Abrir projetos"). Estados vazio e carregando.
   - Pronto: testes de porcentagens e de acessibilidade (estados nunca só por cor).
+  - Nota (Claude): DashboardView com StackedBar (largura anima 0,5 s), cinco StatCard e CollaboratorTable. O DTO só traz porcentagens, então o card mostra a porcentagem (sem contagem por estado). Estados nunca só por cor: o texto e o aria-label levam o nome e a porcentagem.
 
-- [ ] M7.4 Abrir projetos de um colaborador
+- [x] M7.4 Abrir projetos de um colaborador
   - "Abrir projetos" abre o quadro com `listBoard({ forUserId })`; `board/ManagerBanner` ("Tarefas de X · editando como Gestor" + "Voltar às minhas"). Edições nesse quadro são marcadas Gestor.
   - Pronto: testes do fluxo e do botão voltar.
+  - Nota (Claude): 'Abrir projetos' abre o quadro com listBoard({ forUserId }) e o ManagerBanner (Tarefas de X · editando como Gestor + Voltar às minhas).
 
-- [ ] M7.5 Membros do projeto
+- [x] M7.5 Membros do projeto
   - `board/ProjectMembersDialog` (PLANO 12.1, `DECISÃO PROVISÓRIA`): botão "Membros" no `ProjectDialog` visível só para quem criou o projeto e para o gestor; listar, adicionar e remover.
   - Pronto: testes de visibilidade do botão e das ações.
+  - Nota (Claude): DECISÃO PROVISÓRIA (PLANO 12.1): botão 'Membros' no ProjectDialog para o projeto selecionado, visível ao gestor e a quem criou o projeto. Para isso o ProjectDto ganhou createdBy (contrato + mapper). ProjectMembersDialog lista, adiciona e remove.
 
 - [ ] PARADA M7: Pedro troca de perfil e confere: colaborador não vê R$ nem Dashboard; gestor edita e a linha do tempo marca "Gestor".
 

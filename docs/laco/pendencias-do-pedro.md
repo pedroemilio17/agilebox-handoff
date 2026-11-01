@@ -6,3 +6,7 @@
 - [ ] M6.4 · CONFERIR: abrir o painel, arrastar um card entre colunas e confirmar o destaque azul da coluna de destino e a atualização do estado.
 - [ ] M6.4 · DECIDIR: DECISÃO PROVISÓRIA (12.2): confirmar mudança apenas de estado com ordenação por `updated_at` mais recente primeiro; alternativa: permitir reordenar cards manualmente dentro da coluna.
 - [ ] M6.5 · CONFERIR: abrir o painel, criar uma tarefa em cada projeto disponível, confirmar que o projeto selecionado vem pré-selecionado, que título vazio não permite criar e que a tarefa criada abre com opção de voltar ao quadro.
+
+- [ ] M6 · CONFERIR: abrir uma tarefa, editar descrição, prazo, horas e valor/hora, mudar o estado e conferir a linha do tempo; comparar com `design/Painel.dc.html`.
+- [ ] M7 · CONFERIR: trocar de perfil pela Conta (colaborador: sem Dashboard e sem R$; gestor: Dashboard, "Abrir projetos" e marca Gestor na linha do tempo).
+- [ ] M7.5 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.1): o botão "Membros" aparece para o projeto selecionado, só para o gestor e para quem criou o projeto.

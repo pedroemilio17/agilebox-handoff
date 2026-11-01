@@ -43,12 +43,17 @@ export class WindowManager implements ShellWindows {
   close(sender: unknown): void {
     const window = this.windowOf(sender)
     if (window === undefined) return
-    // A bandeja só some da tela; fechar o painel encerra o aplicativo (até o ícone de bandeja do M10.1).
-    if (window === this.tray) window.hide()
-    else window.close()
+    if (window !== this.tray) return window.close()
+    // A bandeja só some da tela. Se o painel também não está visível, não sobra como reabrir
+    // (o ícone de bandeja vem no M10.1): nesse caso encerra o aplicativo.
+    window.hide()
+    if (this.panel === undefined || this.panel.isDestroyed() || !this.panel.isVisible()) {
+      if (this.panel !== undefined && !this.panel.isDestroyed()) this.panel.close()
+      else this.onPanelClosed()
+    }
   }
 
-  // No painel, "Recolher" mostra a bandeja e minimiza o painel; na bandeja, "Expandir" volta ao painel.
+  // No painel, "Recolher" esconde o painel e mostra a bandeja; na bandeja, "Expandir" volta ao painel.
   toggleTray(sender: unknown): void {
     if (this.windowOf(sender) === this.tray) {
       this.openPanel()
@@ -56,7 +61,7 @@ export class WindowManager implements ShellWindows {
       return
     }
     this.createTray().show()
-    this.panel?.minimize()
+    this.panel?.hide()
   }
 
   openPanel(): void {
