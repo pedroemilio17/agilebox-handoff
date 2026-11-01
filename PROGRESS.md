@@ -210,9 +210,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Testes cobrem sucesso, negação, prazo/chamado via mapeamento, notificações, somente leitura e rollback quando a gravação do evento falha.
   - Nota: `pnpm check` passou: 609 testes, sem dependências novas.
 
-- [ ] M3.12 Casos de uso: listas de tarefas
+- [x] M3.12 Casos de uso: listas de tarefas
   - `list-board` ("Minhas tarefas", filtro por projeto, `forUserId` só gestor), `list-team-board`, `list-recent`, `list-frequent`, `search-tasks`, `record-open`.
   - Pronto: ordenações e filtros de acesso testados.
+  - Nota: Casos de uso de listas e registro de abertura ligados ao `createUseCases`; acesso, participação, projeto e busca cobertos por testes.
+  - Nota: Fakes ordenam estados na ordem do produto e Frequentes pela última abertura (desempate por contagem); `pnpm check` passou (615 testes).
 
 - [ ] M3.13 Casos de uso: envolvimentos
   - `add` (copia o valor padrão, PLANO 2.4), `remove`, `set-hours`, `set-rate` (atualiza o padrão do envolvido; permissão PLANO 2.3). Todos geram eventos.

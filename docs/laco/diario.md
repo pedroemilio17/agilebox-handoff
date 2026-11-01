@@ -249,3 +249,21 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.11 concluído. Implementei criar, consultar detalhe, editar e mover tarefas, com controle de acesso, eventos na mesma transação e rollback em caso de falha ao gravar eventos.
 >
 > `pnpm check` passou: 609 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status está `DONE`.
+
+## 2026-10-31 23:38 · M3.12 Casos de uso: listas de tarefas
+
+- Alterações: 6 files changed, 372 insertions(+), 6 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/create-use-cases.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/testing/fakes/in-memory-repositories.ts`
+  - `packages/application/src/use-cases/tasks/list-tasks.ts`
+  - `packages/application/src/use-cases/tasks/task-lists.test.ts`
+
+**Resumo do Codex:**
+
+> M3.12 concluído. Implementei e conectei os casos de uso das listas de tarefas e do registro de abertura. Os testes cobrem filtros de acesso, ordenação e isolamento por organização.
+>
+> `pnpm check` passou: 615 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e o status ficou `DONE`.

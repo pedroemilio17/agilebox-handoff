@@ -14,6 +14,14 @@ import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
 import { CreateTask, GetTaskDetail, MoveTask, UpdateTask } from './use-cases/tasks/tasks'
+import {
+  ListBoard,
+  ListFrequentTasks,
+  ListRecentTasks,
+  ListTeamBoard,
+  RecordTaskOpen,
+  SearchTasks,
+} from './use-cases/tasks/list-tasks'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -42,6 +50,12 @@ export function createUseCases(deps: AppDeps) {
       getDetail: new GetTaskDetail(deps),
       update: new UpdateTask(deps),
       move: new MoveTask(deps),
+      listBoard: new ListBoard(deps),
+      listTeamBoard: new ListTeamBoard(deps),
+      listRecent: new ListRecentTasks(deps),
+      listFrequent: new ListFrequentTasks(deps),
+      search: new SearchTasks(deps),
+      recordOpen: new RecordTaskOpen(deps),
     },
   }
 }

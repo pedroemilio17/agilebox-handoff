@@ -21,6 +21,8 @@ import type {
   UserRepository,
 } from '../../ports'
 
+const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
+
 export interface InMemoryState {
   contributors: Map<OrganizationId, Map<string, Contributor>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
@@ -209,7 +211,11 @@ export class InMemoryTaskRepository implements TaskRepository {
                 part.participant.kind === 'user' && part.participant.userId === query.userId,
             )),
       )
-      .sort((a, b) => a.status.localeCompare(b.status) || a.createdAt.localeCompare(b.createdAt))
+      .sort(
+        (a, b) =>
+          taskStatusOrder.indexOf(a.status) - taskStatusOrder.indexOf(b.status) ||
+          a.createdAt.localeCompare(b.createdAt),
+      )
   }
   async listRecent(org: OrganizationId, userId: User['id']) {
     await Promise.resolve()
@@ -218,10 +224,16 @@ export class InMemoryTaskRepository implements TaskRepository {
   async listFrequent(org: OrganizationId, userId: User['id']) {
     await Promise.resolve()
     const opens = bucket(this.state.taskOpens, org)
-    return this.forUser(org, userId).sort(
-      (a, b) =>
-        (opens.get(`${userId}:${b.id}`)?.count ?? 0) - (opens.get(`${userId}:${a.id}`)?.count ?? 0),
-    )
+    return this.forUser(org, userId)
+      .sort(
+        (a, b) =>
+          (opens.get(`${userId}:${b.id}`)?.openedAt ?? '').localeCompare(
+            opens.get(`${userId}:${a.id}`)?.openedAt ?? '',
+          ) ||
+          (opens.get(`${userId}:${b.id}`)?.count ?? 0) -
+            (opens.get(`${userId}:${a.id}`)?.count ?? 0),
+      )
+      .filter((task) => opens.has(`${userId}:${task.id}`))
   }
   async search(org: OrganizationId, query: string, userId: User['id']) {
     await Promise.resolve()
