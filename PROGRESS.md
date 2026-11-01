@@ -167,9 +167,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Teste de tipos cobre assinaturas assíncronas e `organizationId` em primeiro lugar; aplicado também a `Clock` e `IdGenerator`, conforme texto do passo, embora PLANO 3.6 restrinja a regra explicitamente aos repositórios.
   - Nota: `pnpm check` passou (formatação, lint, tipos e 566 testes); sem dependências novas.
 
-- [ ] M3.6 Fakes e builders
+- [x] M3.6 Fakes e builders
   - `testing/fakes/*` (repositórios em memória, `InMemoryUnitOfWork` que desfaz em erro, `FixedClock`, `SequentialIdGenerator`, `RecordingNotifier`), `testing/builders.ts`. Exportar por `@agilebox/application/testing` (entrada `exports` separada).
   - Pronto: testes dos fakes (inclusive rollback).
+  - Nota: Fakes em memória para as portas, relógio, IDs sequenciais, notificações gravadas e builders de usuários, projetos, entidades, tarefas, envolvimentos e reuniões; exportação separada `@agilebox/application/testing`.
+  - Nota: Testes cobrem relógio, sequência de IDs, notificação, isolamento por organização e rollback do `UnitOfWork`; `pnpm check` passou (571 testes), sem dependências novas.
 
 - [ ] M3.7 Suíte de contrato dos repositórios
   - `testing/repository-contract.ts`: `describeRepositoryContract(name, makeAdapters)`, com CRUD, ordenações (Recentes, Frequentes), busca sem acentos, unicidade por organização e **isolamento entre organizações**. Rodar contra os fakes.

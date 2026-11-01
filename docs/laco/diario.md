@@ -120,3 +120,25 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Registrei no `PROGRESS.md` que essa regra também foi aplicada a `Clock` e `IdGenerator`, seguindo o texto do passo, embora o PLANO 3.6 a especifique para repositórios.
 >
 > `pnpm check` passou: 566 testes. Status definido como `DONE`.
+
+## 2026-10-31 23:05 · M3.6 Fakes e builders
+
+- Alterações: 10 files changed, 628 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/package.json`
+  - `packages/application/src/testing/builders.ts`
+  - `packages/application/src/testing/fakes/fakes.test.ts`
+  - `packages/application/src/testing/fakes/fixed-clock.ts`
+  - `packages/application/src/testing/fakes/in-memory-repositories.ts`
+  - `packages/application/src/testing/fakes/in-memory-unit-of-work.ts`
+  - `packages/application/src/testing/fakes/recording-notifier.ts`
+  - `packages/application/src/testing/fakes/sequential-id-generator.ts`
+  - `packages/application/src/testing/index.ts`
+
+**Resumo do Codex:**
+
+> M3.6 concluído. Implementei os fakes das portas, o `InMemoryUnitOfWork` com rollback, os builders e a exportação `@agilebox/application/testing`.
+>
+> `pnpm check` passou: 30 arquivos de teste e 571 testes. Registrei o resultado em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e marquei `.loop/status` como `DONE`.
