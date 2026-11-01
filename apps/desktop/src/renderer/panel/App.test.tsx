@@ -49,9 +49,33 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    expect(await screen.findByRole('button', { name: /Revisar integração/u })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Revisar integração' })).toBeTruthy()
     expect(screen.getByRole('region', { name: 'Revisar, tarefas' })).toBeTruthy()
     expect(listBoard).toHaveBeenCalledWith({})
+  })
+
+  it('move a tarefa para o estado escolhido pelo controle de teclado', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+    const move = vi.spyOn(api.tasks, 'move')
+    const user = userEvent.setup()
+
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', {
+        name: 'Mover Revisar integração para outro estado',
+      }),
+      'in_progress',
+    )
+
+    expect(move).toHaveBeenCalledWith({ taskId: task.id, status: 'in_progress' })
   })
 
   it('agrupa as tarefas nas cinco colunas na ordem do fluxo', async () => {
@@ -77,7 +101,7 @@ describe('Painel', () => {
       'Revisar, tarefas',
       'Concluído, tarefas',
     ])
-    expect(screen.getAllByRole('button', { name: /Revisar integração/u })).toHaveLength(5)
+    expect(screen.getAllByRole('button', { name: 'Revisar integração' })).toHaveLength(5)
   })
 
   it('filtra a consulta do quadro pelo projeto escolhido', async () => {

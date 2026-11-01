@@ -34,4 +34,6 @@ export const panelCopy = {
   boardError: 'Não foi possível carregar o quadro.',
   boardLabel: 'Quadro kanban',
   boardColumnEmpty: 'Sem tarefas',
+  moveTask: 'Mover',
+  moveTaskToState: (title: string) => `Mover ${title} para outro estado`,
 } as const

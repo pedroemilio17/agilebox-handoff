@@ -430,10 +430,13 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
   - Nota: Cada coluna mantém "Sem tarefas"; carregamento usa esqueleto e falha mostra mensagem curta, conforme proposta provisória 12.6.
   - Nota: `pnpm check` passou (86 arquivos, 721 testes e build do desktop).
 
-- [ ] M6.4 Arrastar e soltar
+- [x] M6.4 Arrastar e soltar
   - `dnd-kit` no `KanbanColumn`/`TaskCard`: coluna de destino azulada, ao soltar chama `tasks.move`; **alternativa por teclado** (sensor de teclado e/ou menu de estado no card); ordem dentro da coluna por `updated_at` (PLANO 12.2, `DECISÃO PROVISÓRIA`).
   - Deps: `@agilebox/desktop prod @dnd-kit/core`, `@agilebox/desktop prod @dnd-kit/sortable`.
   - Pronto: testes de que soltar chama `move` com o estado certo e de que o teclado faz o mesmo.
+  - Nota: Kanban usa dnd-kit com sensores de ponteiro/teclado; a coluna de destino recebe destaque azul e a ação move chama `tasks.move`.
+  - Nota: Controle de estado por card oferece alternativa acessível por teclado; cards ficam ordenados por `updated_at` mais recente primeiro (proposta provisória 12.2).
+  - Nota: `pnpm check` passou: formatação, lint, tipos, 723 testes e build do desktop.
 
 - [ ] M6.5 Nova tarefa
   - Botão "Nova tarefa" da `TitleBar`: escolhe projeto (padrão: o selecionado), título, cria com `tasks.create` e **abre o detalhe**. Colaborador só vê projetos de que é membro.

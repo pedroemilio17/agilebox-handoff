@@ -18,6 +18,11 @@
   border-radius: var(--radius-group);
 }
 
+.columnOver {
+  border-color: var(--color-focus-ring);
+  background: rgba(100, 168, 255, 0.1);
+}
+
 .columnHeading {
   display: flex;
   flex: none;
@@ -85,6 +90,37 @@
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
+}
+
+.dragHandle,
+.statusSelect {
+  min-height: var(--size-touch-target);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.dragHandle {
+  align-self: flex-end;
+  min-width: var(--size-touch-target);
+  margin: 0 var(--space-1) calc(-1 * var(--space-2));
+  font-size: var(--font-size-title-small);
+  touch-action: none;
+}
+
+.statusSelect {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-field);
+  font: inherit;
+}
+
+.statusSelect:focus-visible,
+.dragHandle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 
 .cardButton:focus-visible {

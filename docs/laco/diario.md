@@ -870,3 +870,24 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M6.3 concluído. Implementei o quadro com cinco colunas, filtro por projeto, cards com prazo e iniciais, e estados de carregamento, vazio e erro em [BoardView.tsx](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/apps/desktop/src/renderer/panel/board/BoardView.tsx). Registrei as notas e a conferência visual pendente nos documentos do laço.
 >
 > `pnpm check` passou: 86 arquivos, 721 testes e build do desktop. O status está como `DONE`. Os cards registram a abertura; a navegação para a tela de detalhe fica para o M6.6, quando ela será implementada.
+
+## 2026-11-01 11:24 · M6.4 Arrastar e soltar
+
+- Alterações: 9 files changed, 309 insertions(+), 35 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/package.json`
+  - `apps/desktop/src/renderer/panel/App.test.tsx`
+  - `apps/desktop/src/renderer/panel/App.tsx`
+  - `apps/desktop/src/renderer/panel/board/BoardView.module.css`
+  - `apps/desktop/src/renderer/panel/board/BoardView.test.ts`
+  - `apps/desktop/src/renderer/panel/board/BoardView.tsx`
+  - `apps/desktop/src/renderer/panel/copy.ts`
+  - `pnpm-lock.yaml`
+
+**Resumo do Codex:**
+
+> M6.4 concluído. O quadro agora permite arrastar cards entre colunas, destaca o destino em azul e chama `tasks.move`. Também há um seletor de estado acessível por teclado; os cards são ordenados pelos mais recentemente atualizados.
+>
+> `pnpm check` passou: 87 arquivos de teste, 723 testes e build do desktop. As notas do passo estão em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:433), e registrei em [pendências do Pedro](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md) a conferência visual e a decisão provisória 12.2. Status: `DONE`.

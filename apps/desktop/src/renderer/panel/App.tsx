@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
@@ -13,6 +13,7 @@ import styles from './App.module.css'
 
 export function App() {
   const api = useApi()
+  const queryClient = useQueryClient()
   const [view, setView] = useState<PanelView>('projects')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
@@ -21,6 +22,10 @@ export function App() {
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined),
     queryFn: () => api.tasks.listBoard(selectedProjectId ? { projectId: selectedProjectId } : {}),
+  })
+  const moveTask = useMutation({
+    mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
   })
 
   return (
@@ -49,6 +54,7 @@ export function App() {
             error={tasks.isError}
             loading={tasks.isPending}
             onOpenTask={(taskId) => void api.tasks.recordOpen({ taskId })}
+            onMoveTask={(taskId, status) => moveTask.mutate({ taskId, status })}
             tasks={tasks.data}
           />
           <ProjectDialog
