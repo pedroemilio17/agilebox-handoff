@@ -67,3 +67,25 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.3 concluído. Adicionei e exportei schemas para tarefas, envolvimentos e linha do tempo, com testes de aceitação e rejeição escritos primeiro.
 >
 > `pnpm check` passou: formatação, lint, tipos e 560 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:150) e o status está como `DONE`.
+
+## 2026-10-31 22:58 · M3.4 Schemas: dashboard e agenda; `AgileBoxApi` e `DesktopShellApi`
+
+- Alterações: 8 files changed, 429 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/contract/src/api.test.ts`
+  - `packages/contract/src/api.ts`
+  - `packages/contract/src/dashboard-meetings.test.ts`
+  - `packages/contract/src/dashboard.ts`
+  - `packages/contract/src/index.ts`
+  - `packages/contract/src/meetings.ts`
+  - `packages/contract/src/shell-api.ts`
+
+**Resumo do Codex:**
+
+> M3.4 concluído. Implementei os schemas de dashboard e agenda, as interfaces `AgileBoxApi` e `DesktopShellApi` e testes para conferir os canais e schemas. Registrei a decisão provisória sobre participantes da agenda em aberto.
+>
+> `pnpm check` passou: 28 arquivos de teste e 565 testes. Status registrado como `DONE`.
+>
+> Arquivos principais: [api.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/api.ts), [dashboard.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/dashboard.ts), [meetings.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/meetings.ts) e [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).

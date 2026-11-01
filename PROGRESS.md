@@ -153,9 +153,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Criados schemas de tarefas, filtros de quadros, detalhe com permissões, envolvimentos discriminados e eventos da linha do tempo; exportados pela entrada do contrato.
   - Nota: Testes escritos antes da implementação cobrem IDs inválidos, campos vazios, horas com vírgula, visibilidade de valor/hora e validações de papel. `pnpm check` passou (560 testes), sem dependências novas.
 
-- [ ] M3.4 Schemas: dashboard e agenda; `AgileBoxApi` e `DesktopShellApi`
+- [x] M3.4 Schemas: dashboard e agenda; `AgileBoxApi` e `DesktopShellApi`
   - `api.ts` com todos os métodos da PLANO 7; `shell-api.ts`.
   - Pronto: `pnpm typecheck`; teste que garante que cada método da API tem canal e schemas.
+  - Nota: Schemas de dashboard e agenda e interfaces `AgileBoxApi`/`DesktopShellApi` implementados; registry valida canal e schemas para todos os métodos da seção 7.
+  - Nota: Agenda usa IDs de usuários como participantes, seguindo o modelo da seção 5; decisão 12.5 registrada para confirmação antes do M8.
+  - Nota: `pnpm check` passou após corrigir um exemplo de teste que somava 100% e, por isso, era válido.
 
 - [ ] M3.5 Portas da aplicação
   - `application/src/ports/*` (PLANO 10), todas assíncronas, com `organizationId` como primeiro parâmetro (PLANO 3.6, 3.7). `deps.ts` (`AppDeps`).
