@@ -335,9 +335,11 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Deps: `@agilebox/ui prod @fontsource-variable/inter`.
   - Pronto: testes dos hooks; teste que lê `tokens.css` via `?raw` e confere que cada token do HANDOFF existe.
 
-- [ ] M5.3 Componentes de base I
+- [x] M5.3 Componentes de base I
   - `GlassSurface` (variantes janela, grupo, controle, popover; fallback), `Button` (primário/secundário, hover/active/disabled, alvo ≥ 44 px), `IconButton` (exige `aria-label`), `Avatar` (iniciais), `StatusChip` (5 estados, rótulo de texto sempre), `Skeleton`, `ReadOnlyBadge` ("Somente leitura"), `EmptyState`. Cada um com `.module.css` e `.test.tsx` (papéis, estados, `aria-*`).
   - Pronto: `pnpm check`.
+  - Nota: Implementados os oito componentes com CSS Modules, exportações públicas e testes específicos por componente para rótulos, estados e acessibilidade.
+  - Nota: `pnpm check` passou (64 arquivos, 671 testes); conferir o acabamento visual na galeria quando M5.6 estiver disponível.
 
 - [ ] M5.4 Componentes de base II
   - `SegmentedControl` (2 ou 3 opções, polegar deslizante `aria-hidden`, `aria-pressed`), `GroupedList`/`FieldRow` (linhas de 48 px), `TextField`, `TextArea`, `DateField`, `NumberField` (aceita vírgula decimal), todos com `<label>` ou `aria-label`.

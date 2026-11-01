@@ -1,0 +1,26 @@
+.chip {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-chip);
+  font-size: var(--font-size-chip);
+  line-height: 1;
+  white-space: nowrap;
+}
+.planning {
+  color: var(--color-status-planejamento);
+}
+.todo {
+  color: var(--color-status-afazer);
+}
+.in_progress {
+  color: var(--color-status-desenvolvendo);
+}
+.review {
+  color: var(--color-status-revisar);
+}
+.done {
+  color: var(--color-status-concluido);
+}

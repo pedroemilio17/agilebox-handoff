@@ -11,3 +11,4 @@ Tipos: `CONFERIR`, `TESTAR-NO-WINDOWS`, `RODAR-E2E`, `DECIDIR`.
 - [ ] M4.8 · TESTAR-NO-WINDOWS: executar `pnpm native:electron` e depois `pnpm native:node` no Windows; confirmar que ambas as recompilações terminam e que a aplicação/testes carregam o addon no ABI correspondente.
 - [ ] M5.2 · CONFERIR: abrir painel e bandeja e comparar com `design/Painel.dc.html` e `design/Bandeja.dc.html`; conferir fonte Inter, foco azul com offset, scrollbar de 3 px, fallback de vidro e animações reduzidas pelo sistema.
 - [ ] M5.2 · TESTAR-NO-WINDOWS: abrir o app sem rede no Windows 11 e confirmar que a fonte Inter local carrega e que vidro e foco continuam legíveis com movimento reduzido ativo.
+- [ ] M5.3 · CONFERIR: quando a galeria M5.6 estiver disponível, comparar GlassSurface, Button, IconButton, Avatar, StatusChip, Skeleton, ReadOnlyBadge e EmptyState com o HANDOFF; conferir variantes, contraste e alvos de toque.

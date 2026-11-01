@@ -572,3 +572,41 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 658 testes. O status está como `DONE`. Registrei conferências visuais e no Windows em `pendencias-do-pedro.md`.
 >
 > Arquivos principais: [tokens.css](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/styles/tokens.css), [motion.css](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/styles/motion.css), [vitest.config.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/vitest.config.ts).
+
+## 2026-11-01 01:20 · M5.3 Componentes de base I
+
+- Alterações: 26 files changed, 458 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/ui/src/components/Avatar.module.css`
+  - `packages/ui/src/components/Avatar.test.tsx`
+  - `packages/ui/src/components/Avatar.tsx`
+  - `packages/ui/src/components/Button.module.css`
+  - `packages/ui/src/components/Button.test.tsx`
+  - `packages/ui/src/components/Button.tsx`
+  - `packages/ui/src/components/EmptyState.module.css`
+  - `packages/ui/src/components/EmptyState.test.tsx`
+  - `packages/ui/src/components/EmptyState.tsx`
+  - `packages/ui/src/components/GlassSurface.module.css`
+  - `packages/ui/src/components/GlassSurface.test.tsx`
+  - `packages/ui/src/components/GlassSurface.tsx`
+  - `packages/ui/src/components/IconButton.module.css`
+  - `packages/ui/src/components/IconButton.test.tsx`
+  - `packages/ui/src/components/IconButton.tsx`
+  - `packages/ui/src/components/ReadOnlyBadge.module.css`
+  - `packages/ui/src/components/ReadOnlyBadge.test.tsx`
+  - `packages/ui/src/components/ReadOnlyBadge.tsx`
+  - `packages/ui/src/components/Skeleton.module.css`
+  - `packages/ui/src/components/Skeleton.test.tsx`
+  - `packages/ui/src/components/Skeleton.tsx`
+  - `packages/ui/src/components/StatusChip.module.css`
+  - `packages/ui/src/components/StatusChip.test.tsx`
+  - `packages/ui/src/components/StatusChip.tsx`
+  - `packages/ui/src/index.ts`
+
+**Resumo do Codex:**
+
+> M5.3 concluído: os oito componentes foram implementados com CSS Modules, exportados pelo pacote `ui` e cobertos por testes individuais. O fallback de vidro também cobre as variantes do `GlassSurface`.
+>
+> `pnpm check` passou: 64 arquivos de teste, 671 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md) e a conferência visual para quando a galeria estiver pronta em [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md). O status ficou `DONE`.

@@ -1,0 +1,36 @@
+.surface {
+  border: 1px solid transparent;
+}
+.window {
+  background: var(--glass-window);
+  border: var(--glass-window-border);
+  box-shadow: var(--glass-window-highlight), var(--shadow-window);
+  backdrop-filter: var(--glass-window-backdrop);
+}
+.group {
+  background: var(--glass-group);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+}
+.control {
+  background: var(--glass-control);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-button);
+  backdrop-filter: var(--glass-control-backdrop);
+}
+.popover {
+  background: var(--glass-popover);
+  border-radius: var(--radius-group);
+  backdrop-filter: var(--glass-popover-backdrop);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .window,
+  .group,
+  .control,
+  .popover {
+    background: var(--color-glass-fallback);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
