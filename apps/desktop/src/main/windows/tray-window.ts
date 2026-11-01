@@ -12,7 +12,7 @@ export function createTrayWindow(glassMode: GlassMode, position: WindowPosition)
     frame: false,
     transparent: glassMode === 'css',
     backgroundMaterial: glassMode === 'native' ? 'acrylic' : 'none',
-    backgroundColor: '#00000000',
+    backgroundColor: glassMode === 'opaque' ? '#1e212a' : '#00000000',
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,
@@ -24,7 +24,10 @@ export function createTrayWindow(glassMode: GlassMode, position: WindowPosition)
   })
 
   const rendererUrl = process.env.ELECTRON_RENDERER_URL
-  if (rendererUrl) void window.loadURL(`${rendererUrl}/tray/index.html`)
-  else void window.loadFile(fileURLToPath(new URL('../renderer/tray/index.html', import.meta.url)))
+  if (rendererUrl) void window.loadURL(`${rendererUrl}/tray/index.html?glass=${glassMode}`)
+  else
+    void window.loadFile(fileURLToPath(new URL('../renderer/tray/index.html', import.meta.url)), {
+      query: { glass: glassMode },
+    })
   return window
 }

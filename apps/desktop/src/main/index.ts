@@ -2,6 +2,7 @@ import console from 'node:console'
 import { app, ipcMain } from 'electron'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
+import { registerShellHandlers } from './ipc/register-shell-handlers'
 import { getDatabasePath } from './paths'
 import { resolveGlassMode } from './windows/glass'
 import { WindowManager } from './windows/window-manager'
@@ -34,7 +35,7 @@ if (!gotSingleInstanceLock) {
     isQuitting = true
     closeCompositionRoot?.()
     closeCompositionRoot = undefined
-    windows.close()
+    windows.destroyAll()
   })
 
   app.on('window-all-closed', () => {
@@ -44,6 +45,8 @@ if (!gotSingleInstanceLock) {
   app.on('activate', () => {
     if (!isQuitting) windows.createPanel().show()
   })
+
+  registerShellHandlers(ipcMain, windows)
 
   void app
     .whenReady()

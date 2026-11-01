@@ -94,3 +94,9 @@
   --color-glass-fallback: rgba(30, 33, 42, 0.92);
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.3);
 }
+
+/* Janela sólida (Linux): sem transparência nem desfoque, para manter a legibilidade. */
+:root[data-glass='opaque'] {
+  --glass-window: linear-gradient(150deg, rgba(255, 255, 255, 0.06), transparent 45%), #1e212a;
+  --glass-window-backdrop: none;
+}
