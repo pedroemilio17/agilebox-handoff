@@ -82,9 +82,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: viradas de mês/ano, ano bissexto, data inválida rejeitada.
   - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência do módulo. Implementados validação de datas gregorianas, comparação, diferença em dias de calendário (de `a` até `b`) e conversão de instante no fuso informado; cobertas viradas, anos bissextos e entradas inválidas. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 449 testes). Checkbox preservado para o laço.
 
-- [ ] M2.5 Chamado e papéis
+- [x] M2.5 Chamado e papéis
   - `values/ticket.ts` (ID numérico positivo obrigatório; `url` opcional, só `http(s)`), `values/role.ts` (`UserRole`: `collaborator` | `manager`; `ParticipationRole`: `responsible` | `support`).
   - Pronto: casos válidos e inválidos.
+  - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência dos módulos. Implementados chamado com ID inteiro positivo seguro e link opcional HTTP(S), além dos tipos e validações dos papéis de usuário e participação. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 475 testes). Checkbox preservado para o laço.
 
 - [ ] M2.6 Organização, usuário, entidade, projeto
   - `entities/organization.ts`, `entities/user.ts` (iniciais a partir do nome, valor/hora padrão), `entities/contributor.ts` (stakeholder: nome, origem `manual`|`azure`, valor/hora padrão; **sem** vínculo com usuário, PLANO 2.6), `entities/project.ts` (nome obrigatório, `nameKey` normalizado: sem acentos, minúsculo, espaços colapsados).
