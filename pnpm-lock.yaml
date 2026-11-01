@@ -15,6 +15,28 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  packages/application:
+    dependencies:
+      '@agilebox/contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@agilebox/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/contract: {}
+
+  packages/core: {}
+
+  packages/infra-sqlite:
+    dependencies:
+      '@agilebox/application':
+        specifier: workspace:*
+        version: link:../application
+      '@agilebox/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@typescript/typescript-aix-ppc64@7.0.2':
