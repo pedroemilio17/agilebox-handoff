@@ -10,6 +10,8 @@ import { GetCurrentActor } from './use-cases/session/get-current-actor'
 import { ListSessionUsers } from './use-cases/session/list-users'
 import { SwitchUser } from './use-cases/session/switch-user'
 import { SetDefaultRate } from './use-cases/users/set-default-rate'
+import { ListContributors } from './use-cases/contributors/list-contributors'
+import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -20,6 +22,10 @@ export function createUseCases(deps: AppDeps) {
     },
     users: {
       setDefaultRate: new SetDefaultRate(deps),
+    },
+    contributors: {
+      list: new ListContributors(deps.contributors),
+      setDefaultRate: new SetContributorDefaultRate(deps),
     },
     projects: {
       listProjects: new ListProjects(deps.projects),

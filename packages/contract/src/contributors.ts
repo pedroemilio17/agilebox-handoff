@@ -19,4 +19,5 @@ export const listContributorsOutputSchema = z.array(contributorDtoSchema)
 export const setContributorDefaultRateOutputSchema = contributorDtoSchema
 
 export type CreateContributorInput = z.infer<typeof createContributorInputSchema>
+export type SetContributorDefaultRateInput = z.infer<typeof setContributorDefaultRateInputSchema>
 export type ContributorDto = z.infer<typeof contributorDtoSchema>

@@ -192,9 +192,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: `ActorSession` foi incluída como porta da aplicação; a troca de usuário publica `session`, e mudanças de tarifa e projeto publicam seus respectivos tipos.
   - Nota: `pnpm check` passou (593 testes), sem dependências novas.
 
-- [ ] M3.10 Casos de uso: entidades
+- [!] M3.10 Casos de uso: entidades
   - `contributors/*` (criar, listar, valor padrão só pelo gestor).
   - Pronto: idem.
+  - Nota: Listagem por organização e alteração de tarifa restrita ao gestor implementadas, com filtro no mapper, validação e notificação; testes incluídos.
+  - Nota: Criação ficou pendente: o contrato recebe só nome, mas o domínio exige tarifa padrão positiva; não há valor inicial definido nos documentos.
+  - Nota: `pnpm check` passou (598 testes); retomada depende da decisão registrada em `.loop/blocked.md`.
 
 - [ ] M3.11 Casos de uso: criar, ver, editar e mover tarefa
   - `create-task` (evento `task_created`; responsável = criador), `get-task-detail` (+ `readOnly`), `update-task` (diff → eventos na mesma transação; `as_manager`), `move-task`.
