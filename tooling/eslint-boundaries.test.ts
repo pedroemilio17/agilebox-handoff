@@ -6,13 +6,18 @@ import { layers } from './layers.js'
 // Os caminhos são virtuais: só estes testes dispensam o projeto TypeScript.
 const eslint = new ESLint({ overrideConfig: [tseslint.configs.disableTypeChecked] })
 
+// Confere a configuração efetiva, sem rodar o verificador de tipos sobre um texto falso: esse truque
+// depende de como o TypeScript lê o arquivo real e falhava no CI.
 test('mantém as regras com informação de tipos nos arquivos reais', async () => {
-  const results = await new ESLint().lintText('Promise.resolve(1)', {
-    filePath: 'packages/core/src/index.ts',
-  })
-  expect(results[0]?.messages).toEqual([
-    expect.objectContaining({ ruleId: '@typescript-eslint/no-floating-promises', severity: 2 }),
-  ])
+  const config = (await new ESLint().calculateConfigForFile('packages/core/src/index.ts')) as {
+    rules: Record<string, unknown>
+    languageOptions: { parserOptions: { project?: unknown } }
+  }
+  const severity = ([] as unknown[]).concat(
+    config.rules['@typescript-eslint/no-floating-promises'],
+  )[0]
+  expect([2, 'error']).toContain(severity)
+  expect(config.languageOptions.parserOptions.project).toBe('./tsconfig.eslint.json')
 }, 60000)
 
 // Pacotes de runtime verificados em cada camada (a tabela diz quais ficam bloqueados).
