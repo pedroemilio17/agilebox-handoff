@@ -3,7 +3,10 @@ import { app, ipcMain } from 'electron'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
+import { registerUpdateHandlers } from './updates/register-update-handlers'
+import { createSourceUpdater } from './updates/source-updater'
 import { needsX11Relaunch } from './linux-display'
+import { readAppearance, writeAppearance } from './appearance'
 import { getDatabasePath, getMigrationsFolder } from './paths'
 import { detectCompositorGlass } from './windows/compositor-glass'
 import { resolveGlassMode } from './windows/glass'
@@ -28,12 +31,18 @@ if (relaunchInX11) {
 } else if (!gotSingleInstanceLock) {
   app.quit()
 } else {
-  const glassMode = resolveGlassMode(process.platform, {
+  const userDataPath = app.getPath('userData')
+  const glassEnvironment = {
     ...(process.env.AGILEBOX_GLASS === undefined
       ? {}
       : { AGILEBOX_GLASS: process.env.AGILEBOX_GLASS }),
     systemVersion: process.getSystemVersion(),
     compositorGlass: detectCompositorGlass(process.platform),
+  }
+  const savedAppearance = readAppearance(userDataPath)
+  const glassMode = resolveGlassMode(process.platform, {
+    ...glassEnvironment,
+    ...(savedAppearance === undefined ? {} : { preference: savedAppearance }),
   })
   const windows = new WindowManager(
     glassMode,
@@ -42,6 +51,10 @@ if (relaunchInX11) {
     },
     shouldHideOnClose(process.platform),
   )
+  windows.onAppearanceChange = (preference) => {
+    writeAppearance(userDataPath, preference)
+    windows.applyGlassMode(resolveGlassMode(process.platform, { ...glassEnvironment, preference }))
+  }
   let trayIcon: Electron.Tray | undefined // guardado para o coletor de lixo não remover o ícone
   let closeCompositionRoot: (() => void) | undefined
   let isQuitting = false
@@ -72,6 +85,18 @@ if (relaunchInX11) {
   })
 
   registerShellHandlers(ipcMain, windows)
+  registerUpdateHandlers(
+    ipcMain,
+    createSourceUpdater({
+      appPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      userDataPath,
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      appImage: process.env.APPIMAGE,
+      quit: () => app.quit(),
+    }),
+  )
 
   void app
     .whenReady()

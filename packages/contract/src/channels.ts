@@ -44,6 +44,7 @@ export const SHELL_CHANNELS = [
   'window.toggleTray',
   'window.openPanel',
   'window.setTrayHeight',
+  'window.setAppearance',
 ] as const
 
 export type ShellChannel = (typeof SHELL_CHANNELS)[number]

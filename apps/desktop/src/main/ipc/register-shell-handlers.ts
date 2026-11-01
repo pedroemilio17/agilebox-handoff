@@ -7,6 +7,7 @@ export interface ShellWindows {
   toggleTray(sender: unknown): void
   openPanel(sender?: unknown): void
   setTrayHeight(height: number): void
+  setAppearance(mode: 'translucent' | 'opaque'): void
 }
 
 export interface ShellIpcMainLike {
@@ -27,5 +28,8 @@ export function registerShellHandlers(ipcMain: ShellIpcMainLike, windows: ShellW
   register('window.openPanel', (sender) => windows.openPanel(sender))
   register('window.setTrayHeight', (_sender, input) =>
     windows.setTrayHeight((input as { height: number }).height),
+  )
+  register('window.setAppearance', (_sender, input) =>
+    windows.setAppearance((input as { mode: 'translucent' | 'opaque' }).mode),
   )
 }

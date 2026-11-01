@@ -10,6 +10,12 @@ const bridge: AgileBoxBridge = {
     toggleTray: () => undefined,
     openPanel: () => undefined,
     setTrayHeight: () => undefined,
+    setAppearance: () => undefined,
+  },
+  updates: {
+    check: () => Promise.resolve({ state: 'unsupported', reason: 'fake' }),
+    apply: () => Promise.resolve({ state: 'unsupported', reason: 'fake' }),
+    lastRun: () => Promise.resolve(null),
   },
 }
 

@@ -8,10 +8,10 @@
     "build": "pnpm --workspace-root native:electron && node ../../scripts/run-electron-vite.mjs build",
     "preview": "node ../../scripts/run-electron-vite.mjs preview",
     "typecheck": "tsc -p .",
-    "pack": "pnpm build && electron-builder --dir",
     "dist": "pnpm build && electron-builder",
     "dist:win": "pnpm build && electron-builder --win",
-    "dist:linux": "pnpm build && electron-builder --linux"
+    "dist:linux": "pnpm build && electron-builder --linux",
+    "pack:dir": "pnpm build && electron-builder --dir"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3"

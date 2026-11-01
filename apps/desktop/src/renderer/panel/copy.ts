@@ -65,6 +65,30 @@ export const panelCopy = {
   windowOpacityHint:
     'Quanto do fundo aparece através do vidro. Mais alto deixa o texto mais legível; mais baixo, mais transparente.',
   restoreDefault: 'Restaurar padrão',
+  windowBackground: 'Fundo da janela',
+  translucent: 'Translúcido',
+  opaque: 'Opaco',
+  windowBackgroundHint:
+    'Translúcido usa o vidro do sistema (Acrylic no Windows 11, Liquid Glass no GNOME). As janelas são recriadas ao trocar.',
+  opacityOnlyTranslucent: 'A opacidade só vale no modo translúcido.',
+  updates: 'Atualizações',
+  checkUpdates: 'Procurar atualizações',
+  checkingUpdates: 'Procurando…',
+  applyUpdate: 'Atualizar e reiniciar',
+  applyingUpdate: 'Atualizando…',
+  updatesHint:
+    'Baixa o código novo do GitHub (git pull), instala as dependências e reconstrói o app. O app fecha e reabre sozinho.',
+  updateUpToDate: (commit: string) => `Você já está na versão mais nova (${commit}).`,
+  updateAvailable: (count: number) =>
+    count === 1 ? 'Há 1 atualização disponível:' : `Há ${count} atualizações disponíveis:`,
+  updateDirty: (files: number) =>
+    `Há ${files} arquivo(s) alterado(s) neste computador. Commite ou descarte antes de atualizar.`,
+  updateStarted: 'Atualizando… o AgileBox vai fechar e reabrir em alguns minutos.',
+  updateDoneDev: 'Código atualizado. Reinicie o pnpm dev para ver as mudanças.',
+  updateError: (message: string) => `Não foi possível atualizar: ${message}`,
+  lastUpdate: (when: string, ok: boolean) =>
+    `Última atualização em ${when}: ${ok ? 'concluída' : 'falhou'}.`,
+  updateLog: 'Registro:',
   members: 'Membros',
   membersOf: (project: string) => `Membros de ${project}`,
   addMember: 'Adicionar membro',

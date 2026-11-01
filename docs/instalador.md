@@ -33,7 +33,7 @@ chmod +x release/AgileBox-0.1.0.AppImage
 ## Testar sem gerar o instalador
 
 ```bash
-pnpm --filter @agilebox/desktop pack
+pnpm --filter @agilebox/desktop run pack:dir
 ```
 
 Gera a pasta `release/linux-unpacked` (ou `win-unpacked`), que roda direto (no Linux, com `--no-sandbox`).

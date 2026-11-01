@@ -1,7 +1,7 @@
 # Empacotamento do AgileBox. Gere cada instalador no sistema de destino (o better-sqlite3 é nativo):
 #   Windows: pnpm --filter @agilebox/desktop dist:win     →  release/AgileBox-<versão>-setup.exe
 #   Linux:   pnpm --filter @agilebox/desktop dist:linux   →  release/AgileBox-<versão>.AppImage
-#   Teste sem instalar: pnpm --filter @agilebox/desktop pack  →  release/linux-unpacked (ou win-unpacked)
+#   Teste sem instalar: pnpm --filter @agilebox/desktop run pack:dir  →  release/linux-unpacked (ou win-unpacked)
 appId: br.com.agilebox.app
 productName: AgileBox
 directories:

@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { CHANGE_CHANNEL, type AgileBoxBridge, type ShellChannel } from '@agilebox/contract'
+import {
+  CHANGE_CHANNEL,
+  UPDATE_CHANNELS,
+  type AgileBoxBridge,
+  type ShellChannel,
+} from '@agilebox/contract'
 
 const bridge: AgileBoxBridge = {
   invoke: (channel, input) => ipcRenderer.invoke(channel, input),
@@ -15,6 +20,12 @@ const bridge: AgileBoxBridge = {
     toggleTray: () => invokeShell('window.toggleTray'),
     openPanel: () => invokeShell('window.openPanel'),
     setTrayHeight: (input) => invokeShell('window.setTrayHeight', input),
+    setAppearance: (input) => invokeShell('window.setAppearance', input),
+  },
+  updates: {
+    check: () => ipcRenderer.invoke(UPDATE_CHANNELS.check),
+    apply: () => ipcRenderer.invoke(UPDATE_CHANNELS.apply),
+    lastRun: () => ipcRenderer.invoke(UPDATE_CHANNELS.lastRun),
   },
 }
 

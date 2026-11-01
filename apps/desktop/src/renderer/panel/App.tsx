@@ -9,6 +9,7 @@ import { useProjects } from './hooks/use-projects'
 import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
+import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
 import { ProjectMembersDialog } from './board/ProjectMembersDialog'
@@ -23,7 +24,16 @@ import styles from './App.module.css'
 export function App() {
   const api = useApi()
   const queryClient = useQueryClient()
-  const [view, setView] = useState<PanelView>('projects')
+  const [view, setView] = useState<PanelView>(() => {
+    // Depois de trocar Translúcido/Opaco as janelas são recriadas: o painel volta em Ajustes.
+    try {
+      if (window.localStorage.getItem(REOPEN_SETTINGS_KEY) !== '1') return 'projects'
+      window.localStorage.removeItem(REOPEN_SETTINGS_KEY)
+      return 'settings'
+    } catch {
+      return 'projects'
+    }
+  })
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)

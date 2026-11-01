@@ -11,6 +11,7 @@ function setup() {
     toggleTray: vi.fn(),
     openPanel: vi.fn(),
     setTrayHeight: vi.fn(),
+    setAppearance: vi.fn(),
   }
   const windows: ShellWindows = mocks
   registerShellHandlers(
@@ -43,6 +44,14 @@ describe('handlers IPC da janela', () => {
     listeners.get('window.setTrayHeight')!({ sender: {} }, { height: 480 })
     expect(windows.openPanel).toHaveBeenCalledWith(sender)
     expect(windows.setTrayHeight).toHaveBeenCalledWith(480)
+  })
+
+  it('repassa a escolha de aparência e ignora valores desconhecidos', () => {
+    const { listeners, windows } = setup()
+    listeners.get('window.setAppearance')!({ sender: {} }, { mode: 'opaque' })
+    listeners.get('window.setAppearance')!({ sender: {} }, { mode: 'neon' })
+    expect(windows.setAppearance).toHaveBeenCalledTimes(1)
+    expect(windows.setAppearance).toHaveBeenCalledWith('opaque')
   })
 
   it('ignora entrada inválida', () => {

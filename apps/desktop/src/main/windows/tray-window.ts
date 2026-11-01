@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
+import { windowChrome } from './glass'
 import type { GlassMode } from './glass'
 import type { WindowPosition } from './tray-position'
 
@@ -9,12 +10,7 @@ export function createTrayWindow(glassMode: GlassMode, position: WindowPosition)
   const window = new BrowserWindow({
     ...TRAY_WINDOW_SIZE,
     ...position,
-    frame: false,
-    transparent: glassMode === 'css' || glassMode === 'compositor',
-    // No Windows 11 o Acrylic preenche a janela inteira; os cantos arredondados vêm do próprio sistema.
-    roundedCorners: true,
-    backgroundMaterial: glassMode === 'native' ? 'acrylic' : 'none',
-    backgroundColor: glassMode === 'opaque' ? '#1e212a' : '#00000000',
+    ...windowChrome(glassMode),
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,

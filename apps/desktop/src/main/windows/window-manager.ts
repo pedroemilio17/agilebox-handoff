@@ -11,9 +11,11 @@ export class WindowManager implements ShellWindows {
   private tray: BrowserWindow | undefined
 
   private quitting = false
+  /** Chamado quando a pessoa troca Translúcido/Opaco em Ajustes (definido em index.ts). */
+  onAppearanceChange: (mode: 'translucent' | 'opaque') => void = () => undefined
 
   constructor(
-    private readonly glassMode: GlassMode,
+    private glassMode: GlassMode,
     private readonly onPanelClosed: () => void = () => undefined,
     // Com ícone de bandeja confiável, fechar o painel só o esconde.
     private readonly hideOnClose = false,
@@ -31,7 +33,10 @@ export class WindowManager implements ShellWindows {
       event.preventDefault()
       this.panel?.hide()
     })
-    this.panel.on('closed', () => {
+    const panel = this.panel
+    panel.on('closed', () => {
+      // Um painel substituído (troca de aparência) não encerra o app, mesmo que o evento chegue depois.
+      if (this.panel !== undefined && this.panel !== panel) return
       this.panel = undefined
       this.onPanelClosed()
     })
@@ -44,8 +49,9 @@ export class WindowManager implements ShellWindows {
       this.glassMode,
       getTrayPosition(screen.getPrimaryDisplay().workArea, TRAY_WINDOW_SIZE),
     )
-    this.tray.on('closed', () => {
-      this.tray = undefined
+    const tray = this.tray
+    tray.on('closed', () => {
+      if (this.tray === tray) this.tray = undefined
     })
     return this.tray
   }
@@ -108,6 +114,27 @@ export class WindowManager implements ShellWindows {
     if (panel.isMinimized()) panel.restore()
     panel.show()
     panel.focus()
+  }
+
+  setAppearance(mode: 'translucent' | 'opaque'): void {
+    this.onAppearanceChange(mode)
+  }
+
+  /**
+   * Recria painel e bandeja com outro fundo. As novas nascem antes de as antigas fecharem: se o app
+   * ficasse sem janelas, o Electron encerraria ("window-all-closed").
+   */
+  applyGlassMode(mode: GlassMode): void {
+    if (mode === this.glassMode) return
+    this.glassMode = mode
+    const oldPanel = this.panel
+    const oldTray = this.tray
+    this.panel = undefined
+    this.tray = undefined
+    this.createPanel()
+    this.createTray()
+    oldTray?.destroy()
+    oldPanel?.destroy()
   }
 
   setTrayHeight(height: number): void {
