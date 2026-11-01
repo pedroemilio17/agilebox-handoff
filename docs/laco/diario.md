@@ -89,3 +89,34 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 28 arquivos de teste e 565 testes. Status registrado como `DONE`.
 >
 > Arquivos principais: [api.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/api.ts), [dashboard.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/dashboard.ts), [meetings.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/contract/src/meetings.ts) e [pendencias-do-pedro.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).
+
+## 2026-10-31 23:01 · M3.5 Portas da aplicação
+
+- Alterações: 17 files changed, 223 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/application/src/deps.ts`
+  - `packages/application/src/index.ts`
+  - `packages/application/src/ports/change-notifier.ts`
+  - `packages/application/src/ports/clock.ts`
+  - `packages/application/src/ports/contributor-repository.ts`
+  - `packages/application/src/ports/id-generator.ts`
+  - `packages/application/src/ports/index.ts`
+  - `packages/application/src/ports/meeting-repository.ts`
+  - `packages/application/src/ports/participation-repository.ts`
+  - `packages/application/src/ports/ports.test.ts`
+  - `packages/application/src/ports/project-repository.ts`
+  - `packages/application/src/ports/task-open-repository.ts`
+  - `packages/application/src/ports/task-repository.ts`
+  - `packages/application/src/ports/timeline-repository.ts`
+  - `packages/application/src/ports/unit-of-work.ts`
+  - `packages/application/src/ports/user-repository.ts`
+
+**Resumo do Codex:**
+
+> M3.5 concluído. As portas e `AppDeps` foram criados e exportados; um teste de tipos cobre as assinaturas assíncronas e a organização como primeiro argumento.
+>
+> Registrei no `PROGRESS.md` que essa regra também foi aplicada a `Clock` e `IdGenerator`, seguindo o texto do passo, embora o PLANO 3.6 a especifique para repositórios.
+>
+> `pnpm check` passou: 566 testes. Status definido como `DONE`.

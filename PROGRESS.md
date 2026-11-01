@@ -160,9 +160,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Agenda usa IDs de usuários como participantes, seguindo o modelo da seção 5; decisão 12.5 registrada para confirmação antes do M8.
   - Nota: `pnpm check` passou após corrigir um exemplo de teste que somava 100% e, por isso, era válido.
 
-- [ ] M3.5 Portas da aplicação
+- [x] M3.5 Portas da aplicação
   - `application/src/ports/*` (PLANO 10), todas assíncronas, com `organizationId` como primeiro parâmetro (PLANO 3.6, 3.7). `deps.ts` (`AppDeps`).
   - Pronto: `pnpm typecheck`.
+  - Nota: Criadas as portas assíncronas de repositórios, transação, relógio, IDs e notificação; `AppDeps` e exportações públicas adicionados.
+  - Nota: Teste de tipos cobre assinaturas assíncronas e `organizationId` em primeiro lugar; aplicado também a `Clock` e `IdGenerator`, conforme texto do passo, embora PLANO 3.6 restrinja a regra explicitamente aos repositórios.
+  - Nota: `pnpm check` passou (formatação, lint, tipos e 566 testes); sem dependências novas.
 
 - [ ] M3.6 Fakes e builders
   - `testing/fakes/*` (repositórios em memória, `InMemoryUnitOfWork` que desfaz em erro, `FixedClock`, `SequentialIdGenerator`, `RecordingNotifier`), `testing/builders.ts`. Exportar por `@agilebox/application/testing` (entrada `exports` separada).
