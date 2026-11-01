@@ -92,9 +92,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: validações e normalização testadas.
   - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência das entidades. Criadas as quatro entidades com nomes obrigatórios, iniciais do primeiro e último nomes, valor/hora padrão positivo em centavos, validação de papel e origem, e chave de projeto normalizada; stakeholders não têm vínculo com conta. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 490 testes). Checkbox preservado para o laço.
 
-- [ ] M2.7 Tarefa e envolvimento
+- [x] M2.7 Tarefa e envolvimento
   - `entities/participation.ts`: participante `{ kind: 'user', userId } | { kind: 'contributor', contributorId }`, papel, horas, valor copiado; `responsible` só com usuário. `entities/task.ts`: criação (Responsável = criador, PLANO 2.1), renomear, descrição, estado, prazo, chamado, trocar responsável, adicionar/remover envolvido (sem duplicar; exatamente um responsável; não remove o responsável sem trocar), `searchText`.
   - Pronto: todas as invariantes com teste.
+  - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência dos módulos. Implementadas tarefa e participação imutáveis, responsável inicial criador, troca entre usuários participantes, validação e prevenção de duplicatas, campos editáveis e busca normalizada por título e projeto. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 495 testes). Checkbox preservado para o laço.
 
 - [ ] M2.8 Eventos e agendamento
   - `entities/timeline-event.ts`: união discriminada dos tipos da PLANO 6.4 com payloads tipados. `entities/meeting.ts`: título obrigatório, data `DateOnly`, hora `HH:mm`, participantes (usuários).
