@@ -508,3 +508,35 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > - Registrei a estratégia e o custo de alternar o binário em [0002-better-sqlite3-abi.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/decisoes/0002-better-sqlite3-abi.md), e anotei o passo no `PROGRESS.md`.
 > - `pnpm check` passou: formatação, lint, tipos e 654 testes.
 > - O teste no Windows de `native:electron` seguido de `native:node` ficou registrado como pendência para o Pedro.
+
+## 2026-11-01 01:03 · M5.1 Electron, Vite e ferramentas de teste de interface
+
+- Alterações: 18 files changed, 797 insertions(+), 10 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/electron.vite.config.ts`
+  - `apps/desktop/package.json`
+  - `apps/desktop/src/preload/index.ts`
+  - `apps/desktop/src/renderer/panel/index.html`
+  - `apps/desktop/src/renderer/panel/main.tsx`
+  - `apps/desktop/src/renderer/tray/index.html`
+  - `apps/desktop/src/renderer/tray/main.tsx`
+  - `apps/desktop/tsconfig.json`
+  - `apps/desktop/vite-env.d.ts`
+  - `package.json`
+  - `packages/ui/package.json`
+  - `packages/ui/tsconfig.json`
+  - `packages/ui/vite-env.d.ts`
+  - `packages/ui/vitest.setup.ts`
+  - `pnpm-lock.yaml`
+  - `tsconfig.eslint.json`
+  - `vitest.config.ts`
+
+**Resumo do Codex:**
+
+> M5.1 concluído e `.loop/status` está como `DONE`.
+>
+> Configurados Electron/Vite 6 com entradas main, preload, painel e bandeja; scripts de desenvolvimento, build e preview; typecheck para desktop e projetos Vitest para Node e jsdom. As dependências internas são empacotadas. Registrei as notas em [PROGRESS.md](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md>).
+>
+> Verificações: `pnpm check` passou com 654 testes, e `pnpm --filter @agilebox/desktop build` gerou as três saídas. O binário do Electron não pôde ser baixado por falta de rede, então a execução do aplicativo não foi verificada.
