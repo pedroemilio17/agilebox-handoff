@@ -53,7 +53,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
   min-height: 80px;
   margin: 0;
   padding: 0;
@@ -62,6 +62,7 @@
 }
 
 .card {
+  position: relative;
   flex: none;
   overflow: hidden;
   border: var(--glass-group-border);
@@ -111,8 +112,8 @@
   flex-direction: column;
   width: 100%;
   min-height: var(--size-touch-target);
-  gap: var(--space-2);
-  padding: 14px;
+  gap: 4px;
+  padding: 10px 12px;
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
@@ -120,62 +121,126 @@
   cursor: pointer;
 }
 
-.dragHandle,
-.statusSelect {
-  min-height: var(--size-touch-target);
+.dragHandle {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.dragHandle {
-  align-self: flex-end;
-  min-width: var(--size-touch-target);
-  margin: 0 var(--space-1) calc(-1 * var(--space-2));
-  font-size: var(--font-size-title-small);
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0;
+  cursor: grab;
   touch-action: none;
+  transition: opacity 200ms ease;
 }
 
-.statusSelect {
-  align-self: flex-start;
-  max-width: 100%;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-field);
-  font: inherit;
-}
-
-.statusSelect:focus-visible,
+.card:hover .dragHandle,
 .dragHandle:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: -2px;
+  opacity: 0.8;
 }
 
+/* Alternativa por teclado ao arraste: o seletor só aparece quando recebe o foco. */
+.statusSelect {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  border: 0;
+}
+
+.statusSelect:focus-visible {
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: auto;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-chip);
+  background: var(--glass-popover);
+  clip-path: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-label);
+}
+
+.dragHandle:focus-visible,
 .cardButton:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
 .taskTitle {
-  overflow-wrap: anywhere;
-  font-size: var(--font-size-body-small);
+  display: -webkit-box;
+  overflow: hidden;
+  padding-right: 14px;
+  font-size: 13px;
   font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.projectName {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardMeta {
   display: flex;
-  min-height: 28px;
+  min-height: 22px;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  margin-top: 2px;
   color: var(--color-text-muted);
-  font-size: var(--font-size-label);
+  font-size: 11px;
 }
 
-.cardMeta time {
+.cardMeta > :last-child {
+  flex: none;
+}
+
+.cardMeta [role='img'] {
+  width: 22px;
+  height: 22px;
+  font-size: 9px;
+}
+
+.deadline {
   overflow: hidden;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.toneSoon {
+  background: rgba(255, 159, 10, 0.18);
+  color: var(--color-status-revisar);
+}
+
+.toneOverdue {
+  background: rgba(255, 107, 96, 0.18);
+  color: var(--color-danger);
+}
+
+.toneDone {
+  background: transparent;
+  padding-left: 0;
 }
 
 .empty {
@@ -188,7 +253,7 @@
 }
 
 .skeletonCard {
-  min-height: 88px;
+  min-height: 64px;
 }
 
 .error {
@@ -203,7 +268,7 @@
 @keyframes cardEnter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px) scale(0.98);
   }
 
   to {

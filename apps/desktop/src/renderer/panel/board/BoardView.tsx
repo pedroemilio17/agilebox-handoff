@@ -19,13 +19,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import type { KeyboardEventHandler, PointerEventHandler, ReactNode } from 'react'
-import { TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
+import {
+  deadlineLabel,
+  diffInDays,
+  parseDateOnly,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+} from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import type { TaskStatus } from '@agilebox/core'
 import { Avatar, Skeleton } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
+import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import styles from './BoardView.module.css'
 
@@ -48,7 +55,8 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
   const [activeTask, setActiveTask] = useState<{ task: TaskDto; width: number } | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const lastDroppedId = useRef<string | null>(null)
-  useLayoutAnimation(boardRef, tasks, activeTask !== null, lastDroppedId)
+  const pendingLanding = useRef<PendingLanding | null>(null)
+  useLayoutAnimation(boardRef, tasks, activeTask !== null, lastDroppedId, pendingLanding)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -96,7 +104,13 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     lastDroppedId.current = String(active.id)
     setActiveTask(null)
-    moveTaskAfterDrop(active.id, over?.id, tasks ?? [], onMoveTask)
+    const moved = moveTaskAfterDrop(active.id, over?.id, tasks ?? [], onMoveTask)
+    const dropped = active.rect.current.translated
+    // O card "voa" do ponto onde foi solto até o lugar novo assim que a lista atualizar.
+    pendingLanding.current =
+      moved && dropped
+        ? { id: String(active.id), left: dropped.left, top: dropped.top, tasks }
+        : null
   }
 
   return (
@@ -124,7 +138,7 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
         ))}
       </div>
       {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
-      <DragOverlay dropAnimation={{ duration: 350, easing: 'cubic-bezier(.32, .72, 0, 1)' }}>
+      <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div className={styles.overlay} style={{ width: activeTask.width }}>
             <TaskCard onOpen={() => undefined} responsibleName={undefined} task={activeTask.task} />
@@ -139,11 +153,21 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
  * Anima (FLIP) os cards que mudam de lugar quando as tarefas mudam: quem foi empurrado ou subiu
  * desliza até a nova posição. O card recém-solto é ignorado, porque o DragOverlay já o anima.
  */
+interface PendingLanding {
+  readonly id: string
+  readonly left: number
+  readonly top: number
+  readonly tasks: readonly TaskDto[] | undefined
+}
+
+const SMOOTH = 'cubic-bezier(.32, .72, 0, 1)'
+
 function useLayoutAnimation(
   rootRef: { readonly current: HTMLElement | null },
   tasks: readonly TaskDto[] | undefined,
   dragging: boolean,
   droppedId: { current: string | null },
+  pending: { current: PendingLanding | null },
 ) {
   const previous = useRef(new Map<string, DOMRect>())
 
@@ -159,6 +183,29 @@ function useLayoutAnimation(
       const id = element.dataset.taskId!
       const rect = element.getBoundingClientRect()
       next.set(id, rect)
+      const landing = pending.current
+      if (landing?.id === id && landing.tasks !== tasks) {
+        pending.current = null
+        if (!reduced && typeof element.animate === 'function') {
+          // Parte do ponto onde o card foi solto, ainda "levantado", e assenta no lugar novo.
+          element.animate(
+            [
+              {
+                transform: `translate(${landing.left - rect.left}px, ${landing.top - rect.top}px) scale(1.04) rotate(2deg)`,
+                opacity: 0.9,
+                boxShadow: '0 18px 40px rgba(0, 0, 0, 0.45)',
+              },
+              {
+                transform: 'translate(0, 0) scale(1) rotate(0deg)',
+                opacity: 1,
+                boxShadow: '0 0 0 rgba(0, 0, 0, 0)',
+              },
+            ],
+            { duration: 560, easing: SMOOTH },
+          )
+        }
+        continue
+      }
       const before = previous.current.get(id)
       if (!before || reduced || id === dropped || typeof element.animate !== 'function') continue
       const dx = before.left - rect.left
@@ -166,12 +213,12 @@ function useLayoutAnimation(
       if (dx === 0 && dy === 0) continue
       element.animate(
         [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-        { duration: 450, easing: 'cubic-bezier(.32, .72, 0, 1)' },
+        { duration: 520, easing: SMOOTH },
       )
     }
     droppedId.current = null
     previous.current = next
-  }, [rootRef, tasks, dragging, droppedId])
+  }, [rootRef, tasks, dragging, droppedId, pending])
 }
 
 export function moveTaskAfterDrop(
@@ -179,15 +226,17 @@ export function moveTaskAfterDrop(
   overId: string | number | undefined,
   tasks: readonly TaskDto[],
   onMoveTask: (taskId: string, status: TaskStatus) => void,
-) {
-  if (overId === undefined) return
+): boolean {
+  if (overId === undefined) return false
   const task = tasks.find((item) => item.id === activeId)
   const targetId = String(overId)
   const targetTask = tasks.find((item) => item.id === targetId)
   const status = TASK_STATUSES.includes(targetId as TaskStatus)
     ? (targetId as TaskStatus)
     : targetTask?.status
-  if (task && status && task.status !== status) onMoveTask(task.id, status)
+  if (!task || !status || task.status === status) return false
+  onMoveTask(task.id, status)
+  return true
 }
 
 interface KanbanColumnProps {
@@ -307,17 +356,53 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, responsibleName, onOpen }: TaskCardProps) {
-  const deadline = task.deadline ? formatDate(new Date(`${task.deadline}T12:00:00`)) : undefined
+  const deadline = describeDeadline(task)
 
   return (
-    <button className={styles.cardButton} onClick={onOpen} type="button">
+    <button
+      aria-describedby={`${task.id}-project ${task.id}-meta`}
+      aria-label={task.title}
+      className={styles.cardButton}
+      onClick={onOpen}
+      type="button"
+    >
       <span className={styles.taskTitle}>{task.title}</span>
-      <span className={styles.cardMeta}>
-        {deadline ? <time dateTime={task.deadline ?? undefined}>{deadline}</time> : <span />}
+      <span className={styles.projectName} id={`${task.id}-project`}>
+        {task.projectName}
+      </span>
+      <span className={styles.cardMeta} id={`${task.id}-meta`}>
+        {deadline ? (
+          <time
+            className={`${styles.deadline} ${styles[deadline.tone] ?? ''}`}
+            dateTime={task.deadline ?? undefined}
+            title={deadline.full}
+          >
+            {deadline.text}
+          </time>
+        ) : (
+          <span />
+        )}
         {responsibleName ? (
           <Avatar aria-label={`Responsável: ${responsibleName}`} name={responsibleName} />
         ) : null}
       </span>
     </button>
   )
+}
+
+type DeadlineTone = 'toneNormal' | 'toneSoon' | 'toneOverdue' | 'toneDone'
+
+/** Prazo curto no card: a data quando há folga; "Vence amanhã" / "Venceu há 2 dias" quando é urgente. */
+function describeDeadline(
+  task: TaskDto,
+): { text: string; full: string; tone: DeadlineTone } | null {
+  if (!task.deadline) return null
+  const date = parseDateOnly(task.deadline)
+  const full = formatDate(new Date(`${task.deadline}T12:00:00`))
+  const label = deadlineLabel(task.status, date, todayDateOnly())
+  if (task.status === 'done') return { text: full, full: label, tone: 'toneDone' }
+  const days = diffInDays(todayDateOnly(), date)
+  if (days < 0) return { text: label, full, tone: 'toneOverdue' }
+  if (days <= 1) return { text: label, full, tone: 'toneSoon' }
+  return { text: full, full: label, tone: 'toneNormal' }
 }
