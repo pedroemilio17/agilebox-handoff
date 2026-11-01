@@ -334,3 +334,23 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M3.16 concluído. O roteiro com fakes cobre o fluxo até a edição do gestor e verifica a linha do tempo. Também completei os exports públicos dos casos de uso de participações e agenda em [index.ts](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/application/src/index.ts).
 >
 > `pnpm check` passou com 632 testes; `pnpm coverage` passou. Em `packages/application`, a cobertura ficou em 92,96% de statements e 96,51% de linhas. Registrei as notas no `PROGRESS.md` e marquei `.loop/status` como `DONE`.
+
+## 2026-11-01 00:19 · M4.1 Cliente e configuração
+
+- Alterações: 8 files changed, 165 insertions(+), 3 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/infra-sqlite/drizzle.config.ts`
+  - `packages/infra-sqlite/package.json`
+  - `packages/infra-sqlite/src/client.test.ts`
+  - `packages/infra-sqlite/src/client.ts`
+  - `packages/infra-sqlite/src/index.ts`
+  - `packages/infra-sqlite/tsconfig.json`
+  - `pnpm-lock.yaml`
+
+**Resumo do Codex:**
+
+> M4.1 concluído. O cliente SQLite configura WAL e chaves estrangeiras; em memória, o modo efetivo aparece como `memory`. A configuração do Drizzle ficou dentro do pacote SQLite.
+>
+> `pnpm check` passou: 633 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:252) e escrevi `DONE` em `.loop/status`.

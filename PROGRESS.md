@@ -249,11 +249,14 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
 
 ## M4 · SQLite, `packages/infra-sqlite` (PLANO 3.7, 5, 9 · M4)
 
-- [ ] M4.1 Cliente e configuração
+- [x] M4.1 Cliente e configuração
   - `client.ts` (abre o arquivo ou `:memory:`, pragmas WAL e `foreign_keys`), `drizzle.config.ts`.
   - Deps: `@agilebox/infra-sqlite prod drizzle-orm`, `@agilebox/infra-sqlite prod better-sqlite3`, `@agilebox/infra-sqlite dev drizzle-kit`, `@agilebox/infra-sqlite dev @types/better-sqlite3`.
   - Pronto: teste abre banco em memória e confere os pragmas.
   - Nota: As quatro dependências do passo não estão instaladas; registradas em `.loop/deps.txt` para retomada pelo laço.
+  - Nota: Na retomada, confirmei que os quatro pacotes ainda não resolvem no workspace. Reenviei a solicitação em `.loop/deps.txt`; implementação e `pnpm check` aguardam a instalação automática. Status `NEEDS_DEPS`.
+  - Nota: Criados `createSqliteClient` com `journal_mode = WAL` e `foreign_keys = ON`, teste em memória e `drizzle.config.ts` no pacote; em memória o SQLite mantém `journal_mode = memory`.
+  - Nota: O pacote SQLite usa `skipLibCheck` para ignorar declarações externas incompatíveis do Drizzle; `pnpm check` passou (633 testes).
 
 - [ ] M4.2 Schema: organização, usuários, entidades, projetos, membros
   - Pronto: `pnpm typecheck`.

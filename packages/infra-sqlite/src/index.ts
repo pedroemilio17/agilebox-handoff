@@ -1,1 +1,1 @@
-export {}
+export { createSqliteClient } from './client.js'

@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@agilebox/application": "workspace:*",
-    "@agilebox/core": "workspace:*"
+    "@agilebox/core": "workspace:*",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
