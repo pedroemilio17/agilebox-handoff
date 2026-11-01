@@ -309,7 +309,7 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Estratégia, custo da alternância do binário hoisted e alternativa de instalações separadas registrados em `docs/decisoes/0002-better-sqlite3-abi.md`.
   - Nota: Testes da decisão de rebuild cobrem os comandos de Node e Electron; a validação no Windows segue como pendência do Pedro.
 
-- [ ] PARADA M4: Pedro roda `pnpm db:reset && pnpm db:seed` e confere o banco.
+- [x] PARADA M4: Pedro roda `pnpm db:reset && pnpm db:seed` e confere o banco.
 
 ---
 
