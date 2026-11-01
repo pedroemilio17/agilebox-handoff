@@ -347,9 +347,11 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Implementados os componentes e exportações públicas; testes cobrem rótulos, seleção por teclado, estados acessíveis e entrada decimal com vírgula.
   - Nota: `pnpm check` passou (67 arquivos, 676 testes); conferir visualmente os componentes na galeria M5.6.
 
-- [ ] M5.5 Componentes de base III
+- [x] M5.5 Componentes de base III
   - `StatusMenu` (`role="menu"` + `menuitemradio`, 224 px, itens de 44 px, check no atual, fecha com Esc, devolve o foco), `Modal` (`role="dialog"`, `aria-modal`, prende o foco, fecha com Esc e clique no fundo, devolve o foco ao botão que abriu), `Toast` + `useToast` (`role="status"`, some em ~2,6 s), `Tooltip` (só quando recolhida/solicitada), `WindowControls` (minimizar, expandir/recolher, fechar; 40×44 px).
   - Pronto: testes de foco, Esc, retorno de foco e `role`.
+  - Nota: Implementados os cinco componentes com CSS Modules, exportações públicas e testes de teclado, foco, papéis ARIA e duração do aviso.
+  - Nota: `pnpm check` passou (72 arquivos, 684 testes); conferir visualmente menu, modal, toast, tooltip e controles na galeria M5.6.
 
 - [ ] M5.6 Galeria de componentes (só desenvolvimento)
   - `apps/desktop/src/renderer/panel/dev/Gallery.tsx` mostrando todos os componentes e estados; entrada pelo parâmetro `?gallery` do painel (inativa no build de produção). `index.ts` do `ui` exportando tudo.

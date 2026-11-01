@@ -1,0 +1,20 @@
+.toast {
+  position: fixed;
+  z-index: 1100;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-button);
+  background: var(--glass-popover);
+  color: var(--color-text-primary);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  backdrop-filter: var(--glass-popover-backdrop);
+}
+.check {
+  color: var(--color-status-concluido);
+}

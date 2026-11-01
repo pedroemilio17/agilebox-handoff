@@ -1,0 +1,24 @@
+.controls {
+  display: flex;
+  align-items: center;
+}
+.control {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.control:hover {
+  background: var(--glass-control);
+  color: var(--color-text-primary);
+}
+.close:hover {
+  background: var(--color-danger-hover);
+  color: var(--color-text-primary);
+}

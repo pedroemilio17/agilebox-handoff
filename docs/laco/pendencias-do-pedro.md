@@ -13,3 +13,4 @@ Tipos: `CONFERIR`, `TESTAR-NO-WINDOWS`, `RODAR-E2E`, `DECIDIR`.
 - [ ] M5.2 · TESTAR-NO-WINDOWS: abrir o app sem rede no Windows 11 e confirmar que a fonte Inter local carrega e que vidro e foco continuam legíveis com movimento reduzido ativo.
 - [ ] M5.3 · CONFERIR: quando a galeria M5.6 estiver disponível, comparar GlassSurface, Button, IconButton, Avatar, StatusChip, Skeleton, ReadOnlyBadge e EmptyState com o HANDOFF; conferir variantes, contraste e alvos de toque.
 - [ ] M5.4 · CONFERIR: quando a galeria M5.6 estiver disponível, comparar SegmentedControl, GroupedList/FieldRow e campos de texto, data e número com o HANDOFF; conferir deslize, separadores, rótulos, foco e alvos de toque.
+- [ ] M5.5 · CONFERIR: Na galeria M5.6, conferir StatusMenu (largura e itens), Modal (foco/fechamento), Toast (posição e duração), Tooltip e WindowControls (alvos de 40×44 px) contra o HANDOFF.

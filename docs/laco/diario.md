@@ -635,3 +635,32 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 67 arquivos e 676 testes. Registrei a conferência visual para a galeria M5.6 e escrevi `DONE` em `.loop/status`.
 >
 > Arquivos: [componentes da UI](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/packages/ui/src/components), [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md), [pendências do Pedro](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).
+
+## 2026-11-01 01:29 · M5.5 Componentes de base III
+
+- Alterações: 17 files changed, 569 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/ui/src/components/Modal.module.css`
+  - `packages/ui/src/components/Modal.test.tsx`
+  - `packages/ui/src/components/Modal.tsx`
+  - `packages/ui/src/components/StatusMenu.module.css`
+  - `packages/ui/src/components/StatusMenu.test.tsx`
+  - `packages/ui/src/components/StatusMenu.tsx`
+  - `packages/ui/src/components/Toast.module.css`
+  - `packages/ui/src/components/Toast.test.tsx`
+  - `packages/ui/src/components/Toast.tsx`
+  - `packages/ui/src/components/Tooltip.module.css`
+  - `packages/ui/src/components/Tooltip.test.tsx`
+  - `packages/ui/src/components/Tooltip.tsx`
+  - `packages/ui/src/components/WindowControls.module.css`
+  - `packages/ui/src/components/WindowControls.test.tsx`
+  - `packages/ui/src/components/WindowControls.tsx`
+  - `packages/ui/src/index.ts`
+
+**Resumo do Codex:**
+
+> M5.5 concluído. Implementei `StatusMenu`, `Modal`, `Toast`/`useToast`, `Tooltip` e `WindowControls`, com CSS Modules, exportações públicas e testes de comportamento e acessibilidade.
+>
+> `pnpm check` passou: 72 arquivos de teste e 684 testes. Registrei a revisão visual da galeria como pendência em `docs/laco/pendencias-do-pedro.md` e escrevi `DONE` em `.loop/status`.

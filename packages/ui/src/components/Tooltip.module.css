@@ -1,0 +1,22 @@
+.anchor {
+  position: relative;
+  display: inline-flex;
+}
+.tooltip {
+  position: absolute;
+  z-index: 1200;
+  top: 50%;
+  left: calc(100% + var(--space-2));
+  width: max-content;
+  max-width: 240px;
+  padding: var(--space-2) var(--space-3);
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-field);
+  background: var(--glass-popover);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-small);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: var(--glass-popover-backdrop);
+  pointer-events: none;
+}
