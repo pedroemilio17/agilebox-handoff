@@ -55,10 +55,11 @@ describe('resolveGlassMode', () => {
 })
 
 describe('windowChrome', () => {
-  it('no Acrylic mantém a moldura do sistema e esconde só a barra de título', () => {
+  it('no Windows 11 usa Acrylic numa janela sem moldura (configuração da 7f00386)', () => {
     expect(windowChrome('native')).toEqual({
-      titleBarStyle: 'hidden',
+      frame: false,
       transparent: false,
+      roundedCorners: true,
       backgroundMaterial: 'acrylic',
       backgroundColor: '#00000000',
     })

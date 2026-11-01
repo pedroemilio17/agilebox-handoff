@@ -32,22 +32,24 @@ export function resolveGlassMode(platform: string, env: GlassEnvironment): Glass
 }
 
 export interface WindowChrome {
-  readonly frame?: boolean
-  readonly titleBarStyle?: 'hidden'
+  readonly frame: false
   readonly transparent: boolean
+  readonly roundedCorners?: boolean
   readonly backgroundMaterial: 'acrylic' | 'none'
   readonly backgroundColor: string
 }
 
 /**
- * Opções de moldura de cada modo. O Windows só desenha o Acrylic em janelas com moldura do sistema:
- * no modo `native` a janela mantém a moldura e esconde só a barra de título (os botões são os nossos).
+ * Opções de moldura de cada modo. No Windows 11 (`native`) vale a configuração da versão 7f00386,
+ * confirmada pelo Pedro: janela sem moldura com Acrylic e fundo transparente. (Manter a moldura do
+ * sistema com `titleBarStyle: 'hidden'` deixou o fundo cinza, sem desfoque.)
  */
 export function windowChrome(mode: GlassMode): WindowChrome {
   if (mode === 'native') {
     return {
-      titleBarStyle: 'hidden',
+      frame: false,
       transparent: false,
+      roundedCorners: true,
       backgroundMaterial: 'acrylic',
       backgroundColor: '#00000000',
     }

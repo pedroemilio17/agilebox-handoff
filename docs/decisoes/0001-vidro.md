@@ -27,3 +27,7 @@ Na extensão, o vidro de aplicativo precisa estar ligado só para a classe `agil
 No Windows 11 o modo padrão passou a ser `native` (`backgroundMaterial: 'acrylic'`): é o vidro do sistema, que desfoca o desktop atrás da janela (o Windows não tem a refração do Liquid Glass). A página deixa o fundo translúcido sem `backdrop-filter`, ocupa a janela inteira e deixa os cantos para o Windows. `AGILEBOX_GLASS=css` volta ao vidro em CSS; no Windows 10 o CSS continua sendo o padrão.
 
 A opacidade do fundo da janela (`--glass-window-alpha`) é editável em **Ajustes → Aparência** (30% a 95%, padrão 68%, um pouco acima dos 50% do HANDOFF). O valor fica neste computador e vale para o painel e a bandeja. Pendente `TESTAR-NO-WINDOWS`: tremor do Acrylic ao redimensionar a bandeja (risco R1).
+
+## Correção: Acrylic sem moldura (como na 7f00386)
+
+Uma tentativa de manter a moldura do sistema (`titleBarStyle: 'hidden'`) no Windows 11 deixou o fundo cinza e sem desfoque, e os modos Translúcido e Opaco ficaram iguais. Voltou a configuração confirmada da versão `7f00386`: `frame: false`, `transparent: false`, `roundedCorners: true`, `backgroundMaterial: 'acrylic'` e fundo `#00000000` (`windowChrome('native')`).
