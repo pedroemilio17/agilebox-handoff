@@ -133,10 +133,13 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
 
 ## M3 · Contrato e aplicação (PLANO 3.2, 3.5, 3.6, 7, 8, 9 · M3)
 
-- [ ] M3.1 Base do contrato
+- [x] M3.1 Base do contrato
   - `contract/src/result.ts`, `errors.ts` (`ApiError`, códigos iguais ao `DomainError`), `changes.ts`, `channels.ts`.
   - Deps: `@agilebox/contract prod zod`.
   - Pronto: tipos compilam; testes do envelope de resultado.
+  - Nota: Criados o envelope discriminado de resultado, `ApiError`, eventos de mudança e canais da API e da janela; exportados pela entrada do pacote.
+  - Nota: `zod` já estava declarado como dependência de produção; sem dependências novas.
+  - Nota: Teste do envelope primeiro falhou sem a implementação; `pnpm check` passou após `pnpm format` (531 testes).
 
 - [ ] M3.2 Schemas: sessão, usuários, projetos, entidades
   - zod de entrada e saída + tipos inferidos (DTOs). Valores em R$ como `number | null` (null = sem permissão).

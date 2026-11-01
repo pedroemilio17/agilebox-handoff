@@ -1,0 +1,49 @@
+export const API_CHANNELS = [
+  'session.getCurrent',
+  'session.switchUser',
+  'session.listUsers',
+  'users.setDefaultRate',
+  'projects.list',
+  'projects.create',
+  'projects.listMembers',
+  'projects.addMember',
+  'projects.removeMember',
+  'tasks.listBoard',
+  'tasks.listTeamBoard',
+  'tasks.get',
+  'tasks.create',
+  'tasks.update',
+  'tasks.move',
+  'tasks.listRecent',
+  'tasks.listFrequent',
+  'tasks.search',
+  'tasks.recordOpen',
+  'participations.add',
+  'participations.remove',
+  'participations.setHours',
+  'participations.setRate',
+  'contributors.list',
+  'contributors.create',
+  'contributors.setDefaultRate',
+  'timeline.list',
+  'dashboard.get',
+  'meetings.list',
+  'meetings.listUpcoming',
+  'meetings.create',
+  'meetings.update',
+  'meetings.delete',
+] as const
+
+export type ApiChannel = (typeof API_CHANNELS)[number]
+
+export const CHANGE_CHANNEL = 'changes' as const
+
+export const SHELL_CHANNELS = [
+  'window.minimize',
+  'window.close',
+  'window.toggleTray',
+  'window.openPanel',
+  'window.setTrayHeight',
+] as const
+
+export type ShellChannel = (typeof SHELL_CHANNELS)[number]
