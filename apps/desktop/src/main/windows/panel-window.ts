@@ -8,7 +8,7 @@ export function createPanelWindow(glassMode: GlassMode): BrowserWindow {
     height: 780,
     minWidth: 900,
     frame: false,
-    transparent: glassMode === 'css',
+    transparent: glassMode === 'css' || glassMode === 'compositor',
     backgroundMaterial: glassMode === 'native' ? 'acrylic' : 'none',
     backgroundColor: glassMode === 'opaque' ? '#1e212a' : '#00000000',
     webPreferences: {

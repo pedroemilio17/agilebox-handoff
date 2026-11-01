@@ -13,6 +13,11 @@
   animation: trayOpen 0.6s var(--ease-ios) both;
 }
 
+:global(:root[data-glass='compositor']) .window {
+  inset: 0;
+  box-shadow: var(--glass-window-highlight);
+}
+
 :global(:root[data-glass='opaque']) .window {
   border: 0;
   border-radius: 0;

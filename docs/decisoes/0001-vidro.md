@@ -15,3 +15,9 @@ A bandeja pode animar a altura sem redimensionar continuamente a janela, mas o f
 ## Revisão
 
 Pendente: testar `AGILEBOX_GLASS=css` e `AGILEBOX_GLASS=native` no painel e na bandeja em Windows 11 e registrar a escolha final.
+
+## Linux com GNOME Shell + Liquid Glass (modo `compositor`)
+
+Quando a extensão [Liquid Glass](https://github.com/ryohsuke1231/liquid-glass) está ativa no GNOME Shell, o app detecta (pela lista `enabled-extensions`) e usa o modo `compositor`: janela transparente com o visual do design (cantos de 22 px, fundo translúcido dos tokens), sem o `backdrop-filter` do CSS. O desfoque e a refração do desktop são desenhados pelo próprio GNOME Shell atrás da janela.
+
+Na extensão, o vidro de aplicativo precisa estar ligado só para a classe `agilebox-desktop` (`enable-application-glass`, `application-glass-all-windows=false`, `application-window-whitelist=['agilebox-desktop']`), com `application-content-opacity=1.0` (texto nítido) e `application-corner-radius=22`. Sem a extensão, o Linux continua no modo `opaque`. `AGILEBOX_GLASS=css|opaque|compositor` força um modo.

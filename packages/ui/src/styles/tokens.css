@@ -100,3 +100,8 @@
   --glass-window: linear-gradient(150deg, rgba(255, 255, 255, 0.06), transparent 45%), #1e212a;
   --glass-window-backdrop: none;
 }
+
+/* Vidro desenhado pelo compositor (GNOME Shell + Liquid Glass): a página só deixa o fundo translúcido. */
+:root[data-glass='compositor'] {
+  --glass-window-backdrop: none;
+}

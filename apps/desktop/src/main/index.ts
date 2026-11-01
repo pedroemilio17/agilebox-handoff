@@ -5,6 +5,7 @@ import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
 import { needsX11Relaunch } from './linux-display'
 import { getDatabasePath, getMigrationsFolder } from './paths'
+import { detectCompositorGlass } from './windows/compositor-glass'
 import { resolveGlassMode } from './windows/glass'
 import { createTrayIcon } from './tray/tray-icon'
 import { shouldHideOnClose } from './tray/tray-menu'
@@ -32,6 +33,7 @@ if (relaunchInX11) {
       ? {}
       : { AGILEBOX_GLASS: process.env.AGILEBOX_GLASS }),
     systemVersion: process.getSystemVersion(),
+    compositorGlass: detectCompositorGlass(process.platform),
   })
   const windows = new WindowManager(
     glassMode,

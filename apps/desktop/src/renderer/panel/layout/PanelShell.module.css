@@ -12,6 +12,11 @@
   animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) both;
 }
 
+:global(:root[data-glass='compositor']) .window {
+  inset: 0;
+  box-shadow: var(--glass-window-highlight);
+}
+
 :global(:root[data-glass='opaque']) .window {
   inset: 0;
   border: 0;

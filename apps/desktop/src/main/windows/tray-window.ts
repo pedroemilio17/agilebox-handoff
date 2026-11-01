@@ -10,7 +10,7 @@ export function createTrayWindow(glassMode: GlassMode, position: WindowPosition)
     ...TRAY_WINDOW_SIZE,
     ...position,
     frame: false,
-    transparent: glassMode === 'css',
+    transparent: glassMode === 'css' || glassMode === 'compositor',
     backgroundMaterial: glassMode === 'native' ? 'acrylic' : 'none',
     backgroundColor: glassMode === 'opaque' ? '#1e212a' : '#00000000',
     alwaysOnTop: true,

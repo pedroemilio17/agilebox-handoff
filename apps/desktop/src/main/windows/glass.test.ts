@@ -24,4 +24,14 @@ describe('resolveGlassMode', () => {
       'css',
     )
   })
+
+  it('usa o vidro do GNOME Shell quando a extensão Liquid Glass está ativa', () => {
+    expect(resolveGlassMode('linux', { compositorGlass: true })).toBe('compositor')
+    expect(resolveGlassMode('linux', { compositorGlass: false })).toBe('opaque')
+    expect(resolveGlassMode('linux', { compositorGlass: true, AGILEBOX_GLASS: 'opaque' })).toBe(
+      'opaque',
+    )
+    expect(resolveGlassMode('linux', { AGILEBOX_GLASS: 'compositor' })).toBe('compositor')
+    expect(resolveGlassMode('win32', { compositorGlass: true })).toBe('css')
+  })
 })
