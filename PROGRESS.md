@@ -400,7 +400,7 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: `pnpm check` passou (86 arquivos, 710 testes) e o build gerou main, preload e renderers; binário Electron não baixou sem rede.
   - Nota: A edição pela bandeja citada na conferência depende da tela de edição do M9; a casca deste passo ainda não edita tarefas.
 
-- [ ] PARADA M5: Pedro roda `pnpm dev` (no Windows e no Linux), confere a galeria e o painel esqueleto, e decide o vidro (0001-vidro.md).
+- [x] PARADA M5: Pedro roda `pnpm dev` (no Windows e no Linux), confere a galeria e o painel esqueleto, e decide o vidro (0001-vidro.md).
 
 ---
 
