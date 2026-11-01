@@ -761,3 +761,28 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > Implementei a ponte preload, o cliente IPC com `ApiError`, os providers de API e queries, invalidação por mudanças, capacidades da sessão, formatadores pt-BR e `fake-api`. Ajustei o contrato do renderer para retornar dados desembrulhados, conforme o PLANO 3.5, e registrei a divergência em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md).
 >
 > `pnpm check` passou: 705 testes. Não há pendência específica para o Pedro neste passo.
+
+## 2026-11-01 02:03 · M5.10 Janelas, vidro e ciclo de vida
+
+- Alterações: 11 files changed, 262 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `apps/desktop/src/main/composition-root.ts`
+  - `apps/desktop/src/main/index.ts`
+  - `apps/desktop/src/main/windows/glass.test.ts`
+  - `apps/desktop/src/main/windows/glass.ts`
+  - `apps/desktop/src/main/windows/panel-window.ts`
+  - `apps/desktop/src/main/windows/tray-position.test.ts`
+  - `apps/desktop/src/main/windows/tray-position.ts`
+  - `apps/desktop/src/main/windows/tray-window.ts`
+  - `apps/desktop/src/main/windows/window-manager.ts`
+  - `docs/decisoes/0001-vidro.md`
+
+**Resumo do Codex:**
+
+> M5.10 concluído; status da rodada: `DONE`.
+>
+> Implementei a seleção de vidro, o posicionamento da bandeja, o gerenciador de janelas e o ciclo de vida com instância única. Registrei a decisão provisória e a comparação manual pendente no Windows em [0001-vidro.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/docs/decisoes/0001-vidro.md) e [pendencias-do-pedro.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/docs/laco/pendencias-do-pedro.md).
+>
+> `pnpm check` passou: 85 arquivos e 709 testes. O build do desktop gerou main, preload e renderers; como a rede estava indisponível, o binário Electron não foi baixado e a recompilação nativa foi ignorada. Registrar esse resultado e a pendência em [PROGRESS.md](/home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md).

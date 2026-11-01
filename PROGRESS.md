@@ -382,11 +382,15 @@ O laço não abre janelas. A verificação de cada passo é `pnpm check`; a part
   - Nota: Contrato anterior tipava a API do renderer com `ApiResult`; ajustado para refletir o PLANO 3.5: só o transporte IPC usa envelope.
   - Nota: Formatadores pt-BR e testes de IPC, sincronização e datas adicionados; `pnpm check` passou (705 testes).
 
-- [ ] M5.10 Janelas, vidro e ciclo de vida
+- [x] M5.10 Janelas, vidro e ciclo de vida
   - `main/windows/glass.ts` (**pura**: `resolveGlassMode(platform, env)` → `'css'` por padrão; `'native'` quando `AGILEBOX_GLASS=native` no Windows 11), `window-manager.ts`, `panel-window.ts` (sem moldura, 1280×780, mín. 900 de largura), `tray-window.ts` (360 px, sem moldura, sempre no topo, sem item na barra de tarefas, ancorada no canto inferior direito da área útil), `main/index.ts` (instância única, `whenReady` → composition root → handlers → janelas). Código que toca a API do Electron fica nestes arquivos finos; a lógica (modo de vidro, posição ancorada) em funções puras com teste.
   - Escrever `docs/decisoes/0001-vidro.md` como **provisório**: padrão CSS (janela transparente, vidro por `backdrop-filter`) com alternativa nativa (`backgroundMaterial: 'acrylic'`) por variável de ambiente; explicar o risco R1 do PLANO.
   - Pendência `TESTAR-NO-WINDOWS`: comparar `AGILEBOX_GLASS=css` e `native` na bandeja e no painel; registrar a escolha em `0001-vidro.md`.
   - Pronto: `pnpm check` e build do desktop.
+  - Nota: Implementados o seletor puro de vidro, a posição por área útil, o gerenciador e as janelas sem moldura; inicialização registra handlers após a composição e mantém instância única.
+  - Nota: Decisão provisória deste passo: vidro CSS por padrão; Acrylic é opção no Windows 11 via `AGILEBOX_GLASS=native`, documentada em `docs/decisoes/0001-vidro.md` com risco R1.
+  - Nota: A bandeja usa 360×640 px conforme protótipo/HANDOFF; pendente comparar os dois modos de vidro no Windows 11.
+  - Nota: `pnpm check` passou (85 arquivos, 709 testes) e o build do desktop gerou main, preload e renderers; o binário Electron não pôde ser baixado sem rede, então a recompilação nativa foi ignorada.
 
 - [ ] M5.11 Painel esqueleto ponta a ponta
   - `renderer/panel/{main.tsx,App.tsx,copy.ts}` com providers e uma tela temporária que lista as tarefas de `tasks.listBoard` (título, `StatusChip`, projeto); `renderer/tray/{main.tsx,App.tsx}` com casca mínima. Acrescentar o build do desktop ao script `check` da raiz.

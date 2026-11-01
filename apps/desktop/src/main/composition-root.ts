@@ -61,6 +61,7 @@ export async function createCompositionRoot(options: CompositionRootOptions) {
         clock: systemClock,
         idGenerator: createIdGenerator(),
       }),
+      actorSession,
       close: adapters.close,
     }
   } catch (error) {
