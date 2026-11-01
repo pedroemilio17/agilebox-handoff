@@ -112,9 +112,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: tabelas de casos, incluindo "Concluída" com prazo vencido.
   - Notas da rodada: testes escritos primeiro e executados com falha pela ausência das regras. Implementados subtotal com arredondamento meio para cima em aritmética inteira, soma dos subtotais e frases de prazo por dias de calendário, priorizando tarefas concluídas. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 523 testes). Checkbox preservado para o laço.
 
-- [ ] M2.11 Linha do tempo
+- [x] M2.11 Linha do tempo
   - `rules/timeline.ts`: `diffTask(before, after)` → um evento por campo mudado; eventos de envolvimento; `describeEvent(event, viewer, names)` em pt-BR ("moveu de A fazer para Desenvolvendo"), omitindo R$ quando `canSeeRate` é falso.
   - Pronto: um teste por tipo de evento; teste explícito de que o colaborador não vê o valor de outra pessoa.
+  - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da regra. Implementados diffs dos campos e envolvimentos, incluindo troca de responsável e comparação de chamados por conteúdo, além de descrições em pt-BR com filtro de valores pela política de acesso e organização. Testados os onze tipos e a ocultação de valores de terceiros. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 525 testes). Checkbox preservado para o laço.
 
 - [ ] M2.12 Dashboard
   - `rules/dashboard.ts`: % por estado somando 100 (maior resto), estatísticas por colaborador (nº de tarefas de que participa, distribuição, % concluído).
