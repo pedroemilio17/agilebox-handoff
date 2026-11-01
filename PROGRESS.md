@@ -122,9 +122,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: casos com 0 tarefas, 1 tarefa, arredondamentos difíceis (ex.: 3 tarefas em 3 estados).
   - Notas da rodada: testes escritos primeiro e executados com falha pela ausência da regra. Implementadas distribuições percentuais pelo maior resto, com desempate pela ordem dos estados, e estatísticas por usuário usando a política de participação e isolamento por organização. A decisão sobre incluir gestores na tabela permanece em aberto para a etapa de interface. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 528 testes). Checkbox preservado para o laço.
 
-- [ ] M2.13 Fechamento do core
+- [x] M2.13 Fechamento do core
   - `src/index.ts` exportando a API pública; limite de cobertura ≥ 95% de linhas para `packages/core` no Vitest; remover `sanity.test.ts`.
   - Pronto: `pnpm check` e `pnpm coverage` passam.
+  - Notas da rodada: API pública do core exporta valores, entidades, políticas, regras e erros; teste da entrada escrito antes da implementação e confirmado com falha inicial. Configurado limite de 95% de linhas para o core; `sanity.test.ts` já havia sido removido. O teste existente de ESLint precisou de prazo maior para analisar a nova entrada durante a cobertura. Sem falha anterior ou dependência nova. Validação: `pnpm check` e `pnpm coverage` passaram (529 testes; 99,58% de linhas no relatório atual). Checkbox preservado para o laço.
 
 - [ ] PARADA M2: Pedro revisa a matriz de acesso nos testes do M2.9 e as frases da linha do tempo.
 
