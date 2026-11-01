@@ -67,9 +67,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: testes de criação e de `code` de cada erro.
   - Notas da rodada: implementados os oito IDs marcados e conversores com validação de ULID, além dos erros tipados com seus quatro códigos. Os testes existentes foram executados antes da implementação e falharam pela ausência dos módulos; corrigido também o tipo auxiliar da tupla de conversores nos testes. Não há falha anterior nem dependência nova. Validação: `pnpm check` passou (formatação, lint, tipos e 372 testes). Checkbox mantido para o laço.
 
-- [ ] M2.2 Estado da tarefa
+- [x] M2.2 Estado da tarefa
   - `values/task-status.ts`: `TASK_STATUSES` em ordem (`planning`, `todo`, `in_progress`, `review`, `done`), rótulos pt-BR (Planejamento, A fazer, Desenvolvendo, Revisar, Concluído), `isTaskStatus`, `parseTaskStatus`.
   - Pronto: ordem e rótulos testados.
+  - Notas da rodada: implementados os cinco estados ordenados, rótulos em pt-BR, tipo `TaskStatus`, validação e conversão com erro `VALIDATION` para valores inválidos. Testes escritos primeiro e executados antes da implementação, falhando pela ausência do módulo. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 384 testes). Checkbox preservado para o laço.
 
 - [ ] M2.3 Dinheiro e horas
   - `values/money.ts` (centavos; `parseMoney("45,50")`, aceita `"45"`, `"45.5"`, `"R$ 45,50"`; rejeita negativo e texto inválido; `formatBRL`), `values/hours.ts` (centésimos; `parseHours("1,5") = 150`; formatação `1,5 h`).
