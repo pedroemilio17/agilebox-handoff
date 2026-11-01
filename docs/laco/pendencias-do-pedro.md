@@ -16,3 +16,7 @@
 
 - [ ] M8 · CONFERIR: como gestor, criar, editar e excluir um agendamento; como colaborador, ver a agenda e o aviso "Só o gestor cria e edita agendamentos."; comparar o calendário com `design/Painel.dc.html`.
 - [ ] M8.3 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.5): os participantes do agendamento são só usuários (sem entidades).
+
+- [ ] M10.1 · CONFERIR (Linux): instalar a extensão AppIndicator do GNOME, ver se o ícone aparece, e então decidir se o fechar do painel também recolhe no Linux (hoje `shouldHideOnClose` é falso no Linux).
+- [ ] M10.1 · TESTAR-NO-WINDOWS: ícone na bandeja, clique abre/fecha a bandeja no canto certo (barra de tarefas em qualquer borda, vários monitores), fechar o painel recolhe e "Sair" encerra.
+- [ ] M10.1 · DECIDIR: DECISÃO PROVISÓRIA (PLANO 12.7): o app não inicia sozinho com o Windows.

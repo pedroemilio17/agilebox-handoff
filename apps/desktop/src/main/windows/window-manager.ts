@@ -10,14 +10,27 @@ export class WindowManager implements ShellWindows {
   private panel: BrowserWindow | undefined
   private tray: BrowserWindow | undefined
 
+  private quitting = false
+
   constructor(
     private readonly glassMode: GlassMode,
     private readonly onPanelClosed: () => void = () => undefined,
+    // Com ícone de bandeja confiável, fechar o painel só o esconde.
+    private readonly hideOnClose = false,
   ) {}
+
+  markQuitting(): void {
+    this.quitting = true
+  }
 
   createPanel(): BrowserWindow {
     if (this.panel && !this.panel.isDestroyed()) return this.panel
     this.panel = createPanelWindow(this.glassMode)
+    this.panel.on('close', (event) => {
+      if (!this.hideOnClose || this.quitting) return
+      event.preventDefault()
+      this.panel?.hide()
+    })
     this.panel.on('closed', () => {
       this.panel = undefined
       this.onPanelClosed()
@@ -27,13 +40,36 @@ export class WindowManager implements ShellWindows {
 
   createTray(): BrowserWindow {
     if (this.tray && !this.tray.isDestroyed()) return this.tray
-    const workArea = screen.getPrimaryDisplay().workArea
-    const position = getTrayPosition(workArea, TRAY_WINDOW_SIZE)
-    this.tray = createTrayWindow(this.glassMode, position)
+    this.tray = createTrayWindow(
+      this.glassMode,
+      getTrayPosition(screen.getPrimaryDisplay().workArea, TRAY_WINDOW_SIZE),
+    )
     this.tray.on('closed', () => {
       this.tray = undefined
     })
     return this.tray
+  }
+
+  /** Clique no ícone: mostra a bandeja no canto do monitor do ícone, ou a esconde se já está visível. */
+  toggleTrayWindow(iconBounds?: Electron.Rectangle): void {
+    const tray = this.createTray()
+    if (tray.isVisible()) tray.hide()
+    else this.showTrayWindow(iconBounds)
+  }
+
+  private showTrayWindow(iconBounds?: Electron.Rectangle): void {
+    const tray = this.createTray()
+    const display = iconBounds
+      ? screen.getDisplayNearestPoint({ x: iconBounds.x, y: iconBounds.y })
+      : screen.getPrimaryDisplay()
+    const height = tray.getBounds().height
+    tray.setBounds({
+      ...getTrayPosition(display.workArea, { width: TRAY_WINDOW_SIZE.width, height }),
+      width: TRAY_WINDOW_SIZE.width,
+      height,
+    })
+    tray.show()
+    tray.focus()
   }
 
   minimize(sender: unknown): void {
@@ -44,9 +80,10 @@ export class WindowManager implements ShellWindows {
     const window = this.windowOf(sender)
     if (window === undefined) return
     if (window !== this.tray) return window.close()
-    // A bandeja só some da tela. Se o painel também não está visível, não sobra como reabrir
-    // (o ícone de bandeja vem no M10.1): nesse caso encerra o aplicativo.
+    // A bandeja só some da tela. Sem ícone confiável (Linux) e com o painel também escondido, não
+    // sobra como reabrir: nesse caso encerra o aplicativo.
     window.hide()
+    if (this.hideOnClose) return
     if (this.panel === undefined || this.panel.isDestroyed() || !this.panel.isVisible()) {
       if (this.panel !== undefined && !this.panel.isDestroyed()) this.panel.close()
       else this.onPanelClosed()
@@ -60,7 +97,7 @@ export class WindowManager implements ShellWindows {
       this.tray?.hide()
       return
     }
-    this.createTray().show()
+    this.showTrayWindow()
     this.panel?.hide()
   }
 

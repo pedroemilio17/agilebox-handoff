@@ -561,9 +561,12 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 
 ## M10 · Empacotamento e ícone de bandeja (PLANO 9 · M10)
 
-- [ ] M10.1 Ícone de bandeja e ciclo de vida
+- [x] M10.1 Ícone de bandeja e ciclo de vida
   - `main/tray/tray-icon.ts` (clique abre/fecha a bandeja; menu "Abrir painel" e "Sair"), instância única, janelas reabrem pela bandeja, painel recolhe para a bandeja. Lógica de posição em função pura (barra de tarefas em qualquer borda, vários monitores). Item PLANO 12.7 (iniciar com o Windows): **não** iniciar sozinho; registrar `DECISÃO PROVISÓRIA`.
   - Pronto: testes das funções puras; `pnpm check`.
+  - Nota (Claude): Ícone na área de notificação (tray-icon.ts) com menu 'Abrir painel' | 'Sair'; clique alterna a bandeja, posicionada no canto da área útil do monitor do ícone (qualquer borda da barra de tarefas). Instância única já existia. Ícones gerados por scripts/make-icons.mjs (resources/tray.png e icon.png), sem dependências.
+  - Nota (Claude): DECISÃO DO PEDRO (opção 1): no Windows/macOS fechar o painel o recolhe para o ícone; no Linux fechar o painel encerra o app, porque o GNOME só mostra o ícone com a extensão AppIndicator (shouldHideOnClose).
+  - Nota (Claude): DECISÃO PROVISÓRIA (PLANO 12.7): o app NÃO inicia com o Windows.
 
 - [ ] M10.2 Instalador
   - `apps/desktop/electron-builder.yml` (NSIS para Windows; alvo Linux AppImage como bônus), `resources/` com ícones gerados por script (`scripts/make-icons.mjs`, sem dependência nova), scripts `pack` e `dist`, `better-sqlite3` reconstruído para o Electron (`scripts/ensure-native.mjs`, M4.8), banco em `%APPDATA%/AgileBox` (Windows) ou o diretório de dados do usuário (Linux), migrações ao iniciar.
