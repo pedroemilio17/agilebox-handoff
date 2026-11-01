@@ -87,9 +87,10 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Pronto: casos válidos e inválidos.
   - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência dos módulos. Implementados chamado com ID inteiro positivo seguro e link opcional HTTP(S), além dos tipos e validações dos papéis de usuário e participação. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 475 testes). Checkbox preservado para o laço.
 
-- [ ] M2.6 Organização, usuário, entidade, projeto
+- [x] M2.6 Organização, usuário, entidade, projeto
   - `entities/organization.ts`, `entities/user.ts` (iniciais a partir do nome, valor/hora padrão), `entities/contributor.ts` (stakeholder: nome, origem `manual`|`azure`, valor/hora padrão; **sem** vínculo com usuário, PLANO 2.6), `entities/project.ts` (nome obrigatório, `nameKey` normalizado: sem acentos, minúsculo, espaços colapsados).
   - Pronto: validações e normalização testadas.
+  - Notas da rodada: testes escritos primeiro e executados com falha inicial pela ausência das entidades. Criadas as quatro entidades com nomes obrigatórios, iniciais do primeiro e último nomes, valor/hora padrão positivo em centavos, validação de papel e origem, e chave de projeto normalizada; stakeholders não têm vínculo com conta. Sem falha anterior ou dependências novas. Validação: `pnpm check` passou (formatação, lint, tipos e 490 testes). Checkbox preservado para o laço.
 
 - [ ] M2.7 Tarefa e envolvimento
   - `entities/participation.ts`: participante `{ kind: 'user', userId } | { kind: 'contributor', contributorId }`, papel, horas, valor copiado; `responsible` só com usuário. `entities/task.ts`: criação (Responsável = criador, PLANO 2.1), renomear, descrição, estado, prazo, chamado, trocar responsável, adicionar/remover envolvido (sem duplicar; exatamente um responsável; não remove o responsável sem trocar), `searchText`.
