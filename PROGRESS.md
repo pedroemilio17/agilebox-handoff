@@ -141,9 +141,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: `zod` já estava declarado como dependência de produção; sem dependências novas.
   - Nota: Teste do envelope primeiro falhou sem a implementação; `pnpm check` passou após `pnpm format` (531 testes).
 
-- [ ] M3.2 Schemas: sessão, usuários, projetos, entidades
+- [x] M3.2 Schemas: sessão, usuários, projetos, entidades
   - zod de entrada e saída + tipos inferidos (DTOs). Valores em R$ como `number | null` (null = sem permissão).
   - Pronto: testes de aceitar/rejeitar.
+  - Nota: schemas e DTOs inferidos para sessão, usuários, projetos, membros e entidades; setters recebem centavos e DTOs usam valores em R$ ou `null`.
+  - Nota: testes de aceitação/rejeição adicionados antes da implementação. `pnpm check` passou (formatação, lint, tipos e 547 testes); sem dependências novas.
 
 - [ ] M3.3 Schemas: tarefas, envolvimentos, linha do tempo
   - Inclui `listTeamBoard`, participante discriminado (`kind`), `canEdit`/`readOnly` no detalhe.
