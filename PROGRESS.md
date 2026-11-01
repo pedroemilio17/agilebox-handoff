@@ -290,9 +290,12 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Contrato completo executado em SQLite em memória com `foreign_keys` habilitado; ajustes nos fixtures usam IDs e relações válidos para SQL.
   - Nota: `pnpm check` passou: formatação, lint, tipos e 651 testes.
 
-- [ ] M4.7 Seed e scripts
+- [x] M4.7 Seed e scripts
   - `seed/data.ts` (PLANO 9 · M4; nomes do protótipo), `seed/seed.ts` usando os **casos de uso** (para gerar linha do tempo real), `scripts/` e comandos `db:migrate`, `db:seed`, `db:reset` (banco em `./.data/agilebox.db`, no `.gitignore`).
   - Pronto: teste roda o seed em memória e confere contagens.
+  - Nota: Conferidos os dados de demonstração, seed pelos casos de uso, scripts `db:*` e caminho `.data/agilebox.db` ignorado pelo Git; não havia falha anterior.
+  - Nota: Teste do seed passou e conferiu 5 usuários, 3 projetos, 2 entidades, 10 tarefas, 3 agendamentos e eventos de linha do tempo, incluindo edição de gestor.
+  - Nota: `pnpm check` passou (formatação, lint, tipos e 652 testes); sem dependências novas ou pendências externas deste passo.
 
 - [ ] M4.8 ABI do better-sqlite3 (Node × Electron)
   - O módulo nativo é um só em `node_modules` (hoisted): compilado para o Node (Vitest) **ou** para o Electron (app). Escrever `scripts/ensure-native.mjs <node|electron>`: tenta carregar o `better-sqlite3` no alvo (para `electron`, com `ELECTRON_RUN_AS_NODE=1` e o binário do Electron, se instalado); se falhar por `NODE_MODULE_VERSION`, reconstrói (`npm rebuild better-sqlite3` para o Node, `@electron/rebuild` para o Electron) e sai com código ≠ 0 e mensagem clara se não conseguir (sem rede, sem compilador). Se o pacote ou o Electron ainda não estiverem instalados, sai com 0 sem fazer nada.

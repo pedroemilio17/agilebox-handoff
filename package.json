@@ -11,6 +11,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
+    "db:generate": "pnpm --filter @agilebox/infra-sqlite db:generate",
+    "db:migrate": "pnpm --filter @agilebox/infra-sqlite db:migrate",
+    "db:seed": "pnpm --filter @agilebox/infra-sqlite db:seed",
+    "db:reset": "pnpm --filter @agilebox/infra-sqlite db:reset",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings 0",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
@@ -25,6 +29,7 @@
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
 }

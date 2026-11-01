@@ -462,3 +462,26 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > `pnpm check` passou: 50 arquivos de teste, 651 testes. O status está como `DONE` em `.loop/status`.
 >
 > Arquivos principais: [repositório de agenda](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/repositories/meeting-repository.ts>), [SqliteUnitOfWork](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/unit-of-work.ts>), [fábrica dos adaptadores](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/packages/infra-sqlite/src/create-sqlite-adapters.ts>) e [notas do M4.6](</home/peeddrroolg/Área de trabalho/Projetos/agilebox-handoff/PROGRESS.md>).
+
+## 2026-11-01 00:51 · M4.7 Seed e scripts
+
+- Alterações: 11 files changed, 358 insertions(+), 2 deletions(-)
+- Rodadas do Codex neste passo: 2
+- Arquivos:
+  - `PROGRESS.md`
+  - `package.json`
+  - `packages/infra-sqlite/package.json`
+  - `packages/infra-sqlite/scripts/migrate.mjs`
+  - `packages/infra-sqlite/scripts/reset.mjs`
+  - `packages/infra-sqlite/scripts/runtime.mjs`
+  - `packages/infra-sqlite/scripts/seed.mjs`
+  - `packages/infra-sqlite/src/seed/data.ts`
+  - `packages/infra-sqlite/src/seed/seed.test.ts`
+  - `packages/infra-sqlite/src/seed/seed.ts`
+  - `pnpm-lock.yaml`
+
+**Resumo do Codex:**
+
+> M4.7 conferido e concluído; registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:293) e defini `.loop/status` como `DONE`.
+>
+> O teste do seed confirmou as contagens esperadas e eventos na linha do tempo, incluindo edição de gestor. `pnpm check` passou: 652 testes. Não rodei `git` nem comandos de instalação.
