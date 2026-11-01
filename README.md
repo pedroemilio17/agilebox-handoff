@@ -16,21 +16,31 @@ fica em **Conta**, na base da barra lateral, enquanto não existe login.
 
 ## Instalar
 
-Baixe o instalador na página de
-[Releases](https://github.com/pedroemilio17/agilebox-handoff/releases). Não é preciso git, Node nem
-o código.
+O jeito mais simples é o comando de uma linha. Ele baixa a versão mais nova, instala, cria os
+atalhos e abre o app (o passo a passo está em [docs/instalacao.md](docs/instalacao.md)).
 
-| Sistema                   | Arquivo                       | Como abrir                                                       |
-| ------------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| Windows 10/11             | `AgileBox-<versão>-setup.exe` | Execute e siga o instalador (instala só para o seu usuário).     |
-| Linux (testado no Fedora) | `AgileBox-<versão>.AppImage`  | `chmod +x AgileBox-*.AppImage` e depois `./AgileBox-*.AppImage`. |
+**Linux** (Terminal):
 
-> **Aviso de segurança no Windows.** O instalador ainda não tem assinatura digital. Na primeira vez o
-> SmartScreen mostra "O Windows protegeu o computador": clique em **Mais informações → Executar assim
-> mesmo**. Em PCs com o **Controle de Aplicativos Inteligentes** ligado ele não instala; nesse caso, use
-> o caminho de desenvolvimento (abaixo) ou espere a versão assinada.
+```bash
+curl -fsSL https://raw.githubusercontent.com/pedroemilio17/agilebox-handoff/HEAD/scripts/install-linux.sh | bash
+```
 
-No Linux, se o AppImage reclamar de FUSE: `sudo dnf install fuse fuse-libs`.
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/pedroemilio17/agilebox-handoff/HEAD/scripts/install-windows.ps1 | iex
+```
+
+Rodar o comando de novo atualiza. Depois de instalado, as atualizações também saem pelo próprio
+app, em **Ajustes → Atualizações**. Não é preciso git, Node nem o código.
+
+Também dá para baixar os arquivos à mão na página de
+[Releases](https://github.com/pedroemilio17/agilebox-handoff/releases): `AgileBox-<versão>-setup.exe`
+(Windows) ou `AgileBox-<versão>.AppImage` (Linux).
+
+> **Aviso de segurança no Windows.** O instalador ainda não tem assinatura digital. Baixado pelo
+> navegador, o SmartScreen avisa na primeira vez: clique em **Mais informações → Executar assim
+> mesmo**. Em PCs com o **Controle de Aplicativos Inteligentes** ligado, ele não instala.
 
 ## Usar
 
@@ -133,6 +143,7 @@ são verificadas pelo lint.
 - [docs/PLANO.md](docs/PLANO.md): stack, arquitetura, modelo de dados, regras de acesso e marcos.
 - [docs/HANDOFF.md](docs/HANDOFF.md): especificação visual e de comportamento.
 - [docs/decisoes/](docs/decisoes/): decisões técnicas (vidro, módulo nativo, TypeScript).
-- [docs/instalador.md](docs/instalador.md): detalhes dos instaladores.
+- [docs/instalacao.md](docs/instalacao.md): guia de instalação (Linux e Windows).
+- [docs/instalador.md](docs/instalador.md): como os instaladores são gerados.
 - [PROGRESS.md](PROGRESS.md) e [docs/laco/](docs/laco/): andamento dos marcos e pendências de conferência.
 - `design/`: protótipos de referência visual (não são código reaproveitável).
