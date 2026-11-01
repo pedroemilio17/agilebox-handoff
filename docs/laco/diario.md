@@ -354,3 +354,22 @@ Uma entrada por passo concluído, escrita pelo script do laço.
 > M4.1 concluído. O cliente SQLite configura WAL e chaves estrangeiras; em memória, o modo efetivo aparece como `memory`. A configuração do Drizzle ficou dentro do pacote SQLite.
 >
 > `pnpm check` passou: 633 testes. Registrei as notas em [PROGRESS.md](/home/peeddrroolg/Área%20de%20trabalho/Projetos/agilebox-handoff/PROGRESS.md:252) e escrevi `DONE` em `.loop/status`.
+
+## 2026-11-01 00:22 · M4.2 Schema: organização, usuários, entidades, projetos, membros
+
+- Alterações: 7 files changed, 96 insertions(+), 1 deletion(-)
+- Rodadas do Codex neste passo: 1
+- Arquivos:
+  - `PROGRESS.md`
+  - `packages/infra-sqlite/src/schema/contributors.ts`
+  - `packages/infra-sqlite/src/schema/index.ts`
+  - `packages/infra-sqlite/src/schema/organizations.ts`
+  - `packages/infra-sqlite/src/schema/project-members.ts`
+  - `packages/infra-sqlite/src/schema/projects.ts`
+  - `packages/infra-sqlite/src/schema/users.ts`
+
+**Resumo do Codex:**
+
+> M4.2 concluído. Criei os schemas Drizzle de organizações, usuários, entidades, projetos e membros de projeto, incluindo chaves estrangeiras e as unicidades por organização definidas no plano.
+>
+> `pnpm check` passou: formatação, lint, typecheck e 633 testes. Registrei as notas no `PROGRESS.md` e o status da rodada é `DONE`.

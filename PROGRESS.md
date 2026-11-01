@@ -258,8 +258,11 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - Nota: Criados `createSqliteClient` com `journal_mode = WAL` e `foreign_keys = ON`, teste em memória e `drizzle.config.ts` no pacote; em memória o SQLite mantém `journal_mode = memory`.
   - Nota: O pacote SQLite usa `skipLibCheck` para ignorar declarações externas incompatíveis do Drizzle; `pnpm check` passou (633 testes).
 
-- [ ] M4.2 Schema: organização, usuários, entidades, projetos, membros
+- [x] M4.2 Schema: organização, usuários, entidades, projetos, membros
   - Pronto: `pnpm typecheck`.
+  - Nota: Criados schemas Drizzle para organizações, usuários, entidades, projetos e membros de projeto, com chaves estrangeiras e chave primária composta em membros.
+  - Nota: Email de usuário e `name_key` de projeto têm unicidade por organização, conforme o plano; nenhuma unicidade adicional foi definida para entidades.
+  - Nota: `pnpm check` passou: formatação, lint, typecheck e 633 testes.
 
 - [ ] M4.3 Schema: tarefas, envolvimentos, eventos, aberturas, agenda, `local_settings`; migração inicial
   - CHECKs e índices da PLANO 5 (inclusive índice parcial de um `responsible`). Gerar `migrations/` com `drizzle-kit generate` (script `db:generate`). Aplicar migrações em `client.ts`.
