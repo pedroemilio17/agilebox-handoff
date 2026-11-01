@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
