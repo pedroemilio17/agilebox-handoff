@@ -7,6 +7,13 @@ import { registerShellHandlers } from './ipc/register-shell-handlers'
 import { registerUpdateHandlers } from './updates/register-update-handlers'
 import { createSourceUpdater } from './updates/source-updater'
 import { needsX11Relaunch } from './linux-display'
+import {
+  acquireInstanceLock,
+  BUILD_ID,
+  isReplaceRequest,
+  readRunningInstance,
+  writeRunningInstance,
+} from './instance'
 import { readAppearance, writeAppearance } from './appearance'
 import { getDatabasePath, getMigrationsFolder } from './paths'
 import { detectCompositorGlass } from './windows/compositor-glass'
@@ -25,14 +32,22 @@ if (relaunchInX11) {
   app.exit(0)
 }
 
-const gotSingleInstanceLock = relaunchInX11 || app.requestSingleInstanceLock()
+if (!relaunchInX11) {
+  // Uma versão nova aberta substitui a antiga (no Windows ela costuma estar escondida na bandeja).
+  void acquireInstanceLock({
+    buildId: BUILD_ID,
+    running: readRunningInstance(app.getPath('userData')),
+    requestLock: (request) => app.requestSingleInstanceLock(request),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  }).then((acquired) => {
+    if (acquired) startApp()
+    else app.quit()
+  })
+}
 
-if (relaunchInX11) {
-  // O processo novo assume; este só encerra.
-} else if (!gotSingleInstanceLock) {
-  app.quit()
-} else {
+function startApp(): void {
   const userDataPath = app.getPath('userData')
+  writeRunningInstance(userDataPath, { buildId: BUILD_ID, pid: process.pid })
   const glassEnvironment = {
     ...(process.env.AGILEBOX_GLASS === undefined
       ? {}
@@ -60,7 +75,13 @@ if (relaunchInX11) {
   let closeCompositionRoot: (() => void) | undefined
   let isQuitting = false
 
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, _argv, _cwd, data) => {
+    if (isReplaceRequest(data, BUILD_ID)) {
+      // Outro build foi aberto: esta instância sai e libera o lugar para ela.
+      app.releaseSingleInstanceLock()
+      app.quit()
+      return
+    }
     const panel = windows.createPanel()
     if (panel.isMinimized()) panel.restore()
     panel.show()

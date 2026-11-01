@@ -10,6 +10,8 @@ const internalPackages = [
 
 export default {
   main: {
+    // Cada build tem um identificador: uma versão nova aberta substitui a antiga (src/main/instance.ts).
+    define: { __AGILEBOX_BUILD_ID__: JSON.stringify(new Date().toISOString()) },
     build: {
       externalizeDeps: { exclude: internalPackages },
       rollupOptions: { input: 'src/main/index.ts' },
