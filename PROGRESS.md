@@ -4,7 +4,7 @@ Lido pelo laço do Codex (`scripts/codex-loop/run.sh`). Regras:
 
 - `- [ ]` pendente · `- [x]` feito (marcado **pelo script** quando as verificações passam) · `- [!]` bloqueado (ver `.loop/blocked.md`).
 - O laço executa **o primeiro `- [ ]`** da lista.
-- Linhas com **`PARADA`** ou **`[manual]`** param o laço. Para liberar, o Pedro revisa e troca `- [ ]` por `- [x]`.
+- Linhas **`PARADA`** são pontos de verificação: no modo contínuo o script roda as verificações e a cobertura do marco, escreve `docs/laco/relatorio-<marco>.md`, marca a linha, comita e cria a tag `marco-<Mx>`, sem parar (`STOP_AT_PARADA=1` para parar). Passos **`[manual]`** sempre param o laço.
 - Seções do `docs/PLANO.md` são citadas como "PLANO 3.6".
 
 ---
@@ -229,21 +229,210 @@ Testes primeiro em todos os passos. Nada de I/O, `Date.now()` ou aleatoriedade.
   - `seed/data.ts` (PLANO 9 · M4; nomes do protótipo), `seed/seed.ts` usando os **casos de uso** (para gerar linha do tempo real), `scripts/` e comandos `db:migrate`, `db:seed`, `db:reset` (banco em `./.data/agilebox.db`, no `.gitignore`).
   - Pronto: teste roda o seed em memória e confere contagens.
 
-- [ ] M4.8 Nota sobre ABI do better-sqlite3
-  - Escrever `docs/decisoes/0002-better-sqlite3-abi.md` com a estratégia para Node (testes) × Electron (app) (PLANO 11 · R2), sem rodar Electron.
-  - Pronto: documento escrito; `pnpm check` passa.
+- [ ] M4.8 ABI do better-sqlite3 (Node × Electron)
+  - O módulo nativo é um só em `node_modules` (hoisted): compilado para o Node (Vitest) **ou** para o Electron (app). Escrever `scripts/ensure-native.mjs <node|electron>`: tenta carregar o `better-sqlite3` no alvo (para `electron`, com `ELECTRON_RUN_AS_NODE=1` e o binário do Electron, se instalado); se falhar por `NODE_MODULE_VERSION`, reconstrói (`npm rebuild better-sqlite3` para o Node, `@electron/rebuild` para o Electron) e sai com código ≠ 0 e mensagem clara se não conseguir (sem rede, sem compilador). Se o pacote ou o Electron ainda não estiverem instalados, sai com 0 sem fazer nada.
+  - Scripts de raiz: `native:node`, `native:electron`; o `test` passa a chamar `pnpm native:node` antes do Vitest (o pnpm não executa `pretest` sozinho). Os scripts `dev` e `build` do desktop (M5.1) chamarão `native:electron`.
+  - Escrever `docs/decisoes/0002-better-sqlite3-abi.md` (PLANO 11 · R2): a estratégia, o custo de alternar o binário e a alternativa de ter dois diretórios de instalação.
+  - Testes: a lógica de decisão (qual comando, qual alvo) em função pura com teste; o script em si não é executado nos testes.
+  - Deps: `root dev @electron/rebuild`.
+  - Pronto: `pnpm check` passa; documento escrito. Pendência `TESTAR-NO-WINDOWS`: rodar `pnpm native:electron` e depois `pnpm native:node` no Windows.
 
 - [ ] PARADA M4: Pedro roda `pnpm db:reset && pnpm db:seed` e confere o banco.
 
 ---
 
-## M5 a M10 · a detalhar depois da revisão do M4
+## M5 · Shell Electron, UI base e IPC (PLANO 3.3, 3.4, 9 · M5, 10; HANDOFF inteiro)
 
-Os passos destes marcos serão escritos depois do M4, com o Pedro. Eles dependem do spike de vidro no Windows e de revisão visual. Referência: PLANO 9.
+O laço não abre janelas. A verificação de cada passo é `pnpm check`; a partir do M5.11 o `check` inclui o build do Electron. O que exige olhar a tela ou o Windows vai para `docs/laco/pendencias-do-pedro.md`.
 
-- [ ] PARADA M5: detalhar passos (shell Electron, IPC, UI base). [manual] spike de vidro no Windows 11.
-- [ ] PARADA M6: detalhar passos (painel: kanban e detalhe).
-- [ ] PARADA M7: detalhar passos (permissões e gestor).
-- [ ] PARADA M8: detalhar passos (agenda).
-- [ ] PARADA M9: detalhar passos (bandeja).
-- [ ] PARADA M10: [manual] empacotamento e checklist no Windows 11.
+- [ ] M5.1 Electron, Vite e ferramentas de teste de interface
+  - Arquivos: `apps/desktop/electron.vite.config.ts` (main, preload e renderer com **duas páginas**: `src/renderer/panel/index.html` e `src/renderer/tray/index.html`; pacotes `@agilebox/*` **empacotados**, não externalizados), `apps/desktop/tsconfig.json` + script `typecheck`, `apps/desktop/src/{main,preload,renderer}/` com entradas mínimas, `vite-env.d.ts` (`vite/client`) em `apps/desktop` e `packages/ui`. Scripts do desktop: `dev`, `build`, `preview`; de raiz: `dev`, `build`. Raiz: `typecheck` passa a incluir também `tooling/` e `apps/` (`pnpm -r --if-present typecheck && tsc -p tsconfig.eslint.json`).
+  - Testes de interface: `packages/ui/vitest.setup.ts` (jest-dom), projetos do Vitest `desktop-main` (node: `src/main`, `src/preload`) e `desktop-renderer` (jsdom: `src/renderer`), `setupFiles` onde precisar.
+  - Deps: `root dev @types/node`, `root dev @testing-library/react`, `root dev @testing-library/user-event`, `root dev @testing-library/jest-dom`, `@agilebox/desktop dev electron`, `@agilebox/desktop dev electron-vite`, `@agilebox/desktop dev vite`, `@agilebox/desktop dev @vitejs/plugin-react`, `@agilebox/desktop prod react`, `@agilebox/desktop prod react-dom`, `@agilebox/desktop dev @types/react-dom`, `@agilebox/ui dev @types/react-dom`, `@agilebox/ui prod react-dom`. Dependências internas do desktop conforme PLANO 3.1.
+  - Atenção: a API do `electron-vite` muda entre versões; confira a versão instalada em `node_modules/electron-vite` antes de escrever a configuração.
+  - Pronto: `pnpm check` e `pnpm --filter @agilebox/desktop build` passam.
+
+- [ ] M5.2 Tokens, estilos base e fonte
+  - `packages/ui/src/styles/tokens.css` (**todos** os tokens da tabela "Design Tokens Used" do HANDOFF, como variáveis CSS: cores, vidros, raios, espaços, tipografia, `--ease-ios`), `base.css` (reset, fonte, foco visível 2 px `#64A8FF` offset 2, barra de rolagem de 3 px), `motion.css` (animações nomeadas do HANDOFF e `prefers-reduced-motion`), `fallback.css` (`@supports not (backdrop-filter)` → fundo sólido `rgba(30,33,42,.92)`). Fonte Inter local por pacote npm. Hooks `useReducedMotion`, `useFocusTrap`, `useRestoreFocus`.
+  - Deps: `@agilebox/ui prod @fontsource-variable/inter`.
+  - Pronto: testes dos hooks; teste que lê `tokens.css` via `?raw` e confere que cada token do HANDOFF existe.
+
+- [ ] M5.3 Componentes de base I
+  - `GlassSurface` (variantes janela, grupo, controle, popover; fallback), `Button` (primário/secundário, hover/active/disabled, alvo ≥ 44 px), `IconButton` (exige `aria-label`), `Avatar` (iniciais), `StatusChip` (5 estados, rótulo de texto sempre), `Skeleton`, `ReadOnlyBadge` ("Somente leitura"), `EmptyState`. Cada um com `.module.css` e `.test.tsx` (papéis, estados, `aria-*`).
+  - Pronto: `pnpm check`.
+
+- [ ] M5.4 Componentes de base II
+  - `SegmentedControl` (2 ou 3 opções, polegar deslizante `aria-hidden`, `aria-pressed`), `GroupedList`/`FieldRow` (linhas de 48 px), `TextField`, `TextArea`, `DateField`, `NumberField` (aceita vírgula decimal), todos com `<label>` ou `aria-label`.
+  - Pronto: testes de teclado e rótulos.
+
+- [ ] M5.5 Componentes de base III
+  - `StatusMenu` (`role="menu"` + `menuitemradio`, 224 px, itens de 44 px, check no atual, fecha com Esc, devolve o foco), `Modal` (`role="dialog"`, `aria-modal`, prende o foco, fecha com Esc e clique no fundo, devolve o foco ao botão que abriu), `Toast` + `useToast` (`role="status"`, some em ~2,6 s), `Tooltip` (só quando recolhida/solicitada), `WindowControls` (minimizar, expandir/recolher, fechar; 40×44 px).
+  - Pronto: testes de foco, Esc, retorno de foco e `role`.
+
+- [ ] M5.6 Galeria de componentes (só desenvolvimento)
+  - `apps/desktop/src/renderer/panel/dev/Gallery.tsx` mostrando todos os componentes e estados; entrada pelo parâmetro `?gallery` do painel (inativa no build de produção). `index.ts` do `ui` exportando tudo.
+  - Pronto: teste de renderização da galeria sem erros; pendência `CONFERIR` ao Pedro: abrir a galeria e comparar com o protótipo.
+
+- [ ] M5.7 Main: composition root, sessão e notificador de mudanças
+  - `main/paths.ts`, `main/composition-root.ts` (**único** lugar que liga portas às implementações: SQLite, relógio, IDs, notificador → `createUseCases`; devolve `{ useCases, close }`), `main/actor-session.ts` (ator atual em memória, persistido em `local_settings`; padrão: o usuário "Pedro" do seed; `switchUser`), `main/ipc/change-broadcaster.ts` (implementa `ChangeNotifier`, envia para as janelas por uma interface mínima). Se o banco estiver vazio, roda o seed (apenas fora de produção).
+  - Pronto: testes com SQLite em memória (ator padrão, troca de usuário persiste, notificação chega ao broadcaster).
+
+- [ ] M5.8 Main: IPC com validação
+  - `main/ipc/handle.ts` (valida a entrada com zod do `contract`, injeta o ator **da sessão**, converte erros para o envelope `Result`), `main/ipc/register-handlers.ts` (um handler por canal de `channels.ts`, ligado a um caso de uso).
+  - Pronto: testes com casos de uso falsos: entrada inválida, `FORBIDDEN`, `NOT_FOUND`, ator nunca vindo do renderer, e um teste que garante **todo canal registrado**.
+
+- [ ] M5.9 Preload e camada de dados do renderer
+  - `preload/index.ts` (`contextBridge` expondo `window.agilebox`: `invoke`, `onChanges`, `shell`), `renderer/shared/api/ipc-client.ts` (implementa `AgileBoxApi`; desembrulha `Result`, lança `ApiError`), `ApiProvider.tsx`, `query/QueryProvider.tsx`, `keys.ts`, `sync-changes.ts` (`onChanges` → invalida queries), `session/useActor.ts` (ator e capacidades), `lib/format-date.ts` ("Qui, 05 nov", "há 12 min"; `date-fns` pt-BR), `testing/fake-api.ts`. Hooks por recurso só nos passos das telas que os usam.
+  - Deps: `@agilebox/desktop prod @tanstack/react-query`, `@agilebox/desktop prod date-fns`.
+  - Pronto: testes do client com `invoke` falso, da invalidação e do `format-date`.
+
+- [ ] M5.10 Janelas, vidro e ciclo de vida
+  - `main/windows/glass.ts` (**pura**: `resolveGlassMode(platform, env)` → `'css'` por padrão; `'native'` quando `AGILEBOX_GLASS=native` no Windows 11), `window-manager.ts`, `panel-window.ts` (sem moldura, 1280×780, mín. 900 de largura), `tray-window.ts` (360 px, sem moldura, sempre no topo, sem item na barra de tarefas, ancorada no canto inferior direito da área útil), `main/index.ts` (instância única, `whenReady` → composition root → handlers → janelas). Código que toca a API do Electron fica nestes arquivos finos; a lógica (modo de vidro, posição ancorada) em funções puras com teste.
+  - Escrever `docs/decisoes/0001-vidro.md` como **provisório**: padrão CSS (janela transparente, vidro por `backdrop-filter`) com alternativa nativa (`backgroundMaterial: 'acrylic'`) por variável de ambiente; explicar o risco R1 do PLANO.
+  - Pendência `TESTAR-NO-WINDOWS`: comparar `AGILEBOX_GLASS=css` e `native` na bandeja e no painel; registrar a escolha em `0001-vidro.md`.
+  - Pronto: `pnpm check` e build do desktop.
+
+- [ ] M5.11 Painel esqueleto ponta a ponta
+  - `renderer/panel/{main.tsx,App.tsx,copy.ts}` com providers e uma tela temporária que lista as tarefas de `tasks.listBoard` (título, `StatusChip`, projeto); `renderer/tray/{main.tsx,App.tsx}` com casca mínima. Acrescentar o build do desktop ao script `check` da raiz.
+  - Pronto: teste do `App` com `fake-api`; `pnpm check` (agora com build) passa. Pendência `CONFERIR`: `pnpm dev` abre o painel com as tarefas do seed; editar na bandeja atualiza o painel.
+
+- [ ] PARADA M5: Pedro roda `pnpm dev` (no Windows e no Linux), confere a galeria e o painel esqueleto, e decide o vidro (0001-vidro.md).
+
+---
+
+## M6 · Painel: kanban e detalhe da tarefa (HANDOFF "Painel principal", "Detalhe da tarefa"; PLANO 9 · M6)
+
+Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem junto da tela que os usa.
+
+- [ ] M6.1 Casca do painel
+  - `layout/PanelShell`, `Rail`/`RailItem` (52 px recolhida, 204 px expandida, transição de largura; tooltip só recolhida; Dashboard só para gestor; Projetos; Agenda; Plug-ins "em breve"; Ajustes com `EmptyState` "em breve", PLANO 12.3; Conta na base), `TitleBar` (64 px: nome, segmentado "Minhas tarefas | Equipe · somente leitura" **estático**, botão "Nova tarefa", `WindowControls`), navegação entre visões em estado simples (animação `sobe 10 px + fade`).
+  - Pronto: testes de navegação, de Dashboard oculto para colaborador e de `aria`.
+
+- [ ] M6.2 Projetos
+  - `board/ProjectTitle` (seta que gira) e `ProjectDialog` (lista com check no atual, **"Todos os projetos"** como primeira opção, "Novo projeto" que vira campo + "Criar"; nome repetido seleciona o existente). Hooks `useProjects`, `useCreateProject`.
+  - Pronto: testes do fluxo (criar, repetir, trocar, Esc, foco).
+
+- [ ] M6.3 Quadro kanban (somente leitura de layout)
+  - `board/BoardView`, `KanbanColumn` (5 colunas iguais, gap 12 px, "Sem tarefas"), `TaskCard` (botão que abre o detalhe; título, prazo, iniciais do responsável). Dados de `tasks.listBoard` com filtro por projeto ("Todos os projetos" por padrão, PLANO 1). Estados de carregando (esqueleto), vazio e erro curto (PLANO 12.6; registrar `DECISÃO PROVISÓRIA`).
+  - Pronto: testes de agrupamento por estado, filtro e estados vazios.
+
+- [ ] M6.4 Arrastar e soltar
+  - `dnd-kit` no `KanbanColumn`/`TaskCard`: coluna de destino azulada, ao soltar chama `tasks.move`; **alternativa por teclado** (sensor de teclado e/ou menu de estado no card); ordem dentro da coluna por `updated_at` (PLANO 12.2, `DECISÃO PROVISÓRIA`).
+  - Deps: `@agilebox/desktop prod @dnd-kit/core`, `@agilebox/desktop prod @dnd-kit/sortable`.
+  - Pronto: testes de que soltar chama `move` com o estado certo e de que o teclado faz o mesmo.
+
+- [ ] M6.5 Nova tarefa
+  - Botão "Nova tarefa" da `TitleBar`: escolhe projeto (padrão: o selecionado), título, cria com `tasks.create` e **abre o detalhe**. Colaborador só vê projetos de que é membro.
+  - Pronto: teste do fluxo e do estado desabilitado sem título.
+
+- [ ] M6.6 Detalhe da tarefa: estrutura e card Detalhes
+  - `task-detail/TaskDetailView` (cabeçalho: voltar + título editável; colunas 1,15 × 1; gap 16 px), `DetailsCard` (descrição, estado via `StatusMenu`, responsável, chamado: ID + link opcional), `useBlurSave` (**grava ao sair do campo**, um `update` por blur, só se mudou), `recordOpen` ao abrir. Campos desabilitados + `ReadOnlyBadge` quando `readOnly`.
+  - Pronto: testes de blur (uma gravação), de não gravar sem mudança e do modo somente leitura.
+
+- [ ] M6.7 Card Prazo
+  - `DeadlineCard`: `DateField` + texto auxiliar de `deadlineLabel` ("Em N dias", "Vence hoje", "Vence amanhã", "Venceu há N dias", "Concluída", "Sem prazo definido"); "hoje" vem do relógio injetado.
+  - Pronto: testes de cada frase.
+
+- [ ] M6.8 Cards Custo e Envolvidos
+  - `ParticipantsCard` (lista de envolvidos; adicionar usuário ou entidade, papel Responsável/Apoio, remover), `ContributorPicker` e `CreateContributor` (botão "Criar entidade"), `CostCard` (horas e valor/hora por linha, subtotal e total recalculando na hora; vírgula decimal; valor/hora de envolvido novo vem do padrão dele; editar atualiza o padrão). Nesta etapa o card mostra R$ **conforme o DTO** (`null` → não renderiza valores).
+  - Pronto: testes de cálculo, vírgula, remoção, e de ocultar R$ quando o DTO vem com `null`.
+
+- [ ] M6.9 Card Linha do tempo
+  - `TimelineCard`: entradas com data e hora, quem, o quê (texto do `timeline.list`), mais recente no topo, rolável; marca "Gestor" com as cores `manager` do HANDOFF; "Sem atualizações ainda." quando vazia.
+  - Pronto: testes de ordem, marca Gestor e estado vazio.
+
+- [ ] M6.10 Acabamento do painel
+  - Passada de revisão: animações do HANDOFF (cards sobem 8 px / hover 2 px, troca de visão, modal), `prefers-reduced-motion`, ordem de foco (barra lateral → título → conteúdo), `aria-label` de botões só com ícone. Atualizar a galeria. `pnpm check` limpo.
+  - Pendência `CONFERIR`: percorrer o painel com o protótipo ao lado.
+
+- [ ] PARADA M6: Pedro usa o painel como colaborador (criar, mover, editar, fechar e reabrir; dados persistem) e compara com o protótipo.
+
+---
+
+## M7 · Permissões e gestor (HANDOFF "Dashboard", "Regras de negócio"; PLANO 6.1, 9 · M7)
+
+- [ ] M7.1 Conta e capacidades
+  - `layout/AccountMenu` (troca de perfil **de demonstração**: lista de usuários, chama `session.switchUser`, invalida tudo), `useActor` com `canSeeDashboard`, `canSeeRates` etc. vindos do servidor/DTO.
+  - Pronto: testes de troca de perfil e de item Dashboard aparecendo só para gestor.
+
+- [ ] M7.2 Permissões na tela
+  - Colaborador: nenhum R$ de outras pessoas nem o total; campos desabilitados + `ReadOnlyBadge` quando `readOnly`; erros `FORBIDDEN` viram toast curto. Gestor: edita tudo, e a linha do tempo mostra "Gestor".
+  - Pronto: testes com `fake-api` nos dois perfis.
+
+- [ ] M7.3 Dashboard
+  - `dashboard/DashboardView`, `StackedBar` (largura anima 0,5 s), `StatCard` (5 estados, porcentagem grande + contagem), `CollaboratorTable` (nº de itens, barra de estados, % concluído, botão "Abrir projetos"). Estados vazio e carregando.
+  - Pronto: testes de porcentagens e de acessibilidade (estados nunca só por cor).
+
+- [ ] M7.4 Abrir projetos de um colaborador
+  - "Abrir projetos" abre o quadro com `listBoard({ forUserId })`; `board/ManagerBanner` ("Tarefas de X · editando como Gestor" + "Voltar às minhas"). Edições nesse quadro são marcadas Gestor.
+  - Pronto: testes do fluxo e do botão voltar.
+
+- [ ] M7.5 Membros do projeto
+  - `board/ProjectMembersDialog` (PLANO 12.1, `DECISÃO PROVISÓRIA`): botão "Membros" no `ProjectDialog` visível só para quem criou o projeto e para o gestor; listar, adicionar e remover.
+  - Pronto: testes de visibilidade do botão e das ações.
+
+- [ ] PARADA M7: Pedro troca de perfil e confere: colaborador não vê R$ nem Dashboard; gestor edita e a linha do tempo marca "Gestor".
+
+---
+
+## M8 · Agenda (HANDOFF "Agenda", "Calendário"; PLANO 9 · M8)
+
+- [ ] M8.1 Grade do calendário
+  - `renderer/shared/lib/calendar-grid.ts` (6 semanas × 7 dias, começa no domingo, dias de fora do mês, hoje).
+  - Pronto: testes de viradas de ano e meses de 28 a 31 dias.
+
+- [ ] M8.2 Calendário
+  - `agenda/Calendar` e `DayCell` (normal, hoje com círculo azul, selecionado, fora do mês; até 2 eventos + "+N mais"; texto com reticências, a célula nunca cresce); mês anterior/próximo com `aria-label`; clicar no dia seleciona e define a data do formulário sem abri-lo.
+  - Pronto: testes de seleção, "+N mais" e teclado.
+
+- [ ] M8.3 Lista e formulário
+  - `agenda/UpcomingList` ("Próximos agendamentos", "Nada marcado."), `MeetingForm` (expande no lugar `0fr→1fr`; criar, editar, excluir; participantes são usuários, PLANO 12.5 `DECISÃO PROVISÓRIA`), `AgendaView` (painel direito de 20%, mín. 260 px). Colaborador: botões desabilitados + "Só o gestor cria e edita agendamentos."
+  - Pronto: testes do fluxo completo e das permissões.
+
+- [ ] PARADA M8: Pedro cria, edita e exclui agendamentos como gestor e confere o aviso como colaborador.
+
+---
+
+## M9 · Bandeja (HANDOFF "Bandeja"; PLANO 6.6, 9 · M9)
+
+- [ ] M9.1 Lógica pura da bandeja
+  - `tray/auto-height.ts` (fórmula: Início `246 + max(min(n, 2), 1) × 64`; Atualizar/detalhes 560; Nova 316; mín. 260 e máx. 600 manual), `tray/tray-machine.ts` (telas início → atualizar, início → nova → atualizar; direção da animação).
+  - Pronto: testes da fórmula e da máquina.
+
+- [ ] M9.2 Tela inicial
+  - `tray/screens/HomeScreen`, `SearchField` (filtra por título e projeto, sem acentos; "Nenhuma tarefa encontrada."), segmentado Recentes | Frequentes ("Nenhuma tarefa aberta ainda."), `TaskList`/`TaskRow` (64 px; título, chip, projeto, "há quanto tempo"; no máximo 2 linhas visíveis, barra de 3 px), botão "Nova tarefa".
+  - Pronto: testes de busca, ordem de Recentes/Frequentes e vazios.
+
+- [ ] M9.3 Atualizar tarefa
+  - `UpdateTaskScreen`: título e projeto, "O que será feito", grupo Status (menu), Prazo, Responsável, Envolvidos, Chamado; "Salvar" volta à lista com toast "Atualização salva" e a tarefa sobe para o topo de Recentes. `recordOpen` ao abrir.
+  - Pronto: testes de salvar e de somente leitura.
+
+- [ ] M9.4 Nova tarefa
+  - `NewTaskScreen`: título, projeto (segmentado de 3), "Criar tarefa" cria e **abre o detalhe**; salvar ou voltar leva à lista com "Tarefa criada" e linha destacada.
+  - Pronto: testes do fluxo.
+
+- [ ] M9.5 Janela e redimensionar
+  - `ResizeHandle` (arrastar; setas em passos de 24 px; Home e duplo clique voltam ao automático; sem transição durante o arraste), altura via `shell.setTrayHeight`, controles (minimizar recolhe para o cabeçalho de 52 px; expandir abre o painel; fechar anima e deixa o botão redondo de 52 px), `ClosedTrayButton`. Animações de entrada/saída do HANDOFF.
+  - Pronto: testes do `ResizeHandle` (teclado) e dos controles com `shell` falso. Pendência `CONFERIR`/`TESTAR-NO-WINDOWS`: altura animada sem tremer (risco R1).
+
+- [ ] PARADA M9: Pedro usa a bandeja: criar, atualizar, buscar, redimensionar; confere a sincronização com o painel aberto.
+
+---
+
+## M10 · Empacotamento e ícone de bandeja (PLANO 9 · M10)
+
+- [ ] M10.1 Ícone de bandeja e ciclo de vida
+  - `main/tray/tray-icon.ts` (clique abre/fecha a bandeja; menu "Abrir painel" e "Sair"), instância única, janelas reabrem pela bandeja, painel recolhe para a bandeja. Lógica de posição em função pura (barra de tarefas em qualquer borda, vários monitores). Item PLANO 12.7 (iniciar com o Windows): **não** iniciar sozinho; registrar `DECISÃO PROVISÓRIA`.
+  - Pronto: testes das funções puras; `pnpm check`.
+
+- [ ] M10.2 Instalador
+  - `apps/desktop/electron-builder.yml` (NSIS para Windows; alvo Linux AppImage como bônus), `resources/` com ícones gerados por script (`scripts/make-icons.mjs`, sem dependência nova), scripts `pack` e `dist`, `better-sqlite3` reconstruído para o Electron (`scripts/ensure-native.mjs`, M4.8), banco em `%APPDATA%/AgileBox` (Windows) ou o diretório de dados do usuário (Linux), migrações ao iniciar.
+  - Deps: `root dev electron-builder`, `root dev @electron/rebuild`.
+  - Pronto: `pnpm check`. Pendência `TESTAR-NO-WINDOWS`: gerar o instalador (`pnpm dist`) e instalar.
+
+- [ ] M10.3 Testes de ponta a ponta e checklist
+  - `apps/desktop/e2e/` (Playwright `_electron` com banco temporário): criar tarefa → mover → editar → fechar e reabrir (persiste); troca de perfil (colaborador sem R$); criar pela bandeja e ver no painel. Script `test:e2e` **fora** do `check`. `docs/checklist-windows.md` (instalar, vidro, bandeja, reiniciar o Windows e ver os dados).
+  - Deps: `root dev @playwright/test`.
+  - Pronto: `pnpm check`. Pendências `RODAR-E2E` e `TESTAR-NO-WINDOWS` registradas.
+
+- [ ] PARADA M10: fim do MVP. Pedro percorre `docs/checklist-windows.md` e `docs/laco/pendencias-do-pedro.md`.

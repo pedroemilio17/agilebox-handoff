@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # Laço do Codex: executa um passo do PROGRESS.md por rodada, instala dependências pedidas,
-# roda as verificações e faz commit do passo. Para em PARADA, [manual], bloqueio ou falhas seguidas.
+# roda as verificações, documenta (docs/laco/) e faz commit do passo.
+# Modo contínuo (padrão): em cada PARADA roda as verificações do marco, escreve o relatório, cria a
+# tag `marco-<Mx>` e segue. Só para em BLOCKED, falhas seguidas, [manual] ou fim dos passos.
+# STOP_AT_PARADA=1 volta ao modo antigo (parar em cada marco).
 # Uso e pré-requisitos: scripts/codex-loop/README.md
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-MAX_ROUNDS="${MAX_ROUNDS:-30}"        # rodadas do Codex nesta execução
+MAX_ROUNDS="${MAX_ROUNDS:-300}"       # rodadas do Codex nesta execução
+STOP_AT_PARADA="${STOP_AT_PARADA:-0}" # 1 = parar em cada PARADA (revisão a cada marco)
 MAX_FAILS="${MAX_FAILS:-3}"           # falhas seguidas no mesmo passo antes de parar
 MAX_DEP_ROUNDS="${MAX_DEP_ROUNDS:-3}" # pedidos de dependência seguidos no mesmo passo
 CODEX_BIN="${CODEX_BIN:-codex}"
@@ -18,11 +22,15 @@ CODEX_MODEL="${CODEX_MODEL:-}"
 LOOP_DIR="$ROOT/.loop"
 PROGRESS="$ROOT/PROGRESS.md"
 PROMPT_FILE="$ROOT/scripts/codex-loop/prompt.md"
+RULES_FILE="$ROOT/scripts/codex-loop/regras.md"
 FAILURE_LOG="$LOOP_DIR/last-failure.log"
 
 log()  { printf '\n\033[1;34m[laço]\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m[laço]\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31m[laço]\033[0m %s\n' "$*" >&2; exit 1; }
+
+# shellcheck source=scripts/codex-loop/docs.sh
+source "$ROOT/scripts/codex-loop/docs.sh"
 
 preflight() {
   command -v "$CODEX_BIN" >/dev/null || die "Codex não encontrado ('$CODEX_BIN')."
@@ -42,6 +50,8 @@ preflight() {
     || die "Há mudanças não commitadas. Faça commit ou descarte antes de iniciar o laço."
 
   mkdir -p "$LOOP_DIR/runs"
+  [[ -f "$RULES_FILE" ]] || die "Falta $RULES_FILE."
+  ensure_docs
 }
 
 # Imprime "linha<TAB>marca<TAB>texto" do primeiro passo pendente ou bloqueado.
@@ -104,39 +114,87 @@ run_checks() {
 
 build_prompt() { # $1 = linha, $2 = texto do passo
   cat "$PROMPT_FILE"
+  printf '\n'
+  cat "$RULES_FILE"
   printf '\n## Passo desta rodada\n\n`%s` (linha %s do PROGRESS.md). Leia o bloco completo do passo, com os subitens.\n' "$2" "$1"
   if [[ -s "$FAILURE_LOG" ]]; then
     printf '\n## Atenção\n\nA rodada anterior deste passo falhou nas verificações. A saída está em `.loop/last-failure.log`. Corrija isso primeiro.\n'
   fi
 }
 
+# Fecha um marco: verifica tudo, escreve o relatório, marca a PARADA, comita e cria a tag.
+checkpoint() { # $1 = linha, $2 = texto da PARADA
+  local ms
+  [[ "$2" =~ PARADA\ (M[0-9]+) ]] || die "Linha de PARADA sem marco: $2"
+  ms="${BASH_REMATCH[1]}"
+  local review
+  review="$(sed -E 's/^[[:space:]]+//' <<< "${2#*:}")"
+  log "Fechando o marco $ms: verificações finais, cobertura e relatório"
+
+  if ! run_checks; then
+    cp -f "$LOOP_DIR/checks.log" "$FAILURE_LOG"
+    log_incident "Marco $ms" "As verificações finais do marco falharam. Nada foi marcado; corrija e rode o laço de novo."
+    die "As verificações finais do marco $ms falharam (veja .loop/checks.log)."
+  fi
+  if ! pnpm run --if-present coverage > "$LOOP_DIR/coverage.log" 2>&1; then
+    cp -f "$LOOP_DIR/coverage.log" "$FAILURE_LOG"
+    log_incident "Marco $ms" "A cobertura mínima do marco não foi atingida (ou o comando falhou)."
+    die "Cobertura do marco $ms falhou (veja .loop/coverage.log)."
+  fi
+
+  write_milestone_report "$ms" "$review"
+  set_mark "$1" "x"
+  format_docs
+  git add -A
+  git commit -q -m "docs(laço): relatório do marco $ms" -m "Gerado pelo script do laço (scripts/codex-loop)."
+  git tag -f "marco-$ms" > /dev/null
+  log "Marco $ms fechado. Relatório: docs/laco/relatorio-$ms.md · tag marco-$ms"
+}
+
 main() {
   preflight
 
-  local round=0 fails=0 dep_rounds=0 last_step=""
+  local round=0 fails=0 dep_rounds=0 attempts=0 last_step=""
   while (( round < MAX_ROUNDS )); do
     [[ -f "$LOOP_DIR/STOP" ]] && { log "Arquivo .loop/STOP encontrado. Parando."; rm -f "$LOOP_DIR/STOP"; exit 0; }
 
     local info line mark text step_id
     info="$(next_step)"
-    [[ -n "$info" ]] || { log "Nenhum passo pendente. Fim."; exit 0; }
+    if [[ -z "$info" ]]; then
+      write_final_summary
+      format_docs
+      git add -A
+      git diff --cached --quiet || git commit -q -m "docs(laço): resumo final" -m "Gerado pelo script do laço (scripts/codex-loop)."
+      log "Nenhum passo pendente. Fim. Resumo: docs/laco/RESUMO-FINAL.md"
+      exit 0
+    fi
     IFS=$'\t' read -r line mark text <<< "$info"
     step_id="${text%% *}"
 
     if [[ "$mark" == "!" ]]; then
       die "Passo bloqueado: $text. Veja .loop/blocked.md, resolva e troque [!] por [ ] no PROGRESS.md."
     fi
-    if [[ "$text" == *PARADA* || "$text" == *"[manual]"* ]]; then
-      log "Parada para revisão: $text"
-      log "Revise, marque a linha como [x] no PROGRESS.md, faça commit e rode o laço de novo."
+    if [[ "$text" == *"[manual]"* ]]; then
+      log "Passo manual: $text"
+      log "Faça o que o passo pede, marque a linha como [x] no PROGRESS.md, faça commit e rode o laço de novo."
       exit 0
+    fi
+    if [[ "$text" == *PARADA* ]]; then
+      if [[ "$STOP_AT_PARADA" == "1" ]]; then
+        log "Parada para revisão: $text"
+        log "Revise, marque a linha como [x] no PROGRESS.md, faça commit e rode o laço de novo."
+        exit 0
+      fi
+      checkpoint "$line" "$text"
+      continue
     fi
 
     if [[ "$step_id" != "$last_step" ]]; then
-      fails=0; dep_rounds=0; rm -f "$FAILURE_LOG"; last_step="$step_id"
+      fails=0; dep_rounds=0; attempts=0; rm -f "$FAILURE_LOG"; last_step="$step_id"
     fi
 
     round=$((round + 1))
+    attempts=$((attempts + 1))
     local run_dir="$LOOP_DIR/runs/$(date +%Y%m%d-%H%M%S)-$step_id"
     mkdir -p "$run_dir"
     rm -f "$LOOP_DIR/status" "$LOOP_DIR/deps.txt" "$LOOP_DIR/blocked.md"
@@ -172,6 +230,7 @@ main() {
       BLOCKED)
         set_mark "$line" "!"
         cp -f "$LOOP_DIR/blocked.md" "$run_dir/" 2>/dev/null || true
+        log_incident "$text" "O Codex bloqueou o passo. As mudanças da rodada ficaram sem commit."
         die "Codex bloqueou em $step_id. Leia .loop/blocked.md. As mudanças ficaram sem commit para você revisar."
         ;;
     esac
@@ -179,6 +238,9 @@ main() {
     if (( codex_ok == 1 )) && [[ "$status" == "DONE" ]] && run_checks; then
       set_mark "$line" "x"
       rm -f "$FAILURE_LOG"
+      git add -A
+      append_diary "$text" "$run_dir" "$attempts"
+      format_docs
       git add -A
       git commit -q -m "$text" -m "Gerado pelo Codex no laço automático (scripts/codex-loop)."
       log "Passo $step_id concluído e commitado."
@@ -194,6 +256,9 @@ main() {
     } > "$FAILURE_LOG"
     cp -f "$FAILURE_LOG" "$run_dir/"
     warn "Falha $fails/$MAX_FAILS em $step_id (detalhes em .loop/last-failure.log)."
+    if (( fails >= MAX_FAILS )); then
+      log_incident "$text" "$MAX_FAILS falhas seguidas nas verificações. As mudanças da rodada ficaram sem commit."
+    fi
     (( fails < MAX_FAILS )) || die "Parando: $MAX_FAILS falhas seguidas em $step_id. As mudanças ficaram sem commit."
   done
 

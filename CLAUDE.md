@@ -63,4 +63,4 @@ Electron + React + TypeScript + Vite (`electron-vite`), CSS próprio com tokens,
   - Comandos do banco (`db:*`), do app (`dev`, `build`) e dos testes de ponta a ponta entram nos marcos M4 a M6.
 - Fronteiras entre camadas: imports entre pacotes seguem a tabela 3.1 do `docs/PLANO.md`. Import relativo não sai da pasta da camada, e pacotes de runtime (`electron`, `better-sqlite3`, `drizzle-orm`, módulos do Node) só entram onde a tabela permite (`tooling/layers.js`).
 - Decisões técnicas registradas em `docs/decisoes/`.
-- O código dos marcos é gerado pelo **Codex em laço** (`AGENTS.md`, `PROGRESS.md`, `scripts/codex-loop/`). Ao revisar com o Claude, confira o `PROGRESS.md` (passos feitos, notas e bloqueios) antes de mexer no código.
+- O código dos marcos é gerado pelo **Codex em laço** (`AGENTS.md`, `PROGRESS.md`, `scripts/codex-loop/`). Ao revisar com o Claude, confira `docs/laco/` (diário, relatórios por marco, ocorrências e pendências do Pedro) e o `PROGRESS.md` antes de mexer no código. As regras que o Codex recebe estão em `scripts/codex-loop/regras.md`.
