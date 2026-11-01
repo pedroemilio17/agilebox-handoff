@@ -1,3 +1,4 @@
+import console from 'node:console'
 import { app, ipcMain } from 'electron'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
@@ -57,5 +58,8 @@ if (!gotSingleInstanceLock) {
       windows.createPanel()
       windows.createTray()
     })
-    .catch(() => app.quit())
+    .catch((error: unknown) => {
+      console.error('Falha ao iniciar o AgileBox:', error)
+      app.quit()
+    })
 }

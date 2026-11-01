@@ -3,16 +3,19 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { fileURLToPath } from 'node:url'
 
-export const createSqliteClient = (filename: string) => {
+const defaultMigrationsFolder = fileURLToPath(new URL('../migrations', import.meta.url))
+
+export const createSqliteClient = (
+  filename: string,
+  migrationsFolder: string = defaultMigrationsFolder,
+) => {
   const client = new BetterSqlite3(filename)
 
   client.pragma('journal_mode = WAL')
   client.pragma('foreign_keys = ON')
 
   const database = drizzle(client)
-  migrate(database, {
-    migrationsFolder: fileURLToPath(new URL('../migrations', import.meta.url)),
-  })
+  migrate(database, { migrationsFolder })
 
   return database
 }

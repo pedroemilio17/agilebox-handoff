@@ -1,11 +1,17 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createUseCases } from '@agilebox/application'
 import type { Clock, IdGenerator } from '@agilebox/application'
 import { createSqliteAdapters, seedDemo } from '@agilebox/infra-sqlite'
 import { createActorSession } from './actor-session.js'
 import { ChangeBroadcaster } from './ipc/change-broadcaster.js'
+
+// O bundle do main não carrega o diretório `migrations/` do pacote: ele é lido pelo link do workspace.
+const migrationsFolder = fileURLToPath(
+  new URL('../../node_modules/@agilebox/infra-sqlite/migrations', import.meta.url),
+)
 
 const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
 
@@ -40,7 +46,7 @@ export interface CompositionRootOptions {
 export async function createCompositionRoot(options: CompositionRootOptions) {
   if (options.databasePath !== ':memory:')
     await mkdir(dirname(options.databasePath), { recursive: true })
-  const adapters = createSqliteAdapters(options.databasePath)
+  const adapters = createSqliteAdapters(options.databasePath, migrationsFolder)
   try {
     if (!(await adapters.hasOrganizations())) {
       if (options.isProduction) throw new Error('O banco não contém dados iniciais')

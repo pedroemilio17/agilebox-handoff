@@ -15,4 +15,16 @@ describe('plano de reconstrução do better-sqlite3', () => {
       args: ['exec', 'electron-rebuild', '-f', '-w', 'better-sqlite3'],
     })
   })
+
+  it('aponta o @electron/rebuild para a pasta do módulo quando informada', () => {
+    expect(getNativeRebuildPlan('electron', '/x/infra-sqlite').args).toEqual([
+      'exec',
+      'electron-rebuild',
+      '-f',
+      '-w',
+      'better-sqlite3',
+      '-m',
+      '/x/infra-sqlite',
+    ])
+  })
 })

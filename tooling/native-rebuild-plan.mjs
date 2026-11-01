@@ -1,4 +1,4 @@
-export function getNativeRebuildPlan(target) {
+export function getNativeRebuildPlan(target, moduleDir) {
   if (target === 'node') {
     return { command: 'npm', args: ['rebuild', 'better-sqlite3'] }
   }
@@ -6,7 +6,14 @@ export function getNativeRebuildPlan(target) {
   if (target === 'electron') {
     return {
       command: 'pnpm',
-      args: ['exec', 'electron-rebuild', '-f', '-w', 'better-sqlite3'],
+      args: [
+        'exec',
+        'electron-rebuild',
+        '-f',
+        '-w',
+        'better-sqlite3',
+        ...(moduleDir ? ['-m', moduleDir] : []),
+      ],
     }
   }
 

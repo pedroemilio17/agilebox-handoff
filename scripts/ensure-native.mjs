@@ -7,6 +7,7 @@ import { getNativeRebuildPlan } from '../tooling/native-rebuild-plan.mjs'
 
 const require = createRequire(import.meta.url)
 const target = process.argv[2]
+const moduleDir = resolve('packages/infra-sqlite')
 
 if (target !== 'node' && target !== 'electron') {
   console.error('Uso: node scripts/ensure-native.mjs <node|electron>')
@@ -16,7 +17,7 @@ if (target !== 'node' && target !== 'electron') {
 let packagePath
 try {
   packagePath = require.resolve('better-sqlite3', {
-    paths: [resolve('packages/infra-sqlite')],
+    paths: [moduleDir],
   })
 } catch {
   console.log('better-sqlite3 não está instalado; nenhuma ação necessária.')
@@ -43,7 +44,7 @@ function loadNativeModule() {
     }
   }
 
-  const result = spawnSync(electronPath, ['-e', "require('better-sqlite3')"], {
+  const result = spawnSync(electronPath, ['-e', `require(${JSON.stringify(packagePath)})`], {
     encoding: 'utf8',
     cwd: resolve('packages/infra-sqlite'),
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
@@ -69,10 +70,10 @@ if (!isAbiMismatch) {
   process.exit(1)
 }
 
-const plan = getNativeRebuildPlan(target)
+const plan = getNativeRebuildPlan(target, moduleDir)
 console.log(`ABI incompatível no alvo ${target}; reconstruindo better-sqlite3.`)
 const rebuilt = spawnSync(plan.command, plan.args, {
-  cwd: target === 'node' ? resolve('packages/infra-sqlite') : process.cwd(),
+  cwd: target === 'node' ? moduleDir : process.cwd(),
   stdio: 'inherit',
   env: process.env,
 })

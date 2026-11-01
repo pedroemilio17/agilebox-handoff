@@ -7,8 +7,8 @@ import { organizations } from './schema/index.js'
 import { toOrganizationId } from '@agilebox/core'
 import type { Organization } from '@agilebox/core'
 
-export function createSqliteAdapters(filename: string) {
-  const database = createSqliteClient(filename)
+export function createSqliteAdapters(filename: string, migrationsFolder?: string) {
+  const database = createSqliteClient(filename, migrationsFolder)
   return createSqliteAdaptersForDatabase(database)
 }
 

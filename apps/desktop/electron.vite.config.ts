@@ -18,7 +18,11 @@ export default {
   preload: {
     build: {
       externalizeDeps: { exclude: internalPackages },
-      rollupOptions: { input: 'src/preload/index.ts' },
+      // O preload de uma janela com sandbox (padrão do Electron) precisa ser CommonJS.
+      rollupOptions: {
+        input: 'src/preload/index.ts',
+        output: { format: 'cjs', entryFileNames: 'index.cjs' },
+      },
     },
   },
   renderer: {

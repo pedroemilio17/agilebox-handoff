@@ -2,10 +2,11 @@
   "name": "@agilebox/desktop",
   "private": true,
   "type": "module",
+  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "pnpm --workspace-root native:electron && electron-vite dev",
-    "build": "pnpm --workspace-root native:electron && electron-vite build",
-    "preview": "electron-vite preview",
+    "dev": "pnpm --workspace-root native:electron && node ../../scripts/run-electron-vite.mjs dev",
+    "build": "pnpm --workspace-root native:electron && node ../../scripts/run-electron-vite.mjs build",
+    "preview": "node ../../scripts/run-electron-vite.mjs preview",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "@agilebox/infra-sqlite": "workspace:*",
     "@agilebox/ui": "workspace:*",
     "@tanstack/react-query": "^5.105.0",
+    "better-sqlite3": "^13.0.3",
     "date-fns": "^4.4.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

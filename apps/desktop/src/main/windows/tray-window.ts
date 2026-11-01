@@ -19,7 +19,7 @@ export function createTrayWindow(glassMode: GlassMode, position: WindowPosition)
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: fileURLToPath(new URL('../preload/index.mjs', import.meta.url)),
+      preload: fileURLToPath(new URL('../preload/index.cjs', import.meta.url)),
     },
   })
 
