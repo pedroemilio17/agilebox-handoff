@@ -8,7 +8,7 @@ import { registerUpdateHandlers } from './updates/register-update-handlers'
 import { createSourceUpdater } from './updates/source-updater'
 import { createReleaseUpdater } from './updates/release-updater'
 import electronUpdater from 'electron-updater'
-import { needsX11Relaunch } from './linux-display'
+import { needsX11Relaunch, x11RelaunchOptions } from './linux-display'
 import {
   acquireInstanceLock,
   BUILD_ID,
@@ -30,7 +30,7 @@ const relaunchInX11 = needsX11Relaunch({
   ozonePlatform: app.commandLine.getSwitchValue('ozone-platform'),
 })
 if (relaunchInX11) {
-  app.relaunch({ args: [...process.argv.slice(1), '--ozone-platform=x11'] })
+  app.relaunch(x11RelaunchOptions({ argv: process.argv, appImage: process.env.APPIMAGE }))
   app.exit(0)
 }
 
