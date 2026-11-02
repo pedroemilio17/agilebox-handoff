@@ -43,19 +43,6 @@ function setup() {
   return { useCases, unitOfWork }
 }
 
-async function addProjectMember(
-  unitOfWork: InMemoryUnitOfWork,
-  projectId: ReturnType<typeof toProjectId>,
-  memberId: ReturnType<typeof toUserId>,
-) {
-  await unitOfWork.repositories.projects.addMember(organizationId, {
-    projectId,
-    userId: memberId,
-    addedBy: memberId,
-    addedAt: '2026-01-01T00:00:00.000Z',
-  })
-}
-
 describe('listas de tarefas', () => {
   it('calcula ciclo semanal só do quadro autorizado e não libera filtro de outra pessoa ao colaborador', async () => {
     const { useCases, unitOfWork } = setup()
@@ -103,6 +90,25 @@ describe('listas de tarefas', () => {
         { forUserId: otherUserId },
       ),
     ).toMatchObject({ cycleDays: null })
+  })
+
+  it('"Minhas tarefas" do gestor traz só as tarefas em que ele participa (ADR 0004)', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const mine = { ...aTask().inProject(project).build(), createdBy: managerId, participations: [] }
+    const others = {
+      ...mine,
+      id: toTaskId('00000000000000000000000010'),
+      createdBy: otherUserId,
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, others)
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    const own = await useCases.tasks.listBoard.execute(manager, {})
+    expect(own.map((task) => task.id)).toEqual([mine.id])
+    const seen = await useCases.tasks.listBoard.execute(manager, { forUserId: otherUserId })
+    expect(seen.map((task) => task.id)).toEqual([others.id])
   })
 
   it('deriva sinais apenas das tarefas acessíveis e usa mudança de estado em vez da última edição', async () => {
@@ -185,37 +191,44 @@ describe('listas de tarefas', () => {
     ).resolves.toMatchObject([{ id: task.id }])
   })
 
-  it('lista na Equipe tarefas dos projetos do membro sem incluir as próprias', async () => {
+  it('Equipe do colaborador traz só as tarefas de que participa, mesmo em projetos alheios (ADR 0004)', async () => {
     const { useCases, unitOfWork } = setup()
     const project = aProject().build()
     const mine = aTask().inProject(project).build()
-    const team = {
+    const others = {
       ...mine,
       id: toTaskId('00000000000000000000000012'),
       createdBy: otherUserId,
       participations: [],
     }
-    const unrelatedProject = aProject()
-      .with({ id: toProjectId('00000000000000000000000005') })
-      .build()
-    const unrelated = {
-      ...team,
-      id: toTaskId('00000000000000000000000013'),
-      projectId: unrelatedProject.id,
-      projectName: unrelatedProject.name,
-      createdBy: otherUserId,
-      participations: [],
-    }
     await unitOfWork.repositories.projects.save(organizationId, project)
-    await unitOfWork.repositories.projects.save(organizationId, unrelatedProject)
-    await addProjectMember(unitOfWork, project.id, userId)
     await unitOfWork.repositories.tasks.save(organizationId, mine)
-    await unitOfWork.repositories.tasks.save(organizationId, team)
-    await unitOfWork.repositories.tasks.save(organizationId, unrelated)
+    await unitOfWork.repositories.tasks.save(organizationId, others)
 
     const result = await useCases.tasks.listTeamBoard.execute(actor, {})
 
-    expect(result.map(({ id }) => id)).toEqual([team.id])
+    expect(result.map(({ id }) => id)).toEqual([mine.id])
+  })
+
+  it('Equipe do gestor traz todas as tarefas da organização (ADR 0004)', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const mine = { ...aTask().inProject(project).build(), createdBy: managerId, participations: [] }
+    const others = {
+      ...mine,
+      id: toTaskId('00000000000000000000000012'),
+      createdBy: otherUserId,
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, others)
+
+    const result = await useCases.tasks.listTeamBoard.execute(
+      { userId: managerId, organizationId, role: 'manager' },
+      {},
+    )
+
+    expect(result.map(({ id }) => id).sort()).toEqual([mine.id, others.id].sort())
   })
 
   it('recentes, frequentes e busca retornam somente tarefas de que o ator participa', async () => {

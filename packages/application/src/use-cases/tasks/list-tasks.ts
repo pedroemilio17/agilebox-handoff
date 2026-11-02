@@ -27,11 +27,7 @@ async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
     throw new PermissionDeniedError('Somente o gestor pode filtrar por usuário')
   const query = {
     ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
-    ...(input.forUserId !== undefined
-      ? { userId: toUserId(input.forUserId) }
-      : actor.role === 'manager'
-        ? {}
-        : { userId: actor.userId }),
+    userId: input.forUserId === undefined ? actor.userId : toUserId(input.forUserId),
   }
   return deps.tasks.listBoard(actor.organizationId, query)
 }
@@ -85,27 +81,12 @@ export class ListTeamBoard {
 
   async execute(actor: Actor, input: { readonly projectId?: string }): Promise<readonly TaskDto[]> {
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
-    const [tasks, projects] = await Promise.all([
-      this.deps.tasks.listBoard(actor.organizationId, projectId === undefined ? {} : { projectId }),
-      this.deps.projects.list(actor.organizationId),
-    ])
-    const eligibleProjectIds = new Set(
-      await Promise.all(
-        projects
-          .filter((project) => projectId === undefined || project.id === projectId)
-          .filter(
-            (project) =>
-              actor.role === 'manager' || project.organizationId === actor.organizationId,
-          )
-          .map(async (project) => {
-            if (actor.role === 'manager') return project.id
-            const members = await this.deps.projects.listMembers(actor.organizationId, project.id)
-            return members.some((member) => member.userId === actor.userId) ? project.id : null
-          }),
-      ),
+    const tasks = await this.deps.tasks.listBoard(
+      actor.organizationId,
+      projectId === undefined ? {} : { projectId },
     )
     return tasks
-      .filter((task) => eligibleProjectIds.has(task.projectId) && !participates(actor, task))
+      .filter((task) => actor.role === 'manager' || participates(actor, task))
       .map(toTaskDto)
   }
 }
