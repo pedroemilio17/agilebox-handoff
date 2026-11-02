@@ -96,6 +96,25 @@ describe('linha do tempo', () => {
     })
     expect(diffTask({ ...task, ticket: { id: 42 } }, { ...task, ticket: { id: 42 } })).toEqual([])
   })
+  it('descreve a ida ao quadro e a devolução ao backlog sem valores', () => {
+    const moved = { ...base, type: 'moved_to_board' as const, payload: {} }
+    const sent = { ...base, type: 'sent_to_backlog' as const, payload: {} }
+    expect(describeEvent(moved, viewer, names)).toBe('levou a tarefa ao quadro')
+    expect(describeEvent(sent, viewer, names)).toBe('devolveu a tarefa ao backlog')
+    for (const event of [moved, sent]) {
+      expect(describeEvent(event, viewer, names)).not.toMatch(/R\$|,\d{2}/)
+      expect(describeEvent({ ...event, asManager: true }, viewer, names)).toBe(
+        describeEvent(event, viewer, names),
+      )
+    }
+  })
+
+  it('não gera evento de linha do tempo para reordenar o backlog', () => {
+    const inBacklog = { ...task, backlogRank: 1, onBoard: false }
+    const reordered = { ...inBacklog, backlogRank: 2 }
+    expect(diffTask(inBacklog, reordered)).toEqual([])
+  })
+
   it('descreve todos os tipos e protege valores de terceiros', () => {
     const events: TimelineEvent[] = [
       { ...base, type: 'task_created', payload: {} },

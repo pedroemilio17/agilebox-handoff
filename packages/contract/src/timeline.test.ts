@@ -20,6 +20,21 @@ describe('schemas da linha do tempo', () => {
     expect(listTimelineOutputSchema.parse([event])).toEqual([event])
   })
 
+  it('aceita os eventos de backlog (levar ao quadro e devolver ao backlog)', () => {
+    for (const type of ['moved_to_board', 'sent_to_backlog']) {
+      const event = {
+        id: eventId,
+        taskId,
+        at: '2026-10-31T12:30:00.000Z',
+        actorUserId,
+        asManager: false,
+        type,
+        text: 'levou a tarefa ao quadro',
+      }
+      expect(listTimelineOutputSchema.parse([event])).toEqual([event])
+    }
+  })
+
   it('rejeita ID inválido, tipo desconhecido e data inválida', () => {
     expect(listTimelineInputSchema.safeParse({ taskId: 'tarefa-1' }).success).toBe(false)
     expect(

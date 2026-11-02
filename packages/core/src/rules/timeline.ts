@@ -110,6 +110,10 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return 'arquivou a tarefa'
     case 'unarchived':
       return 'desarquivou a tarefa'
+    case 'moved_to_board':
+      return 'levou a tarefa ao quadro'
+    case 'sent_to_backlog':
+      return 'devolveu a tarefa ao backlog'
     case 'status_changed':
       return `moveu de ${TASK_STATUS_LABELS[event.payload.before]} para ${TASK_STATUS_LABELS[event.payload.after]}`
     case 'deadline_changed':
