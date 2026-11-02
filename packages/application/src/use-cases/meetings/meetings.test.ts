@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createTenantContext,
   parseDateOnly,
   PermissionDeniedError,
   toMeetingId,
@@ -67,7 +68,7 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(organizationId, earlier)
 
     await expect(
-      useCases.meetings.listMonth.execute(actor, { month: '2026-02' }),
+      useCases.meetings.listMonth.execute(createTenantContext(actor), actor, { month: '2026-02' }),
     ).resolves.toMatchObject([{ id: earlier.id }, { id: later.id }])
   })
 
@@ -84,9 +85,9 @@ describe('casos de uso da agenda', () => {
     )
     await unitOfWork.repositories.meetings.save(organizationId, today)
 
-    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toMatchObject([
-      { id: today.id },
-    ])
+    await expect(
+      useCases.meetings.listUpcoming.execute(createTenantContext(actor), actor),
+    ).resolves.toMatchObject([{ id: today.id }])
   })
 
   it('permite somente ao gestor criar, atualizar e excluir agendamentos', async () => {
@@ -94,7 +95,7 @@ describe('casos de uso da agenda', () => {
     const existing = aMeeting().build()
     await unitOfWork.repositories.meetings.save(organizationId, existing)
     await expect(
-      useCases.meetings.create.execute(actor, {
+      useCases.meetings.create.execute(createTenantContext(actor), actor, {
         title: 'Planejamento',
         date: '2026-02-10',
         time: '09:30',
@@ -102,16 +103,18 @@ describe('casos de uso da agenda', () => {
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.meetings.update.execute(actor, {
+      useCases.meetings.update.execute(createTenantContext(actor), actor, {
         meetingId: existing.id,
         changes: { title: 'Alteração não autorizada' },
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.meetings.delete.execute(actor, { meetingId: existing.id }),
+      useCases.meetings.delete.execute(createTenantContext(actor), actor, {
+        meetingId: existing.id,
+      }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
 
-    const created = await useCases.meetings.create.execute(manager, {
+    const created = await useCases.meetings.create.execute(createTenantContext(manager), manager, {
       title: ' Planejamento ',
       date: '2026-02-10',
       time: '09:30',
@@ -124,7 +127,7 @@ describe('casos de uso da agenda', () => {
       createdAt: '2026-01-20T12:00:00.000Z',
       updatedAt: '2026-01-20T12:00:00.000Z',
     })
-    const updated = await useCases.meetings.update.execute(manager, {
+    const updated = await useCases.meetings.update.execute(createTenantContext(manager), manager, {
       meetingId: created.id,
       changes: { time: '10:00', participants: [] },
     })
@@ -133,7 +136,9 @@ describe('casos de uso da agenda', () => {
       participants: [],
       updatedAt: '2026-01-20T12:00:00.000Z',
     })
-    await useCases.meetings.delete.execute(manager, { meetingId: created.id })
+    await useCases.meetings.delete.execute(createTenantContext(manager), manager, {
+      meetingId: created.id,
+    })
     await expect(
       unitOfWork.repositories.meetings.findById(organizationId, toMeetingId(created.id)),
     ).resolves.toBeNull()
@@ -149,11 +154,99 @@ describe('casos de uso da agenda', () => {
     const { useCases } = setup()
     const meetingId = toMeetingId('00000000000000000000000010')
     await expect(
-      useCases.meetings.update.execute(manager, { meetingId, changes: { title: 'Novo título' } }),
+      useCases.meetings.update.execute(createTenantContext(manager), manager, {
+        meetingId,
+        changes: { title: 'Novo título' },
+      }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
-    await expect(useCases.meetings.delete.execute(manager, { meetingId })).rejects.toMatchObject({
+    await expect(
+      useCases.meetings.delete.execute(createTenantContext(manager), manager, { meetingId }),
+    ).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
+  })
+})
+
+describe('isolamento entre organizações (M1.10d)', () => {
+  const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+  const outsider: Actor = {
+    userId: toUserId('00000000000000000000000077'),
+    organizationId: otherOrganizationId,
+    role: 'manager',
+  }
+  const outsiderCtx = createTenantContext(outsider)
+  const newMeeting = {
+    title: 'Planejamento',
+    date: '2026-02-10',
+    time: '09:30',
+    participants: [userId],
+  }
+
+  it('agenda de outro time não aparece nas listagens', async () => {
+    const { useCases, unitOfWork } = setup()
+    await unitOfWork.repositories.meetings.save(
+      organizationId,
+      aMeeting()
+        .with({ date: parseDateOnly('2026-02-02') })
+        .build(),
+    )
+
+    await expect(
+      useCases.meetings.listMonth.execute(outsiderCtx, outsider, { month: '2026-02' }),
+    ).resolves.toEqual([])
+    await expect(useCases.meetings.listUpcoming.execute(outsiderCtx, outsider)).resolves.toEqual([])
+    await expect(
+      useCases.meetings.listMonth.execute(createTenantContext(manager), manager, {
+        month: '2026-02',
+      }),
+    ).resolves.toHaveLength(1)
+  })
+
+  it('gestor de outro time não edita nem exclui agendamento daqui', async () => {
+    const { useCases, unitOfWork } = setup()
+    const existing = aMeeting().build()
+    await unitOfWork.repositories.meetings.save(organizationId, existing)
+
+    await expect(
+      useCases.meetings.update.execute(outsiderCtx, outsider, {
+        meetingId: existing.id,
+        changes: { title: 'Não deve gravar' },
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.meetings.delete.execute(outsiderCtx, outsider, { meetingId: existing.id }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+
+    await expect(
+      unitOfWork.repositories.meetings.findById(organizationId, existing.id),
+    ).resolves.toMatchObject({ title: existing.title })
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
+  })
+
+  it('criar com ator de outro time grava no time do ator', async () => {
+    const { useCases, unitOfWork } = setup()
+
+    await useCases.meetings.create.execute(outsiderCtx, outsider, newMeeting)
+    await expect(unitOfWork.repositories.meetings.count(otherOrganizationId)).resolves.toBe(1)
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(0)
+  })
+
+  it('contexto de um time com ator de outro dá FORBIDDEN e não grava nem exclui nada', async () => {
+    const { useCases, unitOfWork } = setup()
+    const existing = aMeeting().build()
+    await unitOfWork.repositories.meetings.save(organizationId, existing)
+
+    await expect(
+      useCases.meetings.create.execute(createTenantContext(manager), outsider, newMeeting),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      useCases.meetings.delete.execute(createTenantContext(manager), outsider, {
+        meetingId: existing.id,
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
+    await expect(unitOfWork.repositories.meetings.count(otherOrganizationId)).resolves.toBe(0)
   })
 })
 
@@ -187,22 +280,26 @@ describe('guard de módulo na agenda (M1.8)', () => {
     await setAgendaState(unitOfWork, 'disabled')
 
     await expect(
-      useCases.meetings.listMonth.execute(manager, { month: '2026-02' }),
+      useCases.meetings.listMonth.execute(createTenantContext(manager), manager, {
+        month: '2026-02',
+      }),
     ).rejects.toBeInstanceOf(ValidationError)
-    await expect(useCases.meetings.listUpcoming.execute(manager)).rejects.toBeInstanceOf(
-      ValidationError,
-    )
-    await expect(useCases.meetings.create.execute(manager, newMeeting)).rejects.toBeInstanceOf(
-      ValidationError,
-    )
     await expect(
-      useCases.meetings.update.execute(manager, {
+      useCases.meetings.listUpcoming.execute(createTenantContext(manager), manager),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      useCases.meetings.create.execute(createTenantContext(manager), manager, newMeeting),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      useCases.meetings.update.execute(createTenantContext(manager), manager, {
         meetingId: existing.id,
         changes: { title: 'Não deve gravar' },
       }),
     ).rejects.toBeInstanceOf(ValidationError)
     await expect(
-      useCases.meetings.delete.execute(manager, { meetingId: existing.id }),
+      useCases.meetings.delete.execute(createTenantContext(manager), manager, {
+        meetingId: existing.id,
+      }),
     ).rejects.toBeInstanceOf(ValidationError)
 
     await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
@@ -220,19 +317,21 @@ describe('guard de módulo na agenda (M1.8)', () => {
     await setAgendaState(unitOfWork, 'winding_down')
 
     await expect(
-      useCases.meetings.listMonth.execute(actor, { month: '2026-02' }),
+      useCases.meetings.listMonth.execute(createTenantContext(actor), actor, { month: '2026-02' }),
     ).resolves.toMatchObject([{ id: existing.id }])
-    await expect(useCases.meetings.create.execute(manager, newMeeting)).rejects.toBeInstanceOf(
-      ValidationError,
-    )
+    await expect(
+      useCases.meetings.create.execute(createTenantContext(manager), manager, newMeeting),
+    ).rejects.toBeInstanceOf(ValidationError)
     await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
 
-    const updated = await useCases.meetings.update.execute(manager, {
+    const updated = await useCases.meetings.update.execute(createTenantContext(manager), manager, {
       meetingId: existing.id,
       changes: { time: '11:00' },
     })
     expect(updated).toMatchObject({ time: '11:00' })
-    await useCases.meetings.delete.execute(manager, { meetingId: existing.id })
+    await useCases.meetings.delete.execute(createTenantContext(manager), manager, {
+      meetingId: existing.id,
+    })
     await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(0)
   })
 
@@ -240,11 +339,17 @@ describe('guard de módulo na agenda (M1.8)', () => {
     const { useCases, unitOfWork } = setup()
     await setAgendaState(unitOfWork, 'active')
 
-    const created = await useCases.meetings.create.execute(manager, newMeeting)
-    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toMatchObject([
-      { id: created.id },
-    ])
-    await useCases.meetings.delete.execute(manager, { meetingId: created.id })
+    const created = await useCases.meetings.create.execute(
+      createTenantContext(manager),
+      manager,
+      newMeeting,
+    )
+    await expect(
+      useCases.meetings.listUpcoming.execute(createTenantContext(actor), actor),
+    ).resolves.toMatchObject([{ id: created.id }])
+    await useCases.meetings.delete.execute(createTenantContext(manager), manager, {
+      meetingId: created.id,
+    })
     await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(0)
   })
 
@@ -252,9 +357,13 @@ describe('guard de módulo na agenda (M1.8)', () => {
     const { useCases, unitOfWork } = setup()
 
     await expect(unitOfWork.repositories.teamModules.list(organizationId)).resolves.toEqual([])
-    await expect(useCases.meetings.create.execute(manager, newMeeting)).resolves.toMatchObject({
+    await expect(
+      useCases.meetings.create.execute(createTenantContext(manager), manager, newMeeting),
+    ).resolves.toMatchObject({
       title: newMeeting.title,
     })
-    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toHaveLength(1)
+    await expect(
+      useCases.meetings.listUpcoming.execute(createTenantContext(actor), actor),
+    ).resolves.toHaveLength(1)
   })
 })

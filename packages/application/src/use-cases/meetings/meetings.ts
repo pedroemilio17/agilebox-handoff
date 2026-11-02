@@ -6,11 +6,12 @@ import {
   toMeetingId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, TenantContext } from '@agilebox/core'
 import type { CreateMeetingInput, MeetingDto, UpdateMeetingInput } from '@agilebox/contract'
 import { toMeetingDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { requireModuleAccess } from '../../modules/guard'
+import { assertTenant } from '../tenant-scope'
 
 const AGENDA = 'agenda'
 
@@ -30,9 +31,14 @@ function requireManager(actor: Actor): void {
 export class ListMonthMeetings {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: ListMonthInput): Promise<readonly MeetingDto[]> {
-    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
-    const meetings = await this.deps.meetings.listByMonth(actor.organizationId, input.month)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: ListMonthInput,
+  ): Promise<readonly MeetingDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    await requireModuleAccess(this.deps, organizationId, AGENDA, 'existing')
+    const meetings = await this.deps.meetings.listByMonth(organizationId, input.month)
     return meetings.map(toMeetingDto)
   }
 }
@@ -40,13 +46,11 @@ export class ListMonthMeetings {
 export class ListUpcomingMeetings {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<readonly MeetingDto[]> {
-    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
-    const today = (await this.deps.clock.now(actor.organizationId)).slice(0, 10)
-    const meetings = await this.deps.meetings.listUpcoming(
-      actor.organizationId,
-      parseDateOnly(today),
-    )
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly MeetingDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    await requireModuleAccess(this.deps, organizationId, AGENDA, 'existing')
+    const today = (await this.deps.clock.now(organizationId)).slice(0, 10)
+    const meetings = await this.deps.meetings.listUpcoming(organizationId, parseDateOnly(today))
     return meetings.map(toMeetingDto)
   }
 }
@@ -54,13 +58,14 @@ export class ListUpcomingMeetings {
 export class CreateMeeting {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: CreateMeetingInput): Promise<MeetingDto> {
+  async execute(ctx: TenantContext, actor: Actor, input: CreateMeetingInput): Promise<MeetingDto> {
+    const organizationId = assertTenant(ctx, actor)
     requireManager(actor)
-    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'new')
-    const now = await this.deps.clock.now(actor.organizationId)
+    await requireModuleAccess(this.deps, organizationId, AGENDA, 'new')
+    const now = await this.deps.clock.now(organizationId)
     const meeting = createMeeting({
-      id: toMeetingId(await this.deps.idGenerator.generate(actor.organizationId)),
-      organizationId: actor.organizationId,
+      id: toMeetingId(await this.deps.idGenerator.generate(organizationId)),
+      organizationId,
       title: input.title,
       date: parseDateOnly(input.date),
       time: input.time,
@@ -69,10 +74,10 @@ export class CreateMeeting {
       createdAt: now,
       updatedAt: now,
     })
-    await this.deps.unitOfWork.run(actor.organizationId, async ({ meetings }) => {
-      await meetings.save(actor.organizationId, meeting)
+    await this.deps.unitOfWork.run(organizationId, async ({ meetings }) => {
+      await meetings.save(organizationId, meeting)
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, {
+    await this.deps.changeNotifier.publish(organizationId, {
       kind: 'meeting',
       ids: [meeting.id],
     })
@@ -83,11 +88,12 @@ export class CreateMeeting {
 export class UpdateMeeting {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: UpdateMeetingInput): Promise<MeetingDto> {
+  async execute(ctx: TenantContext, actor: Actor, input: UpdateMeetingInput): Promise<MeetingDto> {
+    const organizationId = assertTenant(ctx, actor)
     requireManager(actor)
-    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
+    await requireModuleAccess(this.deps, organizationId, AGENDA, 'existing')
     const meetingId = toMeetingId(input.meetingId)
-    const existing = await this.deps.meetings.findById(actor.organizationId, meetingId)
+    const existing = await this.deps.meetings.findById(organizationId, meetingId)
     if (!existing) throw new NotFoundError('Agendamento não encontrado')
     const meeting = createMeeting({
       ...existing,
@@ -95,12 +101,12 @@ export class UpdateMeeting {
       date: input.changes.date ? parseDateOnly(input.changes.date) : existing.date,
       time: input.changes.time ?? existing.time,
       participants: input.changes.participants?.map(toUserId) ?? existing.participants,
-      updatedAt: await this.deps.clock.now(actor.organizationId),
+      updatedAt: await this.deps.clock.now(organizationId),
     })
-    await this.deps.unitOfWork.run(actor.organizationId, async ({ meetings }) => {
-      await meetings.save(actor.organizationId, meeting)
+    await this.deps.unitOfWork.run(organizationId, async ({ meetings }) => {
+      await meetings.save(organizationId, meeting)
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, {
+    await this.deps.changeNotifier.publish(organizationId, {
       kind: 'meeting',
       ids: [meeting.id],
     })
@@ -111,16 +117,17 @@ export class UpdateMeeting {
 export class DeleteMeeting {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: MeetingIdInput): Promise<void> {
+  async execute(ctx: TenantContext, actor: Actor, input: MeetingIdInput): Promise<void> {
+    const organizationId = assertTenant(ctx, actor)
     requireManager(actor)
-    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
+    await requireModuleAccess(this.deps, organizationId, AGENDA, 'existing')
     const meetingId = toMeetingId(input.meetingId)
-    const existing = await this.deps.meetings.findById(actor.organizationId, meetingId)
+    const existing = await this.deps.meetings.findById(organizationId, meetingId)
     if (!existing) throw new NotFoundError('Agendamento não encontrado')
-    await this.deps.unitOfWork.run(actor.organizationId, async ({ meetings }) => {
-      await meetings.remove(actor.organizationId, meetingId)
+    await this.deps.unitOfWork.run(organizationId, async ({ meetings }) => {
+      await meetings.remove(organizationId, meetingId)
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, {
+    await this.deps.changeNotifier.publish(organizationId, {
       kind: 'meeting',
       ids: [meetingId],
     })

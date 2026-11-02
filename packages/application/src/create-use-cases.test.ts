@@ -86,7 +86,11 @@ describe('composição dos casos de uso', () => {
       changes: { title: 'Entrega revisada' },
     })
 
-    const timeline = await useCases.timeline.list.execute(collaborator, { taskId: task.id })
+    const timeline = await useCases.timeline.list.execute(
+      createTenantContext(collaborator),
+      collaborator,
+      { taskId: task.id },
+    )
     expect(timeline.map((event) => event.type)).toEqual([
       'renamed',
       'hours_changed',

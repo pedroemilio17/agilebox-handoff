@@ -145,11 +145,25 @@ export function registerHandlers(
   register('contributors.setDefaultRate', (actor, input) =>
     useCases.contributors.setDefaultRate.execute(createTenantContext(actor), actor, input),
   )
-  register('timeline.list', (actor, input) => useCases.timeline.list.execute(actor, input))
-  register('dashboard.get', (actor) => useCases.dashboard.get.execute(actor))
-  register('meetings.list', (actor, input) => useCases.meetings.listMonth.execute(actor, input))
-  register('meetings.listUpcoming', (actor) => useCases.meetings.listUpcoming.execute(actor))
-  register('meetings.create', (actor, input) => useCases.meetings.create.execute(actor, input))
-  register('meetings.update', (actor, input) => useCases.meetings.update.execute(actor, input))
-  register('meetings.delete', (actor, input) => useCases.meetings.delete.execute(actor, input))
+  register('timeline.list', (actor, input) =>
+    useCases.timeline.list.execute(createTenantContext(actor), actor, input),
+  )
+  register('dashboard.get', (actor) =>
+    useCases.dashboard.get.execute(createTenantContext(actor), actor),
+  )
+  register('meetings.list', (actor, input) =>
+    useCases.meetings.listMonth.execute(createTenantContext(actor), actor, input),
+  )
+  register('meetings.listUpcoming', (actor) =>
+    useCases.meetings.listUpcoming.execute(createTenantContext(actor), actor),
+  )
+  register('meetings.create', (actor, input) =>
+    useCases.meetings.create.execute(createTenantContext(actor), actor, input),
+  )
+  register('meetings.update', (actor, input) =>
+    useCases.meetings.update.execute(createTenantContext(actor), actor, input),
+  )
+  register('meetings.delete', (actor, input) =>
+    useCases.meetings.delete.execute(createTenantContext(actor), actor, input),
+  )
 }

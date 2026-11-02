@@ -329,3 +329,20 @@ Sem commit. Só `packages/application` (contribuintes, usuários, sessão e test
 - Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1068 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110c-check.log`.
 - Fora deste marco: `ctx` nos casos de uso de agenda, linha do tempo e dashboard (M1.10d) e teste de tipo do M1.11.
+
+## M1.10d · TenantContext nos casos de uso de agenda, linha do tempo e dashboard (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (agenda, linha do tempo, dashboard e testes), chamadores em `apps/desktop/src/main/ipc/register-handlers.ts`, `packages/infra-sqlite/src/seed/seed.ts` e `create-use-cases.test.ts`. Sem tela, banco novo nem mudança de comportamento. D9 aplicada como decidida, no mesmo padrão de M1.10a a c. Com isso, os casos de uso das linhas M1.10a a d recebem `ctx`. Os casos de uso de módulos da equipe (`use-cases/team-modules/team-modules.ts`) não estão em nenhuma linha do M1.10 e ainda recebem só `actor`; ficam como pendência para decidir (ver abaixo).
+
+- Assinaturas novas, com `ctx` antes do ator e `assertTenant(ctx, actor)` como primeira linha de cada caso de uso, antes de qualquer leitura, escrita ou checagem de papel:
+  - `meetings`: `listMonth(ctx, actor, input)`, `listUpcoming(ctx, actor)`, `create(ctx, actor, input)`, `update(ctx, actor, input)`, `delete(ctx, actor, input)`.
+  - `timeline`: `list(ctx, actor, input)`.
+  - `dashboard`: `get(ctx, actor)`.
+- O guard de módulo da agenda (M1.8) continua igual; só recebe o `organizationId` vindo de `assertTenant` em vez de `actor.organizationId`. A ordem entre papel e módulo também não mudou.
+- `composition-root.ts` não precisou de mudança: a linha do plano previa ajuste lá, mas ele só monta as dependências e não chama casos de uso. O ajuste foi só no `register-handlers.ts`.
+- Chamadores atualizados com `createTenantContext(actor)`: canais `timeline.list`, `dashboard.get` e `meetings.*` em `register-handlers.ts`; `seed.ts` (agendamentos de demonstração); `create-use-cases.test.ts` (chamada de `timeline.list`); e `meetings.test.ts` e `timeline-dashboard.test.ts`. `register-handlers.test.ts` não precisou de mudança.
+- Testes novos (bloco "isolamento entre organizações (M1.10d)" em `meetings/meetings.test.ts`, 4 casos, e em `timeline-dashboard.test.ts`, 2 casos): agenda de outro time não aparece nas listagens; gestor de outro time não edita nem exclui agendamento daqui (`NOT_FOUND`, dado intacto); criar com ator de outro time grava no time do ator; contexto de um time com ator de outro dá `FORBIDDEN` e não grava nem exclui nada. Linha do tempo de tarefa alheia dá `NOT_FOUND`, e contexto trocado dá `FORBIDDEN`. Dashboard de outro time não traz pessoas, tarefas nem mudanças daqui, e contexto trocado dá `FORBIDDEN`.
+- Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1074 testes, formatação, lint com zero avisos, tipos e build ok). `pnpm format` foi rodado antes do check para corrigir a formatação dos três arquivos alterados. Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110d-check.log`.
+- Pendência: `team-modules` (`list`, `change`, e o caso de uso de linha 146) ainda não usa `ctx`. Não estava no plano do M1.10; precisa de decisão antes do M1.11 (incluir no M1.10 ou tratar no teste de tipo).
+- Fora deste marco: teste de tipo do M1.11 (que confirma que `ctx` é obrigatório em tempo de compilação) e o teste de contrato com SQLite.

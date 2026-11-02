@@ -150,7 +150,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
 
   actor = { userId: users[4]!.id, organizationId, role: 'manager' }
   for (const meeting of demoSeedData.meetings) {
-    await useCases.meetings.create.execute(actor, {
+    await useCases.meetings.create.execute(createTenantContext(actor), actor, {
       title: meeting.title,
       date: meeting.date,
       time: meeting.time,

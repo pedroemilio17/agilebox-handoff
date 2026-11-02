@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createTenantContext,
   parseDateOnly,
   createUser,
   createTimelineEvent,
@@ -45,6 +46,57 @@ function setup() {
   return { useCases, unitOfWork }
 }
 
+describe('isolamento entre organizações (M1.10d)', () => {
+  const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+  const outsider: Actor = {
+    userId: toUserId('00000000000000000000000077'),
+    organizationId: otherOrganizationId,
+    role: 'manager',
+  }
+  const outsiderCtx = createTenantContext(outsider)
+
+  it('linha do tempo de tarefa de outro time dá NOT_FOUND', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await unitOfWork.repositories.timeline.saveMany(organizationId, [
+      createTimelineEvent({
+        id: toEventId('00000000000000000000000030'),
+        taskId: task.id,
+        at: '2026-01-01T10:00:00.000Z',
+        actorUserId: userId,
+        asManager: false,
+        type: 'renamed',
+        payload: { before: 'Antes', after: 'Depois' },
+      }),
+    ])
+
+    await expect(
+      useCases.timeline.list.execute(outsiderCtx, outsider, { taskId: task.id }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.timeline.list.execute(createTenantContext(actor), outsider, { taskId: task.id }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
+  it('dashboard de gestor de outro time não traz pessoas, tarefas nem mudanças daqui', async () => {
+    const { useCases, unitOfWork } = setup()
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    await unitOfWork.repositories.tasks.save(organizationId, aTask().build())
+
+    await expect(
+      useCases.dashboard.get.execute(createTenantContext(manager), manager),
+    ).resolves.toMatchObject({ collaborators: [{ user: { id: userId } }] })
+    await expect(useCases.dashboard.get.execute(outsiderCtx, outsider)).resolves.toMatchObject({
+      collaborators: [],
+      insights: { team: [], recentChanges: [], agingCount: 0, overdueCount: 0 },
+    })
+    await expect(
+      useCases.dashboard.get.execute(createTenantContext(manager), outsider),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+})
+
 describe('linha do tempo e dashboard', () => {
   it('entrega sinais, fluxo semanal, mudanças e equipe com dados reais da organização', async () => {
     const { useCases, unitOfWork } = setup()
@@ -77,7 +129,7 @@ describe('linha do tempo e dashboard', () => {
         payload: { before: 'in_progress', after: 'done' },
       },
     ])
-    const result = await useCases.dashboard.get.execute(manager)
+    const result = await useCases.dashboard.get.execute(createTenantContext(manager), manager)
     expect(result.insights).toMatchObject({
       agingCount: 1,
       overdueCount: 1,
@@ -124,12 +176,12 @@ describe('linha do tempo e dashboard', () => {
     await unitOfWork.repositories.users.save(organizationId, aUser().build())
     await unitOfWork.repositories.timeline.saveMany(organizationId, [older, newer])
 
-    await expect(useCases.timeline.list.execute(actor, { taskId: task.id })).resolves.toMatchObject(
-      [
-        { id: newer.id, text: 'criou a tarefa' },
-        { id: older.id, text: 'renomeou de Antes para Depois' },
-      ],
-    )
+    await expect(
+      useCases.timeline.list.execute(createTenantContext(actor), actor, { taskId: task.id }),
+    ).resolves.toMatchObject([
+      { id: newer.id, text: 'criou a tarefa' },
+      { id: older.id, text: 'renomeou de Antes para Depois' },
+    ])
   })
 
   it('permite consultar a linha do tempo só quando o ator pode ver a tarefa', async () => {
@@ -146,12 +198,18 @@ describe('linha do tempo e dashboard', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.tasks.save(organizationId, inaccessible)
 
-    await expect(useCases.timeline.list.execute(actor, { taskId: task.id })).resolves.toEqual([])
     await expect(
-      useCases.timeline.list.execute(actor, { taskId: inaccessible.id }),
+      useCases.timeline.list.execute(createTenantContext(actor), actor, { taskId: task.id }),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.timeline.list.execute(createTenantContext(actor), actor, {
+        taskId: inaccessible.id,
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
-      useCases.timeline.list.execute(manager, { taskId: inaccessible.id }),
+      useCases.timeline.list.execute(createTenantContext(manager), manager, {
+        taskId: inaccessible.id,
+      }),
     ).resolves.toEqual([])
   })
 
@@ -175,11 +233,11 @@ describe('linha do tempo e dashboard', () => {
     )
     await unitOfWork.repositories.timeline.saveMany(organizationId, [event])
 
-    await expect(useCases.timeline.list.execute(actor, { taskId: task.id })).resolves.toMatchObject(
-      [{ text: 'alterou o valor/hora de Bruno' }],
-    )
     await expect(
-      useCases.timeline.list.execute(manager, { taskId: task.id }),
+      useCases.timeline.list.execute(createTenantContext(actor), actor, { taskId: task.id }),
+    ).resolves.toMatchObject([{ text: 'alterou o valor/hora de Bruno' }])
+    await expect(
+      useCases.timeline.list.execute(createTenantContext(manager), manager, { taskId: task.id }),
     ).resolves.toMatchObject([{ text: 'alterou o valor/hora de Bruno de R$ 40,00 para R$ 45,00' }])
   })
 
@@ -217,8 +275,12 @@ describe('linha do tempo e dashboard', () => {
     await unitOfWork.repositories.tasks.save(organizationId, other)
     await unitOfWork.repositories.tasks.save(organizationId, managerTask)
 
-    await expect(useCases.dashboard.get.execute(actor)).rejects.toMatchObject({ code: 'FORBIDDEN' })
-    await expect(useCases.dashboard.get.execute(manager)).resolves.toMatchObject({
+    await expect(
+      useCases.dashboard.get.execute(createTenantContext(actor), actor),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      useCases.dashboard.get.execute(createTenantContext(manager), manager),
+    ).resolves.toMatchObject({
       distribution: { planning: 34, todo: 33, in_progress: 0, review: 0, done: 33 },
       collaborators: [
         { user: { id: userId }, taskCount: 1 },

@@ -13,34 +13,34 @@ import {
   participates,
   describeEvent,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, TenantContext } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { assertTenant } from '../tenant-scope'
 
 export class GetDashboard {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<DashboardDto> {
+  async execute(ctx: TenantContext, actor: Actor): Promise<DashboardDto> {
+    const organizationId = assertTenant(ctx, actor)
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
     const [tasks, users] = await Promise.all([
-      this.deps.tasks.listBoard(actor.organizationId, {}),
-      this.deps.users.list(actor.organizationId),
+      this.deps.tasks.listBoard(organizationId, {}),
+      this.deps.users.list(organizationId),
     ])
     const collaborators = users
-      .map((user) => ({ user, ...collaboratorStats(tasks, actor.organizationId, user.id) }))
+      .map((user) => ({ user, ...collaboratorStats(tasks, organizationId, user.id) }))
       .filter((stat) => stat.taskCount > 0)
 
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const today = toDateOnly(new Date(now), timeZone)
     const weeks = flowWeeks(today, timeZone)
     const events = (
-      await Promise.all(
-        tasks.map((task) => this.deps.timeline.listByTask(actor.organizationId, task.id)),
-      )
+      await Promise.all(tasks.map((task) => this.deps.timeline.listByTask(organizationId, task.id)))
     ).flat()
     const current = flowMetrics(tasks, events, weeks[5]!, now)
     const aging = tasks.filter((task) => isStaleTask(task, events, today, timeZone))
@@ -50,7 +50,7 @@ export class GetDashboard {
     const since = new Date(now)
     since.setDate(since.getDate() - 1)
     since.setHours(0, 0, 0, 0)
-    const contributors = await this.deps.contributors.list(actor.organizationId)
+    const contributors = await this.deps.contributors.list(organizationId)
     const contributorNames = new Map(contributors.map((person) => [person.id, person.name]))
     return {
       ...toDashboardDto(statusPercentages(tasks), collaborators),
@@ -75,7 +75,7 @@ export class GetDashboard {
           at: event.at,
           asManager: event.asManager,
           text: describeEvent(event, actor, {
-            organizationId: actor.organizationId,
+            organizationId,
             user: (id) => names.get(id) ?? '—',
             contributor: (id) => contributorNames.get(id) ?? '—',
           }),
