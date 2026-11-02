@@ -23,11 +23,11 @@ A IA e o MCP ficam acima do executor e nunca tocam o domínio direto: tudo que c
 
 Como os filtros se combinam:
 
-| Filtro | Pergunta que responde | Quem define | Onde é verificado | Se falhar |
-| --- | --- | --- | --- | --- |
+| Filtro                | Pergunta que responde                  | Quem define                           | Onde é verificado              | Se falhar                                  |
+| --------------------- | -------------------------------------- | ------------------------------------- | ------------------------------ | ------------------------------------------ |
 | Ferramentas da equipe | Essa ferramenta existe para este time? | Gestor propõe, equipe aceita (ADR-05) | Backend (guard no caso de uso) | Recusa a ação; a tela nem mostra a entrada |
-| Nível de proficiência | Essa tela aparece para esta pessoa? | Equipe (ADR-06) | Interface | Esconde a tela; os dados continuam lá |
-| Permissão | Esta pessoa pode fazer isso? | Papel na organização e no projeto | Backend | Recusa a ação |
+| Nível de proficiência | Essa tela aparece para esta pessoa?    | Equipe (ADR-06)                       | Interface                      | Esconde a tela; os dados continuam lá      |
+| Permissão             | Esta pessoa pode fazer isso?           | Papel na organização e no projeto     | Backend                        | Recusa a ação                              |
 
 Uma consequência importante: um módulo desativado não aparece em nenhum nível, e um nível alto não ativa nada que a equipe não escolheu.
 
@@ -62,7 +62,7 @@ O gestor propõe e a equipe aceita. A mudança só vale depois do aceite e roda 
 1. **Proposta com prévia de impacto.** Antes de enviar, o sistema calcula o que a mudança afeta: quantos itens de backlog, tarefas em sprint ativa, check-ins e impedimentos abertos dependem de cada módulo envolvido.
 2. **Aceite da equipe.** Os membros recebem a proposta com a prévia. Regra inicial sugerida: maioria simples dos membros, prazo configurável e silêncio que não conta como aceite. Proponente, votos e prazo ficam na auditoria.
 3. **Ativar é imediato.** Ligar um módulo e suas dependências só acrescenta; nada existente muda.
-4. **Desativar é gradual.** O módulo passa para o estado *encerrando*: não aceita itens novos, e o que já existe segue visível e editável até terminar (a sprint fecha, os impedimentos são resolvidos). Só então ele vira *desativado*. O gestor pode antecipar escolhendo antes o destino de cada tipo de item, por exemplo tarefas da sprint voltando ao Kanban como estão. Nada é apagado.
+4. **Desativar é gradual.** O módulo passa para o estado _encerrando_: não aceita itens novos, e o que já existe segue visível e editável até terminar (a sprint fecha, os impedimentos são resolvidos). Só então ele vira _desativado_. O gestor pode antecipar escolhendo antes o destino de cada tipo de item, por exemplo tarefas da sprint voltando ao Kanban como estão. Nada é apagado.
 5. **Tudo é reversível.** Reativar um módulo devolve os dados como estavam.
 
 No código, o módulo ganha três estados (`active`, `winding_down`, `disabled`) e a proposta ganha um fluxo próprio (`draft`, `proposed`, `accepted` ou `rejected`, `applied`), guardado na tabela `module_change_proposals`. O guard de módulo trata `winding_down` como "só o que já existe".
@@ -73,12 +73,12 @@ Na Onda 1 há uma máquina e um usuário real, então o M2 entrega a prévia de 
 
 O preset só pré-seleciona ferramentas; a equipe ajusta depois, sempre passando pelas regras acima.
 
-| Preset | Ferramentas ativadas | Nível sugerido |
-| --- | --- | --- |
-| Kanban simples | Núcleo, Agenda | Básico |
-| Scrum | Kanban simples + Backlog, Sprints, Check-ins, Impedimentos, Estimativas, Critérios de aceitação | Intermediário |
-| Kanban com fluxo | Kanban simples + Limites de WIP, Subtarefas/dependências, Métricas de fluxo | Avançado |
-| Scrum completo | Scrum + Review e retro, Burndown/velocity | Avançado |
+| Preset           | Ferramentas ativadas                                                                            | Nível sugerido |
+| ---------------- | ----------------------------------------------------------------------------------------------- | -------------- |
+| Kanban simples   | Núcleo, Agenda                                                                                  | Básico         |
+| Scrum            | Kanban simples + Backlog, Sprints, Check-ins, Impedimentos, Estimativas, Critérios de aceitação | Intermediário  |
+| Kanban com fluxo | Kanban simples + Limites de WIP, Subtarefas/dependências, Métricas de fluxo                     | Avançado       |
+| Scrum completo   | Scrum + Review e retro, Burndown/velocity                                                       | Avançado       |
 
 ### Contrato sugerido
 
@@ -86,34 +86,46 @@ O catálogo vive no código (`packages/core/src/modules/registry.ts`), versionad
 
 ```typescript
 type ModuleId =
-  | 'core' | 'agenda' | 'backlog' | 'sprints' | 'checkins' | 'impediments'
-  | 'estimates.hours' | 'estimates.points' | 'acceptance' | 'wip'
-  | 'subtasks' | 'integrations' | 'flowMetrics' | 'reviewRetro' | 'burndown';
+  | 'core'
+  | 'agenda'
+  | 'backlog'
+  | 'sprints'
+  | 'checkins'
+  | 'impediments'
+  | 'estimates.hours'
+  | 'estimates.points'
+  | 'acceptance'
+  | 'wip'
+  | 'subtasks'
+  | 'integrations'
+  | 'flowMetrics'
+  | 'reviewRetro'
+  | 'burndown'
 
 interface ModuleDefinition {
-  id: ModuleId;
-  requires: ModuleId[];          // todas precisam estar ativas
-  requiresAnyOf?: ModuleId[][];  // ex.: burndown exige horas OU pontos
-  conflicts?: ModuleId[];
-  minLevel: ExperienceLevel;     // nível mínimo das telas do módulo
-  core?: boolean;                // não pode ser desativado
+  id: ModuleId
+  requires: ModuleId[] // todas precisam estar ativas
+  requiresAnyOf?: ModuleId[][] // ex.: burndown exige horas OU pontos
+  conflicts?: ModuleId[]
+  minLevel: ExperienceLevel // nível mínimo das telas do módulo
+  core?: boolean // não pode ser desativado
 }
 
 type Resolution =
   | { ok: true; enabled: ModuleId[]; autoEnabled: ModuleId[] }
-  | { ok: false; conflicts: [ModuleId, ModuleId][]; blockedBy: ModuleId[] };
+  | { ok: false; conflicts: [ModuleId, ModuleId][]; blockedBy: ModuleId[] }
 
 // Funções puras em packages/core — testáveis sem banco nem UI
 declare function resolveModuleSet(
   current: ModuleId[],
   change: { enable?: ModuleId[]; disable?: ModuleId[] },
-): Resolution;
+): Resolution
 
 declare function effectiveCapabilities(input: {
-  modules: ModuleId[];
-  level: ExperienceLevel;
-  role: Role;
-}): Capability[];
+  modules: ModuleId[]
+  level: ExperienceLevel
+  role: Role
+}): Capability[]
 ```
 
 ## Camada nova: autenticação e multi-tenant
@@ -122,11 +134,11 @@ Todo pedido primeiro descobre quem é a pessoa e de qual time ela fala; só depo
 
 ### Quanto separar: três modelos de isolamento
 
-| Modelo | Como separa | Isolamento | Custo operacional | Quando escolher |
-| --- | --- | --- | --- | --- |
-| A · Um banco, `tenant_id` com RLS | Toda tabela carrega o time e o Postgres filtra por linha | Lógico, imposto pelo banco | Baixo: uma migração serve a todos | Padrão recomendado; vários times pequenos |
-| B · Um schema por time | Cada time tem seu schema no mesmo banco | Maior, no mesmo servidor | Médio: a migração roda N vezes e o código roteia o schema | Poucos times com dados bem distintos |
-| C · Um banco PostgreSQL por time | Cada time tem seu próprio banco; a identidade fica num banco central | Total, incluindo backup e restauração por time | Alto: N bancos e migração em todos | Time com exigência contratual ou de conformidade |
+| Modelo                            | Como separa                                                          | Isolamento                                     | Custo operacional                                         | Quando escolher                                  |
+| --------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------ |
+| A · Um banco, `tenant_id` com RLS | Toda tabela carrega o time e o Postgres filtra por linha             | Lógico, imposto pelo banco                     | Baixo: uma migração serve a todos                         | Padrão recomendado; vários times pequenos        |
+| B · Um schema por time            | Cada time tem seu schema no mesmo banco                              | Maior, no mesmo servidor                       | Médio: a migração roda N vezes e o código roteia o schema | Poucos times com dados bem distintos             |
+| C · Um banco PostgreSQL por time  | Cada time tem seu próprio banco; a identidade fica num banco central | Total, incluindo backup e restauração por time | Alto: N bancos e migração em todos                        | Time com exigência contratual ou de conformidade |
 
 A recomendação é o modelo A agora, porque o RLS faz o próprio banco recusar linhas de outro time mesmo que o código do servidor tenha um erro. Se "separar o banco" for requisito duro desde o início, a escolha é o C, e o custo é real: a migração precisa rodar em todos os bancos e é preciso um banco central só para identidade e para o mapa de time para banco; quem participa de dois times continua com uma conta só.
 
@@ -146,16 +158,16 @@ Para que o C continue possível sem reescrever nada, todo acesso a dados passa p
 
 ### Identidade e time no banco
 
-| Tabela | Responsabilidade |
-| --- | --- |
-| `users` | A conta: e-mail, hash da senha (argon2id), estado e data do último login |
-| `sessions` | Hash do token, usuário, validade, dispositivo e revogação |
-| `password_resets` | Pedidos de recuperação: hash do token, validade e uso |
-| `tenants` | O time: nome, estado e modo de isolamento (compartilhado ou dedicado) |
-| `memberships` | Usuário, time e papel (admin do time, gestor ou membro); uma pessoa pode estar em mais de um time |
-| `invitations` | Convites pendentes: hash do token, validade e quem convidou |
-| `tenant_settings` | Nível, ferramentas ativas e regra de aceite; estende `team_preferences` e `team_modules` |
-| `tenant_id` nas demais | Projetos, tarefas, backlog, sprints, check-ins, impedimentos, auditoria e `assistant_requests` |
+| Tabela                 | Responsabilidade                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `users`                | A conta: e-mail, hash da senha (argon2id), estado e data do último login                          |
+| `sessions`             | Hash do token, usuário, validade, dispositivo e revogação                                         |
+| `password_resets`      | Pedidos de recuperação: hash do token, validade e uso                                             |
+| `tenants`              | O time: nome, estado e modo de isolamento (compartilhado ou dedicado)                             |
+| `memberships`          | Usuário, time e papel (admin do time, gestor ou membro); uma pessoa pode estar em mais de um time |
+| `invitations`          | Convites pendentes: hash do token, validade e quem convidou                                       |
+| `tenant_settings`      | Nível, ferramentas ativas e regra de aceite; estende `team_preferences` e `team_modules`          |
+| `tenant_id` nas demais | Projetos, tarefas, backlog, sprints, check-ins, impedimentos, auditoria e `assistant_requests`    |
 
 O papel de admin do time é novo e cuida de membros e configurações; gestor e membro já existem e continuam decidindo o que cada pessoa pode fazer no filtro de permissões.
 
@@ -190,38 +202,38 @@ São 15 marcos em cinco ondas. A Onda 1 entrega níveis, ferramentas da equipe e
 
 A Onda 1 está destacada porque é a única que pode começar hoje. Cada portão é uma condição a cumprir, com as decisões na seção Decisões (ADR), e não uma data.
 
-| Marco | Objetivo | Camadas | Entregas principais | Pronto quando |
-| --- | --- | --- | --- | --- |
-| M0 · Estabilizar o MVP | Base confiável antes de crescer | Entrada, Domínio | Semântica de "Minhas tarefas" do gestor; seletor Equipe conectado; arquivar tarefa e projeto; renomear projeto | Criar, editar, mover e reabrir persistem; nenhuma tela estática |
-| M1 · Motor de capacidades | Uma única função decide o que existe, aparece e é permitido, dentro de um time | Identidade e time, Filtros 1–3, Domínio | Registro de módulos; `resolveModuleSet`; `effectiveCapabilities`; preferências de nível; guard de módulo; `TenantContext` e `tenantId` nos casos de uso e repositórios; estado `winding_down` e prévia de impacto | Testes unitários cobrem dependência, conflito, ciclo e desligamento gradual sem perda de dados; nenhum caso de uso roda sem `TenantContext` |
-| M2 · Interface adaptativa | Cada pessoa vê só o que o time escolheu, no nível do time | Entrada, Filtros 1–2 | Menu por nível; campos avançados ocultos por padrão; tela Ferramentas da equipe com presets, prévia de impacto e aplicação pelo gestor | Trocar nível ou preset não perde dados; desativar um módulo com sprint ativa não deixa item órfão; time Básico trabalha sem saber Scrum |
-| M3 · Backlog e critérios | Tarefas futuras ordenadas e prontas para planejar | Domínio, Persistência | Prioridade persistida; critérios de aceitação; estimativa em horas (ADR-07) ligada ao custo por hora; telas no Intermediário | Reordenar persiste; backlog separado da coluna `planning` |
-| M4 · Sprints | Ciclo completo do planejamento ao encerramento | Domínio, Persistência | Sprint com `draft`, `active`, `closed`; `sprint_tasks` com histórico; limite de sprints ativas como configuração (ADR-08); encerramento com política para itens abertos | Backlog → planejamento → início → encerramento → replanejamento, com histórico |
-| M5 · Check-ins e impedimentos | Comunicar avanço e bloqueio em segundos | Domínio, Entrada | Check-in assíncrono pela bandeja; resumo sugerido a partir das tarefas movidas; impedimento com estado e responsável | Check-in funciona sem sprint; impedimento resolvido sai da lista |
-| M6a · Postgres, login e multi-tenant | Saber quem é cada pessoa e separar os dados de cada time | Identidade e time, Persistência, Filtro 3 | Postgres em Docker (ADR-01); login, sessões e e-mail próprios (ADR-10); `tenants`, `memberships` e `invitations`; RLS em toda tabela; resolvedor de time para conexão; convites | Uma pessoa de um time não lê nem escreve dados de outro, nem direto no banco |
-| M6b · Servidor central | Um só dado para a equipe inteira | Persistência, Entrada | `apps/server`; adaptador Postgres com Drizzle; eventos por time (LISTEN/NOTIFY e SSE); aceite entre membros das mudanças de ferramentas; cache de leitura em SQLite; migração do SQLite com dry-run | Dois computadores editam o mesmo projeto sem conflito; a migração reconcilia e tem rollback |
-| M7 · Executor de comandos | Comandos tipados que funcionam sem IA | Executor | Schemas Zod; resolvedor de tarefas autorizadas; confirmação por risco; diff; idempotência; auditoria com origem | Comandos executam certo, inclusive com permissão negada e concorrência |
-| M8 · Servidor MCP interno | Catálogo de ferramentas usado só pelo Laya | Executor | Tools geradas do catálogo de comandos; lista filtrada por time, ferramentas e permissão; transporte local | Tool de módulo desligado não aparece nem executa; nenhuma porta MCP exposta na rede |
-| M9 · IA local | Atualizar tarefa conversando, com IA 100% local | IA local | Laya e orquestrador MCP; `TextModel` trocável (qwen, llama, Gemma); parser de datas e campos; fila e timeouts; chat com prévia e diff | Troca de modelo pelo `.env` e pela tela funciona; nenhuma chamada a API externa; nunca confirma gravação inexistente |
-| T1 · Bateria completa | Validar o sistema inteiro | Todas | Ver Fase de testes | Todos os critérios da tabela de testes atendidos |
-| T2 · Piloto | Medir adoção real | Todas | Equipe real em presets e níveis diferentes; coleta de feedback | Metas de uso medidas e escopo da Onda 5 decidido |
-| M10 · Fluxo avançado e métricas | Processo e análise para quem pediu | Domínio, Entrada | WIP, subtarefas e dependências sem ciclo; review e retro; burndown, velocity, lead e cycle time | Métricas reconciliam com os eventos auditados |
-| M11 · Integrações | Atualizar tarefas a partir de onde o trabalho acontece | Entrada, Executor | Commits por webhook (aviso para escolher tarefa); GLPI; Azure DevOps | Falha ou credencial inválida não perde nem duplica atualizações |
+| Marco                                | Objetivo                                                                       | Camadas                                   | Entregas principais                                                                                                                                                                                               | Pronto quando                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0 · Estabilizar o MVP               | Base confiável antes de crescer                                                | Entrada, Domínio                          | Semântica de "Minhas tarefas" do gestor; seletor Equipe conectado; arquivar tarefa e projeto; renomear projeto                                                                                                    | Criar, editar, mover e reabrir persistem; nenhuma tela estática                                                                             |
+| M1 · Motor de capacidades            | Uma única função decide o que existe, aparece e é permitido, dentro de um time | Identidade e time, Filtros 1–3, Domínio   | Registro de módulos; `resolveModuleSet`; `effectiveCapabilities`; preferências de nível; guard de módulo; `TenantContext` e `tenantId` nos casos de uso e repositórios; estado `winding_down` e prévia de impacto | Testes unitários cobrem dependência, conflito, ciclo e desligamento gradual sem perda de dados; nenhum caso de uso roda sem `TenantContext` |
+| M2 · Interface adaptativa            | Cada pessoa vê só o que o time escolheu, no nível do time                      | Entrada, Filtros 1–2                      | Menu por nível; campos avançados ocultos por padrão; tela Ferramentas da equipe com presets, prévia de impacto e aplicação pelo gestor                                                                            | Trocar nível ou preset não perde dados; desativar um módulo com sprint ativa não deixa item órfão; time Básico trabalha sem saber Scrum     |
+| M3 · Backlog e critérios             | Tarefas futuras ordenadas e prontas para planejar                              | Domínio, Persistência                     | Prioridade persistida; critérios de aceitação; estimativa em horas (ADR-07) ligada ao custo por hora; telas no Intermediário                                                                                      | Reordenar persiste; backlog separado da coluna `planning`                                                                                   |
+| M4 · Sprints                         | Ciclo completo do planejamento ao encerramento                                 | Domínio, Persistência                     | Sprint com `draft`, `active`, `closed`; `sprint_tasks` com histórico; limite de sprints ativas como configuração (ADR-08); encerramento com política para itens abertos                                           | Backlog → planejamento → início → encerramento → replanejamento, com histórico                                                              |
+| M5 · Check-ins e impedimentos        | Comunicar avanço e bloqueio em segundos                                        | Domínio, Entrada                          | Check-in assíncrono pela bandeja; resumo sugerido a partir das tarefas movidas; impedimento com estado e responsável                                                                                              | Check-in funciona sem sprint; impedimento resolvido sai da lista                                                                            |
+| M6a · Postgres, login e multi-tenant | Saber quem é cada pessoa e separar os dados de cada time                       | Identidade e time, Persistência, Filtro 3 | Postgres em Docker (ADR-01); login, sessões e e-mail próprios (ADR-10); `tenants`, `memberships` e `invitations`; RLS em toda tabela; resolvedor de time para conexão; convites                                   | Uma pessoa de um time não lê nem escreve dados de outro, nem direto no banco                                                                |
+| M6b · Servidor central               | Um só dado para a equipe inteira                                               | Persistência, Entrada                     | `apps/server`; adaptador Postgres com Drizzle; eventos por time (LISTEN/NOTIFY e SSE); aceite entre membros das mudanças de ferramentas; cache de leitura em SQLite; migração do SQLite com dry-run               | Dois computadores editam o mesmo projeto sem conflito; a migração reconcilia e tem rollback                                                 |
+| M7 · Executor de comandos            | Comandos tipados que funcionam sem IA                                          | Executor                                  | Schemas Zod; resolvedor de tarefas autorizadas; confirmação por risco; diff; idempotência; auditoria com origem                                                                                                   | Comandos executam certo, inclusive com permissão negada e concorrência                                                                      |
+| M8 · Servidor MCP interno            | Catálogo de ferramentas usado só pelo Laya                                     | Executor                                  | Tools geradas do catálogo de comandos; lista filtrada por time, ferramentas e permissão; transporte local                                                                                                         | Tool de módulo desligado não aparece nem executa; nenhuma porta MCP exposta na rede                                                         |
+| M9 · IA local                        | Atualizar tarefa conversando, com IA 100% local                                | IA local                                  | Laya e orquestrador MCP; `TextModel` trocável (qwen, llama, Gemma); parser de datas e campos; fila e timeouts; chat com prévia e diff                                                                             | Troca de modelo pelo `.env` e pela tela funciona; nenhuma chamada a API externa; nunca confirma gravação inexistente                        |
+| T1 · Bateria completa                | Validar o sistema inteiro                                                      | Todas                                     | Ver Fase de testes                                                                                                                                                                                                | Todos os critérios da tabela de testes atendidos                                                                                            |
+| T2 · Piloto                          | Medir adoção real                                                              | Todas                                     | Equipe real em presets e níveis diferentes; coleta de feedback                                                                                                                                                    | Metas de uso medidas e escopo da Onda 5 decidido                                                                                            |
+| M10 · Fluxo avançado e métricas      | Processo e análise para quem pediu                                             | Domínio, Entrada                          | WIP, subtarefas e dependências sem ciclo; review e retro; burndown, velocity, lead e cycle time                                                                                                                   | Métricas reconciliam com os eventos auditados                                                                                               |
+| M11 · Integrações                    | Atualizar tarefas a partir de onde o trabalho acontece                         | Entrada, Executor                         | Commits por webhook (aviso para escolher tarefa); GLPI; Azure DevOps                                                                                                                                              | Falha ou credencial inválida não perde nem duplica atualizações                                                                             |
 
 ## Fase de testes (Onda 4)
 
 A bateria completa roda depois do M9, sobre o sistema inteiro, e termina no piloto com a equipe real. Até lá, cada marco só fecha com o portão mínimo da última coluna.
 
-| Tipo | O que cobre | Marcos | Critério de aprovação | Portão mínimo no marco |
-| --- | --- | --- | --- | --- |
-| Unitário de domínio | Resolvedor de módulos, níveis, transições de sprint, regras de impedimento, contratos de comando | M1–M7 | 100% das regras de dependência e conflito cobertas; nenhuma transição inválida aceita | Sim — obrigatório |
-| Contrato | Schemas Zod, IPC do Electron, HTTP do servidor, schema das tools MCP | M6–M8 | Cliente e servidor validam o mesmo contrato; payload malformado é recusado | Só schemas novos |
-| Integração | Banco central, transações, auditoria, migração do SQLite, concorrência entre usuários | M6–M7 | Migração com dry-run e rollback; nenhuma escrita perdida em edição concorrente | Não |
-| E2E | Electron real, bandeja, painel, troca de nível, ativação de ferramentas, duas estações sincronizadas | M0–M6 | Fluxos críticos passam no Windows instalado | Não (inclui o M10.3 pendente) |
-| Segurança | Prompt injection, acesso a outro time (API, banco, eventos, chat e MCP), ação em massa, replay, ferramenta desativada chamada via chat/MCP | M6–M9 | Zero acesso fora do escopo; zero chamada a módulo desativado | Não |
-| IA | Roteamento rotulado em português, ambiguidade, preservação de fatos, comparação de checkpoints Laya | M9 | Roteamento ≥ 95%; zero alteração silenciosa em tarefa errada | Não |
-| Desempenho | Laya + 3B na GTX 1050 Ti, fila, P50/P95, internet desligada | M9 | Metas definidas no benchmark P0-02 | Não |
-| Uso (piloto) | Equipe real nos três níveis e presets de ferramentas | Todos | Atualização simples em até 15 s; ≥ 80% de usuários ativos por semana | Não |
+| Tipo                | O que cobre                                                                                                                                | Marcos | Critério de aprovação                                                                 | Portão mínimo no marco        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------- | ----------------------------- |
+| Unitário de domínio | Resolvedor de módulos, níveis, transições de sprint, regras de impedimento, contratos de comando                                           | M1–M7  | 100% das regras de dependência e conflito cobertas; nenhuma transição inválida aceita | Sim — obrigatório             |
+| Contrato            | Schemas Zod, IPC do Electron, HTTP do servidor, schema das tools MCP                                                                       | M6–M8  | Cliente e servidor validam o mesmo contrato; payload malformado é recusado            | Só schemas novos              |
+| Integração          | Banco central, transações, auditoria, migração do SQLite, concorrência entre usuários                                                      | M6–M7  | Migração com dry-run e rollback; nenhuma escrita perdida em edição concorrente        | Não                           |
+| E2E                 | Electron real, bandeja, painel, troca de nível, ativação de ferramentas, duas estações sincronizadas                                       | M0–M6  | Fluxos críticos passam no Windows instalado                                           | Não (inclui o M10.3 pendente) |
+| Segurança           | Prompt injection, acesso a outro time (API, banco, eventos, chat e MCP), ação em massa, replay, ferramenta desativada chamada via chat/MCP | M6–M9  | Zero acesso fora do escopo; zero chamada a módulo desativado                          | Não                           |
+| IA                  | Roteamento rotulado em português, ambiguidade, preservação de fatos, comparação de checkpoints Laya                                        | M9     | Roteamento ≥ 95%; zero alteração silenciosa em tarefa errada                          | Não                           |
+| Desempenho          | Laya + 3B na GTX 1050 Ti, fila, P50/P95, internet desligada                                                                                | M9     | Metas definidas no benchmark P0-02                                                    | Não                           |
+| Uso (piloto)        | Equipe real nos três níveis e presets de ferramentas                                                                                       | Todos  | Atualização simples em até 15 s; ≥ 80% de usuários ativos por semana                  | Não                           |
 
 Casos de teste específicos da camada de ferramentas da equipe:
 
@@ -249,18 +261,18 @@ Casos de teste de multi-tenant, mudança de ferramentas e IA configurável:
 
 Oito das dez decisões estão fechadas e duas são recomendações para você confirmar. Nenhuma bloqueia a Onda 1; banco e login precisam estar prontos antes do M6a.
 
-| ID | Decisão | Status | Resultado | Efeito no plano |
-| --- | --- | --- | --- | --- |
-| ADR-01 | Banco central e offline | Decidida | PostgreSQL próprio: em Docker agora e no servidor da empresa, 24/7, depois; nenhuma plataforma externa. SQLite só como cache de leitura, avaliado abaixo | Adaptador Postgres com Drizzle; M6a e M6b |
-| ADR-02 | Papel do MCP | Decidida | MCP interno: o Laya escolhe a ferramenta e o orquestrador a chama; a LLM não acessa o MCP | M8 sem clientes externos |
-| ADR-03 | Roteador de intenção | Decidida | Laya local; o POC P0-01 só escolhe o checkpoint | M9 |
-| ADR-04 | Modelo de texto | Decidida | Trocável por injeção de dependência, pelo `.env` ou pela tela de configurações; qwen, llama e Gemma entram no benchmark | M9; detalhes abaixo |
-| ADR-05 | Quem escolhe as ferramentas | Decidida | Gestor propõe e a equipe aceita; a mudança roda em etapas para não quebrar tarefas, backlog nem sprints em andamento | M1, M2 e M6b; fluxo na seção Ferramentas da equipe |
-| ADR-06 | Escopo do nível | Decidida | Por equipe; simplificação individual fica fora por enquanto | M2 |
-| ADR-07 | Unidade de estimativa | Decidida | Horas, que reaproveitam o custo por hora que já existe nas tarefas; pontos ficam como módulo futuro | M3 |
-| ADR-08 | Sprint ativa única | Recomendada | Sim, como configuração do módulo Sprints (padrão: uma ativa por projeto), sem travar no banco | M4; confirmar com o time |
-| ADR-09 | Servidor e eventos | Recomendada | Fastify; eventos entre clientes por LISTEN/NOTIFY do Postgres, entregues pelo servidor via SSE | M6b; confirmar |
-| ADR-10 | Autenticação e e-mail | Decidida | Tudo no código do servidor: senhas com argon2id, sessões e convites no próprio banco, e-mail por SMTP da empresa; nenhum provedor externo de identidade ou de e-mail | M6a; detalhes na camada de autenticação |
+| ID     | Decisão                     | Status      | Resultado                                                                                                                                                            | Efeito no plano                                    |
+| ------ | --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| ADR-01 | Banco central e offline     | Decidida    | PostgreSQL próprio: em Docker agora e no servidor da empresa, 24/7, depois; nenhuma plataforma externa. SQLite só como cache de leitura, avaliado abaixo             | Adaptador Postgres com Drizzle; M6a e M6b          |
+| ADR-02 | Papel do MCP                | Decidida    | MCP interno: o Laya escolhe a ferramenta e o orquestrador a chama; a LLM não acessa o MCP                                                                            | M8 sem clientes externos                           |
+| ADR-03 | Roteador de intenção        | Decidida    | Laya local; o POC P0-01 só escolhe o checkpoint                                                                                                                      | M9                                                 |
+| ADR-04 | Modelo de texto             | Decidida    | Trocável por injeção de dependência, pelo `.env` ou pela tela de configurações; qwen, llama e Gemma entram no benchmark                                              | M9; detalhes abaixo                                |
+| ADR-05 | Quem escolhe as ferramentas | Decidida    | Gestor propõe e a equipe aceita; a mudança roda em etapas para não quebrar tarefas, backlog nem sprints em andamento                                                 | M1, M2 e M6b; fluxo na seção Ferramentas da equipe |
+| ADR-06 | Escopo do nível             | Decidida    | Por equipe; simplificação individual fica fora por enquanto                                                                                                          | M2                                                 |
+| ADR-07 | Unidade de estimativa       | Decidida    | Horas, que reaproveitam o custo por hora que já existe nas tarefas; pontos ficam como módulo futuro                                                                  | M3                                                 |
+| ADR-08 | Sprint ativa única          | Recomendada | Sim, como configuração do módulo Sprints (padrão: uma ativa por projeto), sem travar no banco                                                                        | M4; confirmar com o time                           |
+| ADR-09 | Servidor e eventos          | Recomendada | Fastify; eventos entre clientes por LISTEN/NOTIFY do Postgres, entregues pelo servidor via SSE                                                                       | M6b; confirmar                                     |
+| ADR-10 | Autenticação e e-mail       | Decidida    | Tudo no código do servidor: senhas com argon2id, sessões e convites no próprio banco, e-mail por SMTP da empresa; nenhum provedor externo de identidade ou de e-mail | M6a; detalhes na camada de autenticação            |
 
 ### ADR-01 · PostgreSQL próprio, sem plataforma externa
 
@@ -275,20 +287,20 @@ O plano não depende de nenhum serviço de terceiros: o banco é um PostgreSQL s
 
 **Onde roda**
 
-| Fase | Onde | Como | Cuidado |
-| --- | --- | --- | --- |
-| Agora | Docker na máquina de desenvolvimento | Um `docker compose` com Postgres e volume nomeado; migrações rodadas pelo próprio projeto | Backup do volume antes de trocar de versão; é a base de teste e do primeiro time |
-| Depois | Servidor da empresa, ligado 24/7 | O mesmo Postgres instalado no servidor, com backup agendado e restauração testada | Migração por dump e restauração; a conexão vem de variáveis de ambiente |
+| Fase   | Onde                                 | Como                                                                                      | Cuidado                                                                          |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Agora  | Docker na máquina de desenvolvimento | Um `docker compose` com Postgres e volume nomeado; migrações rodadas pelo próprio projeto | Backup do volume antes de trocar de versão; é a base de teste e do primeiro time |
+| Depois | Servidor da empresa, ligado 24/7     | O mesmo Postgres instalado no servidor, com backup agendado e restauração testada         | Migração por dump e restauração; a conexão vem de variáveis de ambiente          |
 
 O código é o mesmo nas duas fases; só muda a variável de conexão. Como nada depende da internet, o teste "com a internet desligada" da 2.0 passa para o sistema inteiro. O compose também sobe um SMTP de teste que captura os e-mails (algo como o Mailpit), então o fluxo de convite funciona sem rede.
 
 **SQLite para uso offline**
 
-| Opção | O que faz | Complexidade | Risco |
-| --- | --- | --- | --- |
-| A · Sem offline | O app avisa "sem conexão" e bloqueia escrita | Nenhuma | Bandeja inútil fora da rede |
-| B · Cache de leitura | O SQLite guarda o último estado das tarefas do usuário; lê offline, não escreve | Baixa: reaproveita o `infra-sqlite` | Dado desatualizado; precisa limpar ao sair do time |
-| C · Offline-first com fila de escrita | Grava offline e sincroniza depois | Alta: idempotência, conflito de versão e regras de sprint e de ferramentas reaplicadas na volta | Alto: merge e escritas sobre dados velhos |
+| Opção                                 | O que faz                                                                       | Complexidade                                                                                    | Risco                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| A · Sem offline                       | O app avisa "sem conexão" e bloqueia escrita                                    | Nenhuma                                                                                         | Bandeja inútil fora da rede                        |
+| B · Cache de leitura                  | O SQLite guarda o último estado das tarefas do usuário; lê offline, não escreve | Baixa: reaproveita o `infra-sqlite`                                                             | Dado desatualizado; precisa limpar ao sair do time |
+| C · Offline-first com fila de escrita | Grava offline e sincroniza depois                                               | Alta: idempotência, conflito de versão e regras de sprint e de ferramentas reaplicadas na volta | Alto: merge e escritas sobre dados velhos          |
 
 A recomendação é a opção B, entregue no M6b, e a C só se o piloto mostrar necessidade real. Com o banco na LAN, estar offline quase sempre significa estar fora da rede, então o ganho de B é pequeno. O cache fica por usuário e por time e é apagado ao sair ou ao ser removido do time. O SQLite continua útil na Onda 1, nos testes e na migração dos dados atuais (P1-07).
 
