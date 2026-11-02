@@ -166,4 +166,26 @@ export const panelCopy = {
   boardColumnEmpty: 'Nada aqui.',
   moveTask: 'Mover',
   moveTaskToState: (title: string) => `Mover ${title} para outro estado`,
+  toolsHint: 'Desligar esconde a ferramenta do menu depois de aplicar. Nada é apagado.',
+  toolsLoading: 'Carregando ferramentas…',
+  toolsError: 'Não foi possível carregar as ferramentas.',
+  toolsPresets: 'Presets do time',
+  toolsCustom: 'Conjunto personalizado: não bate com nenhum preset.',
+  toolsCoreHint: 'Base do time, sempre ligada.',
+  toolsNoDependency: 'Sem dependências.',
+  toolsDependsOn: (names: string) => `Depende de ${names}.`,
+  toolsSignalOn: 'Ligada',
+  toolsSignalOff: 'Desligada',
+  toolsSignalWinding: 'Encerrando',
+  toolsEntered: (name: string) => `Entra no rascunho: ${name}.`,
+  toolsEnteredWith: (name: string, pulled: string) =>
+    `Entra no rascunho: ${name}. Também entra por dependência: ${pulled}.`,
+  toolsLeft: (name: string) => `Sai do rascunho: ${name}.`,
+  toolsLeftWith: (name: string, leaving: string) =>
+    `Sai do rascunho: ${name}. Também sai por dependência: ${leaving}.`,
+  toolsRefusedConflict: (name: string, others: string) =>
+    `Não dá para ligar ${name}: conflita com ${others}.`,
+  toolsRefusedMissing: (name: string, missing: string) =>
+    `Não dá para ligar ${name}: precisa de ${missing}.`,
+  toolsPresetApplied: (name: string) => `Preset no rascunho: ${name}.`,
 } as const

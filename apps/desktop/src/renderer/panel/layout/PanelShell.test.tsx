@@ -2,6 +2,9 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SidebarScreenId } from '@agilebox/contract'
+import { ApiProvider } from '../../shared/api/ApiProvider'
+import { QueryProvider } from '../../shared/query/QueryProvider'
+import { createFakeApi } from '../../shared/testing/fake-api'
 import { PanelShell } from './PanelShell'
 
 afterEach(cleanup)
@@ -124,5 +127,68 @@ describe('barra lateral por nível, papel e ferramentas', () => {
     await userEvent.click(nav.getByRole('button', { name: 'Backlog' }))
 
     expect(onViewChange).toHaveBeenCalledWith('backlog')
+  })
+})
+
+describe('Ferramentas na área principal (M2.10a)', () => {
+  const MANAGER_ADVANCED: readonly SidebarScreenId[] = [
+    'projects',
+    'agenda',
+    'backlog',
+    'sprints',
+    'dashboard',
+    'impediments',
+    'integrations',
+    'tools',
+  ]
+
+  /** Renderiza a shell com a API falsa, porque a tela Ferramentas lê o time pela API. */
+  function renderToolsShell(screens: readonly SidebarScreenId[]) {
+    const api = createFakeApi()
+    vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
+      userId: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
+      organizationId: '01J8Y4G2XK8Z1S6M3Q9W0A5G01',
+      role: 'manager',
+    })
+    vi.spyOn(api.teamModules, 'get').mockResolvedValue({
+      level: 'advanced',
+      screens: [...screens],
+      statuses: [
+        { moduleId: 'core', state: 'active' },
+        { moduleId: 'agenda', state: 'active' },
+      ],
+    })
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <PanelShell
+            view="tools"
+            managerContext={null}
+            screens={screens}
+            onViewChange={() => undefined}
+            onMinimize={() => undefined}
+            onToggleExpand={() => undefined}
+            onClose={() => undefined}
+            onNewTask={() => undefined}
+          >
+            <p>Conteúdo do quadro</p>
+          </PanelShell>
+        </QueryProvider>
+      </ApiProvider>,
+    )
+  }
+
+  it('gestor no Avançado abre a tela Ferramentas no lugar do Quadro', async () => {
+    renderToolsShell(MANAGER_ADVANCED)
+
+    expect(await screen.findByRole('switch', { name: 'Agenda' })).toBeTruthy()
+    expect(screen.queryByText('Conteúdo do quadro')).toBeNull()
+  })
+
+  it('sem a liberação do servidor, Ferramentas não aparece e o Quadro segue na área', () => {
+    renderToolsShell(['projects', 'agenda'])
+
+    expect(screen.getByText('Conteúdo do quadro')).toBeTruthy()
+    expect(screen.queryByRole('switch')).toBeNull()
   })
 })

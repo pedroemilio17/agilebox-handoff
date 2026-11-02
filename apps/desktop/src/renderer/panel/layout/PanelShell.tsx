@@ -4,6 +4,7 @@ import type { SessionUserDto, SidebarScreenId } from '@agilebox/contract'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
+import { ToolsView } from '../tools/ToolsView'
 import styles from './PanelShell.module.css'
 
 export type PanelView = SidebarScreenId | 'plugins' | 'settings'
@@ -154,6 +155,8 @@ export function PanelShell({
             agenda
           ) : visibleView === 'settings' ? (
             <SettingsView />
+          ) : visibleView === 'tools' ? (
+            <ToolsView />
           ) : visibleView === 'plugins' ? (
             <EmptyState title={panelCopy.comingSoon} />
           ) : (
