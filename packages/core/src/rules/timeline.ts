@@ -27,6 +27,13 @@ function responsible(task: Task): UserId {
   if (!participant || participant.kind !== 'user') throw new Error('Tarefa sem responsável')
   return participant.userId
 }
+/**
+ * Texto livre do critério (até 200 caracteres, vindo do usuário): vira uma linha só, sem controles.
+ * O texto é só texto: nada aqui o interpreta como valor (R$, horas) nem como marcação.
+ */
+function criterionText(text: string): string {
+  return `“${text.replace(/[\s\p{Cc}]+/gu, ' ').trim()}”`
+}
 function sameTicket(a: Ticket | null, b: Ticket | null): boolean {
   return a === null || b === null ? a === b : a.id === b.id && a.url === b.url
 }
@@ -139,5 +146,20 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `adicionou ${name(event.payload.participant)} como ${event.payload.role === 'responsible' ? 'Responsável' : 'Apoio'}`
     case 'participant_removed':
       return `removeu ${name(event.payload.participant)} de ${event.payload.role === 'responsible' ? 'Responsável' : 'Apoio'}`
+    case 'criterion_added':
+      return `adicionou o critério ${criterionText(event.payload.text)}`
+    case 'criterion_edited':
+      return `editou o critério ${criterionText(event.payload.text)}`
+    case 'criterion_removed':
+      return `removeu o critério ${criterionText(event.payload.text)}`
+    case 'criterion_done_changed':
+      return event.payload.done
+        ? `marcou o critério ${criterionText(event.payload.text)} como feito`
+        : `desmarcou o critério ${criterionText(event.payload.text)}`
+    case 'estimate_changed':
+      if (event.payload.after === null) return 'removeu a estimativa'
+      if (event.payload.before === null)
+        return `definiu a estimativa em ${formatHours(event.payload.after)}`
+      return `alterou a estimativa de ${formatHours(event.payload.before)} para ${formatHours(event.payload.after)}`
   }
 }

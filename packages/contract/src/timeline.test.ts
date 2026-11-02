@@ -35,6 +35,27 @@ describe('schemas da linha do tempo', () => {
     }
   })
 
+  it('aceita os eventos de critérios de aceite e de estimativa', () => {
+    for (const type of [
+      'criterion_added',
+      'criterion_edited',
+      'criterion_done_changed',
+      'criterion_removed',
+      'estimate_changed',
+    ]) {
+      const event = {
+        id: eventId,
+        taskId,
+        at: '2026-10-31T12:30:00.000Z',
+        actorUserId,
+        asManager: true,
+        type,
+        text: 'alterou a estimativa de 2 h para 3 h',
+      }
+      expect(listTimelineOutputSchema.parse([event])).toEqual([event])
+    }
+  })
+
   it('rejeita ID inválido, tipo desconhecido e data inválida', () => {
     expect(listTimelineInputSchema.safeParse({ taskId: 'tarefa-1' }).success).toBe(false)
     expect(

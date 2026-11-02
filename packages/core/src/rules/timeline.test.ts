@@ -109,6 +109,69 @@ describe('linha do tempo', () => {
     }
   })
 
+  it('descreve os eventos de critérios de aceite com o texto do critério, sem valores', () => {
+    const added = { ...base, type: 'criterion_added' as const, payload: { text: 'Botão visível' } }
+    const edited = { ...base, type: 'criterion_edited' as const, payload: { text: 'Botão claro' } }
+    const removed = {
+      ...base,
+      type: 'criterion_removed' as const,
+      payload: { text: 'Botão claro' },
+    }
+    const checked = {
+      ...base,
+      type: 'criterion_done_changed' as const,
+      payload: { text: 'Botão claro', done: true },
+    }
+    const unchecked = { ...checked, payload: { text: 'Botão claro', done: false } }
+    expect(describeEvent(added, viewer, names)).toBe('adicionou o critério “Botão visível”')
+    expect(describeEvent(edited, viewer, names)).toBe('editou o critério “Botão claro”')
+    expect(describeEvent(removed, viewer, names)).toBe('removeu o critério “Botão claro”')
+    expect(describeEvent(checked, viewer, names)).toBe('marcou o critério “Botão claro” como feito')
+    expect(describeEvent(unchecked, viewer, names)).toBe('desmarcou o critério “Botão claro”')
+    for (const event of [added, edited, removed, checked, unchecked]) {
+      expect(describeEvent({ ...event, asManager: true }, viewer, names)).toBe(
+        describeEvent(event, viewer, names),
+      )
+    }
+  })
+
+  it('trata o texto livre do critério como texto: R$ e quebras não viram valor nem quebram a linha', () => {
+    const tricky = {
+      ...base,
+      type: 'criterion_added' as const,
+      payload: { text: 'Custo abaixo de R$ 50,00\n\t<b>x</b>' },
+    }
+    const text = describeEvent(tricky, viewer, names)
+    expect(text).toBe('adicionou o critério “Custo abaixo de R$ 50,00 <b>x</b>”')
+    expect(text).not.toMatch(/\n|\t/)
+    expect(describeEvent(tricky, { ...viewer, role: 'manager' }, names)).toBe(text)
+  })
+
+  it('descreve a estimativa em horas, sem custo', () => {
+    const changed = {
+      ...base,
+      type: 'estimate_changed' as const,
+      payload: { before: 200, after: 300 },
+    }
+    const defined = {
+      ...base,
+      type: 'estimate_changed' as const,
+      payload: { before: null, after: 250 },
+    }
+    const removed = {
+      ...base,
+      type: 'estimate_changed' as const,
+      payload: { before: 0, after: null },
+    }
+    expect(describeEvent(changed, viewer, names)).toBe('alterou a estimativa de 2 h para 3 h')
+    expect(describeEvent(defined, viewer, names)).toBe('definiu a estimativa em 2,5 h')
+    expect(describeEvent(removed, viewer, names)).toBe('removeu a estimativa')
+    expect(describeEvent({ ...changed, asManager: true }, viewer, names)).toBe(
+      'alterou a estimativa de 2 h para 3 h',
+    )
+    expect(describeEvent(defined, viewer, names)).not.toMatch(/R\$/)
+  })
+
   it('não gera evento de linha do tempo para reordenar o backlog', () => {
     const inBacklog = { ...task, backlogRank: 1, onBoard: false }
     const reordered = { ...inBacklog, backlogRank: 2 }

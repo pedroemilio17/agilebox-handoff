@@ -15,6 +15,7 @@ interface EventBase {
 type Change<T> = { readonly before: T; readonly after: T }
 type ParticipantChange = { readonly participant: Participant; readonly role: ParticipationRole }
 type ParticipantValueChange = Change<number> & { readonly participant: Participant }
+type CriterionText = { readonly text: string }
 
 export type TimelineEvent = EventBase &
   (
@@ -38,6 +39,17 @@ export type TimelineEvent = EventBase &
         readonly type: 'participant_added' | 'participant_removed'
         readonly payload: ParticipantChange
       }
+    /** Texto do critério depois da mudança (sem o texto anterior: payload mínimo). */
+    | {
+        readonly type: 'criterion_added' | 'criterion_edited' | 'criterion_removed'
+        readonly payload: CriterionText
+      }
+    | {
+        readonly type: 'criterion_done_changed'
+        readonly payload: CriterionText & { readonly done: boolean }
+      }
+    /** Estimativa em centésimos de hora, nunca em custo. Nulo = sem estimativa. */
+    | { readonly type: 'estimate_changed'; readonly payload: Change<number | null> }
   )
 
 export function createTimelineEvent(event: TimelineEvent): TimelineEvent {
