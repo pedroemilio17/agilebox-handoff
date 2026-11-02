@@ -300,3 +300,17 @@ Sem commit. Só `packages/application` (projetos e helper), IPC em `apps/desktop
 - Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1053 testes, formatação, lint com zero avisos, tipos e build ok).
 - Fora deste marco: `ctx` nos casos de uso de tarefas, participações, contribuintes, usuários, sessão, agenda, linha do tempo e dashboard (M1.10b a d), teste de tipo do M1.11.
+
+## M1.10b · TenantContext nos casos de uso de tarefas e participações (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (tarefas, participações e testes), chamadores em `apps/desktop/src/main/ipc/register-handlers.ts` e `create-use-cases.test.ts`. Sem tela, banco novo nem mudança de comportamento. D9 aplicada como decidida, no mesmo padrão de M1.10a.
+
+- Assinatura nova: `execute(ctx, actor, input)` em todos os casos de uso de `use-cases/tasks/tasks.ts` (criar, detalhar, atualizar, mover, arquivar, desarquivar), `use-cases/tasks/list-tasks.ts` (quadro, fluxo, quadro da equipe, recentes, frequentes, busca, registro de abertura) e `use-cases/participations/participations.ts` (adicionar, remover, horas, valor/hora).
+- Cada caso de uso chama `assertTenant(ctx, actor)` antes de qualquer leitura ou escrita e usa o `organizationId` devolvido. Os métodos auxiliares (`ChangeTask.change`, `findEditableTask`, `recordChange`, `mapParticipation` e `scopedBoard`) recebem `ctx` e refazem a checagem, para que nenhum caminho use `actor.organizationId` direto.
+- Os casos de uso que só repassam para `change` (atualizar, mover, arquivar e desarquivar) passam `ctx` adiante, sem checagem própria.
+- Chamadores atualizados com `createTenantContext(actor)`: canais `tasks.*` e `participations.*` em `register-handlers.ts`, `seed.ts` do `infra-sqlite`, e os usos em `create-use-cases.test.ts` e nos testes de tarefas e participações.
+- Testes novos (bloco "isolamento entre organizações (M1.10b)" em `tasks.test.ts` e `participations.test.ts`): listagens e busca de outro time vazias, inclusive para gestor com filtro por usuário; tarefa alheia dá `NOT_FOUND` em leitura, escrita, arquivar, desarquivar e registro de abertura, e fica intacta; envolvimentos de tarefa alheia (adicionar, remover, horas, valor/hora) dão `NOT_FOUND`; criar tarefa em projeto alheio dá `NOT_FOUND` e não grava; contexto de um time com ator de outro dá `FORBIDDEN` e não grava nada.
+- Os timelines e o dashboard (`use-cases/timeline`, `use-cases/dashboard`) ficam para M1.10d; `list-timeline` ainda recebe `actor` sem `ctx`, por isso `create-use-cases.test.ts` mantém essa chamada como está.
+- Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1059 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110b-check-3.log`.
+- Fora deste marco: `ctx` nos casos de uso de contribuintes, usuários, sessão, agenda, linha do tempo e dashboard (M1.10c e d), teste de tipo do M1.11.

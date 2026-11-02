@@ -68,47 +68,67 @@ export function registerHandlers(
     useCases.projects.removeMember.execute(createTenantContext(actor), actor, input),
   )
   register('tasks.getBoardFlow', (actor, input) =>
-    useCases.tasks.getBoardFlow.execute(actor, {
+    useCases.tasks.getBoardFlow.execute(createTenantContext(actor), actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
       ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
     }),
   )
   register('tasks.listBoard', (actor, input) =>
     input.scope === 'team'
-      ? useCases.tasks.listTeamBoard.execute(actor, {
+      ? useCases.tasks.listTeamBoard.execute(createTenantContext(actor), actor, {
           ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
         })
-      : useCases.tasks.listBoard.execute(actor, {
+      : useCases.tasks.listBoard.execute(createTenantContext(actor), actor, {
           ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
           ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
         }),
   )
   register('tasks.listTeamBoard', (actor, input) =>
-    useCases.tasks.listTeamBoard.execute(actor, {
+    useCases.tasks.listTeamBoard.execute(createTenantContext(actor), actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
     }),
   )
-  register('tasks.get', (actor, input) => useCases.tasks.getDetail.execute(actor, input))
-  register('tasks.create', (actor, input) => useCases.tasks.create.execute(actor, input))
-  register('tasks.update', (actor, input) => useCases.tasks.update.execute(actor, input))
-  register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
-  register('tasks.archive', (actor, input) => useCases.tasks.archive.execute(actor, input))
-  register('tasks.unarchive', (actor, input) => useCases.tasks.unarchive.execute(actor, input))
-  register('tasks.listRecent', (actor) => useCases.tasks.listRecent.execute(actor))
-  register('tasks.listFrequent', (actor) => useCases.tasks.listFrequent.execute(actor))
-  register('tasks.search', (actor, input) => useCases.tasks.search.execute(actor, input))
-  register('tasks.recordOpen', (actor, input) => useCases.tasks.recordOpen.execute(actor, input))
+  register('tasks.get', (actor, input) =>
+    useCases.tasks.getDetail.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.create', (actor, input) =>
+    useCases.tasks.create.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.update', (actor, input) =>
+    useCases.tasks.update.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.move', (actor, input) =>
+    useCases.tasks.move.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.archive', (actor, input) =>
+    useCases.tasks.archive.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.unarchive', (actor, input) =>
+    useCases.tasks.unarchive.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.listRecent', (actor) =>
+    useCases.tasks.listRecent.execute(createTenantContext(actor), actor),
+  )
+  register('tasks.listFrequent', (actor) =>
+    useCases.tasks.listFrequent.execute(createTenantContext(actor), actor),
+  )
+  register('tasks.search', (actor, input) =>
+    useCases.tasks.search.execute(createTenantContext(actor), actor, input),
+  )
+  register('tasks.recordOpen', (actor, input) =>
+    useCases.tasks.recordOpen.execute(createTenantContext(actor), actor, input),
+  )
   register('participations.add', (actor, input) =>
-    useCases.participations.add.execute(actor, input),
+    useCases.participations.add.execute(createTenantContext(actor), actor, input),
   )
   register('participations.remove', (actor, input) =>
-    useCases.participations.remove.execute(actor, input),
+    useCases.participations.remove.execute(createTenantContext(actor), actor, input),
   )
   register('participations.setHours', (actor, input) =>
-    useCases.participations.setHours.execute(actor, input),
+    useCases.participations.setHours.execute(createTenantContext(actor), actor, input),
   )
   register('participations.setRate', (actor, input) =>
-    useCases.participations.setRate.execute(actor, input),
+    useCases.participations.setRate.execute(createTenantContext(actor), actor, input),
   )
   register('contributors.list', (actor) => useCases.contributors.list.execute(actor))
   register('contributors.create', (actor, input) =>

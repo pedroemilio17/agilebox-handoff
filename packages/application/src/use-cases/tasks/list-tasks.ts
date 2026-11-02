@@ -12,37 +12,38 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, TenantContext } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { assertTenant } from '../tenant-scope'
 
 export interface ListBoardInput {
   readonly projectId?: string
   readonly forUserId?: string
 }
 
-async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
+async function scopedBoard(deps: AppDeps, ctx: TenantContext, actor: Actor, input: ListBoardInput) {
+  const organizationId = assertTenant(ctx, actor)
   if (input.forUserId !== undefined && actor.role !== 'manager')
     throw new PermissionDeniedError('Somente o gestor pode filtrar por usuário')
   const query = {
     ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
     userId: input.forUserId === undefined ? actor.userId : toUserId(input.forUserId),
   }
-  return deps.tasks.listBoard(actor.organizationId, query)
+  return deps.tasks.listBoard(organizationId, query)
 }
 
 export class GetBoardFlow {
   constructor(private readonly deps: AppDeps) {}
-  async execute(actor: Actor, input: ListBoardInput) {
-    const tasks = await scopedBoard(this.deps, actor, input)
-    const now = await this.deps.clock.now(actor.organizationId)
+  async execute(ctx: TenantContext, actor: Actor, input: ListBoardInput) {
+    const organizationId = assertTenant(ctx, actor)
+    const tasks = await scopedBoard(this.deps, ctx, actor, input)
+    const now = await this.deps.clock.now(organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const week = flowWeeks(toDateOnly(new Date(now), timeZone), timeZone)[5]!
     const events = (
-      await Promise.all(
-        tasks.map((task) => this.deps.timeline.listByTask(actor.organizationId, task.id)),
-      )
+      await Promise.all(tasks.map((task) => this.deps.timeline.listByTask(organizationId, task.id)))
     ).flat()
     return {
       cycleDays: flowMetrics(tasks, events, week, now).cycleDays,
@@ -55,16 +56,21 @@ export class GetBoardFlow {
 export class ListBoard {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: ListBoardInput): Promise<readonly TaskDto[]> {
-    const tasks = await scopedBoard(this.deps, actor, input)
-    const now = await this.deps.clock.now(actor.organizationId)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: ListBoardInput,
+  ): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    const tasks = await scopedBoard(this.deps, ctx, actor, input)
+    const now = await this.deps.clock.now(organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const today = toDateOnly(new Date(now), timeZone)
     return Promise.all(
       tasks.map(async (task) => {
         const events =
           task.status === 'in_progress' || task.status === 'review'
-            ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
+            ? await this.deps.timeline.listByTask(organizationId, task.id)
             : []
         return {
           ...toTaskDto(task),
@@ -79,10 +85,15 @@ export class ListBoard {
 export class ListTeamBoard {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: { readonly projectId?: string }): Promise<readonly TaskDto[]> {
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly projectId?: string },
+  ): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
     const tasks = await this.deps.tasks.listBoard(
-      actor.organizationId,
+      organizationId,
       projectId === undefined ? {} : { projectId },
     )
     return tasks
@@ -94,41 +105,51 @@ export class ListTeamBoard {
 export class ListRecentTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<readonly TaskDto[]> {
-    return (await this.deps.tasks.listRecent(actor.organizationId, actor.userId)).map(toTaskDto)
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    return (await this.deps.tasks.listRecent(organizationId, actor.userId)).map(toTaskDto)
   }
 }
 
 export class ListFrequentTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<readonly TaskDto[]> {
-    return (await this.deps.tasks.listFrequent(actor.organizationId, actor.userId)).map(toTaskDto)
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    return (await this.deps.tasks.listFrequent(organizationId, actor.userId)).map(toTaskDto)
   }
 }
 
 export class SearchTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: { readonly query: string }): Promise<readonly TaskDto[]> {
-    return (await this.deps.tasks.search(actor.organizationId, input.query, actor.userId)).map(
-      toTaskDto,
-    )
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly query: string },
+  ): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    return (await this.deps.tasks.search(organizationId, input.query, actor.userId)).map(toTaskDto)
   }
 }
 
 export class RecordTaskOpen {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: { readonly taskId: string }): Promise<void> {
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly taskId: string },
+  ): Promise<void> {
+    const organizationId = assertTenant(ctx, actor)
     const taskId = toTaskId(input.taskId)
-    const task = await this.deps.tasks.findById(actor.organizationId, taskId)
+    const task = await this.deps.tasks.findById(organizationId, taskId)
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    const members = await this.deps.projects.listMembers(actor.organizationId, task.projectId)
+    const members = await this.deps.projects.listMembers(organizationId, task.projectId)
     const isMember = members.some((member) => member.userId === actor.userId)
     if (!canViewTask(actor, task, isMember))
       throw new PermissionDeniedError('Sem acesso a esta tarefa')
-    const openedAt = await this.deps.clock.now(actor.organizationId)
-    await this.deps.taskOpens.recordOpen(actor.organizationId, taskId, actor.userId, openedAt)
+    const openedAt = await this.deps.clock.now(organizationId)
+    await this.deps.taskOpens.recordOpen(organizationId, taskId, actor.userId, openedAt)
   }
 }

@@ -97,11 +97,11 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   for (const item of demoSeedData.tasks) {
     const owner = users[item.owner]!
     actor = { userId: owner.id, organizationId, role: owner.role }
-    const task = await useCases.tasks.create.execute(actor, {
+    const task = await useCases.tasks.create.execute(createTenantContext(actor), actor, {
       projectId: projects[item.project]!.id,
       title: item.title,
     })
-    await useCases.tasks.update.execute(actor, {
+    await useCases.tasks.update.execute(createTenantContext(actor), actor, {
       taskId: task.id,
       changes: {
         description: 'description' in item ? item.description : '',
@@ -109,34 +109,39 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       },
     })
     if (item.status !== 'planning') {
-      await useCases.tasks.move.execute(actor, { taskId: task.id, status: item.status })
+      await useCases.tasks.move.execute(createTenantContext(actor), actor, {
+        taskId: task.id,
+        status: item.status,
+      })
     }
     if (item.owner === 0 && item.title === 'Atualizar documentação da API') {
-      const support = await useCases.participations.add.execute(actor, {
+      const support = await useCases.participations.add.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participant: { kind: 'user', userId: users[1]!.id },
         role: 'support',
       })
-      await useCases.participations.setHours.execute(actor, {
+      await useCases.participations.setHours.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participationId: support.id,
         hours: '2',
       })
-      const details = await useCases.tasks.getDetail.execute(actor, { taskId: task.id })
+      const details = await useCases.tasks.getDetail.execute(createTenantContext(actor), actor, {
+        taskId: task.id,
+      })
       const responsible = details.participations.find((part) => part.role === 'responsible')
       if (responsible) {
-        await useCases.participations.setHours.execute(actor, {
+        await useCases.participations.setHours.execute(createTenantContext(actor), actor, {
           taskId: task.id,
           participationId: responsible.id,
           hours: '6',
         })
       }
       actor = { userId: users[4]!.id, organizationId, role: 'manager' }
-      await useCases.tasks.update.execute(actor, {
+      await useCases.tasks.update.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         changes: { deadline: null },
       })
-      await useCases.tasks.update.execute(actor, {
+      await useCases.tasks.update.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         changes: { deadline: item.deadline },
       })

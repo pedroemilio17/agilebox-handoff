@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createUser, toOrganizationId, toTaskId, toUserId } from '@agilebox/core'
+import {
+  createTenantContext,
+  createUser,
+  toOrganizationId,
+  toTaskId,
+  toUserId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -48,6 +54,7 @@ describe('casos de uso de tarefas', () => {
       aUser().with({ id: otherUserId, name: 'Bruno', defaultRateCents: 7200 }).build(),
     )
     const created = await useCases.tasks.create.execute(
+      createTenantContext({ ...actor, role: 'manager' }),
       { ...actor, role: 'manager' },
       {
         projectId: project.id,
@@ -91,7 +98,7 @@ describe('casos de uso de tarefas', () => {
     await unitOfWork.repositories.users.save(organizationId, aUser().build())
     const manager = { ...actor, role: 'manager' as const }
     await expect(
-      useCases.tasks.create.execute(manager, {
+      useCases.tasks.create.execute(createTenantContext(manager), manager, {
         projectId: project.id,
         title: 'Inválida',
         responsibleId: otherUserId,
@@ -101,7 +108,7 @@ describe('casos de uso de tarefas', () => {
       new Error('Falha ao persistir histórico'),
     )
     await expect(
-      useCases.tasks.create.execute(manager, {
+      useCases.tasks.create.execute(createTenantContext(manager), manager, {
         projectId: project.id,
         title: 'Falha',
         deadline: '2026-01-12',
@@ -116,6 +123,7 @@ describe('casos de uso de tarefas', () => {
     const task = { ...aTask().build(), status: 'review' as const }
     await unitOfWork.repositories.tasks.save(organizationId, task)
     const result = await useCases.tasks.update.execute(
+      createTenantContext({ ...actor, role: 'manager' }),
       { ...actor, role: 'manager' },
       { taskId: task.id, changes: { progressConfirmed: true } },
     )
@@ -134,12 +142,13 @@ describe('casos de uso de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await expect(
       useCases.tasks.update.execute(
+        createTenantContext({ ...actor, userId: otherUserId }),
         { ...actor, userId: otherUserId },
         { taskId: task.id, changes: { progressConfirmed: true } },
       ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
-      useCases.tasks.update.execute(actor, {
+      useCases.tasks.update.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         changes: { progressConfirmed: true },
       }),
@@ -158,7 +167,7 @@ describe('casos de uso de tarefas', () => {
         createUser({ ...aUser().build(), id: managerId, role: 'manager' }),
       )
       const manager: Actor = { organizationId, userId: managerId, role: 'manager' }
-      const created = await useCases.tasks.create.execute(manager, {
+      const created = await useCases.tasks.create.execute(createTenantContext(manager), manager, {
         projectId: project.id,
         title: 'Tarefa por coluna',
         status,
@@ -207,7 +216,7 @@ describe('casos de uso de tarefas', () => {
       }),
     )
 
-    const created = await useCases.tasks.create.execute(actor, {
+    const created = await useCases.tasks.create.execute(createTenantContext(actor), actor, {
       projectId: project.id,
       title: 'Nova tarefa',
     })
@@ -229,7 +238,10 @@ describe('casos de uso de tarefas', () => {
     const project = aProject().with({ createdBy: otherUserId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.tasks.create.execute(actor, { projectId: project.id, title: 'Tarefa' }),
+      useCases.tasks.create.execute(createTenantContext(actor), actor, {
+        projectId: project.id,
+        title: 'Tarefa',
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
@@ -275,8 +287,11 @@ describe('casos de uso de tarefas', () => {
         createdAt: project.createdAt,
       }),
     )
-    const editable = await useCases.tasks.getDetail.execute(actor, { taskId: task.id })
+    const editable = await useCases.tasks.getDetail.execute(createTenantContext(actor), actor, {
+      taskId: task.id,
+    })
     const readOnly = await useCases.tasks.getDetail.execute(
+      createTenantContext({ ...actor, userId: otherUserId }),
       { ...actor, userId: otherUserId },
       { taskId: task.id },
     )
@@ -289,7 +304,7 @@ describe('casos de uso de tarefas', () => {
     const task = aTask().build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
-    const result = await useCases.tasks.update.execute(manager, {
+    const result = await useCases.tasks.update.execute(createTenantContext(manager), manager, {
       taskId: task.id,
       changes: { title: 'Título novo', description: 'Descrição' },
     })
@@ -309,7 +324,10 @@ describe('casos de uso de tarefas', () => {
     const task = aTask().ownedBy(otherUser).build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await expect(
-      useCases.tasks.update.execute(actor, { taskId: task.id, changes: { title: 'Alterada' } }),
+      useCases.tasks.update.execute(createTenantContext(actor), actor, {
+        taskId: task.id,
+        changes: { title: 'Alterada' },
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
@@ -323,7 +341,7 @@ describe('casos de uso de tarefas', () => {
     unitOfWork.repositories.timeline.saveMany = () =>
       Promise.reject(new Error('falha ao gravar evento'))
     await expect(
-      useCases.tasks.update.execute(actor, {
+      useCases.tasks.update.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         changes: { title: 'Título alterado' },
       }),
@@ -338,7 +356,10 @@ describe('casos de uso de tarefas', () => {
     const { useCases, unitOfWork } = setup()
     const task = aTask().build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
-    const moved = await useCases.tasks.move.execute(actor, { taskId: task.id, status: 'review' })
+    const moved = await useCases.tasks.move.execute(createTenantContext(actor), actor, {
+      taskId: task.id,
+      status: 'review',
+    })
     expect(moved.status).toBe('review')
     expect(
       await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
@@ -355,11 +376,11 @@ describe('casos de uso de tarefas', () => {
     const { useCases, unitOfWork, notifier } = setup()
     const task = aTask().build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
-    await useCases.tasks.archive.execute(actor, { taskId: task.id })
+    await useCases.tasks.archive.execute(createTenantContext(actor), actor, { taskId: task.id })
     expect(
       (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.archivedAt,
     ).toBe('2026-01-02T00:00:00.000Z')
-    await useCases.tasks.unarchive.execute(actor, { taskId: task.id })
+    await useCases.tasks.unarchive.execute(createTenantContext(actor), actor, { taskId: task.id })
     expect(
       (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.archivedAt,
     ).toBeNull()
@@ -374,6 +395,7 @@ describe('casos de uso de tarefas', () => {
     const task = aTask().build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await useCases.tasks.archive.execute(
+      createTenantContext({ userId: managerId, organizationId, role: 'manager' }),
       { userId: managerId, organizationId, role: 'manager' },
       {
         taskId: task.id,
@@ -389,7 +411,9 @@ describe('casos de uso de tarefas', () => {
     const otherUser = aUser().with({ id: otherUserId, name: 'Bia Lima' }).build()
     const task = aTask().ownedBy(otherUser).build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
-    await expect(useCases.tasks.archive.execute(actor, { taskId: task.id })).rejects.toMatchObject({
+    await expect(
+      useCases.tasks.archive.execute(createTenantContext(actor), actor, { taskId: task.id }),
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
     expect(
@@ -401,7 +425,94 @@ describe('casos de uso de tarefas', () => {
   it('valida entrada de atualização', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.tasks.update.execute(actor, { taskId: 'inválido', changes: { title: 'x' } }),
+      useCases.tasks.update.execute(createTenantContext(actor), actor, {
+        taskId: 'inválido',
+        changes: { title: 'x' },
+      }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+})
+
+describe('isolamento entre organizações (M1.10b)', () => {
+  const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+  const outsider: Actor = {
+    userId: toUserId('00000000000000000000000077'),
+    organizationId: otherOrganizationId,
+    role: 'manager',
+  }
+  const outsiderCtx = createTenantContext(outsider)
+
+  function setupWithTask() {
+    const scope = setup()
+    const task = aTask().build()
+    void scope.unitOfWork.repositories.projects.save(organizationId, aProject().build())
+    void scope.unitOfWork.repositories.tasks.save(organizationId, task)
+    return { ...scope, task }
+  }
+
+  it('listagens de outro time não devolvem tarefas deste time, nem para gestor', async () => {
+    const { useCases, task } = setupWithTask()
+    await expect(useCases.tasks.listTeamBoard.execute(outsiderCtx, outsider, {})).resolves.toEqual(
+      [],
+    )
+    await expect(
+      useCases.tasks.listBoard.execute(outsiderCtx, outsider, { forUserId: userId }),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.tasks.search.execute(outsiderCtx, outsider, { query: task.title }),
+    ).resolves.toEqual([])
+  })
+
+  it('tarefa de outro time dá NOT_FOUND em leitura e escrita e fica intacta', async () => {
+    const { useCases, unitOfWork, task } = setupWithTask()
+    const taskId = task.id
+    await expect(
+      useCases.tasks.getDetail.execute(outsiderCtx, outsider, { taskId }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.tasks.update.execute(outsiderCtx, outsider, {
+        taskId,
+        changes: { title: 'Invadida' },
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.tasks.move.execute(outsiderCtx, outsider, { taskId, status: 'done' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.tasks.archive.execute(outsiderCtx, outsider, { taskId }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.tasks.unarchive.execute(outsiderCtx, outsider, { taskId }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.tasks.recordOpen.execute(outsiderCtx, outsider, { taskId }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(await unitOfWork.repositories.tasks.findById(organizationId, taskId)).toEqual(task)
+  })
+
+  it('criar tarefa em projeto de outro time dá NOT_FOUND e não grava nada', async () => {
+    const { useCases, unitOfWork, task } = setupWithTask()
+    const before = await unitOfWork.repositories.tasks.listBoard(organizationId, {})
+    await expect(
+      useCases.tasks.create.execute(outsiderCtx, outsider, {
+        projectId: task.projectId,
+        title: 'Intrusa',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(await unitOfWork.repositories.tasks.listBoard(organizationId, {})).toEqual(before)
+  })
+
+  it('contexto de um time com ator de outro dá FORBIDDEN e não altera nada', async () => {
+    const { useCases, unitOfWork, task } = setupWithTask()
+    await expect(
+      useCases.tasks.move.execute(createTenantContext(actor), outsider, {
+        taskId: task.id,
+        status: 'review',
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      useCases.tasks.listTeamBoard.execute(createTenantContext(actor), outsider, {}),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(await unitOfWork.repositories.tasks.findById(organizationId, task.id)).toEqual(task)
   })
 })

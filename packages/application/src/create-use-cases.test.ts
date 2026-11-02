@@ -51,22 +51,37 @@ describe('composição dos casos de uso', () => {
         name: 'Projeto do roteiro',
       },
     )
-    const task = await useCases.tasks.create.execute(collaborator, {
-      projectId: project.id,
-      title: 'Preparar entrega',
-    })
-    await useCases.tasks.move.execute(collaborator, { taskId: task.id, status: 'in_progress' })
-    const participation = await useCases.participations.add.execute(collaborator, {
+    const task = await useCases.tasks.create.execute(
+      createTenantContext(collaborator),
+      collaborator,
+      {
+        projectId: project.id,
+        title: 'Preparar entrega',
+      },
+    )
+    await useCases.tasks.move.execute(createTenantContext(collaborator), collaborator, {
       taskId: task.id,
-      participant: { kind: 'user', userId: supportId },
-      role: 'support',
+      status: 'in_progress',
     })
-    await useCases.participations.setHours.execute(collaborator, {
-      taskId: task.id,
-      participationId: participation.id,
-      hours: '2,50',
-    })
-    await useCases.tasks.update.execute(manager, {
+    const participation = await useCases.participations.add.execute(
+      createTenantContext(collaborator),
+      collaborator,
+      {
+        taskId: task.id,
+        participant: { kind: 'user', userId: supportId },
+        role: 'support',
+      },
+    )
+    await useCases.participations.setHours.execute(
+      createTenantContext(collaborator),
+      collaborator,
+      {
+        taskId: task.id,
+        participationId: participation.id,
+        hours: '2,50',
+      },
+    )
+    await useCases.tasks.update.execute(createTenantContext(manager), manager, {
       taskId: task.id,
       changes: { title: 'Entrega revisada' },
     })

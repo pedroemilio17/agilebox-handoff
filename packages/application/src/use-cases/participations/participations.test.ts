@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toParticipationId, toUserId } from '@agilebox/core'
+import { createTenantContext, toOrganizationId, toParticipationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aContributor, aParticipation, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -46,7 +46,7 @@ describe('casos de uso de envolvimentos', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.users.save(organizationId, user)
 
-    const added = await useCases.participations.add.execute(actor, {
+    const added = await useCases.participations.add.execute(createTenantContext(actor), actor, {
       taskId: task.id,
       participant: { kind: 'user', userId: otherUserId },
       role: 'support',
@@ -70,7 +70,7 @@ describe('casos de uso de envolvimentos', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
 
-    const added = await useCases.participations.add.execute(manager, {
+    const added = await useCases.participations.add.execute(createTenantContext(manager), manager, {
       taskId: task.id,
       participant: { kind: 'contributor', contributorId: contributor.id },
       role: 'support',
@@ -89,14 +89,14 @@ describe('casos de uso de envolvimentos', () => {
       .build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await expect(
-      useCases.participations.add.execute(actor, {
+      useCases.participations.add.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participant: { kind: 'user', userId: otherUserId },
         role: 'support',
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
-      useCases.participations.add.execute(manager, {
+      useCases.participations.add.execute(createTenantContext(manager), manager, {
         taskId: task.id,
         participant: { kind: 'user', userId },
         role: 'support',
@@ -116,7 +116,7 @@ describe('casos de uso de envolvimentos', () => {
     const taskWithSupport = { ...task, participations: [...task.participations, support] }
     await unitOfWork.repositories.tasks.save(organizationId, taskWithSupport)
 
-    await useCases.participations.remove.execute(actor, {
+    await useCases.participations.remove.execute(createTenantContext(actor), actor, {
       taskId: task.id,
       participationId: support.id,
     })
@@ -124,7 +124,7 @@ describe('casos de uso de envolvimentos', () => {
       (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.participations,
     ).toHaveLength(1)
     await expect(
-      useCases.participations.remove.execute(actor, {
+      useCases.participations.remove.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participationId: task.participations[0]!.id,
       }),
@@ -145,11 +145,15 @@ describe('casos de uso de envolvimentos', () => {
       participations: [...task.participations, support],
     })
 
-    const changed = await useCases.participations.setHours.execute(actor, {
-      taskId: task.id,
-      participationId: support.id,
-      hours: '2,5',
-    })
+    const changed = await useCases.participations.setHours.execute(
+      createTenantContext(actor),
+      actor,
+      {
+        taskId: task.id,
+        participationId: support.id,
+        hours: '2,5',
+      },
+    )
 
     expect(changed.hours).toBe(2.5)
     expect(
@@ -180,7 +184,7 @@ describe('casos de uso de envolvimentos', () => {
       participations: [...task.participations, other],
     })
 
-    await useCases.participations.setRate.execute(actor, {
+    await useCases.participations.setRate.execute(createTenantContext(actor), actor, {
       taskId: task.id,
       participationId: self.id,
       rateCents: 5100,
@@ -189,7 +193,7 @@ describe('casos de uso de envolvimentos', () => {
       (await unitOfWork.repositories.users.findById(organizationId, userId))?.defaultRateCents,
     ).toBe(5100)
     await expect(
-      useCases.participations.setRate.execute(actor, {
+      useCases.participations.setRate.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participationId: other.id,
         rateCents: 5100,
@@ -218,7 +222,7 @@ describe('casos de uso de envolvimentos', () => {
     })
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
 
-    await useCases.participations.setRate.execute(manager, {
+    await useCases.participations.setRate.execute(createTenantContext(manager), manager, {
       taskId: task.id,
       participationId: participation.id,
       rateCents: 3000,
@@ -243,7 +247,7 @@ describe('casos de uso de envolvimentos', () => {
       Promise.reject(new Error('falha ao gravar evento'))
 
     await expect(
-      useCases.participations.setRate.execute(actor, {
+      useCases.participations.setRate.execute(createTenantContext(actor), actor, {
         taskId: task.id,
         participationId: task.participations[0]!.id,
         rateCents: 5100,
@@ -256,5 +260,68 @@ describe('casos de uso de envolvimentos', () => {
     expect(
       (await unitOfWork.repositories.users.findById(organizationId, userId))?.defaultRateCents,
     ).toBe(4500)
+  })
+})
+
+describe('isolamento entre organizações (M1.10b)', () => {
+  const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+  const outsider: Actor = {
+    userId: toUserId('00000000000000000000000077'),
+    organizationId: otherOrganizationId,
+    role: 'manager',
+  }
+  const outsiderCtx = createTenantContext(outsider)
+
+  function setupWithTask() {
+    const scope = setup()
+    const task = aTask().build()
+    void scope.unitOfWork.repositories.tasks.save(organizationId, task)
+    return { ...scope, task }
+  }
+
+  it('envolvimentos de tarefa de outro time dão NOT_FOUND e não alteram a tarefa', async () => {
+    const { useCases, unitOfWork, task } = setupWithTask()
+    const taskId = task.id
+    const participationId = task.participations[0]!.id
+    await expect(
+      useCases.participations.add.execute(outsiderCtx, outsider, {
+        taskId,
+        participant: { kind: 'user', userId: otherUserId },
+        role: 'support',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.participations.remove.execute(outsiderCtx, outsider, {
+        taskId,
+        participationId,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.participations.setHours.execute(outsiderCtx, outsider, {
+        taskId,
+        participationId,
+        hours: '3',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.participations.setRate.execute(outsiderCtx, outsider, {
+        taskId,
+        participationId,
+        rateCents: 9000,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(await unitOfWork.repositories.tasks.findById(organizationId, taskId)).toEqual(task)
+  })
+
+  it('contexto de um time com ator de outro dá FORBIDDEN e não grava envolvimento', async () => {
+    const { useCases, unitOfWork, task } = setupWithTask()
+    await expect(
+      useCases.participations.add.execute(createTenantContext(actor), outsider, {
+        taskId: task.id,
+        participant: { kind: 'user', userId: otherUserId },
+        role: 'support',
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(await unitOfWork.repositories.tasks.findById(organizationId, task.id)).toEqual(task)
   })
 })

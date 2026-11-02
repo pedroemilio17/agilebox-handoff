@@ -30,6 +30,7 @@ import {
 } from '@agilebox/core'
 import type {
   Actor,
+  TenantContext,
   ContributorId,
   Task,
   TaskId,
@@ -40,15 +41,17 @@ import type {
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { assertTenant } from '../tenant-scope'
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: CreateTaskInput): Promise<TaskDto> {
+  async execute(ctx: TenantContext, actor: Actor, input: CreateTaskInput): Promise<TaskDto> {
+    const organizationId = assertTenant(ctx, actor)
     const projectId = toProjectId(input.projectId)
-    const project = await this.deps.projects.findById(actor.organizationId, projectId)
+    const project = await this.deps.projects.findById(organizationId, projectId)
     if (!project) throw new NotFoundError('Projeto não encontrado')
-    const members = await this.deps.projects.listMembers(actor.organizationId, projectId)
+    const members = await this.deps.projects.listMembers(organizationId, projectId)
     if (
       !canCreateTask(
         actor,
@@ -57,19 +60,19 @@ export class CreateTask {
       )
     )
       throw new PermissionDeniedError('Sem permissão para criar tarefa neste projeto')
-    const user = await this.deps.users.findById(actor.organizationId, actor.userId)
+    const user = await this.deps.users.findById(organizationId, actor.userId)
     if (!user) throw new NotFoundError('Usuário não encontrado')
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
     const initialTask = createTask({
-      id: toTaskId(await this.deps.idGenerator.generate(actor.organizationId)),
-      organizationId: actor.organizationId,
+      id: toTaskId(await this.deps.idGenerator.generate(organizationId)),
+      organizationId,
       projectId,
       projectName: project.name,
       createdBy: actor.userId,
       title: input.title,
       createdAt: now,
       responsibleParticipationId: toParticipationId(
-        await this.deps.idGenerator.generate(actor.organizationId),
+        await this.deps.idGenerator.generate(organizationId),
       ),
       responsibleRateCents: user.defaultRateCents,
     })
@@ -78,12 +81,12 @@ export class CreateTask {
       task = setDeadline(task, input.deadline === null ? null : parseDateOnly(input.deadline))
     if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
       const responsibleId = toUserId(input.responsibleId)
-      const responsible = await this.deps.users.findById(actor.organizationId, responsibleId)
+      const responsible = await this.deps.users.findById(organizationId, responsibleId)
       if (!responsible) throw new NotFoundError('Responsável não encontrado')
       task = addParticipant(
         task,
         createParticipation({
-          id: toParticipationId(await this.deps.idGenerator.generate(actor.organizationId)),
+          id: toParticipationId(await this.deps.idGenerator.generate(organizationId)),
           taskId: task.id,
           participant: { kind: 'user', userId: responsibleId },
           role: 'support',
@@ -95,7 +98,7 @@ export class CreateTask {
       task = changeResponsible(task, responsibleId)
     }
     const event = createTimelineEvent({
-      id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+      id: toEventId(await this.deps.idGenerator.generate(organizationId)),
       taskId: task.id,
       at: now,
       actorUserId: actor.userId,
@@ -107,7 +110,7 @@ export class CreateTask {
       diffTask(initialTask, task).map(async (draft) =>
         createTimelineEvent({
           ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+          id: toEventId(await this.deps.idGenerator.generate(organizationId)),
           taskId: task.id,
           at: now,
           actorUserId: actor.userId,
@@ -115,11 +118,11 @@ export class CreateTask {
         }),
       ),
     )
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.tasks.save(actor.organizationId, task)
-      await repositories.timeline.saveMany(actor.organizationId, [event, ...initialEvents])
+    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      await repositories.tasks.save(organizationId, task)
+      await repositories.timeline.saveMany(organizationId, [event, ...initialEvents])
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
+    await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [task.id] })
     return toTaskDto(task)
   }
 }
@@ -127,18 +130,23 @@ export class CreateTask {
 export class GetTaskDetail {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: { readonly taskId: string }): Promise<GetTaskDto> {
-    const task = await this.getTask(actor.organizationId, input.taskId)
-    const members = await this.deps.projects.listMembers(actor.organizationId, task.projectId)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly taskId: string },
+  ): Promise<GetTaskDto> {
+    const organizationId = assertTenant(ctx, actor)
+    const task = await this.getTask(organizationId, input.taskId)
+    const members = await this.deps.projects.listMembers(organizationId, task.projectId)
     const isMember = members.some((member) => member.userId === actor.userId)
     if (!canViewTask(actor, task, isMember))
       throw new PermissionDeniedError('Sem acesso a esta tarefa')
     const names = await this.getNames(task)
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const events =
       task.status === 'in_progress' || task.status === 'review'
-        ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
+        ? await this.deps.timeline.listByTask(organizationId, task.id)
         : []
     return {
       ...toTaskDetailDto(task, actor, isMember, names),
@@ -187,17 +195,19 @@ abstract class ChangeTask {
   constructor(protected readonly deps: AppDeps) {}
 
   protected async change(
+    ctx: TenantContext,
     actor: Actor,
     rawTaskId: string,
     transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
   ): Promise<TaskDto> {
+    const organizationId = assertTenant(ctx, actor)
     const taskId = toTaskId(rawTaskId)
-    const task = await this.deps.tasks.findById(actor.organizationId, taskId)
+    const task = await this.deps.tasks.findById(organizationId, taskId)
     if (!task) throw new NotFoundError('Tarefa não encontrada')
     if (!canEditTask(actor, task))
       throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
     const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
     const drafts = [...diffTask(task, updated), ...extraEvents]
@@ -205,7 +215,7 @@ abstract class ChangeTask {
       drafts.map(async (draft) =>
         createTimelineEvent({
           ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+          id: toEventId(await this.deps.idGenerator.generate(organizationId)),
           taskId: task.id,
           at: now,
           actorUserId: actor.userId,
@@ -213,19 +223,20 @@ abstract class ChangeTask {
         }),
       ),
     )
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.tasks.save(actor.organizationId, updated)
-      if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
+    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      await repositories.tasks.save(organizationId, updated)
+      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
     })
     if (events.length > 0)
-      await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
+      await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [task.id] })
     return toTaskDto(updated)
   }
 }
 
 export class UpdateTask extends ChangeTask {
-  async execute(actor: Actor, input: TaskUpdateInput): Promise<TaskDto> {
+  async execute(ctx: TenantContext, actor: Actor, input: TaskUpdateInput): Promise<TaskDto> {
     return this.change(
+      ctx,
       actor,
       input.taskId,
       (task) => {
@@ -267,22 +278,31 @@ export class UpdateTask extends ChangeTask {
 
 export class MoveTask extends ChangeTask {
   async execute(
+    ctx: TenantContext,
     actor: Actor,
     input: { readonly taskId: string; readonly status: Task['status'] },
   ): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => setStatus(task, input.status))
+    return this.change(ctx, actor, input.taskId, (task) => setStatus(task, input.status))
   }
 }
 
 export class ArchiveTask extends ChangeTask {
-  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task, now) => setArchivedAt(task, now))
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly taskId: string },
+  ): Promise<TaskDto> {
+    return this.change(ctx, actor, input.taskId, (task, now) => setArchivedAt(task, now))
   }
 }
 
 export class UnarchiveTask extends ChangeTask {
-  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => setArchivedAt(task, null))
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly taskId: string },
+  ): Promise<TaskDto> {
+    return this.change(ctx, actor, input.taskId, (task) => setArchivedAt(task, null))
   }
 }
 

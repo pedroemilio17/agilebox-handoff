@@ -21,6 +21,7 @@ import {
 } from '@agilebox/core'
 import type {
   Actor,
+  TenantContext,
   Contributor,
   ContributorId,
   ParticipationRole,
@@ -32,6 +33,7 @@ import type {
 import type { ParticipationSummaryDto } from '@agilebox/contract'
 import { toParticipationSummaryDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { assertTenant } from '../tenant-scope'
 
 interface AddParticipationInput {
   readonly taskId: string
@@ -54,23 +56,34 @@ interface SetParticipationRateInput extends RemoveParticipationInput {
 abstract class ChangeParticipation {
   constructor(protected readonly deps: AppDeps) {}
 
-  protected async findEditableTask(actor: Actor, rawTaskId: string): Promise<Task> {
-    const task = await this.deps.tasks.findById(actor.organizationId, toTaskId(rawTaskId))
+  protected async findEditableTask(
+    ctx: TenantContext,
+    actor: Actor,
+    rawTaskId: string,
+  ): Promise<Task> {
+    const organizationId = assertTenant(ctx, actor)
+    const task = await this.deps.tasks.findById(organizationId, toTaskId(rawTaskId))
     if (!task) throw new NotFoundError('Tarefa não encontrada')
     if (!canEditTask(actor, task))
       throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
     return task
   }
 
-  protected async recordChange(actor: Actor, before: Task, after: Task): Promise<void> {
-    const now = await this.deps.clock.now(actor.organizationId)
+  protected async recordChange(
+    ctx: TenantContext,
+    actor: Actor,
+    before: Task,
+    after: Task,
+  ): Promise<void> {
+    const organizationId = assertTenant(ctx, actor)
+    const now = await this.deps.clock.now(organizationId)
     const updated = { ...after, updatedAt: now }
     const drafts = diffTask(before, updated)
     const events = await Promise.all(
       drafts.map(async (draft) =>
         createTimelineEvent({
           ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+          id: toEventId(await this.deps.idGenerator.generate(organizationId)),
           taskId: before.id,
           at: now,
           actorUserId: actor.userId,
@@ -78,8 +91,8 @@ abstract class ChangeParticipation {
         }),
       ),
     )
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.tasks.save(actor.organizationId, updated)
+    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      await repositories.tasks.save(organizationId, updated)
       for (const participation of updated.participations) {
         const previous = before.participations.find((item) => item.id === participation.id)
         if (
@@ -87,26 +100,28 @@ abstract class ChangeParticipation {
           previous.hoursHundredths !== participation.hoursHundredths ||
           previous.rateCents !== participation.rateCents
         )
-          await repositories.participations.save(actor.organizationId, participation)
+          await repositories.participations.save(organizationId, participation)
       }
       for (const participation of before.participations) {
         if (!updated.participations.some((item) => item.id === participation.id))
-          await repositories.participations.remove(actor.organizationId, participation.id)
+          await repositories.participations.remove(organizationId, participation.id)
       }
-      if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
+      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
     })
     if (events.length > 0)
-      await this.deps.changeNotifier.publish(actor.organizationId, {
+      await this.deps.changeNotifier.publish(organizationId, {
         kind: 'task',
         ids: [before.id],
       })
   }
 
   protected async mapParticipation(
+    ctx: TenantContext,
     actor: Actor,
     task: Task,
     participationId: string,
   ): Promise<ParticipationSummaryDto> {
+    const organizationId = assertTenant(ctx, actor)
     const participation = task.participations.find(
       (item) => item.id === toParticipationId(participationId),
     )
@@ -115,19 +130,14 @@ abstract class ChangeParticipation {
       Promise.all(
         task.participations.flatMap((item) =>
           item.participant.kind === 'user'
-            ? [this.deps.users.findById(actor.organizationId, item.participant.userId)]
+            ? [this.deps.users.findById(organizationId, item.participant.userId)]
             : [],
         ),
       ),
       Promise.all(
         task.participations.flatMap((item) =>
           item.participant.kind === 'contributor'
-            ? [
-                this.deps.contributors.findById(
-                  actor.organizationId,
-                  item.participant.contributorId,
-                ),
-              ]
+            ? [this.deps.contributors.findById(organizationId, item.participant.contributorId)]
             : [],
         ),
       ),
@@ -157,26 +167,31 @@ abstract class ChangeParticipation {
 }
 
 export class AddParticipation extends ChangeParticipation {
-  async execute(actor: Actor, input: AddParticipationInput): Promise<ParticipationSummaryDto> {
-    const task = await this.findEditableTask(actor, input.taskId)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: AddParticipationInput,
+  ): Promise<ParticipationSummaryDto> {
+    const organizationId = assertTenant(ctx, actor)
+    const task = await this.findEditableTask(ctx, actor, input.taskId)
     let rateCents: number
     if (input.participant.kind === 'user') {
       const user = await this.deps.users.findById(
-        actor.organizationId,
+        organizationId,
         toUserId(input.participant.userId),
       )
       if (!user) throw new NotFoundError('Usuário não encontrado')
       rateCents = user.defaultRateCents
     } else {
       const contributor = await this.deps.contributors.findById(
-        actor.organizationId,
+        organizationId,
         toContributorId(input.participant.contributorId),
       )
       if (!contributor) throw new NotFoundError('Entidade não encontrada')
       rateCents = contributor.defaultRateCents
     }
     const participation = createParticipation({
-      id: toParticipationId(await this.deps.idGenerator.generate(actor.organizationId)),
+      id: toParticipationId(await this.deps.idGenerator.generate(organizationId)),
       taskId: task.id,
       participant:
         input.participant.kind === 'user'
@@ -188,27 +203,32 @@ export class AddParticipation extends ChangeParticipation {
       role: input.role,
       hoursHundredths: 0,
       rateCents,
-      addedAt: await this.deps.clock.now(actor.organizationId),
+      addedAt: await this.deps.clock.now(organizationId),
     })
     const updated = addParticipant(task, participation)
-    await this.recordChange(actor, task, updated)
-    const saved = await this.deps.tasks.findById(actor.organizationId, task.id)
+    await this.recordChange(ctx, actor, task, updated)
+    const saved = await this.deps.tasks.findById(organizationId, task.id)
     if (!saved) throw new NotFoundError('Tarefa não encontrada')
-    return this.mapParticipation(actor, saved, participation.id)
+    return this.mapParticipation(ctx, actor, saved, participation.id)
   }
 }
 
 export class RemoveParticipation extends ChangeParticipation {
-  async execute(actor: Actor, input: RemoveParticipationInput): Promise<void> {
-    const task = await this.findEditableTask(actor, input.taskId)
+  async execute(ctx: TenantContext, actor: Actor, input: RemoveParticipationInput): Promise<void> {
+    const task = await this.findEditableTask(ctx, actor, input.taskId)
     const updated = removeParticipant(task, toParticipationId(input.participationId))
-    await this.recordChange(actor, task, updated)
+    await this.recordChange(ctx, actor, task, updated)
   }
 }
 
 export class SetParticipationHours extends ChangeParticipation {
-  async execute(actor: Actor, input: SetParticipationHoursInput): Promise<ParticipationSummaryDto> {
-    const task = await this.findEditableTask(actor, input.taskId)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: SetParticipationHoursInput,
+  ): Promise<ParticipationSummaryDto> {
+    const organizationId = assertTenant(ctx, actor)
+    const task = await this.findEditableTask(ctx, actor, input.taskId)
     const participationId = toParticipationId(input.participationId)
     const participation = task.participations.find((item) => item.id === participationId)
     if (!participation) throw new NotFoundError('Envolvimento não encontrado')
@@ -220,17 +240,22 @@ export class SetParticipationHours extends ChangeParticipation {
           : item,
       ),
     }
-    await this.recordChange(actor, task, updated)
-    const saved = await this.deps.tasks.findById(actor.organizationId, task.id)
+    await this.recordChange(ctx, actor, task, updated)
+    const saved = await this.deps.tasks.findById(organizationId, task.id)
     if (!saved) throw new NotFoundError('Tarefa não encontrada')
-    return this.mapParticipation(actor, saved, participationId)
+    return this.mapParticipation(ctx, actor, saved, participationId)
   }
 }
 
 export class SetParticipationRate extends ChangeParticipation {
-  async execute(actor: Actor, input: SetParticipationRateInput): Promise<ParticipationSummaryDto> {
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: SetParticipationRateInput,
+  ): Promise<ParticipationSummaryDto> {
+    const organizationId = assertTenant(ctx, actor)
     if (input.rateCents <= 0) throw new ValidationError('Valor/hora deve ser maior que zero')
-    const task = await this.findEditableTask(actor, input.taskId)
+    const task = await this.findEditableTask(ctx, actor, input.taskId)
     const participationId = toParticipationId(input.participationId)
     const participation = task.participations.find((item) => item.id === participationId)
     if (!participation) throw new NotFoundError('Envolvimento não encontrado')
@@ -252,28 +277,25 @@ export class SetParticipationRate extends ChangeParticipation {
     let updatedUser: User | null = null
     let updatedContributor: Contributor | null = null
     if (participation.participant.kind === 'user') {
-      const user = await this.deps.users.findById(
-        actor.organizationId,
-        participation.participant.userId,
-      )
+      const user = await this.deps.users.findById(organizationId, participation.participant.userId)
       if (!user) throw new NotFoundError('Usuário não encontrado')
       updatedUser = createUser({ ...user, defaultRateCents: input.rateCents })
     } else {
       const contributor = await this.deps.contributors.findById(
-        actor.organizationId,
+        organizationId,
         participation.participant.contributorId,
       )
       if (!contributor) throw new NotFoundError('Entidade não encontrada')
       updatedContributor = createContributor({ ...contributor, defaultRateCents: input.rateCents })
     }
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
     const changed = { ...updated, updatedAt: now }
     const drafts = diffTask(task, changed)
     const events = await Promise.all(
       drafts.map(async (draft) =>
         createTimelineEvent({
           ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+          id: toEventId(await this.deps.idGenerator.generate(organizationId)),
           taskId: task.id,
           at: now,
           actorUserId: actor.userId,
@@ -281,21 +303,21 @@ export class SetParticipationRate extends ChangeParticipation {
         }),
       ),
     )
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.tasks.save(actor.organizationId, changed)
+    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      await repositories.tasks.save(organizationId, changed)
       const updatedParticipation = changed.participations.find(
         (item) => item.id === participationId,
       )
       if (updatedParticipation)
-        await repositories.participations.save(actor.organizationId, updatedParticipation)
-      if (updatedUser) await repositories.users.save(actor.organizationId, updatedUser)
+        await repositories.participations.save(organizationId, updatedParticipation)
+      if (updatedUser) await repositories.users.save(organizationId, updatedUser)
       if (updatedContributor)
-        await repositories.contributors.save(actor.organizationId, updatedContributor)
-      if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
+        await repositories.contributors.save(organizationId, updatedContributor)
+      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    const saved = await this.deps.tasks.findById(actor.organizationId, task.id)
+    await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [task.id] })
+    const saved = await this.deps.tasks.findById(organizationId, task.id)
     if (!saved) throw new NotFoundError('Tarefa não encontrada')
-    return this.mapParticipation(actor, saved, participationId)
+    return this.mapParticipation(ctx, actor, saved, participationId)
   }
 }
