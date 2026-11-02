@@ -5,6 +5,8 @@ import type { ParticipationRepository } from './participation-repository'
 import type { ProjectRepository } from './project-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
+import type { TeamModuleEventRepository } from './team-module-event-repository'
+import type { TeamModuleRepository } from './team-module-repository'
 import type { TimelineRepository } from './timeline-repository'
 import type { UserRepository } from './user-repository'
 
@@ -15,6 +17,8 @@ export interface UnitOfWorkRepositories {
   readonly projects: ProjectRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
+  readonly teamModuleEvents: TeamModuleEventRepository
+  readonly teamModules: TeamModuleRepository
   readonly timeline: TimelineRepository
   readonly users: UserRepository
 }

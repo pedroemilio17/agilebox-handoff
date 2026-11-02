@@ -8,6 +8,8 @@ import {
   InMemoryProjectRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
+  InMemoryTeamModuleEventRepository,
+  InMemoryTeamModuleRepository,
   InMemoryTimelineRepository,
   InMemoryUserRepository,
 } from './in-memory-repositories'
@@ -31,6 +33,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       projects: new InMemoryProjectRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
       tasks: new InMemoryTaskRepository(state),
+      teamModuleEvents: new InMemoryTeamModuleEventRepository(state),
+      teamModules: new InMemoryTeamModuleRepository(state),
       timeline: new InMemoryTimelineRepository(state),
       users: new InMemoryUserRepository(state),
     }
@@ -50,6 +54,12 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       members: copyMap(this.state.members),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
+      teamModuleEvents: new Map(
+        [...this.state.teamModuleEvents].map(([organizationId, events]) => [
+          organizationId,
+          [...events],
+        ]),
+      ),
       teamModules: copyMap(this.state.teamModules),
       teamSettings: new Map(this.state.teamSettings),
       timeline: copyMap(this.state.timeline),

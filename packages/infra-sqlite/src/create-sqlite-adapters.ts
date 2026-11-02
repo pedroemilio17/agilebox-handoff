@@ -14,15 +14,17 @@ export function createSqliteAdapters(filename: string, migrationsFolder?: string
 }
 
 export function createSqliteAdaptersForDatabase(database: ReturnType<typeof createSqliteClient>) {
+  const teamRepositories = createSqliteTeamRepositories(database)
   const repositories = {
     ...createSqliteCoreRepositories(database),
     ...createSqliteTaskRepositories(database),
     meetings: createSqliteMeetingRepository(database),
+    teamModuleEvents: teamRepositories.teamModuleEvents,
+    teamModules: teamRepositories.teamModules,
   }
   return {
     ...repositories,
-    // Fora da unidade de trabalho até o M1.6: as mudanças de ferramentas entram nela junto com o histórico.
-    ...createSqliteTeamRepositories(database),
+    teamSettings: teamRepositories.teamSettings,
     unitOfWork: createSqliteUnitOfWork(database, repositories),
     async hasOrganizations() {
       const [row] = await database.select({ id: organizations.id }).from(organizations).limit(1)

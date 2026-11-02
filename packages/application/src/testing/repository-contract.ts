@@ -16,6 +16,7 @@ import type {
   ProjectRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamModuleEventRepository,
   TeamModuleRepository,
   TeamSettingsRepository,
   TimelineRepository,
@@ -239,6 +240,7 @@ export function describeRepositoryContract(
 }
 
 export interface TeamRepositoryContractAdapters {
+  readonly teamModuleEvents: TeamModuleEventRepository
   readonly teamModules: TeamModuleRepository
   readonly teamSettings: TeamSettingsRepository
 }
@@ -279,6 +281,24 @@ export function describeTeamRepositoryContract(
       })
 
       await expect(teamModules.list(otherOrganizationId)).resolves.toEqual([])
+    })
+
+    it('acrescenta eventos do histórico, lista em ordem cronológica e isola por organização', async () => {
+      const { teamModuleEvents } = makeAdapters()
+      const later = {
+        id: '00000000000000000000000002',
+        moduleId: 'sprints' as const,
+        fromState: 'active' as const,
+        toState: 'disabled' as const,
+        changedBy: userId,
+        changedAt: '2026-01-05T00:00:00.000Z',
+      }
+      const earlier = { ...later, id: '00000000000000000000000001', changedAt: changedAt }
+      await teamModuleEvents.append(organizationId, later)
+      await teamModuleEvents.append(organizationId, earlier)
+
+      await expect(teamModuleEvents.list(organizationId)).resolves.toEqual([earlier, later])
+      await expect(teamModuleEvents.list(otherOrganizationId)).resolves.toEqual([])
     })
 
     it('grava, relê e substitui as preferências do time, sem configuração devolve null', async () => {

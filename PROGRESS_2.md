@@ -211,3 +211,27 @@ Sem commit. Só `packages/infra-sqlite` (schema, migração, mapper, adaptador) 
   - `repositories/team-repositories.test.ts`: chave única por time e módulo (mesmo módulo em outro time é aceito) e substituição sem duplicar linha.
 - Decisão de execução: `config` como JSON de valores simples (`string | number | boolean | null`), conforme pedido. Nenhum módulo grava config ainda.
 - `pnpm check` com saída 0: 124 arquivos, 1013 testes, lint com zero avisos, build ok.
+
+## M1.6 · Ferramentas do time, casos de uso e histórico (sessão Claude, 2026-11-02)
+
+Sem commit. Marco feito inteiro (não foi preciso dividir). Sem tela, sem IPC, sem prévia (M1.7) e sem guard (M1.8).
+
+- **Regra de acesso:** `canManageTeamModules(actor)` em `packages/core/src/policies/access-policy.ts` (só `manager`, D6).
+- **Histórico (D7):** migração `0004_team_module_events.sql` (aditiva, gerada por `pnpm db:generate`), tabela `team_module_events`, schema `schema/team-module-events.ts`, mapper e repositório em `repositories/team-repositories.ts`. Porta `TeamModuleEventRepository` em `application/src/ports/team-module-event-repository.ts`, com `append` e `list` (ordem por data e id).
+- **Unidade de trabalho:** `UnitOfWorkRepositories` ganhou `teamModules` e `teamModuleEvents`, nos dois adaptadores (fake e SQLite). Assim a mudança e o histórico gravam na mesma transação. `AppDeps` ficou igual: os casos de uso leem e gravam pela unidade de trabalho. O comentário "fora da unidade de trabalho até o M1.6" saiu de `create-sqlite-adapters.ts`.
+- **Casos de uso** em `application/src/use-cases/team-modules/team-modules.ts`, registrados em `create-use-cases.ts` como `teamModules.get` e `teamModules.change`:
+  - `GetTeamModules`: qualquer membro lê os 15 módulos com estado efetivo.
+  - `ChangeTeamModules`: só gestor (`PermissionDeniedError` para colaborador, nada gravado). Usa `resolveModuleSet`. Recusa mudança inválida com `ValidationError` antes de gravar. Grava uma linha por módulo que mudou, com `fromState`, `toState`, `changedBy` e `changedAt`.
+- **Decisões de execução (não estavam explícitas no plano):**
+  - Módulo nunca gravado usa o preset "Kanban simples" (núcleo e agenda ativos; o resto desativado). Sem isso, a agenda, que já existe, sumiria para times antigos.
+  - Desativar vai direto a `disabled`, não a `winding_down`. O plano põe o encerramento gradual no M2, então o M1.6 não produz `winding_down`. Dependências contam módulos `active` e `winding_down`, porque ambos ainda têm itens em uso.
+  - Reativar usa o mesmo caminho: `disabled` ou `winding_down` vão para `active`, e os dados e a configuração permanecem.
+  - Mensagens de recusa citam os ids dos módulos (ex.: `sprints`), sem rótulos em pt-BR, porque o catálogo de rótulos é da UI do M2.
+- **Testes:**
+  - `use-cases/team-modules/team-modules.test.ts`: time nunca configurado; colaborador recusado sem gravar; gestor ativa com dependência puxada e histórico; desativar backlog com sprints recusado sem gravar; conflito horas × pontos; id desconhecido e núcleo; desativar e reativar preservando configuração; nenhuma mudança não gera evento.
+  - Contrato `describeTeamRepositoryContract` ganhou o teste de histórico, rodado no fake e no SQLite.
+  - `unit-of-work.test.ts` (SQLite) ganhou o teste de desfazer módulo e histórico juntos quando a operação falha.
+  - `client.test.ts` lista a tabela nova.
+- **Verificação:** `pnpm check` com saída 0: 125 arquivos de teste, 1024 testes, lint com zero avisos, build ok. `pnpm coverage` não foi rodado nesta rodada.
+- **Fora deste marco:** IPC e contrato Zod de `teamModules`, tela (M2), prévia de impacto (M1.7), guard da agenda (M1.8), conclusão do encerramento (`finishWindingDown` como caso de uso).
+- **Pendências:** D10 continua aberto (arquivo lido pelo laço). Não há pendência nova do Pedro; a confirmação das arestas inferidas do catálogo (M1.2) segue valendo.

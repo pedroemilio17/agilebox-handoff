@@ -6,6 +6,7 @@ import {
   InMemoryProjectRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
+  InMemoryTeamModuleEventRepository,
   InMemoryTeamModuleRepository,
   InMemoryTeamSettingsRepository,
   InMemoryTimelineRepository,
@@ -30,6 +31,7 @@ describeRepositoryContract('repositórios em memória', () => {
 describeTeamRepositoryContract('repositórios em memória', () => {
   const state = createInMemoryState()
   return {
+    teamModuleEvents: new InMemoryTeamModuleEventRepository(state),
     teamModules: new InMemoryTeamModuleRepository(state),
     teamSettings: new InMemoryTeamSettingsRepository(state),
   }

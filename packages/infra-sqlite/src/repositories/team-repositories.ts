@@ -1,19 +1,26 @@
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { MODULE_IDS } from '@agilebox/core'
 import type { OrganizationId } from '@agilebox/core'
 import type {
   TeamModule,
+  TeamModuleEvent,
+  TeamModuleEventRepository,
   TeamModuleRepository,
   TeamSettings,
   TeamSettingsRepository,
 } from '@agilebox/application'
 import { createSqliteClient } from '../client.js'
-import { mapTeamModuleRow, mapTeamSettingsRow } from '../mappers/team-mappers.js'
-import { teamModules, teamSettings } from '../schema/index.js'
+import {
+  mapTeamModuleEventRow,
+  mapTeamModuleRow,
+  mapTeamSettingsRow,
+} from '../mappers/team-mappers.js'
+import { teamModuleEvents, teamModules, teamSettings } from '../schema/index.js'
 
 type SqliteDatabase = ReturnType<typeof createSqliteClient>
 
 export function createSqliteTeamRepositories(database: SqliteDatabase): {
+  readonly teamModuleEvents: TeamModuleEventRepository
   readonly teamModules: TeamModuleRepository
   readonly teamSettings: TeamSettingsRepository
 } {
@@ -44,6 +51,20 @@ export function createSqliteTeamRepositories(database: SqliteDatabase): {
     },
   }
 
+  const teamModuleEventRepository: TeamModuleEventRepository = {
+    async append(organizationId: OrganizationId, event: TeamModuleEvent) {
+      await database.insert(teamModuleEvents).values({ ...event, organizationId })
+    },
+    async list(organizationId: OrganizationId) {
+      const rows = await database
+        .select()
+        .from(teamModuleEvents)
+        .where(eq(teamModuleEvents.organizationId, organizationId))
+        .orderBy(asc(teamModuleEvents.changedAt), asc(teamModuleEvents.id))
+      return rows.map(mapTeamModuleEventRow)
+    },
+  }
+
   const teamSettingsRepository: TeamSettingsRepository = {
     async find(organizationId: OrganizationId) {
       const [row] = await database
@@ -65,5 +86,9 @@ export function createSqliteTeamRepositories(database: SqliteDatabase): {
     },
   }
 
-  return { teamModules: teamModuleRepository, teamSettings: teamSettingsRepository }
+  return {
+    teamModuleEvents: teamModuleEventRepository,
+    teamModules: teamModuleRepository,
+    teamSettings: teamSettingsRepository,
+  }
 }

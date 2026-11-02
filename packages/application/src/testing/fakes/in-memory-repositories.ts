@@ -20,6 +20,8 @@ import type {
   TaskOpenRepository,
   TaskRepository,
   TeamModule,
+  TeamModuleEvent,
+  TeamModuleEventRepository,
   TeamModuleRepository,
   TeamSettings,
   TeamSettingsRepository,
@@ -39,6 +41,7 @@ export interface InMemoryState {
   members: Map<OrganizationId, Map<string, ProjectMember>>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  teamModuleEvents: Map<OrganizationId, TeamModuleEvent[]>
   teamModules: Map<OrganizationId, Map<string, TeamModule>>
   teamSettings: Map<OrganizationId, TeamSettings>
   timeline: Map<OrganizationId, Map<string, TimelineEvent>>
@@ -54,6 +57,7 @@ export function createInMemoryState(): InMemoryState {
     members: new Map(),
     taskOpens: new Map(),
     tasks: new Map(),
+    teamModuleEvents: new Map(),
     teamModules: new Map(),
     teamSettings: new Map(),
     timeline: new Map(),
@@ -282,6 +286,21 @@ export class InMemoryTeamModuleRepository implements TeamModuleRepository {
   async save(org: OrganizationId, value: TeamModule) {
     await Promise.resolve()
     bucket(this.state.teamModules, org).set(value.moduleId, value)
+  }
+}
+
+export class InMemoryTeamModuleEventRepository implements TeamModuleEventRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async append(org: OrganizationId, event: TeamModuleEvent) {
+    await Promise.resolve()
+    const events = this.state.teamModuleEvents.get(org) ?? []
+    this.state.teamModuleEvents.set(org, [...events, event])
+  }
+  async list(org: OrganizationId) {
+    await Promise.resolve()
+    return [...(this.state.teamModuleEvents.get(org) ?? [])].sort(
+      (a, b) => a.changedAt.localeCompare(b.changedAt) || a.id.localeCompare(b.id),
+    )
   }
 }
 

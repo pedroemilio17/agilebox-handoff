@@ -61,3 +61,7 @@ export const canSeeDashboard = canSeeTaskTotal
 export function isManagerEdit(actor: Actor): boolean {
   return actor.role === 'manager'
 }
+/** Ferramentas do time são aplicadas pelo gestor (aceite entre membros entra no M6b). */
+export function canManageTeamModules(actor: Actor): boolean {
+  return actor.role === 'manager'
+}
