@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  archiveTaskInputSchema,
+  archiveTaskOutputSchema,
+  unarchiveTaskInputSchema,
   createTaskInputSchema,
   getTaskOutputSchema,
   listBoardInputSchema,
@@ -107,6 +110,14 @@ describe('schemas de tarefas', () => {
       scope: 'team',
     })
     expect(listBoardInputSchema.safeParse({ scope: 'todos' }).success).toBe(false)
+  })
+
+  it('aceita arquivar e desarquivar tarefa com identificador válido', () => {
+    expect(archiveTaskInputSchema.parse({ taskId })).toEqual({ taskId })
+    expect(unarchiveTaskInputSchema.parse({ taskId })).toEqual({ taskId })
+    expect(archiveTaskOutputSchema.parse(task)).toEqual(task)
+    expect(archiveTaskInputSchema.safeParse({}).success).toBe(false)
+    expect(unarchiveTaskInputSchema.safeParse({ taskId: 'tarefa-1' }).success).toBe(false)
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

@@ -3,6 +3,12 @@ import type { ChangeEvent } from './changes'
 import {
   addProjectMemberInputSchema,
   addProjectMemberOutputSchema,
+  archiveProjectInputSchema,
+  archiveProjectOutputSchema,
+  renameProjectInputSchema,
+  renameProjectOutputSchema,
+  unarchiveProjectInputSchema,
+  unarchiveProjectOutputSchema,
   createProjectInputSchema,
   createProjectOutputSchema,
   listProjectMembersInputSchema,
@@ -23,6 +29,9 @@ import {
   setParticipationRateOutputSchema,
 } from './participations'
 import {
+  archiveTaskInputSchema,
+  archiveTaskOutputSchema,
+  unarchiveTaskInputSchema,
   createTaskInputSchema,
   createTaskOutputSchema,
   getTaskInputSchema,
@@ -90,6 +99,18 @@ export const API_SCHEMA_REGISTRY = {
   'users.setDefaultRate': { input: setDefaultRateInputSchema, output: setDefaultRateOutputSchema },
   'projects.list': { input: listProjectsInputSchema, output: listProjectsOutputSchema },
   'projects.create': { input: createProjectInputSchema, output: createProjectOutputSchema },
+  'projects.archiveProject': {
+    input: archiveProjectInputSchema,
+    output: archiveProjectOutputSchema,
+  },
+  'projects.unarchiveProject': {
+    input: unarchiveProjectInputSchema,
+    output: unarchiveProjectOutputSchema,
+  },
+  'projects.renameProject': {
+    input: renameProjectInputSchema,
+    output: renameProjectOutputSchema,
+  },
   'projects.listMembers': {
     input: listProjectMembersInputSchema,
     output: listProjectMembersOutputSchema,
@@ -109,6 +130,8 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.create': { input: createTaskInputSchema, output: createTaskOutputSchema },
   'tasks.update': { input: taskUpdateInputSchema, output: taskUpdateOutputSchema },
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
+  'tasks.archive': { input: archiveTaskInputSchema, output: archiveTaskOutputSchema },
+  'tasks.unarchive': { input: unarchiveTaskInputSchema, output: archiveTaskOutputSchema },
   'tasks.listRecent': { input: listRecentTasksInputSchema, output: listRecentTasksOutputSchema },
   'tasks.listFrequent': {
     input: listFrequentTasksInputSchema,
@@ -168,11 +191,14 @@ export interface AgileBoxApi {
   }
   users: { setDefaultRate: Method<'users.setDefaultRate'> }
   projects: {
-    list: Method<'projects.list'>
+    list: (input?: ApiInput<'projects.list'>) => Promise<ApiOutput<'projects.list'>>
     create: Method<'projects.create'>
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
+    archiveProject: Method<'projects.archiveProject'>
+    unarchiveProject: Method<'projects.unarchiveProject'>
+    renameProject: Method<'projects.renameProject'>
   }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>
@@ -182,6 +208,8 @@ export interface AgileBoxApi {
     create: Method<'tasks.create'>
     update: Method<'tasks.update'>
     move: Method<'tasks.move'>
+    archive: Method<'tasks.archive'>
+    unarchive: Method<'tasks.unarchive'>
     listRecent: Method<'tasks.listRecent'>
     listFrequent: Method<'tasks.listFrequent'>
     search: Method<'tasks.search'>

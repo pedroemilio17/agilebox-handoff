@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   addProjectMemberInputSchema,
+  archiveProjectInputSchema,
+  archiveProjectOutputSchema,
   createProjectInputSchema,
   createProjectOutputSchema,
   listProjectMembersOutputSchema,
   listProjectMembersInputSchema,
+  listProjectsInputSchema,
   listProjectsOutputSchema,
   removeProjectMemberInputSchema,
+  renameProjectInputSchema,
+  renameProjectOutputSchema,
+  unarchiveProjectInputSchema,
 } from './projects'
 
 const projectId = '01ARZ3NDEKTSV4RRFFQ69G5FAV'
@@ -38,6 +44,42 @@ describe('schemas de projetos', () => {
       projectId,
       userId,
     })
+  })
+
+  it('aceita listagem com e sem arquivados e rejeita flag inválida', () => {
+    expect(listProjectsInputSchema.parse(undefined)).toBeUndefined()
+    expect(listProjectsInputSchema.parse({ includeArchived: true })).toEqual({
+      includeArchived: true,
+    })
+    expect(listProjectsInputSchema.safeParse({ includeArchived: 'sim' }).success).toBe(false)
+  })
+
+  it('aceita arquivar, desarquivar e renomear com identificador válido', () => {
+    expect(archiveProjectInputSchema.parse({ projectId })).toEqual({ projectId })
+    expect(unarchiveProjectInputSchema.parse({ projectId })).toEqual({ projectId })
+    expect(archiveProjectOutputSchema.parse(undefined)).toBeUndefined()
+    expect(renameProjectInputSchema.parse({ projectId, name: '  Novo nome  ' })).toEqual({
+      projectId,
+      name: 'Novo nome',
+    })
+    expect(
+      renameProjectOutputSchema.parse({
+        id: projectId,
+        name: 'Novo nome',
+        createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
+        createdAt: '2026-10-31T12:00:00.000Z',
+      }).name,
+    ).toBe('Novo nome')
+  })
+
+  it('rejeita renomear com nome vazio e arquivar sem id válido', () => {
+    expect(renameProjectInputSchema.safeParse({ projectId, name: '   ' }).success).toBe(false)
+    expect(renameProjectInputSchema.safeParse({ projectId: 'project-1', name: 'X' }).success).toBe(
+      false,
+    )
+    expect(archiveProjectInputSchema.safeParse({}).success).toBe(false)
+    expect(archiveProjectInputSchema.safeParse({ projectId: 'project-1' }).success).toBe(false)
+    expect(unarchiveProjectInputSchema.safeParse({ projectId: 'project-1' }).success).toBe(false)
   })
 
   it('aceita membros do projeto e rejeita papel inválido', () => {

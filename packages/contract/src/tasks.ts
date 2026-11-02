@@ -78,6 +78,9 @@ export const listRecentTasksOutputSchema = listBoardOutputSchema
 export const listFrequentTasksOutputSchema = listBoardOutputSchema
 export const searchTasksInputSchema = z.object({ query: nameSchema })
 export const searchTasksOutputSchema = listBoardOutputSchema
+export const archiveTaskInputSchema = z.object({ taskId: ulidSchema })
+export const unarchiveTaskInputSchema = archiveTaskInputSchema
+export const archiveTaskOutputSchema = taskDtoSchema
 export const recordTaskOpenInputSchema = z.object({ taskId: ulidSchema })
 export const recordTaskOpenOutputSchema = z.void()
 

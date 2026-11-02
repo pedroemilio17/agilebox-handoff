@@ -40,9 +40,20 @@ export function registerHandlers(
   register('users.setDefaultRate', (actor, input) =>
     useCases.users.setDefaultRate.execute(actor, input),
   )
-  register('projects.list', (actor) => useCases.projects.listProjects.execute(actor))
+  register('projects.list', (actor, input) =>
+    useCases.projects.listProjects.execute(actor, input ?? {}),
+  )
   register('projects.create', (actor, input) =>
     useCases.projects.createProject.execute(actor, input),
+  )
+  register('projects.archiveProject', (actor, input) =>
+    useCases.projects.archiveProject.execute(actor, input),
+  )
+  register('projects.unarchiveProject', (actor, input) =>
+    useCases.projects.unarchiveProject.execute(actor, input),
+  )
+  register('projects.renameProject', (actor, input) =>
+    useCases.projects.renameProject.execute(actor, input),
   )
   register('projects.listMembers', (actor, input) =>
     useCases.projects.listMembers.execute(actor, input),
@@ -78,6 +89,8 @@ export function registerHandlers(
   register('tasks.create', (actor, input) => useCases.tasks.create.execute(actor, input))
   register('tasks.update', (actor, input) => useCases.tasks.update.execute(actor, input))
   register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
+  register('tasks.archive', (actor, input) => useCases.tasks.archive.execute(actor, input))
+  register('tasks.unarchive', (actor, input) => useCases.tasks.unarchive.execute(actor, input))
   register('tasks.listRecent', (actor) => useCases.tasks.listRecent.execute(actor))
   register('tasks.listFrequent', (actor) => useCases.tasks.listFrequent.execute(actor))
   register('tasks.search', (actor, input) => useCases.tasks.search.execute(actor, input))
