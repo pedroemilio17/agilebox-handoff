@@ -7,6 +7,7 @@ import { SettingsView } from '../settings/SettingsView'
 import styles from './PanelShell.module.css'
 
 export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
+export type TaskScope = 'mine' | 'team'
 
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
@@ -29,6 +30,8 @@ export interface PanelShellProps {
     readonly currentUserId: string | undefined
     readonly onSwitch: (userId: string) => void
   }
+  readonly taskScope?: TaskScope
+  readonly onTaskScopeChange?: (scope: TaskScope) => void
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
   readonly children?: ReactNode
@@ -59,6 +62,8 @@ export function PanelShell({
   onProjectSelect,
   onOpenTray,
   onSearch,
+  taskScope = 'mine',
+  onTaskScopeChange,
   dashboard,
   agenda,
   children,
@@ -90,6 +95,8 @@ export function PanelShell({
       />
       <section className={styles.main}>
         <TitleBar
+          taskScope={taskScope}
+          onTaskScopeChange={onTaskScopeChange ?? (() => undefined)}
           title={viewTitles[visibleView]}
           board={visibleView === 'projects'}
           projectSelector={projectSelector}
@@ -261,6 +268,8 @@ function Rail({
 
 interface TitleBarProps {
   readonly board: boolean
+  readonly taskScope: TaskScope
+  readonly onTaskScopeChange: (scope: TaskScope) => void
   readonly projectSelector: ReactNode
   readonly managerContext: ReactNode
   readonly title: string
@@ -273,6 +282,8 @@ interface TitleBarProps {
 function TitleBar({
   title,
   board,
+  taskScope,
+  onTaskScopeChange,
   projectSelector,
   managerContext,
   onMinimize,
@@ -287,10 +298,19 @@ function TitleBar({
         {board && projectSelector}
         {board && (
           <div className={styles.segmented} aria-label={panelCopy.taskScope}>
-            <button type="button" aria-pressed="true">
+            <button
+              type="button"
+              aria-pressed={taskScope === 'mine'}
+              onClick={() => onTaskScopeChange('mine')}
+            >
               Minhas
             </button>
-            <button type="button" aria-pressed="false" title={panelCopy.readOnly}>
+            <button
+              type="button"
+              aria-pressed={taskScope === 'team'}
+              title={panelCopy.readOnly}
+              onClick={() => onTaskScopeChange('team')}
+            >
               {panelCopy.team}
             </button>
           </div>

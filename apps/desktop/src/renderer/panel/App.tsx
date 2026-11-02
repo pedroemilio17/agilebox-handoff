@@ -20,7 +20,7 @@ import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
 import { TaskDetailView } from './task-detail/TaskDetailView'
-import { PanelShell, type PanelView } from './layout/PanelShell'
+import { PanelShell, type PanelView, type TaskScope } from './layout/PanelShell'
 import { PanelCommands } from './commands/PanelCommands'
 
 export function App() {
@@ -45,16 +45,18 @@ export function App() {
   const [taskFullScreen, setTaskFullScreen] = useState(false)
   const [boardException, setBoardException] = useState<'aging' | 'overdue' | null>(null)
   const [viewingUser, setViewingUser] = useState<{ id: string; name: string } | null>(null)
+  const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
   const actor = useActor()
   const projects = useProjects()
   const sessionUsers = useSessionUsers()
   const tasks = useQuery({
-    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id),
+    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, taskScope),
     queryFn: () =>
       api.tasks.listBoard({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
+        ...(taskScope === 'team' ? { scope: 'team' as const } : {}),
       }),
   })
   const boardFlow = useQuery({
@@ -205,6 +207,8 @@ export function App() {
         }
         view={view}
         onViewChange={setView}
+        taskScope={taskScope}
+        onTaskScopeChange={setTaskScope}
         isManager={isManager}
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}

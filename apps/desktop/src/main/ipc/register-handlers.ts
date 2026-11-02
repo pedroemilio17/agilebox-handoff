@@ -60,10 +60,14 @@ export function registerHandlers(
     }),
   )
   register('tasks.listBoard', (actor, input) =>
-    useCases.tasks.listBoard.execute(actor, {
-      ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
-      ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
-    }),
+    input.scope === 'team'
+      ? useCases.tasks.listTeamBoard.execute(actor, {
+          ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+        })
+      : useCases.tasks.listBoard.execute(actor, {
+          ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+          ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+        }),
   )
   register('tasks.listTeamBoard', (actor, input) =>
     useCases.tasks.listTeamBoard.execute(actor, {

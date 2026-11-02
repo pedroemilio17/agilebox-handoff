@@ -229,6 +229,27 @@ describe('Painel', () => {
     expect(listBoard).toHaveBeenCalledWith({})
   })
 
+  it('troca o escopo Minhas tarefas | Equipe e refaz a listagem com o escopo certo', async () => {
+    const api = createFakeApi()
+    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    const user = userEvent.setup()
+    await screen.findByRole('button', { name: task.title })
+    expect(listBoard).toHaveBeenLastCalledWith({})
+    await user.click(screen.getByRole('button', { name: 'Equipe' }))
+    expect(screen.getByRole('button', { name: 'Equipe' }).getAttribute('aria-pressed')).toBe('true')
+    await waitFor(() => expect(listBoard).toHaveBeenLastCalledWith({ scope: 'team' }))
+    await user.click(screen.getByRole('button', { name: 'Minhas' }))
+    await waitFor(() => expect(listBoard).toHaveBeenLastCalledWith({}))
+    expect(screen.getByRole('button', { name: 'Minhas' }).getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('move a tarefa para o estado escolhido pelo controle de teclado', async () => {
     const api = createFakeApi()
     vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
