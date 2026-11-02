@@ -1,5 +1,6 @@
 import type { AppDeps } from './deps'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-project'
+import { RenameProject } from './use-cases/projects/rename-project'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ListProjects } from './use-cases/projects/list-projects'
 import {
@@ -70,6 +71,7 @@ export function createUseCases(deps: AppDeps) {
       removeMember: new RemoveProjectMember(deps),
       archiveProject: new ArchiveProject(deps),
       unarchiveProject: new UnarchiveProject(deps),
+      renameProject: new RenameProject(deps),
     },
     tasks: {
       create: new CreateTask(deps),

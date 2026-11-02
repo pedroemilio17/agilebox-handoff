@@ -165,4 +165,35 @@ describe('casos de uso de projetos', () => {
       useCases.projects.unarchiveProject.execute(actor, { projectId: project.id }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
+
+  it('renomeia projeto e notifica', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+    const project = await useCases.projects.createProject.execute(actor, { name: 'Antigo' })
+    const renamed = await useCases.projects.renameProject.execute(actor, {
+      projectId: project.id,
+      name: '  Novo nome ',
+    })
+    expect(renamed).toEqual(expect.objectContaining({ id: project.id, name: 'Novo nome' }))
+    expect(
+      await unitOfWork.repositories.projects.findById(organizationId, toProjectId(project.id)),
+    ).toEqual(expect.objectContaining({ name: 'Novo nome', nameKey: 'novo nome' }))
+    expect(notifier.changes.at(-1)?.change).toEqual({ kind: 'project', ids: [project.id] })
+  })
+
+  it('rejeita renomear para nome vazio', async () => {
+    const { useCases } = setup()
+    const project = await useCases.projects.createProject.execute(actor, { name: 'Projeto' })
+    await expect(
+      useCases.projects.renameProject.execute(actor, { projectId: project.id, name: '  ' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('nega renomear a colaborador que não criou o projeto', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: otherUserId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.renameProject.execute(actor, { projectId: project.id, name: 'Outro' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
 })
