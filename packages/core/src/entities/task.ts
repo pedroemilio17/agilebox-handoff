@@ -6,6 +6,7 @@ import { parseTaskStatus } from '../values/task-status'
 import type { TaskStatus } from '../values/task-status'
 import { createTicket } from '../values/ticket'
 import type { Ticket } from '../values/ticket'
+import { parseBacklogRank } from '../values/backlog-order'
 import { createParticipation } from './participation'
 import type { Participation, Participant } from './participation'
 import { validateName } from './validation'
@@ -25,6 +26,10 @@ export interface Task {
   readonly createdAt: string
   readonly updatedAt: string
   readonly archivedAt: string | null
+  /** Posição no backlog do time; nulo = fora do backlog (B1 A). */
+  readonly backlogRank: number | null
+  /** Aparece no quadro quando o módulo Backlog está ligado. Invariante: `onBoard` é `backlogRank === null`. */
+  readonly onBoard: boolean
   readonly participations: readonly Participation[]
 }
 
@@ -76,6 +81,8 @@ export function createTask(input: CreateTaskInput): Task {
     createdAt: input.createdAt,
     updatedAt: input.createdAt,
     archivedAt: null,
+    backlogRank: null,
+    onBoard: true,
     participations: [responsible],
   }
 }
@@ -95,6 +102,20 @@ export function setDeadline(task: Task, deadline: DateOnly | null): Task {
 }
 export function setArchivedAt(task: Task, archivedAt: string | null): Task {
   return { ...task, archivedAt }
+}
+/** Manda a tarefa ao backlog na posição dada. Fica fora do quadro; o estado (status) não muda. */
+export function sendToBacklog(task: Task, backlogRank: number): Task {
+  return { ...task, backlogRank: parseBacklogRank(backlogRank), onBoard: false }
+}
+/** Muda a posição de uma tarefa que já está no backlog. */
+export function setBacklogRank(task: Task, backlogRank: number): Task {
+  if (task.backlogRank === null) throw new ValidationError('Tarefa não está no backlog')
+  return { ...task, backlogRank: parseBacklogRank(backlogRank) }
+}
+/** Leva a tarefa do backlog ao quadro, em Planejamento. Só vale para quem está no backlog. */
+export function takeToBoard(task: Task): Task {
+  if (task.backlogRank === null) throw new ValidationError('Tarefa não está no backlog')
+  return { ...task, backlogRank: null, onBoard: true, status: 'planning' }
 }
 export function setTicket(task: Task, ticket: Ticket | null): Task {
   return { ...task, ticket: ticket === null ? null : createTicket(ticket.id, ticket.url) }

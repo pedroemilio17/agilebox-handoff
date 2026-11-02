@@ -277,6 +277,132 @@ export function describeRepositoryContract(
       ).resolves.toEqual(sameNameElsewhere)
     })
 
+    it('findActiveByNameKey ignora projeto arquivado, mesmo gravado antes do ativo', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const archived = {
+        ...aProject()
+          .with({
+            id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+            organizationId,
+            name: 'Projeto Alfa',
+          })
+          .build(),
+        archivedAt: timestamp,
+      }
+      const active = aProject()
+        .with({
+          id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
+          organizationId,
+          name: 'Projeto Alfa',
+        })
+        .build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, archived)
+      await repositories.projects.save(organizationId, active)
+
+      await expect(
+        repositories.projects.findActiveByNameKey(organizationId, active.nameKey),
+      ).resolves.toEqual(active)
+      await expect(
+        repositories.projects.findActiveByNameKey(otherOrganizationId, active.nameKey),
+      ).resolves.toBeNull()
+    })
+
+    it('findActiveByNameKey devolve null quando só existe projeto arquivado com o nome', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const archived = {
+        ...aProject()
+          .with({
+            id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+            organizationId,
+            name: 'Projeto Alfa',
+          })
+          .build(),
+        archivedAt: timestamp,
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, archived)
+
+      await expect(
+        repositories.projects.findActiveByNameKey(organizationId, archived.nameKey),
+      ).resolves.toBeNull()
+    })
+
+    it('impede dois projetos ativos com o mesmo nome na organização, e aceita arquivado com o nome', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const first = aProject()
+        .with({
+          id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+          organizationId,
+          name: 'Projeto Alfa',
+        })
+        .build()
+      const sameNameActive = aProject()
+        .with({
+          id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
+          organizationId,
+          name: '  projeto ALFA ',
+        })
+        .build()
+      const archivedSameName = {
+        ...aProject()
+          .with({
+            id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB7'),
+            organizationId,
+            name: 'Projeto Alfa',
+          })
+          .build(),
+        archivedAt: timestamp,
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, first)
+
+      await expect(
+        repositories.projects.save(organizationId, sameNameActive),
+      ).rejects.toMatchObject({ code: 'VALIDATION', message: 'Já existe um projeto com este nome' })
+      await expect(
+        repositories.projects.save(organizationId, archivedSameName),
+      ).resolves.toBeUndefined()
+      await expect(
+        repositories.projects.findById(organizationId, sameNameActive.id),
+      ).resolves.toBeNull()
+    })
+
+    it('impede desarquivar (gravar sem arquivo) quando o nome já é de outro projeto ativo', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const active = aProject()
+        .with({
+          id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+          organizationId,
+          name: 'Projeto Alfa',
+        })
+        .build()
+      const archived = {
+        ...aProject()
+          .with({
+            id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
+            organizationId,
+            name: 'Projeto Alfa',
+          })
+          .build(),
+        archivedAt: timestamp,
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, active)
+      await repositories.projects.save(organizationId, archived)
+
+      await expect(
+        repositories.projects.save(organizationId, { ...archived, archivedAt: null }),
+      ).rejects.toMatchObject({ code: 'VALIDATION', message: 'Já existe um projeto com este nome' })
+      await expect(repositories.projects.findById(organizationId, archived.id)).resolves.toEqual(
+        archived,
+      )
+    })
+
     it('isola leituras e listagens entre organizações', async () => {
       const repositories = makeAdapters()
       const user = aUser().with({ id: userId, organizationId }).build()

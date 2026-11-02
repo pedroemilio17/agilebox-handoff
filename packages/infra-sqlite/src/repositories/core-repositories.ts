@@ -1,4 +1,5 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
+import { ValidationError } from '@agilebox/core'
 import type { OrganizationId, ProjectId, UserId } from '@agilebox/core'
 import type {
   ContributorRepository,
@@ -11,6 +12,16 @@ import { mapContributorRow, mapProjectRow, mapUserRow } from '../mappers/core-ma
 import { contributors, projectMembers, projects, users } from '../schema/index.js'
 
 type SqliteDatabase = ReturnType<typeof createSqliteClient>
+
+/** Violação do índice `projects_organization_name_key_unique`, mesmo embrulhada pelo Drizzle. */
+function isActiveProjectNameConflict(error: unknown): boolean {
+  for (let current: unknown = error; current instanceof Error; current = current.cause) {
+    const code = (current as { code?: unknown }).code
+    if (code === 'SQLITE_CONSTRAINT_UNIQUE' && current.message.includes('projects.name_key'))
+      return true
+  }
+  return false
+}
 
 export function createSqliteCoreRepositories(database: SqliteDatabase): {
   readonly users: UserRepository
@@ -95,6 +106,20 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
         .limit(1)
       return row ? mapProjectRow(row) : null
     },
+    async findActiveByNameKey(organizationId, nameKey) {
+      const [row] = await database
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.organizationId, organizationId),
+            eq(projects.nameKey, nameKey),
+            isNull(projects.archivedAt),
+          ),
+        )
+        .limit(1)
+      return row ? mapProjectRow(row) : null
+    },
     async list(organizationId) {
       const rows = await database
         .select()
@@ -105,14 +130,21 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
     },
     async save(organizationId, project) {
       const value = { ...project, organizationId }
-      await database
-        .insert(projects)
-        .values(value)
-        .onConflictDoUpdate({
-          target: projects.id,
-          set: value,
-          setWhere: eq(projects.organizationId, organizationId),
-        })
+      try {
+        await database
+          .insert(projects)
+          .values(value)
+          .onConflictDoUpdate({
+            target: projects.id,
+            set: value,
+            setWhere: eq(projects.organizationId, organizationId),
+          })
+      } catch (error) {
+        // Corrida entre checar e gravar: o índice único de nome ativo vence a checagem da aplicação.
+        if (isActiveProjectNameConflict(error))
+          throw new ValidationError('Já existe um projeto com este nome')
+        throw error
+      }
     },
     async listMembers(organizationId, projectId) {
       const rows = await database

@@ -11,6 +11,8 @@ export interface ProjectMember {
 export interface ProjectRepository {
   findById(organizationId: OrganizationId, projectId: ProjectId): Promise<Project | null>
   findByNameKey(organizationId: OrganizationId, nameKey: string): Promise<Project | null>
+  /** Só projetos ativos: a duplicidade de nome ignora os arquivados. */
+  findActiveByNameKey(organizationId: OrganizationId, nameKey: string): Promise<Project | null>
   list(organizationId: OrganizationId): Promise<readonly Project[]>
   save(organizationId: OrganizationId, project: Project): Promise<void>
   listMembers(

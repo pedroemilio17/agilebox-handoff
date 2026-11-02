@@ -11,7 +11,7 @@ import settingsStyles from './SettingsView.module.css'
 /**
  * Projetos arquivados (M2.12c). Sem esta seção, um projeto arquivado e fora do Desfazer ficaria
  * inacessível. O botão aparece para quem pode arquivar (criador ou gestor, a mesma regra de
- * `canManageMembers` no core); a decisão final é do servidor, e a recusa aparece em role=alert.
+ * `canArchiveProject` no core); a decisão final é do servidor, e a recusa aparece em role=alert.
  */
 export function ArchivedProjectsSection() {
   const { actor } = useActor()

@@ -35,6 +35,8 @@ const task: Task = {
   createdAt: '',
   updatedAt: '',
   archivedAt: null,
+  backlogRank: null,
+  onBoard: true,
   participations: [],
 }
 const ownTask = { ...task, createdBy: user }
@@ -92,6 +94,17 @@ describe('política de acesso', () => {
     expect(policy.canManageMembers(collaborator, { ...project, createdBy: user })).toBe(true)
     expect(policy.canManageMembers(manager, project)).toBe(true)
   })
+  it('arquivar, desarquivar e renomear projeto: gestor ou criador, sem depender de membro', () => {
+    for (const check of [policy.canArchiveProject, policy.canRenameProject]) {
+      expect(check(manager, project)).toBe(true)
+      expect(check(collaborator, project)).toBe(false)
+      expect(check(collaborator, { ...project, createdBy: user })).toBe(true)
+      expect(check(manager, { ...project, organizationId: otherOrg })).toBe(false)
+      expect(
+        check({ ...collaborator, organizationId: otherOrg }, { ...project, createdBy: user }),
+      ).toBe(false)
+    }
+  })
   it('protege valores, total, agenda e dashboard', () => {
     for (const check of [policy.canSeeRate, policy.canEditRate]) {
       expect(check(collaborator, rate)).toBe(true)
@@ -132,5 +145,13 @@ describe('política de acesso', () => {
       expect(policy.canSeeRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
       expect(policy.canEditRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
     }
+  })
+})
+
+describe('reordenar backlog', () => {
+  it('só o gestor reordena, e só na própria organização', () => {
+    expect(policy.canReorderBacklog(manager, org)).toBe(true)
+    expect(policy.canReorderBacklog(collaborator, org)).toBe(false)
+    expect(policy.canReorderBacklog(manager, otherOrg)).toBe(false)
   })
 })

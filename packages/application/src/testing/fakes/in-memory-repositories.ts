@@ -1,4 +1,4 @@
-import { MODULE_IDS } from '@agilebox/core'
+import { MODULE_IDS, ValidationError } from '@agilebox/core'
 import type {
   Contributor,
   Meeting,
@@ -189,6 +189,14 @@ export class InMemoryProjectRepository implements ProjectRepository {
       [...bucket(this.state.projects, org).values()].find((item) => item.nameKey === key) ?? null
     )
   }
+  async findActiveByNameKey(org: OrganizationId, key: string) {
+    await Promise.resolve()
+    return (
+      [...bucket(this.state.projects, org).values()].find(
+        (item) => item.nameKey === key && item.archivedAt === null,
+      ) ?? null
+    )
+  }
   async list(org: OrganizationId) {
     await Promise.resolve()
     return [...bucket(this.state.projects, org).values()].sort((a, b) =>
@@ -198,6 +206,14 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async save(org: OrganizationId, value: Project) {
     await Promise.resolve()
     if (ownedByOtherOrganization(this.state.projects, org, value.id)) return
+    // Como o índice único parcial do SQLite: só projetos ativos disputam o nome.
+    const clashes =
+      value.archivedAt === null &&
+      [...bucket(this.state.projects, org).values()].some(
+        (item) =>
+          item.id !== value.id && item.archivedAt === null && item.nameKey === value.nameKey,
+      )
+    if (clashes) throw new ValidationError('Já existe um projeto com este nome')
     bucket(this.state.projects, org).set(value.id, value)
   }
   async listMembers(org: OrganizationId, projectId: Project['id']) {

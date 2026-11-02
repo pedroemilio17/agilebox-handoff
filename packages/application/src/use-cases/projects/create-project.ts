@@ -17,12 +17,15 @@ export class CreateProject {
       createdBy: actor.userId,
       createdAt: await this.deps.clock.now(organizationId),
     })
-    const existing = await this.deps.projects.findByNameKey(organizationId, candidate.nameKey)
+    const existing = await this.deps.projects.findActiveByNameKey(organizationId, candidate.nameKey)
     // Projeto arquivado com o mesmo nome não é reaproveitado: cria-se um projeto novo.
-    if (existing && existing.archivedAt === null) return toProjectDto(existing)
+    if (existing) return toProjectDto(existing)
     const project = await this.deps.unitOfWork.run(organizationId, async (repositories) => {
-      const raced = await repositories.projects.findByNameKey(organizationId, candidate.nameKey)
-      if (raced && raced.archivedAt === null) return raced
+      const raced = await repositories.projects.findActiveByNameKey(
+        organizationId,
+        candidate.nameKey,
+      )
+      if (raced) return raced
       await repositories.projects.save(organizationId, candidate)
       await repositories.projects.addMember(organizationId, {
         projectId: candidate.id,

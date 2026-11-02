@@ -1,9 +1,10 @@
 import {
-  canManageMembers,
+  canRenameProject,
   createProject,
   NotFoundError,
   PermissionDeniedError,
   toProjectId,
+  ValidationError,
 } from '@agilebox/core'
 import type { Actor, TenantContext } from '@agilebox/core'
 import type { AppDeps } from '../../deps'
@@ -20,10 +21,17 @@ export class RenameProject {
     const organizationId = assertTenant(ctx, actor)
     const project = await this.deps.projects.findById(organizationId, toProjectId(input.projectId))
     if (!project) throw new NotFoundError('Projeto não encontrado')
-    if (!canManageMembers(actor, project))
+    if (!canRenameProject(actor, project))
       throw new PermissionDeniedError('Sem permissão para editar este projeto')
     const renamed = createProject({ ...project, name: input.name })
+    // Arquivado com o mesmo nome não conta; o próprio projeto também não (trocar só maiúsculas é válido).
     await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      const sameName = await repositories.projects.findActiveByNameKey(
+        organizationId,
+        renamed.nameKey,
+      )
+      if (sameName && sameName.id !== project.id)
+        throw new ValidationError('Já existe um projeto com este nome')
       await repositories.projects.save(organizationId, renamed)
     })
     await this.deps.changeNotifier.publish(organizationId, {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTenantContext,
   createUser,
@@ -266,6 +266,212 @@ describe('casos de uso de projetos', () => {
         name: '  ',
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('criador que não é membro arquiva, desarquiva e renomeia o próprio projeto', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: userId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    expect(await unitOfWork.repositories.projects.listMembers(organizationId, project.id)).toEqual(
+      [],
+    )
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: project.id,
+    })
+    await useCases.projects.unarchiveProject.execute(createTenantContext(actor), actor, {
+      projectId: project.id,
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: project.id,
+        name: 'Criado por mim',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ name: 'Criado por mim' }))
+  })
+
+  it('gestor arquiva, desarquiva e renomeia projeto de outro criador', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: otherUserId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    await useCases.projects.archiveProject.execute(createTenantContext(manager), manager, {
+      projectId: project.id,
+    })
+    await useCases.projects.unarchiveProject.execute(createTenantContext(manager), manager, {
+      projectId: project.id,
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(manager), manager, {
+        projectId: project.id,
+        name: 'Renomeado pelo gestor',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ name: 'Renomeado pelo gestor' }))
+  })
+
+  it('rejeita renomear para nome de outro projeto ativo, com mensagem própria', async () => {
+    const { useCases } = setup()
+    await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Projeto Alfa',
+    })
+    const beta = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Projeto Beta',
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: beta.id,
+        name: '  projeto ALFA ',
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Já existe um projeto com este nome',
+    })
+    expect(
+      (await useCases.projects.listProjects.execute(createTenantContext(actor), actor)).map(
+        (project) => project.name,
+      ),
+    ).toEqual(['Projeto Alfa', 'Projeto Beta'])
+  })
+
+  it('aceita renomear só para trocar maiúsculas do próprio nome e para nome de projeto arquivado', async () => {
+    const { useCases } = setup()
+    const alfa = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Projeto Alfa',
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: alfa.id,
+        name: 'PROJETO ALFA',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ id: alfa.id, name: 'PROJETO ALFA' }))
+    const beta = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Projeto Beta',
+    })
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: beta.id,
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: alfa.id,
+        name: 'projeto beta',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ name: 'projeto beta' }))
+  })
+
+  it('rejeita renomear para nome de projeto ativo mesmo com um arquivado de mesmo nome criado antes', async () => {
+    const { useCases } = setup()
+    const alfaArchived = await useCases.projects.createProject.execute(
+      createTenantContext(actor),
+      actor,
+      { name: 'Alfa' },
+    )
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: alfaArchived.id,
+    })
+    await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'alfa',
+    })
+    const beta = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Beta',
+    })
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: beta.id,
+        name: 'ALFA',
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Já existe um projeto com este nome',
+    })
+  })
+
+  it('rejeita renomear quando a checagem não vê o ativo e a gravação bate no índice único', async () => {
+    const { useCases, unitOfWork } = setup()
+    await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Alfa',
+    })
+    const beta = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Beta',
+    })
+    vi.spyOn(unitOfWork.repositories.projects, 'findActiveByNameKey').mockResolvedValueOnce(null)
+    await expect(
+      useCases.projects.renameProject.execute(createTenantContext(actor), actor, {
+        projectId: beta.id,
+        name: 'alfa',
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Já existe um projeto com este nome',
+    })
+    expect(
+      await unitOfWork.repositories.projects.findById(organizationId, toProjectId(beta.id)),
+    ).toEqual(expect.objectContaining({ name: 'Beta' }))
+  })
+
+  it('rejeita desarquivar quando outro projeto ativo já tem o nome, e o projeto segue arquivado', async () => {
+    const { useCases, unitOfWork } = setup()
+    const old = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Alfa',
+    })
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: old.id,
+    })
+    await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'alfa',
+    })
+    await expect(
+      useCases.projects.unarchiveProject.execute(createTenantContext(actor), actor, {
+        projectId: old.id,
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Já existe um projeto com este nome',
+    })
+    expect(
+      await unitOfWork.repositories.projects.findById(organizationId, toProjectId(old.id)),
+    ).toEqual(expect.objectContaining({ archivedAt: '2026-01-02T00:00:00.000Z' }))
+  })
+
+  it('barra na gravação o desarquivar quando a checagem não vê o ativo', async () => {
+    const { useCases, unitOfWork } = setup()
+    const old = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Alfa',
+    })
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: old.id,
+    })
+    await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'alfa',
+    })
+    vi.spyOn(unitOfWork.repositories.projects, 'findActiveByNameKey').mockResolvedValueOnce(null)
+    await expect(
+      useCases.projects.unarchiveProject.execute(createTenantContext(actor), actor, {
+        projectId: old.id,
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: 'Já existe um projeto com este nome',
+    })
+  })
+
+  it('reaproveita o projeto ativo quando um arquivado de mesmo nome foi criado antes', async () => {
+    const { useCases } = setup()
+    const old = await useCases.projects.createProject.execute(createTenantContext(actor), actor, {
+      name: 'Alfa',
+    })
+    await useCases.projects.archiveProject.execute(createTenantContext(actor), actor, {
+      projectId: old.id,
+    })
+    const active = await useCases.projects.createProject.execute(
+      createTenantContext(actor),
+      actor,
+      { name: 'Alfa' },
+    )
+    const reused = await useCases.projects.createProject.execute(
+      createTenantContext(actor),
+      actor,
+      { name: ' alfa ' },
+    )
+    expect(reused.id).toBe(active.id)
   })
 
   it('nega renomear a colaborador que não criou o projeto', async () => {
