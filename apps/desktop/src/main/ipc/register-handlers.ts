@@ -166,4 +166,21 @@ export function registerHandlers(
   register('meetings.delete', (actor, input) =>
     useCases.meetings.delete.execute(createTenantContext(actor), actor, input),
   )
+  register('teamModules.get', (actor) =>
+    useCases.teamModules.get.execute(createTenantContext(actor), actor),
+  )
+  register('teamModules.previewImpact', (actor, input) =>
+    useCases.teamModules.previewImpact.execute(createTenantContext(actor), actor, {
+      ...(input.disable === undefined ? {} : { disable: input.disable }),
+    }),
+  )
+  register('teamModules.change', (actor, input) =>
+    useCases.teamModules.change.execute(createTenantContext(actor), actor, {
+      ...(input.enable === undefined ? {} : { enable: input.enable }),
+      ...(input.disable === undefined ? {} : { disable: input.disable }),
+    }),
+  )
+  register('teamModules.finishWindingDown', (actor, input) =>
+    useCases.teamModules.finishWindingDown.execute(createTenantContext(actor), actor, input),
+  )
 }

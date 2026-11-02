@@ -85,6 +85,16 @@ import {
   switchUserInputSchema,
   switchUserOutputSchema,
 } from './session'
+import {
+  changeTeamModulesInputSchema,
+  changeTeamModulesOutputSchema,
+  finishTeamModuleWindingDownInputSchema,
+  finishTeamModuleWindingDownOutputSchema,
+  getTeamModulesInputSchema,
+  getTeamModulesOutputSchema,
+  previewTeamModuleImpactInputSchema,
+  previewTeamModuleImpactOutputSchema,
+} from './team-modules'
 import { API_CHANNELS, type ApiChannel } from './channels'
 
 type SchemaPair = { input: z.ZodType; output: z.ZodType }
@@ -174,6 +184,19 @@ export const API_SCHEMA_REGISTRY = {
   'meetings.create': { input: createMeetingInputSchema, output: createMeetingOutputSchema },
   'meetings.update': { input: updateMeetingInputSchema, output: updateMeetingOutputSchema },
   'meetings.delete': { input: deleteMeetingInputSchema, output: deleteMeetingOutputSchema },
+  'teamModules.get': { input: getTeamModulesInputSchema, output: getTeamModulesOutputSchema },
+  'teamModules.previewImpact': {
+    input: previewTeamModuleImpactInputSchema,
+    output: previewTeamModuleImpactOutputSchema,
+  },
+  'teamModules.change': {
+    input: changeTeamModulesInputSchema,
+    output: changeTeamModulesOutputSchema,
+  },
+  'teamModules.finishWindingDown': {
+    input: finishTeamModuleWindingDownInputSchema,
+    output: finishTeamModuleWindingDownOutputSchema,
+  },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
@@ -234,6 +257,12 @@ export interface AgileBoxApi {
     create: Method<'meetings.create'>
     update: Method<'meetings.update'>
     delete: Method<'meetings.delete'>
+  }
+  teamModules: {
+    get: Method<'teamModules.get'>
+    previewImpact: Method<'teamModules.previewImpact'>
+    change: Method<'teamModules.change'>
+    finishWindingDown: Method<'teamModules.finishWindingDown'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

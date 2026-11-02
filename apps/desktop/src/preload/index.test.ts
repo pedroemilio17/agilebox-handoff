@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { API_CHANNELS } from '@agilebox/contract'
 import type { AgileBoxBridge } from '@agilebox/contract'
 
 const { exposeInMainWorld, invoke, on, removeListener } = vi.hoisted(() => ({
@@ -49,6 +50,25 @@ describe('ponte preload', () => {
     bridge.shell.setTrayHeight({ height: 320 })
 
     expect(invoke).toHaveBeenCalledWith('window.setTrayHeight', { height: 320 })
+  })
+
+  it('encaminha cada canal da API para o IPC com o mesmo nome, inclusive ferramentas do time', async () => {
+    await import('./index')
+    const bridge = getExposedBridge()
+
+    for (const channel of API_CHANNELS) {
+      await bridge.invoke(channel, undefined)
+      expect(invoke).toHaveBeenLastCalledWith(channel, undefined)
+    }
+
+    expect(API_CHANNELS).toEqual(
+      expect.arrayContaining([
+        'teamModules.get',
+        'teamModules.previewImpact',
+        'teamModules.change',
+        'teamModules.finishWindingDown',
+      ]),
+    )
   })
 })
 

@@ -71,6 +71,12 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       update: (input) => call('meetings.update', input),
       delete: (input) => call('meetings.delete', input),
     },
+    teamModules: {
+      get: () => call('teamModules.get', undefined),
+      previewImpact: (input) => call('teamModules.previewImpact', input),
+      change: (input) => call('teamModules.change', input),
+      finishWindingDown: (input) => call('teamModules.finishWindingDown', input),
+    },
     onChanges: bridge.onChanges,
   }
 }
