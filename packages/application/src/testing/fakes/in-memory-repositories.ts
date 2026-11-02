@@ -74,6 +74,16 @@ function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: Or
   return values
 }
 
+/** Id já gravado em outra organização: a escrita é ignorada, como no SQLite (ON CONFLICT com `setWhere`). */
+function ownedByOtherOrganization<T>(
+  root: Map<OrganizationId, Map<string, T>>,
+  organizationId: OrganizationId,
+  id: string,
+): boolean {
+  for (const [owner, values] of root) if (owner !== organizationId && values.has(id)) return true
+  return false
+}
+
 export class InMemoryContributorRepository implements ContributorRepository {
   constructor(private readonly state: InMemoryState) {}
   async findById(org: OrganizationId, id: Contributor['id']) {
@@ -86,6 +96,7 @@ export class InMemoryContributorRepository implements ContributorRepository {
   }
   async save(org: OrganizationId, value: Contributor) {
     await Promise.resolve()
+    if (ownedByOtherOrganization(this.state.contributors, org, value.id)) return
     bucket(this.state.contributors, org).set(value.id, value)
   }
 }
@@ -110,6 +121,7 @@ export class InMemoryMeetingRepository implements MeetingRepository {
   }
   async save(org: OrganizationId, value: Meeting) {
     await Promise.resolve()
+    if (ownedByOtherOrganization(this.state.meetings, org, value.id)) return
     bucket(this.state.meetings, org).set(value.id, value)
   }
   async remove(org: OrganizationId, id: Meeting['id']) {
@@ -136,6 +148,9 @@ export class InMemoryParticipationRepository implements ParticipationRepository 
   }
   async save(org: OrganizationId, value: Participation) {
     await Promise.resolve()
+    // Como no SQLite: a participação só entra se a tarefa for da organização.
+    if (!bucket(this.state.tasks, org).has(value.taskId)) return
+    if (ownedByOtherOrganization(this.state.participations, org, value.id)) return
     bucket(this.state.participations, org).set(value.id, value)
   }
   async remove(org: OrganizationId, id: Participation['id']) {
@@ -173,6 +188,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
   }
   async save(org: OrganizationId, value: Project) {
     await Promise.resolve()
+    if (ownedByOtherOrganization(this.state.projects, org, value.id)) return
     bucket(this.state.projects, org).set(value.id, value)
   }
   async listMembers(org: OrganizationId, projectId: Project['id']) {
@@ -275,6 +291,7 @@ export class InMemoryTaskRepository implements TaskRepository {
   }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
+    if (ownedByOtherOrganization(this.state.tasks, org, value.id)) return
     bucket(this.state.tasks, org).set(value.id, value)
   }
   async count(org: OrganizationId) {
@@ -362,6 +379,7 @@ export class InMemoryUserRepository implements UserRepository {
   }
   async save(org: OrganizationId, value: User) {
     await Promise.resolve()
+    if (ownedByOtherOrganization(this.state.users, org, value.id)) return
     bucket(this.state.users, org).set(value.id, value)
   }
 }

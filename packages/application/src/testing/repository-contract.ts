@@ -42,6 +42,8 @@ const otherOrganizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAW')
 const userId = toUserId('01ARZ3NDEKTSV4RRFFQ69G5FAX')
 const projectId = toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FAY')
 const taskId = toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FAZ')
+const otherUserId = toUserId('01ARZ3NDEKTSV4RRFFQ69G5FB0')
+const otherProjectId = toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB1')
 const timestamp = '2026-01-01T00:00:00.000Z'
 
 export function describeRepositoryContract(
@@ -341,6 +343,103 @@ export function describeRepositoryContract(
       await expect(repositories.tasks.count(other)).resolves.toBe(0)
       await expect(repositories.participations.count(other)).resolves.toBe(0)
       await expect(repositories.meetings.count(other)).resolves.toBe(0)
+    })
+
+    it('escrita com identificador de outra organização não altera nem move o registro (M1.12)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId, name: 'Ana' }).build()
+      const project = aProject().with({ id: projectId, organizationId, name: 'Projeto A' }).build()
+      const contributor = aContributor().with({ organizationId, name: 'Colaborador A' }).build()
+      const task = aTask()
+        .with({ id: taskId, organizationId, createdBy: userId, title: 'Tarefa A' })
+        .inProject(project)
+        .build()
+      const participation = aParticipation(task)
+        .with({ participant: { kind: 'contributor', contributorId: contributor.id } })
+        .build()
+      const meeting = aMeeting().with({ organizationId, title: 'Reunião A' }).build()
+
+      // A organização B tem dono próprio (usuário e projeto), para a escrita passar pelas checagens de posse.
+      const otherUser = aUser()
+        .with({
+          id: otherUserId,
+          organizationId: otherOrganizationId,
+          name: 'Bia',
+          email: 'bia@example.com',
+        })
+        .build()
+      const otherProject = aProject()
+        .with({ id: otherProjectId, organizationId: otherOrganizationId, name: 'Projeto B' })
+        .build()
+
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.contributors.save(organizationId, contributor)
+      await repositories.tasks.save(organizationId, task)
+      await repositories.participations.save(organizationId, participation)
+      await repositories.meetings.save(organizationId, meeting)
+      await repositories.users.save(otherOrganizationId, otherUser)
+      await repositories.projects.save(otherOrganizationId, otherProject)
+
+      // Tentativas de B gravar com os ids de A.
+      const other = otherOrganizationId
+      await repositories.users.save(other, { ...user, organizationId: other, name: 'Invasora' })
+      await repositories.projects.save(other, {
+        ...project,
+        organizationId: other,
+        name: 'Invadido',
+        nameKey: 'invadido',
+      })
+      await repositories.contributors.save(other, {
+        ...contributor,
+        organizationId: other,
+        name: 'Invasor',
+      })
+      await repositories.meetings.save(other, {
+        ...meeting,
+        organizationId: other,
+        title: 'Invasão',
+      })
+      await repositories.tasks.save(other, {
+        ...task,
+        organizationId: other,
+        projectId: otherProject.id,
+        createdBy: otherUser.id,
+        participations: [],
+        title: 'Invasão',
+      })
+      await repositories.participations.save(other, { ...participation, role: 'support' })
+
+      // A continua com os registros originais.
+      await expect(repositories.users.findById(organizationId, userId)).resolves.toEqual(user)
+      await expect(repositories.projects.findById(organizationId, projectId)).resolves.toEqual(
+        project,
+      )
+      await expect(
+        repositories.contributors.findById(organizationId, contributor.id),
+      ).resolves.toEqual(contributor)
+      await expect(repositories.meetings.findById(organizationId, meeting.id)).resolves.toEqual(
+        meeting,
+      )
+      await expect(repositories.tasks.findById(organizationId, taskId)).resolves.toMatchObject({
+        id: taskId,
+        organizationId,
+        title: 'Tarefa A',
+        projectId,
+      })
+      await expect(
+        repositories.participations.findById(organizationId, participation.id),
+      ).resolves.toEqual(participation)
+
+      // B não ganha cópia nem enxerga os registros de A.
+      await expect(repositories.users.findById(other, userId)).resolves.toBeNull()
+      await expect(repositories.projects.findById(other, projectId)).resolves.toBeNull()
+      await expect(repositories.contributors.findById(other, contributor.id)).resolves.toBeNull()
+      await expect(repositories.meetings.findById(other, meeting.id)).resolves.toBeNull()
+      await expect(repositories.tasks.findById(other, taskId)).resolves.toBeNull()
+      await expect(
+        repositories.participations.findById(other, participation.id),
+      ).resolves.toBeNull()
     })
 
     it('remove registros removíveis do contrato', async () => {

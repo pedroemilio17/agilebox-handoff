@@ -372,3 +372,31 @@ Sem commit. Só `packages/application` (contrato de repositórios e teste de tip
 - Limite: o contrato cobre leituras, contagens e a não exibição de dados alheios. Escritas com identificador de outra organização (um `save` em B com id já existente em A) não estão cobertas; os ids são ULID, então a colisão é improvável, mas vale decidir se entra no M1.12.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1081 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m111-check.log`.
 - Fora deste marco: M1.12 (fechamento, cobertura de `modules/` em 100% e notas finais) e D10 (laço lendo este arquivo).
+
+## M1.12 · Fechamento do M1 (sessão Claude, 2026-11-02)
+
+**M1 concluído** (M1.1 a M1.12). Sem commit desta etapa: M1.12 fica para o Pedro revisar e commitar.
+
+Lacuna do M1.11 (escrita com id de outra organização) decidida: entra no contrato, com correção nos adaptadores. Não havia opção recomendada escrita para ela; a escolha foi fechar o buraco, porque o contrato de isolamento precisa cobrir escrita e não só leitura.
+
+- **Achado real (SQLite):** o `save` de usuário, contribuinte, projeto, tarefa e agendamento fazia `ON CONFLICT (id) DO UPDATE` sem checar a organização da linha existente. Um `save` em B com id de A trocava a organização da linha de A para B (mover, não só copiar). No caso de tarefa, também apagava as participações de A antes de a troca ser recusada. A aplicação não chega a esse caminho hoje (as leituras já filtram por organização), então é defesa em profundidade.
+- **Correção no SQLite:** `setWhere` com a organização da linha existente em `users`, `contributors`, `projects`, `meetings`, `tasks` e `task_participations` (subconsulta de tarefas da organização). Em `tasks`, checagem de dono antes do `delete` das participações. Escrita com id alheio vira no-op, como já era o padrão do adaptador para tarefa sem projeto da organização.
+- **Espelho nos fakes:** `ownedByOtherOrganization` em `in-memory-repositories.ts` ignora a escrita com id já existente em outra organização; participação só entra se a tarefa for da organização. Assim o contrato roda igual nos dois adaptadores.
+- **Teste:** `escrita com identificador de outra organização não altera nem move o registro (M1.12)` em `repository-contract.ts`. Antes da correção, falhou no SQLite (usuário de A foi para B) e no fake (cópia em B).
+- **Cobertura de `modules/`:** o único ramo sem teste era o fallback `?? 'disabled'` do guard de módulo, inalcançável por tipo. Novo `packages/application/src/modules/guard.test.ts` cobre id fora do catálogo (tratado como desativado). Resultado: `packages/core/src/modules/*` e `packages/application/src/modules/guard.ts` em 100% de statements, branches e funções.
+- **Limite restante:** timeline e `taskOpens` também checam dono no SQLite, mas não entraram no teste de escrita; o fake não espelha essa checagem ainda. Fica para o M6a, quando entra RLS.
+- **D10 (laço lendo `PROGRESS_2.md`): não aplicada.** A Proposta M1 não a colocou no M1.12 (só consta em "Decisões tomadas"), então não entrou neste marco. Não mexi em `scripts/codex-loop/`. Pendente de confirmação do Pedro sobre onde ela entra.
+- **Verificação:** `pnpm check` com saída 0 (128 arquivos de teste, 1084 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m112-check.log`. Cobertura: `vitest run --coverage` (mesma config de `pnpm coverage`) com saída 0 após a última mudança; resumo por arquivo em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/cov/coverage-summary.json`.
+
+### O que o M2 exige do Pedro antes de começar
+
+M2 é a primeira etapa com tela. Antes de escrever código de interface, precisa de:
+
+1. **Arestas inferidas do catálogo**, a confirmar com o diagrama: `checkins → sprints`, `impediments → sprints`, `acceptance → backlog`, `reviewRetro → sprints`. Também o `minLevel` de `integrations` (Avançado). Afetam o que a tela de Ferramentas oferece.
+2. **Desenho da tela Ferramentas da equipe.** Não há protótipo dela em `design/` (só Bandeja e Painel). Preciso de referência visual ou da aprovação de um layout antes de codar.
+3. **Conteúdo do menu por nível.** O plano diz "menu por nível" e "campos avançados ocultos por padrão", mas não lista quais telas e campos são Básico, Intermediário ou Avançado. Sem isso, não há o que esconder.
+4. **Presets.** Confirmar a composição e o nível sugerido de cada um. "Kanban com fluxo" e "Scrum completo" citam módulos que só existem a partir de M10 (WIP, subtarefas, métricas, review, burndown). Decidir se o preset os mostra desativados ou se o preset fica só com o que já existe.
+5. **Encerramento gradual.** O plano prevê que o gestor escolha o destino de cada tipo de item ao desligar um módulo (por exemplo, tarefas da sprint voltando ao Kanban). Confirmar se isso entra no M2 ou fica para depois. O mínimo do M2 é o estado `encerrando` com a prévia.
+6. **Redação do aviso de nível.** O plano escreve "Subir o nível do projeto?", mas o nível é por equipe (ADR-06). Confirmar a redação ("time" ou "projeto") antes de ir para a tela.
+
+Pendências herdadas do M0 e do M1, não bloqueiam o M2: M0.8, M0.9b e M0.11 (UI de arquivar e renomear, e varredura de telas estáticas); teste instável de `App.manager.test.tsx`; D10.

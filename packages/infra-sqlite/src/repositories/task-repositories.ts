@@ -226,6 +226,13 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         ),
       )
       if (!project || !creator || !validParticipants.every(Boolean)) return
+      // Tarefa de outra organização com o mesmo id: não troca a linha nem mexe nas participações dela.
+      const [owner] = await database
+        .select({ organizationId: tasks.organizationId })
+        .from(tasks)
+        .where(eq(tasks.id, task.id))
+        .limit(1)
+      if (owner && owner.organizationId !== organizationId) return
       const value = {
         id: task.id,
         organizationId,
@@ -245,7 +252,11 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       await database
         .insert(tasks)
         .values(value)
-        .onConflictDoUpdate({ target: tasks.id, set: value })
+        .onConflictDoUpdate({
+          target: tasks.id,
+          set: value,
+          setWhere: eq(tasks.organizationId, organizationId),
+        })
       await database.delete(taskParticipations).where(eq(taskParticipations.taskId, task.id))
       if (task.participations.length)
         await database.insert(taskParticipations).values(
@@ -312,7 +323,18 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       await database
         .insert(taskParticipations)
         .values(value)
-        .onConflictDoUpdate({ target: taskParticipations.id, set: value })
+        .onConflictDoUpdate({
+          target: taskParticipations.id,
+          set: value,
+          // A linha existente só é trocada se a tarefa dela também for da organização.
+          setWhere: inArray(
+            taskParticipations.taskId,
+            database
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(eq(tasks.organizationId, organizationId)),
+          ),
+        })
     },
     async count(organizationId) {
       const [row] = await database

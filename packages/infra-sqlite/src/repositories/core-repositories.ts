@@ -41,6 +41,7 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
         .onConflictDoUpdate({
           target: users.id,
           set: { ...user, organizationId },
+          setWhere: eq(users.organizationId, organizationId),
         })
     },
   }
@@ -69,7 +70,11 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
       await database
         .insert(contributors)
         .values(value)
-        .onConflictDoUpdate({ target: contributors.id, set: value })
+        .onConflictDoUpdate({
+          target: contributors.id,
+          set: value,
+          setWhere: eq(contributors.organizationId, organizationId),
+        })
     },
   }
 
@@ -103,7 +108,11 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
       await database
         .insert(projects)
         .values(value)
-        .onConflictDoUpdate({ target: projects.id, set: value })
+        .onConflictDoUpdate({
+          target: projects.id,
+          set: value,
+          setWhere: eq(projects.organizationId, organizationId),
+        })
     },
     async listMembers(organizationId, projectId) {
       const rows = await database

@@ -115,7 +115,11 @@ export function createSqliteMeetingRepository(database: SqliteDatabase): Meeting
       await database
         .insert(meetings)
         .values(value)
-        .onConflictDoUpdate({ target: meetings.id, set: value })
+        .onConflictDoUpdate({
+          target: meetings.id,
+          set: value,
+          setWhere: eq(meetings.organizationId, organizationId),
+        })
       await database
         .delete(meetingParticipants)
         .where(eq(meetingParticipants.meetingId, meeting.id))
