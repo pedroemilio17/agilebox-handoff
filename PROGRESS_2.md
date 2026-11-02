@@ -276,3 +276,15 @@ Sem commit. Só `packages/application` (guard, agenda e teste). Sem tela, banco 
 - **Verificação:** `pnpm check` com saída 0: 126 arquivos de teste, 1044 testes, lint com zero avisos, tipos e build ok.
 - **Fora deste marco:** guard nos demais casos de uso (só a Agenda existe hoje), IPC e tela (M2), e `finishWindingDown` como caso de uso.
 - **Pendências:** nenhuma nova. D10 segue aberto (arquivo lido pelo laço).
+
+## M1.9 · TenantContext (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/core` (tipo, função e teste). Sem caso de uso, porta, banco nem tela. D1 e D9 aplicadas como decididas: o contexto só embrulha o `organizationId` do ator, e a assinatura dos casos de uso fica para o M1.10.
+
+- `packages/core/src/policies/tenant.ts`:
+  - `TenantContext` = `{ organizationId }`, derivado do `Actor`.
+  - `createTenantContext(actor)`: devolve o contexto; lança `ValidationError` ("Contexto de time ausente") se o `organizationId` faltar, for vazio ou não for texto. O tipo já exige o campo; a checagem em tempo de execução cobre entrada vinda de fora do tipo (IPC).
+  - Localização escolhida: `core/policies` (é regra de acesso, não de caso de uso), exportado por `core/src/index.ts`.
+- Teste `policies/tenant.test.ts`: embrulha só o time, gestor e colaborador geram o mesmo contexto, e recusa sem time, vazio e não texto.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1049 testes, formatação, lint com zero avisos, tipos e build ok).
+- Fora deste marco: `ctx` obrigatório nos casos de uso (M1.10a a d) e teste de tipo do M1.11.
