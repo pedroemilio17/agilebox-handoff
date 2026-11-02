@@ -9,7 +9,7 @@ import {
   toUserId,
   ValidationError,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, ModuleId, ModuleState } from '@agilebox/core'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -358,6 +358,73 @@ describe('encerramento gradual (M2.4)', () => {
     const stored = await unitOfWork.repositories.teamModules.list(organizationId)
     expect(stored.find((item) => item.moduleId === 'agenda')?.state).toBe('winding_down')
     expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toHaveLength(1)
+  })
+})
+
+describe('encerramento não é reativado sem pedido (M2.10c)', () => {
+  /** Time com Backlog e Sprints ativos e Check-ins já encerrando (estado consistente: Check-ins exige Sprints). */
+  async function withCheckinsWindingDown(unitOfWork: InMemoryUnitOfWork) {
+    const save = (moduleId: ModuleId, state: ModuleState) =>
+      unitOfWork.repositories.teamModules.save(organizationId, {
+        moduleId,
+        state,
+        config: {},
+        changedBy: manager.userId,
+        changedAt: now,
+      })
+    await save('backlog', 'active')
+    await save('sprints', 'active')
+    await save('checkins', 'winding_down')
+  }
+
+  it('ligar Backlog (já ativo) não reativa Check-ins encerrando e não grava evento para ele', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withCheckinsWindingDown(unitOfWork)
+
+    const { statuses } = await useCases.teamModules.change.execute(managerCtx, manager, {
+      enable: ['backlog'],
+    })
+
+    expect(stateOf(statuses, 'checkins')).toBe('winding_down')
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.filter((event) => event.moduleId === 'checkins')).toEqual([])
+  })
+
+  it('desligar um módulo não relacionado (Agenda) não reativa Check-ins encerrando', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withCheckinsWindingDown(unitOfWork)
+
+    const { statuses } = await useCases.teamModules.change.execute(managerCtx, manager, {
+      disable: ['agenda'],
+    })
+
+    expect(stateOf(statuses, 'agenda')).toBe('disabled')
+    expect(stateOf(statuses, 'checkins')).toBe('winding_down')
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.filter((event) => event.moduleId === 'checkins')).toEqual([])
+  })
+
+  it('ativar um módulo que depende de Sprints (Retro) não reativa Check-ins encerrando', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withCheckinsWindingDown(unitOfWork)
+
+    const { statuses } = await useCases.teamModules.change.execute(managerCtx, manager, {
+      enable: ['reviewRetro'],
+    })
+
+    expect(stateOf(statuses, 'reviewRetro')).toBe('active')
+    expect(stateOf(statuses, 'checkins')).toBe('winding_down')
+  })
+
+  it('pedir Check-ins em enable cancela o encerramento e o devolve ativo', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withCheckinsWindingDown(unitOfWork)
+
+    const { statuses } = await useCases.teamModules.change.execute(managerCtx, manager, {
+      enable: ['checkins'],
+    })
+
+    expect(stateOf(statuses, 'checkins')).toBe('active')
   })
 })
 

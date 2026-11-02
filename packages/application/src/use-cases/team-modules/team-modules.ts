@@ -181,7 +181,12 @@ export class ChangeTeamModules {
       if (!resolution.ok) throw new ValidationError(describeRefusal(resolution))
 
       const available = await countItems(organizationId, repositories)
-      const desired = new Set<ModuleId>(resolution.enabled)
+      // Um módulo encerrando só volta a ativo se foi pedido em `enable`; ficar na resolução
+      // (porque ainda conta como dependência) não basta para reativá-lo.
+      const requested = new Set<ModuleId>(change.enable)
+      const desired = new Set<ModuleId>(
+        resolution.enabled.filter((id) => current.get(id) !== 'winding_down' || requested.has(id)),
+      )
       const next = new Map(current)
       const windingDown: ModuleImpact[] = []
       for (const moduleId of MODULE_IDS) {
