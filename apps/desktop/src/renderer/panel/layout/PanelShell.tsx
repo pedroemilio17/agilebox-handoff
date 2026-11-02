@@ -1,19 +1,55 @@
 import { useState, type ReactNode } from 'react'
 import { EmptyState, WindowControls, ProjectSwatch, Eyebrow, Kbd } from '@agilebox/ui'
-import type { SessionUserDto } from '@agilebox/contract'
+import type { SessionUserDto, SidebarScreenId } from '@agilebox/contract'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
 import styles from './PanelShell.module.css'
 
-export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
+export type PanelView = SidebarScreenId | 'plugins' | 'settings'
+
+interface RailItem {
+  readonly id: PanelView
+  readonly label: string
+  readonly soon?: boolean
+}
+
+/** Telas do menu, na ordem do quadro 07. Cada uma aparece só se o servidor a libera para a pessoa. */
+const RAIL_SCREENS: readonly { readonly id: SidebarScreenId; readonly label: string }[] = [
+  { id: 'projects', label: 'Quadro' },
+  { id: 'agenda', label: panelCopy.agenda },
+  { id: 'backlog', label: 'Backlog' },
+  { id: 'sprints', label: 'Sprints' },
+  { id: 'dashboard', label: panelCopy.dashboard },
+  { id: 'impediments', label: 'Impedimentos' },
+  { id: 'integrations', label: 'Integrações' },
+  { id: 'tools', label: 'Ferramentas' },
+]
+
+/** Antes de o servidor responder, ou se a consulta falhar: só o mínimo do nível Essencial. */
+export const FALLBACK_SCREENS: readonly SidebarScreenId[] = ['projects', 'agenda']
+
+/** Telas liberadas agora: as do servidor, ou o mínimo enquanto não há resposta. */
+export function allowedScreens(screens?: readonly SidebarScreenId[]): readonly SidebarScreenId[] {
+  return screens ?? FALLBACK_SCREENS
+}
+
+/**
+ * View que de fato aparece: a pedida, se a tela está liberada; senão Quadro.
+ * Quem renderiza o conteúdo e quem marca o menu tem que usar esta mesma view.
+ */
+export function resolveView(view: PanelView, screens?: readonly SidebarScreenId[]): PanelView {
+  if (view === 'plugins' || view === 'settings') return view
+  return allowedScreens(screens).includes(view) ? view : 'projects'
+}
 export type TaskScope = 'mine' | 'team'
 
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
   readonly managerContext?: ReactNode
   readonly view: PanelView
-  readonly isManager: boolean
+  /** Telas do menu liberadas para quem está logado (`teamModules.get`). */
+  readonly screens?: readonly SidebarScreenId[]
   readonly onViewChange: (view: PanelView) => void
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
@@ -41,6 +77,11 @@ const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
   projects: 'Quadro',
   agenda: panelCopy.agenda,
+  backlog: 'Backlog',
+  sprints: 'Sprints',
+  impediments: 'Impedimentos',
+  integrations: 'Integrações',
+  tools: 'Ferramentas',
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
 }
@@ -49,7 +90,7 @@ export function PanelShell({
   view,
   projectSelector,
   managerContext,
-  isManager,
+  screens,
   onViewChange,
   onMinimize,
   onToggleExpand,
@@ -69,12 +110,10 @@ export function PanelShell({
   children,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
-  const visibleView = view === 'dashboard' && !isManager ? 'projects' : view
-  const items: readonly { id: PanelView; label: string; icon: string; soon?: boolean }[] = [
-    ...(isManager ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: '▥' }] : []),
-    { id: 'projects', label: 'Quadro', icon: '▦' },
-    { id: 'agenda', label: panelCopy.agenda, icon: '▣' },
-    { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
+  const visibleView = resolveView(view, screens)
+  const items: readonly RailItem[] = [
+    ...RAIL_SCREENS.filter((item) => allowedScreens(screens).includes(item.id)),
+    { id: 'plugins', label: panelCopy.plugins, soon: true },
   ]
 
   return (
@@ -128,7 +167,7 @@ export function PanelShell({
 
 interface RailProps {
   readonly expanded: boolean
-  readonly items: readonly { id: PanelView; label: string; icon: string; soon?: boolean }[]
+  readonly items: readonly RailItem[]
   readonly selected: PanelView
   readonly onExpandChange: (expanded: boolean) => void
   readonly onSelect: (view: PanelView) => void
@@ -349,6 +388,11 @@ function NavIcon({ kind }: { readonly kind: string }) {
     agenda: 'M4 5h16v16H4ZM4 10h16M8 2v6m8-6v6',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
+    backlog: 'M4 6h16M4 12h16M4 18h10',
+    sprints: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+    impediments: 'M5 21V4M5 4h11l-2 4 2 4H5',
+    integrations: 'M7 7h10M7 17h10M4 12h16',
+    tools: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z',
   }
   return (
     <span aria-hidden="true">

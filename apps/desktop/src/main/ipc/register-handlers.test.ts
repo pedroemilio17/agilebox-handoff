@@ -1,7 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { API_CHANNELS, TEAM_MODULE_IDS } from '@agilebox/contract'
+import {
+  API_CHANNELS,
+  EXPERIENCE_LEVEL_IDS,
+  SIDEBAR_SCREEN_IDS as CONTRACT_SCREEN_IDS,
+  TEAM_MODULE_IDS,
+} from '@agilebox/contract'
 import type { ApiResult } from '@agilebox/contract'
-import { MODULE_IDS, toOrganizationId, toUserId } from '@agilebox/core'
+import {
+  EXPERIENCE_LEVELS,
+  MODULE_IDS,
+  SIDEBAR_SCREEN_IDS as CORE_SCREEN_IDS,
+  toOrganizationId,
+  toUserId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { createUseCases } from '@agilebox/application'
 import type { ActorSession } from '@agilebox/application'
@@ -85,6 +96,11 @@ describe('handlers de ferramentas do time', () => {
     expect([...TEAM_MODULE_IDS]).toEqual([...MODULE_IDS])
   })
 
+  it('níveis e telas do menu no contrato são iguais aos do core, na mesma ordem', () => {
+    expect([...EXPERIENCE_LEVEL_IDS]).toEqual([...EXPERIENCE_LEVELS])
+    expect([...CONTRACT_SCREEN_IDS]).toEqual([...CORE_SCREEN_IDS])
+  })
+
   it('recusa colaborador em mudança, prévia e conclusão de encerramento', async () => {
     const call = handlersFor(collaborator)
 
@@ -102,6 +118,43 @@ describe('handlers de ferramentas do time', () => {
     const result = await handlersFor(collaborator)('teamModules.get')
 
     expect(result).toMatchObject({ ok: true })
+  })
+
+  it('colaborador não recebe Ferramentas nem Dashboard nas telas do menu', async () => {
+    const result = await handlersFor(collaborator)('teamModules.get')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = result.value as { level: string; screens: string[] }
+    expect(value.level).toBe('intermediate')
+    expect(value.screens).not.toContain('tools')
+    expect(value.screens).not.toContain('dashboard')
+    expect(value.screens).toEqual(['projects', 'agenda'])
+  })
+
+  it('gestor recebe Dashboard, mas não Ferramentas nem Impedimentos no nível padrão', async () => {
+    const call = handlersFor(manager)
+    await call('teamModules.change', { enable: ['backlog'] })
+
+    const result = await call('teamModules.get')
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { level: 'intermediate', screens: ['projects', 'agenda', 'backlog', 'dashboard'] },
+    })
+  })
+
+  it('ferramenta desligada some das telas do menu', async () => {
+    const call = handlersFor(manager)
+    await call('teamModules.change', { disable: ['agenda'] })
+
+    const result = await call('teamModules.get')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const value = result.value as { screens: string[] }
+    expect(value.screens).not.toContain('agenda')
+    expect(value.screens).toContain('projects')
   })
 
   it('recusa id desconhecido antes de chegar ao caso de uso', async () => {

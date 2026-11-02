@@ -2,12 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Drawer } from '@agilebox/ui'
 import type { TaskStatus } from '@agilebox/core'
-import type { TaskDto } from '@agilebox/contract'
+import type { SidebarScreenId, TaskDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
 import { panelCopy } from './copy'
 import { useProjects } from './hooks/use-projects'
+import { useTeamCapabilities } from './hooks/use-team-capabilities'
 import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
@@ -20,7 +21,13 @@ import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
 import { TaskDetailView } from './task-detail/TaskDetailView'
-import { PanelShell, type PanelView, type TaskScope } from './layout/PanelShell'
+import {
+  PanelShell,
+  allowedScreens,
+  resolveView,
+  type PanelView,
+  type TaskScope,
+} from './layout/PanelShell'
 import { PanelCommands } from './commands/PanelCommands'
 
 export function App() {
@@ -49,6 +56,12 @@ export function App() {
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
   const actor = useActor()
   const projects = useProjects()
+  const teamCapabilities = useTeamCapabilities()
+  const screens = teamCapabilities.data?.screens
+  // A view que aparece: a mesma no menu, no conteúdo e nas consultas. Sem ela, uma tela
+  // que o servidor não libera deixava a área vazia.
+  const allowed = allowedScreens(screens)
+  const visibleView = resolveView(view, screens)
   const sessionUsers = useSessionUsers()
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, taskScope),
@@ -61,7 +74,7 @@ export function App() {
   })
   const boardFlow = useQuery({
     queryKey: [...queryKeys.tasks.all, 'flow', selectedProjectId, viewingUser?.id],
-    enabled: view === 'projects',
+    enabled: visibleView === 'projects',
     queryFn: () =>
       api.tasks.getBoardFlow({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
@@ -160,9 +173,11 @@ export function App() {
       if (goTo) {
         goTo = false
         if (timer) clearTimeout(timer)
-        if (key === 'q' || key === 'a' || (key === 'd' && isManager)) {
+        const target: SidebarScreenId | null =
+          key === 'q' ? 'projects' : key === 'a' ? 'agenda' : key === 'd' ? 'dashboard' : null
+        if (target && allowed.includes(target)) {
           event.preventDefault()
-          setView(key === 'q' ? 'projects' : key === 'a' ? 'agenda' : 'dashboard')
+          setView(target)
         }
         return
       }
@@ -184,7 +199,7 @@ export function App() {
       window.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [isManager])
+  }, [allowed])
 
   return (
     <>
@@ -205,11 +220,11 @@ export function App() {
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
           ) : null
         }
-        view={view}
+        view={visibleView}
         onViewChange={setView}
         taskScope={taskScope}
         onTaskScopeChange={setTaskScope}
-        isManager={isManager}
+        {...(screens ? { screens } : {})}
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
         {...(projectCounts ? { projectCounts } : {})}
@@ -262,7 +277,7 @@ export function App() {
           setNewTaskDialogOpen(true)
         }}
       >
-        {view === 'projects' ? (
+        {visibleView === 'projects' ? (
           <>
             {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
             {activeTaskId && taskFullScreen ? (
@@ -342,13 +357,15 @@ export function App() {
           projects={projects.data ?? []}
           people={sessionUsers.data ?? []}
           selectedProjectId={selectedProjectId}
-          isManager={isManager}
+          screens={allowed}
           onClose={() => setCommandsOpen(false)}
           onOpenTask={(id) => {
             openTask(id)
             setView('projects')
           }}
-          onNavigate={setView}
+          onNavigate={(target) => {
+            if (allowed.includes(target)) setView(target)
+          }}
         />
       )}
     </>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { parseQuickAdd } from '@agilebox/core'
-import type { ProjectDto, SessionUserDto } from '@agilebox/contract'
+import type { ProjectDto, SessionUserDto, SidebarScreenId } from '@agilebox/contract'
 import { CommandPalette, Skeleton, type CommandAction } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
@@ -11,7 +11,8 @@ export interface PanelCommandsProps {
   readonly projects: readonly ProjectDto[]
   readonly people: readonly SessionUserDto[]
   readonly selectedProjectId: string | null
-  readonly isManager: boolean
+  /** Telas liberadas para quem está logado: só estas aparecem em "Ir para". */
+  readonly screens: readonly SidebarScreenId[]
   readonly onClose: () => void
   readonly onOpenTask: (id: string) => void
   readonly onNavigate: (view: 'projects' | 'dashboard' | 'agenda') => void
@@ -22,7 +23,7 @@ export function PanelCommands({
   projects,
   people,
   selectedProjectId,
-  isManager,
+  screens,
   onClose,
   onOpenTask,
   onNavigate,
@@ -84,10 +85,10 @@ export function PanelCommands({
       },
     })
   const destinations = [
-    ...(isManager ? [{ view: 'dashboard' as const, label: 'Dashboard', shortcut: 'G D' }] : []),
+    { view: 'dashboard' as const, label: 'Dashboard', shortcut: 'G D' },
     { view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' },
     { view: 'projects' as const, label: 'Quadro', shortcut: 'G Q' },
-  ]
+  ].filter((destination) => screens.includes(destination.view))
   for (const destination of destinations)
     actions.push({
       id: destination.view,

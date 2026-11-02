@@ -1,7 +1,7 @@
 import { cleanup, render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { TaskDto } from '@agilebox/contract'
+import type { TaskDto, TeamCapabilitiesDto } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { createFakeApi } from '../shared/testing/fake-api'
 import { QueryProvider } from '../shared/query/QueryProvider'
@@ -565,5 +565,64 @@ describe('Painel', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog', { name: 'Projetos' })).toBeNull()
     expect(document.activeElement).toBe(title)
+  })
+})
+
+describe('Telas liberadas pelo servidor', () => {
+  const COLLABORATOR_BASIC: TeamCapabilitiesDto = {
+    level: 'basic',
+    screens: ['projects', 'backlog'],
+    statuses: [],
+  }
+
+  function renderWith(modules: Promise<TeamCapabilitiesDto>) {
+    const api = createFakeApi()
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    vi.spyOn(api.teamModules, 'get').mockReturnValue(modules)
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+  }
+
+  it('tela aberta que sai da lista depois da resposta mostra o quadro, não área vazia', async () => {
+    let respond!: (value: TeamCapabilitiesDto) => void
+    renderWith(new Promise((resolve) => (respond = resolve)))
+    const user = userEvent.setup()
+    // Antes da resposta vale o mínimo (Quadro e Agenda), então G A abre a Agenda.
+    await user.keyboard('ga')
+    expect(await screen.findByRole('heading', { name: 'Agenda' })).toBeTruthy()
+
+    respond(COLLABORATOR_BASIC)
+
+    expect(await screen.findByRole('button', { name: task.title })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Agenda' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('G A não abre a Agenda quando o servidor não a libera', async () => {
+    renderWith(Promise.resolve(COLLABORATOR_BASIC))
+    await screen.findByRole('button', { name: 'Backlog' })
+    const user = userEvent.setup()
+
+    await user.keyboard('ga')
+
+    expect(screen.queryByRole('heading', { name: 'Agenda' })).toBeNull()
+    expect(await screen.findByRole('button', { name: task.title })).toBeTruthy()
+  })
+
+  it('G D de colaborador não muda a view', async () => {
+    renderWith(Promise.resolve(COLLABORATOR_BASIC))
+    await screen.findByRole('button', { name: 'Backlog' })
+    const user = userEvent.setup()
+
+    await user.keyboard('gd')
+
+    expect(screen.queryByRole('heading', { name: 'Dashboard' })).toBeNull()
+    expect(await screen.findByRole('button', { name: task.title })).toBeTruthy()
   })
 })

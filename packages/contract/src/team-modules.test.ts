@@ -38,10 +38,25 @@ describe('schemas de ferramentas do time', () => {
   })
 
   it('recusa estado fora de active, winding_down e disabled na saída', () => {
-    expect(getTeamModulesOutputSchema.safeParse([status]).success).toBe(true)
+    const payload = (statuses: unknown) => ({
+      level: 'intermediate',
+      screens: ['projects'],
+      statuses,
+    })
+    expect(getTeamModulesOutputSchema.safeParse(payload([status])).success).toBe(true)
     expect(
-      getTeamModulesOutputSchema.safeParse([{ moduleId: 'agenda', state: 'encerrado' }]).success,
+      getTeamModulesOutputSchema.safeParse(payload([{ moduleId: 'agenda', state: 'encerrado' }]))
+        .success,
     ).toBe(false)
+  })
+
+  it('a saída de get traz nível, telas do menu e estados; recusa tela ou nível desconhecidos', () => {
+    const ok = { level: 'advanced', screens: ['tools', 'backlog'], statuses: [status] }
+    expect(getTeamModulesOutputSchema.parse(ok)).toEqual(ok)
+    expect(getTeamModulesOutputSchema.safeParse({ ...ok, screens: ['plugins'] }).success).toBe(
+      false,
+    )
+    expect(getTeamModulesOutputSchema.safeParse({ ...ok, level: 'expert' }).success).toBe(false)
   })
 
   it('aceita prévia e mudança com a forma que a aplicação devolve', () => {

@@ -102,6 +102,17 @@ function setup(currentUserId: string, boardTasks: TaskDto[] = [task]) {
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
   const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardTasks)
   vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboard)
+  // Telas do menu vêm do servidor: gestor vê Dashboard, colaborador não.
+  vi.spyOn(api.teamModules, 'get').mockImplementation(() =>
+    Promise.resolve({
+      level: 'intermediate',
+      screens:
+        role() === 'manager'
+          ? ['projects', 'agenda', 'backlog', 'sprints', 'dashboard']
+          : ['projects', 'agenda', 'backlog', 'sprints'],
+      statuses: [],
+    }),
+  )
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])

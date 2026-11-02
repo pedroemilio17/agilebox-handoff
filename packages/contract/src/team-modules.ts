@@ -23,6 +23,24 @@ export const TEAM_MODULE_IDS = [
   'burndown',
 ] as const
 
+/** Espelha `EXPERIENCE_LEVELS` do core. Coberto pelo teste de igualdade em `register-handlers.test.ts`. */
+export const EXPERIENCE_LEVEL_IDS = ['basic', 'intermediate', 'advanced'] as const
+
+/** Espelha `SIDEBAR_SCREEN_IDS` do core, na mesma ordem. Mesmo teste de igualdade. */
+export const SIDEBAR_SCREEN_IDS = [
+  'projects',
+  'agenda',
+  'backlog',
+  'sprints',
+  'dashboard',
+  'impediments',
+  'integrations',
+  'tools',
+] as const
+
+export const experienceLevelSchema = z.enum(EXPERIENCE_LEVEL_IDS)
+export const sidebarScreenIdSchema = z.enum(SIDEBAR_SCREEN_IDS)
+
 export const teamModuleIdSchema = z.enum(TEAM_MODULE_IDS)
 export const teamModuleStateSchema = z.enum(['active', 'winding_down', 'disabled'])
 export const teamModuleItemKindSchema = z.enum(['tasks', 'meetings'])
@@ -53,7 +71,12 @@ export const teamModuleImpactDtoSchema = z.object({
 })
 
 export const getTeamModulesInputSchema = z.undefined()
-export const getTeamModulesOutputSchema = z.array(teamModuleStatusDtoSchema)
+/** Nível e telas do menu de quem pede (já filtradas por nível, módulo ligado e papel), mais os estados. */
+export const getTeamModulesOutputSchema = z.object({
+  level: experienceLevelSchema,
+  screens: z.array(sidebarScreenIdSchema),
+  statuses: z.array(teamModuleStatusDtoSchema),
+})
 
 export const previewTeamModuleImpactInputSchema = z.object({
   disable: z.array(teamModuleIdSchema).optional(),
@@ -76,3 +99,5 @@ export const finishTeamModuleWindingDownOutputSchema = z.array(teamModuleStatusD
 
 export type TeamModuleStatusDto = z.infer<typeof teamModuleStatusDtoSchema>
 export type TeamModuleImpactDto = z.infer<typeof teamModuleImpactDtoSchema>
+export type TeamCapabilitiesDto = z.infer<typeof getTeamModulesOutputSchema>
+export type SidebarScreenId = z.infer<typeof sidebarScreenIdSchema>

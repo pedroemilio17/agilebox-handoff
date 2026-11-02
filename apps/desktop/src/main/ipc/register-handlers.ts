@@ -1,5 +1,10 @@
-import { createTenantContext } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import {
+  createTenantContext,
+  effectiveCapabilities,
+  sidebarScreens,
+  SUGGESTED_LEVEL,
+} from '@agilebox/core'
+import type { Actor, ModuleId, ModuleState, UserRole } from '@agilebox/core'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
 import type { ApiChannel } from '@agilebox/contract'
 import type { ActorSession } from '@agilebox/application'
@@ -166,8 +171,11 @@ export function registerHandlers(
   register('meetings.delete', (actor, input) =>
     useCases.meetings.delete.execute(createTenantContext(actor), actor, input),
   )
-  register('teamModules.get', (actor) =>
-    useCases.teamModules.get.execute(createTenantContext(actor), actor),
+  register('teamModules.get', async (actor) =>
+    teamCapabilities(
+      await useCases.teamModules.get.execute(createTenantContext(actor), actor),
+      actor.role,
+    ),
   )
   register('teamModules.previewImpact', (actor, input) =>
     useCases.teamModules.previewImpact.execute(createTenantContext(actor), actor, {
@@ -183,4 +191,18 @@ export function registerHandlers(
   register('teamModules.finishWindingDown', (actor, input) =>
     useCases.teamModules.finishWindingDown.execute(createTenantContext(actor), actor, input),
   )
+}
+
+/**
+ * Nível e telas do menu de quem pede. O nível do time ainda não tem caso de uso para ser lido
+ * (`TeamSettingsRepository`), então vale o nível sugerido até existir (PROGRESS_2.md, M2.9).
+ * Ferramenta em encerramento (`winding_down`) conta como ligada: ainda tem itens em uso.
+ */
+function teamCapabilities(
+  statuses: readonly { readonly moduleId: ModuleId; readonly state: ModuleState }[],
+  role: UserRole,
+) {
+  const modules = statuses.filter((status) => status.state !== 'disabled').map((s) => s.moduleId)
+  const capabilities = effectiveCapabilities({ modules, level: SUGGESTED_LEVEL, role })
+  return { level: capabilities.level, screens: sidebarScreens(capabilities), statuses }
 }

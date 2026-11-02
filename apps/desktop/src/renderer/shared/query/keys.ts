@@ -20,4 +20,5 @@ export const queryKeys = {
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
+  teamModules: { capabilities: ['agilebox', 'teamModules', 'capabilities'] as const },
 } as const
