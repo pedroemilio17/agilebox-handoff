@@ -133,6 +133,7 @@
   --radius-chip: 8px; /* era 10 */
   --radius-badge: 6px; /* NOVO: selos, teclas */
   --radius-drawer: 18px; /* NOVO */
+  --radius-float: 14px; /* NOVO: menus e toasts de vidro (quadro 08) */
 
   /* ---------- Espaço (inalterado) ---------- */
   --space-1: 4px;

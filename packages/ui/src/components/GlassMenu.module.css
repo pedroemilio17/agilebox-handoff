@@ -1,0 +1,62 @@
+.menu {
+  display: grid;
+  box-sizing: border-box;
+  width: 230px;
+  padding: 6px;
+  border-radius: var(--radius-float);
+  background: var(--glass-float);
+  backdrop-filter: var(--glass-float-backdrop);
+  box-shadow: var(--glass-float-highlight);
+}
+
+.item {
+  display: flex;
+  width: 100%;
+  min-height: var(--size-touch-target);
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: var(--glass-control);
+}
+
+.item:disabled {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}
+
+.separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .menu {
+    background: var(--color-glass-fallback);
+    backdrop-filter: none;
+  }
+}

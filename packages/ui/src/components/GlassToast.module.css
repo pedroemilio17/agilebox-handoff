@@ -1,0 +1,68 @@
+.toast {
+  position: fixed;
+  z-index: 1100;
+  left: var(--space-6);
+  bottom: var(--space-6);
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 2 * var(--space-6)));
+  overflow: hidden;
+  border-radius: var(--radius-float);
+  background: var(--glass-float);
+  backdrop-filter: var(--glass-float-backdrop);
+  box-shadow: var(--glass-float-highlight);
+  color: var(--color-text-primary);
+}
+
+.row {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) 0 var(--space-4);
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-body-small);
+}
+
+.action {
+  display: inline-flex;
+  flex: none;
+  min-height: var(--size-touch-target);
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--glass-control);
+}
+
+.track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bar {
+  height: 100%;
+  background: var(--color-accent-text);
+  transform-origin: left center;
+  transition: transform 100ms linear;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .toast {
+    background: var(--color-glass-fallback);
+    backdrop-filter: none;
+  }
+}
