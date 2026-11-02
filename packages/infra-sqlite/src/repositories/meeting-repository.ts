@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lt } from 'drizzle-orm'
+import { and, asc, eq, gte, lt, sql } from 'drizzle-orm'
 import type { MeetingRepository } from '@agilebox/application'
 import type { Meeting, OrganizationId, UserId } from '@agilebox/core'
 import { toMeetingId, toOrganizationId, toUserId } from '@agilebox/core'
@@ -123,6 +123,13 @@ export function createSqliteMeetingRepository(database: SqliteDatabase): Meeting
         await database
           .insert(meetingParticipants)
           .values(meeting.participants.map((userId) => ({ meetingId: meeting.id, userId })))
+    },
+    async count(organizationId) {
+      const [row] = await database
+        .select({ value: sql<number>`count(*)` })
+        .from(meetings)
+        .where(eq(meetings.organizationId, organizationId))
+      return Number(row?.value ?? 0)
     },
     async remove(organizationId: OrganizationId, meetingId) {
       const [meeting] = await database

@@ -40,7 +40,11 @@ import {
 } from './use-cases/participations/participations'
 import { GetDashboard } from './use-cases/dashboard/get-dashboard'
 import { ListTimeline } from './use-cases/timeline/list-timeline'
-import { ChangeTeamModules, GetTeamModules } from './use-cases/team-modules/team-modules'
+import {
+  ChangeTeamModules,
+  GetTeamModules,
+  PreviewTeamModuleImpact,
+} from './use-cases/team-modules/team-modules'
 import {
   CreateMeeting,
   DeleteMeeting,
@@ -104,6 +108,7 @@ export function createUseCases(deps: AppDeps) {
     teamModules: {
       get: new GetTeamModules(deps),
       change: new ChangeTeamModules(deps),
+      previewImpact: new PreviewTeamModuleImpact(deps),
     },
     meetings: {
       listMonth: new ListMonthMeetings(deps),

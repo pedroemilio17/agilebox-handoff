@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { PermissionDeniedError, toOrganizationId, toUserId, ValidationError } from '@agilebox/core'
+import {
+  PermissionDeniedError,
+  toOrganizationId,
+  toParticipationId,
+  toTaskId,
+  toUserId,
+  ValidationError,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
@@ -7,6 +14,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { aMeeting, aParticipation, aProject, aTask } from '../../testing/builders'
 
 const organizationId = toOrganizationId('00000000000000000000000001')
 const collaborator: Actor = {
@@ -163,5 +171,130 @@ describe('ferramentas do time', () => {
     await useCases.teamModules.change.execute(manager, { enable: ['agenda'] })
 
     expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toEqual([])
+  })
+})
+
+describe('prévia de impacto das ferramentas', () => {
+  function impactOf(
+    statuses: readonly { moduleId: string; counts: Record<string, number> }[],
+    id: string,
+  ) {
+    return statuses.find((status) => status.moduleId === id)?.counts
+  }
+
+  it('colaborador não vê a prévia', async () => {
+    const { useCases } = setup(collaborator)
+
+    await expect(
+      useCases.teamModules.previewImpact.execute(collaborator, { disable: ['agenda'] }),
+    ).rejects.toThrow(PermissionDeniedError)
+  })
+
+  it('sem módulos pedidos para desligar, a prévia devolve lista vazia', async () => {
+    const { useCases } = setup()
+
+    await expect(useCases.teamModules.previewImpact.execute(manager, {})).resolves.toEqual([])
+  })
+
+  it('organização sem itens dá zero em todas as contagens', async () => {
+    const { useCases } = setup()
+
+    const impacts = await useCases.teamModules.previewImpact.execute(manager, {
+      disable: ['core', 'agenda', 'backlog'],
+    })
+
+    expect(impacts.map((impact) => impact.moduleId)).toEqual(['core', 'agenda', 'backlog'])
+    for (const impact of impacts) {
+      expect(Object.values(impact.counts)).toEqual([0, 0, 0, 0])
+    }
+  })
+
+  it('conta tarefas, projetos, participações e reuniões que dependem de cada módulo', async () => {
+    const { useCases, unitOfWork } = setup()
+    const repositories = unitOfWork.repositories
+    await repositories.projects.save(organizationId, aProject().with({ organizationId }).build())
+    // Cada tarefa traz a própria participação de responsável (ids distintos).
+    await repositories.tasks.save(
+      organizationId,
+      aTask()
+        .with({
+          id: toTaskId('00000000000000000000000010'),
+          responsibleParticipationId: toParticipationId('00000000000000000000000020'),
+          organizationId,
+        })
+        .build(),
+    )
+    await repositories.tasks.save(
+      organizationId,
+      aTask()
+        .with({
+          id: toTaskId('00000000000000000000000011'),
+          responsibleParticipationId: toParticipationId('00000000000000000000000021'),
+          organizationId,
+        })
+        .build(),
+    )
+    const task = aTask()
+      .with({
+        id: toTaskId('00000000000000000000000012'),
+        responsibleParticipationId: toParticipationId('00000000000000000000000022'),
+        organizationId,
+      })
+      .build()
+    await repositories.tasks.save(organizationId, task)
+    await repositories.participations.save(organizationId, aParticipation(task).build())
+    await repositories.meetings.save(organizationId, aMeeting().with({ organizationId }).build())
+
+    const impacts = await useCases.teamModules.previewImpact.execute(manager, {
+      disable: ['core', 'agenda', 'backlog'],
+    })
+
+    // 3 tarefas, 3 responsáveis e 1 participação extra = 4 participações.
+    expect(impactOf(impacts, 'core')).toEqual({
+      tasks: 3,
+      projects: 1,
+      participations: 4,
+      meetings: 0,
+    })
+    expect(impactOf(impacts, 'agenda')).toEqual({
+      tasks: 0,
+      projects: 0,
+      participations: 0,
+      meetings: 1,
+    })
+    expect(impactOf(impacts, 'backlog')).toEqual({
+      tasks: 0,
+      projects: 0,
+      participations: 0,
+      meetings: 0,
+    })
+  })
+
+  it('desligar nunca apaga contagem: a prévia não muda dados nem estado do módulo', async () => {
+    const { useCases, unitOfWork } = setup()
+    await unitOfWork.repositories.meetings.save(
+      organizationId,
+      aMeeting().with({ organizationId }).build(),
+    )
+    await useCases.teamModules.change.execute(manager, { enable: ['agenda'] })
+
+    const first = await useCases.teamModules.previewImpact.execute(manager, { disable: ['agenda'] })
+    const second = await useCases.teamModules.previewImpact.execute(manager, {
+      disable: ['agenda'],
+    })
+
+    expect(second).toEqual(first)
+    expect(impactOf(first, 'agenda')?.meetings).toBe(1)
+    expect(await unitOfWork.repositories.meetings.count(organizationId)).toBe(1)
+    const statuses = await useCases.teamModules.get.execute(manager)
+    expect(stateOf(statuses, 'agenda')).toBe('active')
+  })
+
+  it('recusa identificador de módulo desconhecido', async () => {
+    const { useCases } = setup()
+
+    await expect(
+      useCases.teamModules.previewImpact.execute(manager, { disable: ['inexistente'] }),
+    ).rejects.toThrow(ValidationError)
   })
 })

@@ -235,3 +235,27 @@ Sem commit. Marco feito inteiro (não foi preciso dividir). Sem tela, sem IPC, s
 - **Verificação:** `pnpm check` com saída 0: 125 arquivos de teste, 1024 testes, lint com zero avisos, build ok. `pnpm coverage` não foi rodado nesta rodada.
 - **Fora deste marco:** IPC e contrato Zod de `teamModules`, tela (M2), prévia de impacto (M1.7), guard da agenda (M1.8), conclusão do encerramento (`finishWindingDown` como caso de uso).
 - **Pendências:** D10 continua aberto (arquivo lido pelo laço). Não há pendência nova do Pedro; a confirmação das arestas inferidas do catálogo (M1.2) segue valendo.
+
+## M1.7 · Prévia de impacto (sessão Claude, 2026-11-02)
+
+Sem commit. Sem tela (a prévia visível é do M2). D4 aplicada como decidida: contagens do que existe, backlog e sprints entram quando chegarem.
+
+- **Núcleo (puro):** `packages/core/src/modules/impact-preview.ts`.
+  - `ITEM_KIND_MODULE`: tarefas, projetos e participações são do `core`; reuniões são da `agenda`.
+  - `dependentsOf(moduleId)`: o próprio módulo mais quem depende dele, direta ou indiretamente (`requires` e `requiresAnyOf`), na ordem do catálogo. Desligar um módulo afeta esses itens.
+  - `previewModuleImpact(moduleId, available)`: devolve as contagens só dos tipos cujo módulo está em `dependentsOf`. Não lê nem muda estado, e não depende de o módulo estar ativo.
+- **Portas:** `count(organizationId)` em `TaskRepository`, `ParticipationRepository` e `MeetingRepository`. Projetos usam `list().length`, que já existe.
+  - Fake e SQLite contam as mesmas linhas: a participação de responsável que cada tarefa traz também conta, como em `task_participations`.
+  - Teste de contrato `conta tarefas, participações e reuniões por organização` roda nos dois adaptadores.
+- **Caso de uso:** `PreviewTeamModuleImpact` em `use-cases/team-modules/team-modules.ts`, registrado como `teamModules.previewImpact`. Recebe `{ disable }` e devolve um `ModuleImpact` por módulo pedido, na ordem do catálogo.
+  - Só gestor (`canManageTeamModules`), como a mudança. Id desconhecido recusa com `ValidationError`.
+- **Decisões de execução (não estavam explícitas):**
+  - Reuniões entraram na prévia além das três contagens citadas em D4. Sem elas, desligar a agenda mostraria zero, o que estaria errado. Se o Pedro preferir só as três, é remover a linha `meetings` de `ITEM_KIND_MODULE` e de `ITEM_KINDS`.
+  - Dependentes usam `dependenciesOf`, que inclui as alternativas de `requiresAnyOf`. Desligar horas aparece em `burndown` mesmo quando pontos cobriria a exigência. A prévia é conservadora: mostra o que pode ser afetado.
+  - A prévia lista só os módulos pedidos em `disable`. Ativar só acrescenta, então não tem impacto a mostrar.
+- **Testes:**
+  - `impact-preview.test.ts`: dependentes (inclusive indiretos e `requiresAnyOf`), contagens corretas, módulo sem itens dá zero, entrada não alterada.
+  - `team-modules.test.ts`: colaborador recusado, lista vazia sem pedido, organização vazia dá zero, contagens com dados, desligar não apaga contagem nem muda estado, id desconhecido recusado.
+  - Contrato de repositórios: contagem por organização, nos dois adaptadores.
+- **Verificação:** `pnpm check` com saída 0: 126 arquivos de teste, 1040 testes, lint com zero avisos, tipos e build ok.
+- **Fora deste marco:** IPC e contrato Zod da prévia, tela (M2), guard da agenda (M1.8).

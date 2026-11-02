@@ -3,10 +3,19 @@ import {
   isModuleId,
   MODULE_IDS,
   PermissionDeniedError,
+  previewModuleImpact,
   resolveModuleSet,
   ValidationError,
 } from '@agilebox/core'
-import type { Actor, ModuleChange, ModuleId, ModuleResolution, ModuleState } from '@agilebox/core'
+import type {
+  Actor,
+  ItemCounts,
+  ModuleChange,
+  ModuleId,
+  ModuleImpact,
+  ModuleResolution,
+  ModuleState,
+} from '@agilebox/core'
 import type { AppDeps } from '../../deps'
 import type { TeamModule, TeamModuleConfig } from '../../ports'
 
@@ -135,5 +144,40 @@ export class ChangeTeamModules {
         return toStatuses(next)
       },
     )
+  }
+}
+
+export interface PreviewTeamModuleImpactInput {
+  readonly disable?: readonly string[]
+}
+
+/**
+ * Prévia de impacto (D4): para cada módulo pedido para desligar, quantas tarefas, projetos,
+ * participações e reuniões dependem dele. Só leitura; a aplicação continua em `ChangeTeamModules`.
+ * Módulos devolvidos seguem a ordem do catálogo.
+ */
+export class PreviewTeamModuleImpact {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(
+    actor: Actor,
+    input: PreviewTeamModuleImpactInput,
+  ): Promise<readonly ModuleImpact[]> {
+    if (!canManageTeamModules(actor)) {
+      throw new PermissionDeniedError('Só o gestor vê a prévia de ferramentas do time')
+    }
+    const wanted = new Set((input.disable ?? []).map(toModuleId))
+    const organizationId = actor.organizationId
+
+    const available: ItemCounts = await this.deps.unitOfWork.run(
+      organizationId,
+      async ({ tasks, projects, participations, meetings }) => ({
+        tasks: await tasks.count(organizationId),
+        projects: (await projects.list(organizationId)).length,
+        participations: await participations.count(organizationId),
+        meetings: await meetings.count(organizationId),
+      }),
+    )
+    return MODULE_IDS.filter((id) => wanted.has(id)).map((id) => previewModuleImpact(id, available))
   }
 }

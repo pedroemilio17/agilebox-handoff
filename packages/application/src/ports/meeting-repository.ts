@@ -7,4 +7,6 @@ export interface MeetingRepository {
   listUpcoming(organizationId: OrganizationId, today: DateOnly): Promise<readonly Meeting[]>
   save(organizationId: OrganizationId, meeting: Meeting): Promise<void>
   remove(organizationId: OrganizationId, meetingId: MeetingId): Promise<void>
+  /** Quantas reuniões a organização tem. Usada pela prévia de impacto. */
+  count(organizationId: OrganizationId): Promise<number>
 }

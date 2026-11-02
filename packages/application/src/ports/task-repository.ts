@@ -19,4 +19,6 @@ export interface TaskRepository {
   listFrequent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   search(organizationId: OrganizationId, query: string, userId: UserId): Promise<readonly Task[]>
   save(organizationId: OrganizationId, task: Task): Promise<void>
+  /** Quantas tarefas (inclusive arquivadas) a organização tem. Usada pela prévia de impacto. */
+  count(organizationId: OrganizationId): Promise<number>
 }

@@ -220,6 +220,31 @@ export function describeRepositoryContract(
       await expect(repositories.users.list(otherOrganizationId)).resolves.toEqual([])
     })
 
+    it('conta tarefas, participações e reuniões por organização', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const contributor = aContributor().with({ organizationId }).build()
+      const task = aTask().with({ id: taskId, organizationId }).build()
+      const participation = aParticipation(task)
+        .with({ participant: { kind: 'contributor', contributorId: contributor.id } })
+        .build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.contributors.save(organizationId, contributor)
+      await repositories.tasks.save(organizationId, task)
+      await repositories.participations.save(organizationId, participation)
+      await repositories.meetings.save(organizationId, aMeeting().with({ organizationId }).build())
+
+      await expect(repositories.tasks.count(organizationId)).resolves.toBe(1)
+      // A participação explícita e a de responsável que a tarefa já traz.
+      await expect(repositories.participations.count(organizationId)).resolves.toBe(2)
+      await expect(repositories.meetings.count(organizationId)).resolves.toBe(1)
+      await expect(repositories.tasks.count(otherOrganizationId)).resolves.toBe(0)
+      await expect(repositories.participations.count(otherOrganizationId)).resolves.toBe(0)
+      await expect(repositories.meetings.count(otherOrganizationId)).resolves.toBe(0)
+    })
+
     it('remove registros removíveis do contrato', async () => {
       const repositories = makeAdapters()
       const meeting = aMeeting().with({ organizationId }).build()

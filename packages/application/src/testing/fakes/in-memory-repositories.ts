@@ -116,6 +116,10 @@ export class InMemoryMeetingRepository implements MeetingRepository {
     await Promise.resolve()
     bucket(this.state.meetings, org).delete(id)
   }
+  async count(org: OrganizationId) {
+    await Promise.resolve()
+    return bucket(this.state.meetings, org).size
+  }
 }
 
 export class InMemoryParticipationRepository implements ParticipationRepository {
@@ -137,6 +141,15 @@ export class InMemoryParticipationRepository implements ParticipationRepository 
   async remove(org: OrganizationId, id: Participation['id']) {
     await Promise.resolve()
     bucket(this.state.participations, org).delete(id)
+  }
+  async count(org: OrganizationId) {
+    await Promise.resolve()
+    // Mesmas linhas que o SQLite conta: participações gravadas e a de responsável de cada tarefa.
+    const ids = new Set(bucket(this.state.participations, org).keys())
+    for (const task of bucket(this.state.tasks, org).values()) {
+      for (const participation of task.participations) ids.add(participation.id)
+    }
+    return ids.size
   }
 }
 
@@ -263,6 +276,10 @@ export class InMemoryTaskRepository implements TaskRepository {
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
     bucket(this.state.tasks, org).set(value.id, value)
+  }
+  async count(org: OrganizationId) {
+    await Promise.resolve()
+    return bucket(this.state.tasks, org).size
   }
   private forUser(org: OrganizationId, userId: User['id']) {
     return [...bucket(this.state.tasks, org).values()].filter(
