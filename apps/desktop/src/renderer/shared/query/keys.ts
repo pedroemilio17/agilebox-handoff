@@ -8,6 +8,7 @@ export const queryKeys = {
   projects: {
     all: ['agilebox', 'projects'] as const,
     list: ['agilebox', 'projects', 'list'] as const,
+    archived: ['agilebox', 'projects', 'archived'] as const,
     members: (projectId: string) => ['agilebox', 'projects', 'members', projectId] as const,
   },
   tasks: {

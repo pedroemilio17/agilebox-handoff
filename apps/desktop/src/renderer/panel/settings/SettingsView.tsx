@@ -11,6 +11,7 @@ import {
   WINDOW_OPACITY_MIN,
 } from '../../shared/lib/window-opacity'
 import { panelCopy } from '../copy'
+import { ArchivedProjectsSection } from './ArchivedProjectsSection'
 import { TeamLevelSection } from './TeamLevelSection'
 import { UpdatesSection } from './UpdatesSection'
 import styles from './SettingsView.module.css'
@@ -92,6 +93,7 @@ export function SettingsView() {
         </div>
       </GlassSurface>
       {canChangeTeamLevel ? <TeamLevelSection /> : null}
+      <ArchivedProjectsSection />
       <UpdatesSection />
     </div>
   )

@@ -57,6 +57,8 @@ function renderSettings({
     role,
   })
   vi.spyOn(api.session, 'getCurrent').mockReturnValue(sessionCall)
+  // A seção de arquivados lê a lista de projetos; sem mock, o fake falha e cria outro alerta.
+  vi.spyOn(api.projects, 'list').mockResolvedValue([])
   const getModules = vi
     .spyOn(api.teamModules, 'get')
     .mockImplementation(() =>

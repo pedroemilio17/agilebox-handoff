@@ -1,0 +1,20 @@
+.list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-touch-target);
+}
+
+.name {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-body);
+}
