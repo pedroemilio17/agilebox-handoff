@@ -1,7 +1,9 @@
 # Progresso
+
 Plano: `docs/AgileBox 2.0 — Plano de entregas por camadas e marcos.md` (linha M0). Regras do laço: ver prompt do orquestrador.
 
 ## M0 · Estabilizar o MVP
+
 Pronto quando: criar, editar, mover e reabrir persistem; nenhuma tela estática.
 
 - [x] M0.1 Definir a semântica de "Minhas tarefas" do gestor (decisão aberta; registrar em `docs/decisoes/`) — teste: nenhum, só o ADR — decidido: opção A (ADR 0004)
