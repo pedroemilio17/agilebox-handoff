@@ -1,12 +1,16 @@
 import {
+  acceptanceSummary,
   canSeeRate,
   canSeeTaskTotal,
   canEditTask,
   describeEvent,
   isReadOnlyFor,
   total as calculateTaskTotal,
+  visiblePlannedCost,
+  visibleRealizedCost,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
   Actor,
   Contributor,
   Meeting,
@@ -104,7 +108,59 @@ export function toParticipationSummaryDto(
   }
 }
 
-export function toTaskDto(task: Task): TaskDto {
+/** Resumo dos critérios de aceite (M3.6): contagem n/m para a linha do Backlog e o detalhe. */
+export interface AcceptanceSummaryDto {
+  readonly done: number
+  readonly total: number
+}
+
+/**
+ * Estimativa e custos da tarefa (M3.7). Horas são decimais, como em `ParticipationSummaryDto`.
+ * Os valores em R$ seguem `visiblePlannedCost`/`visibleRealizedCost` do core: nulo quando o ator
+ * não pode ver (gestor vê o total; colaborador só a própria parcela).
+ */
+export interface TaskEstimateDto {
+  readonly estimatedHours: number | null
+  readonly estimatedCost: number | null
+  readonly realizedCost: number | null
+}
+
+/** DTO da tarefa com a estimativa e os custos conforme o ator (M3.7). */
+export type TaskViewDto = TaskDto & TaskEstimateDto
+
+export interface AcceptanceCriterionDto {
+  readonly id: string
+  readonly text: string
+  readonly done: boolean
+}
+
+/** Lista de critérios na ordem da tarefa, com o resumo. Devolvida pelas leituras e pelas edições. */
+export interface CriteriaViewDto {
+  readonly criteria: readonly AcceptanceCriterionDto[]
+  readonly summary: AcceptanceSummaryDto
+}
+
+export function toAcceptanceSummaryDto(
+  criteria: readonly AcceptanceCriterion[],
+): AcceptanceSummaryDto {
+  const { done, total } = acceptanceSummary(criteria)
+  return { done, total }
+}
+
+export function toCriteriaViewDto(criteria: readonly AcceptanceCriterion[]): CriteriaViewDto {
+  return {
+    criteria: criteria.map((item) => ({ id: item.id, text: item.text, done: item.done })),
+    summary: toAcceptanceSummaryDto(criteria),
+  }
+}
+
+/**
+ * DTO da tarefa para quem a vê. Os custos em R$ dependem de quem olha (`viewer`): o mapper exige o
+ * ator em todos os pontos de uso, para que nenhum caminho entregue valor sem decidir a visibilidade.
+ */
+export function toTaskDto(task: Task, viewer: Actor): TaskViewDto {
+  const plannedCents = visiblePlannedCost(viewer, task)
+  const realizedCents = visibleRealizedCost(viewer, task)
   return {
     id: task.id,
     projectId: task.projectId,
@@ -117,6 +173,11 @@ export function toTaskDto(task: Task): TaskDto {
     ticketUrl: task.ticket?.url ?? null,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
+    backlogRank: task.backlogRank,
+    onBoard: task.onBoard,
+    estimatedHours: task.estimatedHours === null ? null : task.estimatedHours / 100,
+    estimatedCost: plannedCents === null ? null : rateInReais(plannedCents),
+    realizedCost: realizedCents === null ? null : rateInReais(realizedCents),
   }
 }
 
@@ -125,10 +186,10 @@ export function toTaskDetailDto(
   actor: Actor,
   isMember: boolean,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
-): GetTaskDto {
+): GetTaskDto & TaskEstimateDto {
   const canEdit = canEditTask(actor, task)
   return {
-    ...toTaskDto(task),
+    ...toTaskDto(task, actor),
     participations: task.participations.map((participation) =>
       toParticipationSummaryDto(participation, task.organizationId, actor, names),
     ),

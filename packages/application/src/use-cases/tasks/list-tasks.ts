@@ -14,8 +14,8 @@ import {
   toUserId,
 } from '@agilebox/core'
 import type { Actor, OrganizationId, Task, TenantContext } from '@agilebox/core'
-import type { TaskDto } from '@agilebox/contract'
 import { toTaskDto } from '../../mappers'
+import type { TaskViewDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { BACKLOG_MODULE, readModuleState } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
@@ -76,7 +76,7 @@ export class ListBoard {
     ctx: TenantContext,
     actor: Actor,
     input: ListBoardInput,
-  ): Promise<readonly TaskDto[]> {
+  ): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
     const tasks = await scopedBoard(this.deps, ctx, actor, input)
     const now = await this.deps.clock.now(organizationId)
@@ -89,7 +89,7 @@ export class ListBoard {
             ? await this.deps.timeline.listByTask(organizationId, task.id)
             : []
         return {
-          ...toTaskDto(task),
+          ...toTaskDto(task, actor),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
         }
@@ -105,7 +105,7 @@ export class ListTeamBoard {
     ctx: TenantContext,
     actor: Actor,
     input: { readonly projectId?: string },
-  ): Promise<readonly TaskDto[]> {
+  ): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
     const tasks = await onlyBoardTasks(
@@ -115,7 +115,7 @@ export class ListTeamBoard {
     )
     return tasks
       .filter((task) => actor.role === 'manager' || participates(actor, task))
-      .map(toTaskDto)
+      .map((task) => toTaskDto(task, actor))
   }
 }
 
@@ -126,30 +126,34 @@ export class ListTeamBoard {
 export class ListArchivedTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
     const archived = await this.deps.tasks.listArchived(organizationId)
     return archived
       .filter((task) => actor.role === 'manager' || participates(actor, task))
-      .map(toTaskDto)
+      .map((task) => toTaskDto(task, actor))
   }
 }
 
 export class ListRecentTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
-    return (await this.deps.tasks.listRecent(organizationId, actor.userId)).map(toTaskDto)
+    return (await this.deps.tasks.listRecent(organizationId, actor.userId)).map((task) =>
+      toTaskDto(task, actor),
+    )
   }
 }
 
 export class ListFrequentTasks {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
-    return (await this.deps.tasks.listFrequent(organizationId, actor.userId)).map(toTaskDto)
+    return (await this.deps.tasks.listFrequent(organizationId, actor.userId)).map((task) =>
+      toTaskDto(task, actor),
+    )
   }
 }
 
@@ -160,9 +164,11 @@ export class SearchTasks {
     ctx: TenantContext,
     actor: Actor,
     input: { readonly query: string },
-  ): Promise<readonly TaskDto[]> {
+  ): Promise<readonly TaskViewDto[]> {
     const organizationId = assertTenant(ctx, actor)
-    return (await this.deps.tasks.search(organizationId, input.query, actor.userId)).map(toTaskDto)
+    return (await this.deps.tasks.search(organizationId, input.query, actor.userId)).map((task) =>
+      toTaskDto(task, actor),
+    )
   }
 }
 

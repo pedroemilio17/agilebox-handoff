@@ -41,11 +41,16 @@ import type {
   UserId,
 } from '@agilebox/core'
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
-import { toTaskDetailDto, toTaskDto } from '../../mappers'
+import { toAcceptanceSummaryDto, toTaskDetailDto, toTaskDto } from '../../mappers'
+import type { AcceptanceSummaryDto, TaskEstimateDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import type { UnitOfWorkRepositories } from '../../ports'
 import { BACKLOG_MODULE, requireModuleAccess } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
+
+/** Detalhe da tarefa: DTO da tarefa, custos conforme o ator, dias parada e resumo do aceite (M3.6/M3.7). */
+export type GetTaskDetailView = GetTaskDto &
+  TaskEstimateDto & { readonly acceptance: AcceptanceSummaryDto }
 
 /**
  * Criação. Com `inBacklog` (Q4, M3.5), a tarefa nasce no fim do backlog do time, fora do quadro, e
@@ -144,7 +149,7 @@ export class CreateTask {
       await repositories.timeline.saveMany(organizationId, [event, ...initialEvents])
     })
     await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task)
+    return toTaskDto(task, actor)
   }
 }
 
@@ -155,7 +160,7 @@ export class GetTaskDetail {
     ctx: TenantContext,
     actor: Actor,
     input: { readonly taskId: string },
-  ): Promise<GetTaskDto> {
+  ): Promise<GetTaskDetailView> {
     const organizationId = assertTenant(ctx, actor)
     const task = await this.getTask(organizationId, input.taskId)
     const members = await this.deps.projects.listMembers(organizationId, task.projectId)
@@ -169,9 +174,13 @@ export class GetTaskDetail {
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(organizationId, task.id)
         : []
+    const criteria = await this.deps.unitOfWork.run(organizationId, (repositories) =>
+      repositories.taskCriteria.listByTask(organizationId, task.id),
+    )
     return {
       ...toTaskDetailDto(task, actor, isMember, names),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
+      acceptance: toAcceptanceSummaryDto(criteria),
     }
   }
 
@@ -263,7 +272,7 @@ abstract class ChangeTask {
     )
     if (events.length > 0)
       await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [updated.id] })
-    return toTaskDto(updated)
+    return toTaskDto(updated, actor)
   }
 }
 

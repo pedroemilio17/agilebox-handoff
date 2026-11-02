@@ -24,6 +24,15 @@ import {
   UpdateTask,
 } from './use-cases/tasks/tasks'
 import {
+  AddCriterion,
+  EditCriterion,
+  ListTaskCriteria,
+  RemoveCriterion,
+  ReorderCriterion,
+  SetCriterionDone,
+} from './use-cases/tasks/acceptance'
+import { SetTaskEstimate } from './use-cases/tasks/estimate'
+import {
   GetBoardFlow,
   ListArchivedTasks,
   ListBoard,
@@ -106,6 +115,17 @@ export function createUseCases(deps: AppDeps) {
       listFrequent: new ListFrequentTasks(deps),
       search: new SearchTasks(deps),
       recordOpen: new RecordTaskOpen(deps),
+    },
+    acceptance: {
+      list: new ListTaskCriteria(deps),
+      add: new AddCriterion(deps),
+      edit: new EditCriterion(deps),
+      setDone: new SetCriterionDone(deps),
+      remove: new RemoveCriterion(deps),
+      reorder: new ReorderCriterion(deps),
+    },
+    estimates: {
+      set: new SetTaskEstimate(deps),
     },
     backlog: {
       list: new ListBacklog(deps),

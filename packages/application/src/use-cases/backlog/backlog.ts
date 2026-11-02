@@ -25,10 +25,15 @@ import type {
   TimelineEventDraft,
 } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
-import { toTaskDto } from '../../mappers'
+import { toAcceptanceSummaryDto, toTaskDto } from '../../mappers'
+import type { AcceptanceSummaryDto, TaskEstimateDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { BACKLOG_MODULE, requireModuleAccess } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
+
+/** Linha do backlog: a tarefa, a estimativa conforme o ator e o resumo n/m dos critérios (M3.6). */
+export type BacklogTaskDto = TaskDto &
+  TaskEstimateDto & { readonly acceptance: AcceptanceSummaryDto }
 
 /*
  * Backlog do time (M3.5). Regras:
@@ -74,15 +79,28 @@ export class ListBacklog {
     ctx: TenantContext,
     actor: Actor,
     input: ListBacklogInput = {},
-  ): Promise<readonly TaskDto[]> {
+  ): Promise<readonly BacklogTaskDto[]> {
     const organizationId = assertTenant(ctx, actor)
     await requireModuleAccess(this.deps, organizationId, BACKLOG_MODULE, 'existing')
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
     const backlog = await this.deps.tasks.listBacklog(organizationId)
-    return backlog
+    const visible = backlog
       .filter((task) => projectId === undefined || task.projectId === projectId)
       .filter((task) => actor.role === 'manager' || participates(actor, task))
-      .map(toTaskDto)
+    if (visible.length === 0) return []
+    // Resumo n/m dos critérios, lido na mesma transação para todas as linhas (M3.6).
+    return this.deps.unitOfWork.run(organizationId, async ({ taskCriteria }) => {
+      const rows: BacklogTaskDto[] = []
+      for (const task of visible) {
+        rows.push({
+          ...toTaskDto(task, actor),
+          acceptance: toAcceptanceSummaryDto(
+            await taskCriteria.listByTask(organizationId, task.id),
+          ),
+        })
+      }
+      return rows
+    })
   }
 }
 
@@ -167,7 +185,7 @@ abstract class BacklogMoveUseCase {
       },
     )
     await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: changedIds })
-    return toTaskDto(updated)
+    return toTaskDto(updated, actor)
   }
 }
 

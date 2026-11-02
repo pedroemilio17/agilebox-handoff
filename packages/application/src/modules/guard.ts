@@ -33,6 +33,12 @@ export function effectiveModuleStates(
 /** Módulo do backlog (M3.5): ordem do time, levar ao quadro, devolver e criar no backlog. */
 export const BACKLOG_MODULE: ModuleId = 'backlog'
 
+/** Módulo de critérios de aceite (M3.6, B5 A: nível Avançado). Exige o Backlog (registro, M3.4). */
+export const ACCEPTANCE_MODULE: ModuleId = 'acceptance'
+
+/** Módulo de estimativa em horas (M3.7, ADR-07). Fica fora do preset Scrum (B6). */
+export const ESTIMATES_HOURS_MODULE: ModuleId = 'estimates.hours'
+
 /**
  * `new`: criar itens. Exige módulo ativo.
  * `existing`: ler, editar e excluir o que já existe. Aceita módulo encerrando; recusa só se desativado.
