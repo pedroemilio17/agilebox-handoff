@@ -1,11 +1,14 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TEAM_MODULE_IDS } from '@agilebox/contract'
 import { parseDateOnly } from '@agilebox/core'
 import { ApiProvider } from '../../shared/api/ApiProvider'
+import { queryKeys } from '../../shared/query/keys'
 import { QueryProvider } from '../../shared/query/QueryProvider'
+import { UndoProvider } from '../layout/UndoProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { makeDetail, makeEvent, makeParticipation, TASK_ID, USER_ID } from './fixtures'
 import { TaskDetailView } from './TaskDetailView'
@@ -51,7 +54,9 @@ function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <TaskDetailView taskId={TASK_ID} onBack={onBack} today={parseDateOnly('2026-11-01')} />
+        <UndoProvider>
+          <TaskDetailView taskId={TASK_ID} onBack={onBack} today={parseDateOnly('2026-11-01')} />
+        </UndoProvider>
       </QueryProvider>
     </ApiProvider>,
   )
@@ -162,7 +167,9 @@ describe('Detalhe da tarefa', () => {
     render(
       <ApiProvider api={api}>
         <QueryProvider>
-          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
         </QueryProvider>
       </ApiProvider>,
     )
@@ -222,7 +229,9 @@ describe('Card Linha do tempo', () => {
     render(
       <ApiProvider api={api}>
         <QueryProvider>
-          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
         </QueryProvider>
       </ApiProvider>,
     )
@@ -261,7 +270,9 @@ describe('Card Linha do tempo', () => {
     render(
       <ApiProvider api={api}>
         <QueryProvider>
-          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
         </QueryProvider>
       </ApiProvider>,
     )
@@ -365,6 +376,55 @@ describe('Card Custo', () => {
   })
 })
 
+describe('Card Custo com o próprio valor/hora', () => {
+  it('colaborador com o próprio valor/hora e total nulo mostra o valor e esconde o total', async () => {
+    setup({ detail: makeDetail({ total: null }) })
+    expect(await screen.findByLabelText('Valor/hora de Ana Souza')).toHaveValue('40,00')
+    expect(screen.queryByLabelText('Total')).toBeNull()
+    // A linha mostra o próprio subtotal (2,5 h × R$ 40,00), sem total do cartão.
+    const line = screen.getByLabelText('Valor/hora de Ana Souza').closest('li')
+    expect(line?.textContent).toContain('R$\u00a0100,00')
+  })
+
+  it('sem a estimativa, o total usa as horas gravadas mesmo com rascunho digitado', async () => {
+    const api = fakeApi()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())
+    vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+    vi.spyOn(api.timeline, 'list').mockResolvedValue([])
+    vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
+    vi.spyOn(api.contributors, 'list').mockResolvedValue([])
+    // Cliente próprio, para poder pedir de novo o nível do time depois de digitar.
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <ApiProvider api={api}>
+        <QueryClientProvider client={queryClient}>
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
+        </QueryClientProvider>
+      </ApiProvider>,
+    )
+    const user = userEvent.setup()
+    const hours = await screen.findByLabelText('Horas de Ana Souza')
+    await user.clear(hours)
+    await user.type(hours, '3,5')
+    expect(screen.getByLabelText('Total').textContent).toBe('R$\u00a0140,00')
+
+    // O time desliga a estimativa enquanto o rascunho ainda está na tela.
+    allowTeam(
+      api,
+      'advanced',
+      TEAM_MODULE_IDS.filter((id) => id !== 'estimates.hours'),
+    )
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.teamModules.capabilities })
+    })
+
+    await waitFor(() => expect(screen.queryByLabelText('Horas de Ana Souza')).toBeNull())
+    expect(screen.getByLabelText('Total').textContent).toBe('R$\u00a0100,00')
+  })
+})
+
 describe('Card Envolvidos', () => {
   it('remove um envolvido', async () => {
     const { api, user } = setup()
@@ -393,7 +453,9 @@ describe('Card Envolvidos', () => {
     render(
       <ApiProvider api={api}>
         <QueryProvider>
-          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
         </QueryProvider>
       </ApiProvider>,
     )
@@ -434,9 +496,6 @@ describe('Campos por nível (M2.11)', () => {
   ) {
     const api = fakeApi(level, options.active)
     const detail = options.detail ?? makeDetail()
-    if (options.teamFails) {
-      vi.spyOn(api.teamModules, 'get').mockRejectedValue(new Error('x'))
-    }
     vi.spyOn(api.tasks, 'get').mockResolvedValue(detail)
     vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     vi.spyOn(api.timeline, 'list').mockResolvedValue([makeEvent()])
@@ -445,14 +504,18 @@ describe('Campos por nível (M2.11)', () => {
     const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(detail)
     const setRate = vi.spyOn(api.participations, 'setRate').mockResolvedValue(makeParticipation())
     const setHours = vi.spyOn(api.participations, 'setHours').mockResolvedValue(makeParticipation())
+    const teamGet = vi.spyOn(api.teamModules, 'get')
+    if (options.teamFails) teamGet.mockRejectedValue(new Error('x'))
     const view = render(
       <ApiProvider api={api}>
         <QueryProvider>
-          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          <UndoProvider>
+            <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+          </UndoProvider>
         </QueryProvider>
       </ApiProvider>,
     )
-    return { ...view, user: userEvent.setup(), update, setRate, setHours }
+    return { ...view, user: userEvent.setup(), update, setRate, setHours, teamGet }
   }
 
   it('Essencial mostra só título, estado e prazo', async () => {
@@ -542,9 +605,11 @@ describe('Campos por nível (M2.11)', () => {
     expect(high.setHours).not.toHaveBeenCalled()
   })
 
-  it('se o time não carrega, mostra só o Essencial', async () => {
-    renderAt('advanced', { teamFails: true })
+  it('se o time não carrega, pede o nível, recebe a rejeição e mostra só o Essencial', async () => {
+    const { teamGet } = renderAt('advanced', { teamFails: true })
     expect(await screen.findByDisplayValue('Revisar integração')).toBeInTheDocument()
+    await waitFor(() => expect(teamGet).toHaveBeenCalledTimes(1))
+    await expect(teamGet.mock.results[0]!.value).rejects.toThrow('x')
     expect(screen.queryByRole('group', { name: 'Responsável' })).toBeNull()
     expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Campos avançados' })).toBeNull()

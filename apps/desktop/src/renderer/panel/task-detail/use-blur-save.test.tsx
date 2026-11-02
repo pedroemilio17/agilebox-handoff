@@ -31,6 +31,27 @@ describe('useBlurSave', () => {
     expect(result.current.value).toBe('digitando')
   })
 
+  it('cancel volta ao valor gravado e o próximo blur não grava nada', () => {
+    const onSave = vi.fn()
+    const { result } = renderHook(() => useBlurSave('gravado', onSave))
+    act(() => result.current.onFocus())
+    act(() => result.current.onChange('digitado'))
+    act(() => result.current.cancel())
+    expect(result.current.value).toBe('gravado')
+    act(() => result.current.onBlur())
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
+  it('o blur grava o último texto digitado, mesmo com digitações seguidas', () => {
+    const onSave = vi.fn()
+    const { result } = renderHook(() => useBlurSave('a', onSave))
+    act(() => result.current.onFocus())
+    act(() => result.current.onChange('ab'))
+    act(() => result.current.onChange('abc'))
+    act(() => result.current.onBlur())
+    expect(onSave).toHaveBeenCalledWith('abc')
+  })
+
   it('acompanha o servidor quando o campo não tem o foco', () => {
     const { result, rerender } = renderHook(({ value }) => useBlurSave(value, vi.fn()), {
       initialProps: { value: 'a' },

@@ -1,10 +1,11 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { DateOnly, TaskFieldId, TaskStatus } from '@agilebox/core'
-import { Button, IconButton, ReadOnlyBadge } from '@agilebox/ui'
+import { Button, GlassMenu, IconButton, ReadOnlyBadge } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { useDismissOnOutside } from '../hooks/use-dismiss-on-outside'
 import { useTeamCapabilities } from '../hooks/use-team-capabilities'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
@@ -15,8 +16,23 @@ import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { detailFieldLayout } from './task-layout'
 import { useBlurSave } from './use-blur-save'
+import { useTaskArchive } from './use-task-archive'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import styles from './TaskDetailView.module.css'
+
+/** Barra lateral: ali F2 e E são de quem tem o foco (renomear ou arquivar um projeto). */
+function isInSidebar(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('nav') !== null
+}
+
+/** Campo de texto ou editor: ali as teclas de letra são do próprio campo. */
+function isTyping(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') !==
+      null
+  )
+}
 
 export interface TaskDetailViewProps {
   readonly fullScreen?: boolean
@@ -42,10 +58,58 @@ export function TaskDetailView({
   const shows = (field: TaskFieldId) => layout.visible.includes(field)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const advancedId = useId()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
+  const menuAnchorRef = useRef<HTMLDivElement>(null)
+  useDismissOnOutside(menuAnchorRef, menuOpen, () => setMenuOpen(false))
+  const archive = useTaskArchive(taskId, detail.data?.title ?? '')
+  const archiving = useRef(false)
   const task = detail.data
+  const editable = task !== undefined && !task.readOnly
   const title = useBlurSave(task?.title ?? '', (next) => {
     if (next.trim() !== '') update.mutate({ title: next.trim() })
   })
+
+  function archiveNow() {
+    if (archiving.current) return
+    archiving.current = true
+    archive.mutate(undefined, {
+      onSuccess: () => onBack(),
+      onSettled: () => {
+        archiving.current = false
+      },
+    })
+  }
+
+  // O atalho lê a ação do último render sem reprender o efeito a cada render.
+  const archiveRef = useRef(archiveNow)
+  useEffect(() => {
+    archiveRef.current = archiveNow
+  })
+
+  useEffect(() => {
+    if (!editable) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      // Outro controle já usou a tecla (ex.: F2 para renomear um projeto na barra lateral).
+      if (event.defaultPrevented) return
+      // Shift+E não é o atalho de arquivar: só E puro.
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
+      if (event.repeat || event.isComposing) return
+      const key = event.key.toLowerCase()
+      if (key !== 'f2' && key !== 'e') return
+      if (isTyping(event.target) || isInSidebar(event.target)) return
+      if (document.querySelector('[role="menu"], [role="dialog"][aria-modal="true"]')) return
+      event.preventDefault()
+      if (key === 'f2') {
+        titleRef.current?.focus()
+        titleRef.current?.select()
+      } else {
+        archiveRef.current()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [editable])
 
   useEffect(() => {
     void api.tasks.recordOpen({ taskId }).catch(() => undefined)
@@ -125,22 +189,79 @@ export function TaskDetailView({
             </svg>
           </IconButton>
         )}
+        {readOnly ? null : (
+          <div ref={menuAnchorRef} className={styles.menuAnchor}>
+            <IconButton
+              type="button"
+              aria-label="Mais ações da tarefa"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <circle cx="5" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="19" cy="12" r="1.8" />
+              </svg>
+            </IconButton>
+            {menuOpen ? (
+              // Esc fecha só o menu: não pode chegar ao Drawer, que fecharia o detalhe.
+              <div
+                className={styles.menuPopover}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') event.stopPropagation()
+                }}
+              >
+                <GlassMenu
+                  label="Ações da tarefa"
+                  items={[{ id: 'archive', label: 'Arquivar', shortcut: 'E' }]}
+                  onSelect={(id) => {
+                    if (id === 'archive') archiveNow()
+                  }}
+                  onClose={() => setMenuOpen(false)}
+                />
+              </div>
+            ) : null}
+          </div>
+        )}
         {backButton}
         {readOnly ? <ReadOnlyBadge /> : null}
       </header>
       <input
+        ref={titleRef}
         aria-label={panelCopy.taskTitle}
         className={styles.title}
         disabled={readOnly}
         value={title.value}
         onChange={(event) => title.onChange(event.currentTarget.value)}
         onFocus={title.onFocus}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            event.currentTarget.blur()
+          } else if (event.key === 'Escape' && title.value !== (task?.title ?? title.value)) {
+            // Com texto diferente do gravado, Esc só cancela a edição e o foco fica no campo.
+            // Sem mudança, Esc segue e fecha o detalhe, como antes.
+            event.preventDefault()
+            event.stopPropagation()
+            title.cancel()
+          } else if (event.key === 'F2') {
+            event.preventDefault()
+            event.currentTarget.select()
+          }
+        }}
         onBlur={() => {
           if (title.value.trim() === '') title.onChange(task!.title)
           title.onBlur()
         }}
       />
-      <SaveError error={update.error ?? move.error} />
+      <SaveError error={update.error ?? move.error ?? archive.error} />
       {(task!.agingDays ?? 0) > 4 && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
           <p>

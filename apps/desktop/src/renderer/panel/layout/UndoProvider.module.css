@@ -1,0 +1,13 @@
+.failure {
+  position: fixed;
+  z-index: 1100;
+  left: var(--space-6);
+  bottom: calc(var(--space-6) + 72px);
+  max-width: min(360px, calc(100vw - 2 * var(--space-6)));
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-field);
+  background: var(--color-signal-danger-bg);
+  color: var(--color-signal-danger-text);
+  font-size: var(--font-size-body-small);
+}

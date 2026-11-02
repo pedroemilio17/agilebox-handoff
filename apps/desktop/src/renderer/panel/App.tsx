@@ -226,6 +226,7 @@ export function App() {
         onTaskScopeChange={setTaskScope}
         {...(screens ? { screens } : {})}
         projects={projects.data ?? []}
+        canManageProject={(project) => isManager || project.createdBy === actor.actor?.userId}
         selectedProjectId={selectedProjectId}
         {...(projectCounts ? { projectCounts } : {})}
         onProjectSelect={(id) => {

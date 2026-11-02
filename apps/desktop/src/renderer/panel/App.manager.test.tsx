@@ -250,6 +250,28 @@ describe('Membros do projeto', () => {
   })
 })
 
+describe('Ações do projeto na barra lateral (M2.12-fix)', () => {
+  it('o gestor vê o ⋯ de qualquer projeto, mesmo o que não criou', async () => {
+    setup(MANAGER)
+
+    expect(
+      await screen.findByRole('button', { name: 'Ações do projeto Projeto Boreal' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Ações do projeto Projeto Aurora' }),
+    ).toBeInTheDocument()
+  })
+
+  it('o colaborador vê o ⋯ só no projeto que criou', async () => {
+    setup(ANA)
+
+    expect(
+      await screen.findByRole('button', { name: 'Ações do projeto Projeto Aurora' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ações do projeto Projeto Boreal' })).toBeNull()
+  })
+})
+
 describe('Erros de permissão', () => {
   it('permissão negada ao salvar vira aviso curto', async () => {
     const { api, user } = setup(ANA)

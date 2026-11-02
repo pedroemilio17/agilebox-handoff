@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { EmptyState, WindowControls, ProjectSwatch, Eyebrow, Kbd } from '@agilebox/ui'
+import { EmptyState, WindowControls, Eyebrow, Kbd } from '@agilebox/ui'
 import type { SessionUserDto, SidebarScreenId } from '@agilebox/contract'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
+import { ProjectRow } from './ProjectRow'
+import { UndoProvider } from './UndoProvider'
 import { SettingsView } from '../settings/SettingsView'
 import { ToolsView } from '../tools/ToolsView'
 import styles from './PanelShell.module.css'
@@ -45,6 +47,13 @@ export function resolveView(view: PanelView, screens?: readonly SidebarScreenId[
 }
 export type TaskScope = 'mine' | 'team'
 
+/** Projeto como a barra lateral o recebe. `createdBy` decide o menu quando a tela não manda outra regra. */
+export interface SidebarProject {
+  readonly id: string
+  readonly name: string
+  readonly createdBy?: string
+}
+
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
   readonly managerContext?: ReactNode
@@ -56,7 +65,12 @@ export interface PanelShellProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
-  readonly projects?: readonly { readonly id: string; readonly name: string }[]
+  readonly projects?: readonly SidebarProject[]
+  /**
+   * Quem vê o menu "⋯" do projeto (renomear e arquivar). Sem ela, vale quem criou o projeto.
+   * O servidor confere a mesma regra (criador ou gestor) em cada ação.
+   */
+  readonly canManageProject?: (project: SidebarProject) => boolean
   readonly selectedProjectId?: string | null
   readonly projectCounts?: Readonly<Record<string, number>>
   readonly onProjectSelect?: (id: string | null) => void
@@ -99,6 +113,7 @@ export function PanelShell({
   onNewTask,
   account,
   projects = [],
+  canManageProject,
   selectedProjectId = null,
   projectCounts,
   onProjectSelect,
@@ -117,54 +132,63 @@ export function PanelShell({
     { id: 'plugins', label: panelCopy.plugins, soon: true },
   ]
 
+  const currentUserId = account?.currentUserId
+  const canManage =
+    canManageProject ??
+    ((project: SidebarProject) =>
+      project.createdBy !== undefined && project.createdBy === currentUserId)
+
   return (
-    <main className={styles.window} aria-label={panelCopy.title}>
-      <Rail
-        expanded={railExpanded}
-        items={items}
-        selected={visibleView}
-        onExpandChange={setRailExpanded}
-        onSelect={onViewChange}
-        account={account}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        projectCounts={projectCounts}
-        onProjectSelect={onProjectSelect}
-        onOpenTray={onOpenTray}
-        onSearch={onSearch}
-      />
-      <section className={styles.main}>
-        <TitleBar
-          taskScope={taskScope}
-          onTaskScopeChange={onTaskScopeChange ?? (() => undefined)}
-          title={viewTitles[visibleView]}
-          board={visibleView === 'projects'}
-          projectSelector={projectSelector}
-          managerContext={managerContext}
-          onMinimize={onMinimize}
-          onToggleExpand={onToggleExpand}
-          onClose={onClose}
-          onNewTask={onNewTask}
+    <UndoProvider>
+      <main className={styles.window} aria-label={panelCopy.title}>
+        <Rail
+          expanded={railExpanded}
+          items={items}
+          selected={visibleView}
+          onExpandChange={setRailExpanded}
+          onSelect={onViewChange}
+          account={account}
+          projects={projects}
+          canManage={canManage}
+          selectedProjectId={selectedProjectId}
+          projectCounts={projectCounts}
+          onProjectSelect={onProjectSelect}
+          onOpenTray={onOpenTray}
+          onSearch={onSearch}
         />
-        <div className={styles.content} key={visibleView}>
-          {visibleView === 'projects' ? (
-            children
-          ) : visibleView === 'dashboard' && dashboard ? (
-            dashboard
-          ) : visibleView === 'agenda' && agenda ? (
-            agenda
-          ) : visibleView === 'settings' ? (
-            <SettingsView />
-          ) : visibleView === 'tools' ? (
-            <ToolsView />
-          ) : visibleView === 'plugins' ? (
-            <EmptyState title={panelCopy.comingSoon} />
-          ) : (
-            <EmptyState title={panelCopy.comingSoon} />
-          )}
-        </div>
-      </section>
-    </main>
+        <section className={styles.main}>
+          <TitleBar
+            taskScope={taskScope}
+            onTaskScopeChange={onTaskScopeChange ?? (() => undefined)}
+            title={viewTitles[visibleView]}
+            board={visibleView === 'projects'}
+            projectSelector={projectSelector}
+            managerContext={managerContext}
+            onMinimize={onMinimize}
+            onToggleExpand={onToggleExpand}
+            onClose={onClose}
+            onNewTask={onNewTask}
+          />
+          <div className={styles.content} key={visibleView}>
+            {visibleView === 'projects' ? (
+              children
+            ) : visibleView === 'dashboard' && dashboard ? (
+              dashboard
+            ) : visibleView === 'agenda' && agenda ? (
+              agenda
+            ) : visibleView === 'settings' ? (
+              <SettingsView />
+            ) : visibleView === 'tools' ? (
+              <ToolsView />
+            ) : visibleView === 'plugins' ? (
+              <EmptyState title={panelCopy.comingSoon} />
+            ) : (
+              <EmptyState title={panelCopy.comingSoon} />
+            )}
+          </div>
+        </section>
+      </main>
+    </UndoProvider>
   )
 }
 
@@ -175,6 +199,7 @@ interface RailProps {
   readonly onExpandChange: (expanded: boolean) => void
   readonly onSelect: (view: PanelView) => void
   readonly projects: NonNullable<PanelShellProps['projects']>
+  readonly canManage: (project: SidebarProject) => boolean
   readonly selectedProjectId: string | null
   readonly projectCounts: PanelShellProps['projectCounts']
   readonly onProjectSelect: PanelShellProps['onProjectSelect']
@@ -191,6 +216,7 @@ function Rail({
   onSelect,
   account,
   projects,
+  canManage,
   selectedProjectId,
   projectCounts,
   onProjectSelect,
@@ -268,20 +294,14 @@ function Rail({
           Todos os projetos
         </button>
         {projects.map((project) => (
-          <button
+          <ProjectRow
             key={project.id}
-            type="button"
-            className={styles.projectItem}
-            aria-pressed={selectedProjectId === project.id}
-            onClick={() => onProjectSelect?.(project.id)}
-          >
-            <ProjectSwatch
-              index={Array.from(project.id).reduce((sum, char) => sum + char.charCodeAt(0), 0)}
-              name={project.name}
-            />
-            <span className={styles.projectName}>{project.name}</span>
-            <span className={styles.count}>{projectCounts?.[project.id] ?? '—'}</span>
-          </button>
+            project={project}
+            count={projectCounts?.[project.id] ?? '—'}
+            selected={selectedProjectId === project.id}
+            canManage={canManage(project)}
+            {...(onProjectSelect ? { onProjectSelect } : {})}
+          />
         ))}
       </div>
       <span className={styles.spacer} />

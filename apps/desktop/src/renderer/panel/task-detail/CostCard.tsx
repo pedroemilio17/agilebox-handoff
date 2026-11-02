@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GetTaskDto, ParticipationSummaryDto } from '@agilebox/contract'
 import { formatBRL, parseHours, parseMoney, subtotal } from '@agilebox/core'
 import { PropertyRow } from './PropertyRow'
@@ -35,13 +35,26 @@ function safeHundredths(parse: (text: string) => number, text: string, fallback:
   }
 }
 
-function lineSubtotal(participation: ParticipationSummaryDto, draft: Draft | undefined) {
-  if (participation.rate === null) return null
-  const hours = safeHundredths(
-    parseHours,
-    draft?.hours ?? '',
-    Math.round(participation.hours * 100),
+/** Sem a coluna de horas, o rascunho de horas não vale: o subtotal usa o que está gravado. */
+function withoutHourDrafts(drafts: Record<string, Draft>): Record<string, Draft> {
+  return Object.fromEntries(
+    Object.entries(drafts).map(([id, draft]) => [
+      id,
+      draft.rate === undefined ? {} : { rate: draft.rate },
+    ]),
   )
+}
+
+function lineSubtotal(
+  participation: ParticipationSummaryDto,
+  draft: Draft | undefined,
+  showHours: boolean,
+) {
+  if (participation.rate === null) return null
+  const recorded = Math.round(participation.hours * 100)
+  const hoursDraft = showHours ? draft?.hours : undefined
+  const hours =
+    hoursDraft === undefined ? recorded : safeHundredths(parseHours, hoursDraft, recorded)
   const rate = safeHundredths(parseMoney, draft?.rate ?? '', Math.round(participation.rate * 100))
   return subtotal(hours, rate)
 }
@@ -56,6 +69,10 @@ export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps)
   const setHours = useSetHours(task.id)
   const setRate = useSetRate(task.id)
 
+  useEffect(() => {
+    if (!showHours) setDrafts(withoutHourDrafts)
+  }, [showHours])
+
   const patch = (id: string, value: Draft) =>
     setDrafts((current) => ({ ...current, [id]: { ...current[id], ...value } }))
   const clear = (id: string, key: keyof Draft) =>
@@ -67,7 +84,7 @@ export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps)
 
   const lines = task.participations.map((participation) => ({
     participation,
-    value: lineSubtotal(participation, drafts[participation.id]),
+    value: lineSubtotal(participation, drafts[participation.id], showHours),
   }))
   const total = task.total === null ? null : lines.reduce((sum, line) => sum + (line.value ?? 0), 0)
 
