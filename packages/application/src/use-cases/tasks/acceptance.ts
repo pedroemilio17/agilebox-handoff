@@ -18,12 +18,14 @@ import type {
   Actor,
   Task,
   TenantContext,
+  TimelineEventDraft,
 } from '@agilebox/core'
 import { toCriteriaViewDto } from '../../mappers'
 import type { CriteriaViewDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { ACCEPTANCE_MODULE, requireModuleAccess } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
+import { timelineEventsFor } from './timeline-events'
 
 /*
  * Critérios de aceite da tarefa (M3.6). Regras:
@@ -35,8 +37,10 @@ import { assertTenant } from '../tenant-scope'
  * - Id de outro time ou inexistente: NotFoundError. Contexto de outro time: PermissionDeniedError.
  * - Cada edição lê e grava a lista inteira na mesma transação (`replaceForTask`): tudo ou nada.
  * - Concluir a tarefa não depende de critérios conferidos (Q5): o resumo só informa.
- * - Pendente: a linha do tempo por edição de critério (criou, editou, marcou, removeu, com marcação
- *   Gestor). Exige tipos novos de evento no core (`TimelineEvent`), que não existem ainda.
+ * - Linha do tempo (M3.6b), gravada na mesma transação: acrescentar (`criterion_added`), trocar o
+ *   texto (`criterion_edited`, só se mudou), marcar ou desmarcar (`criterion_done_changed`, só se
+ *   mudou), remover (`criterion_removed`). Reordenar não gera evento (como o backlog). Os eventos
+ *   levam autor, data/hora e marcação Gestor, e não trazem valor monetário.
  */
 
 const ARCHIVED_CRITERIA_MESSAGE =
@@ -95,9 +99,15 @@ export class ListTaskCriteria {
   }
 }
 
+/** Rascunhos da linha do tempo de uma edição, a partir da lista antes e depois. */
+type CriteriaDrafts = (
+  before: readonly AcceptanceCriterion[],
+  after: readonly AcceptanceCriterion[],
+) => TimelineEventDraft[]
+
 /**
  * Base das edições. Confere contexto, módulo, existência, permissão e arquivada, lê a lista, aplica
- * a transformação pura do core e grava a lista inteira, tudo na mesma transação.
+ * a transformação pura do core, grava a lista e os eventos da linha do tempo, tudo na mesma transação.
  */
 abstract class AcceptanceChange {
   constructor(protected readonly deps: AppDeps) {}
@@ -107,16 +117,28 @@ abstract class AcceptanceChange {
     actor: Actor,
     rawTaskId: string,
     transform: (criteria: readonly AcceptanceCriterion[]) => AcceptanceCriterion[],
+    drafts: CriteriaDrafts,
   ): Promise<CriteriaViewDto> {
     const organizationId = assertTenant(ctx, actor)
     await requireModuleAccess(this.deps, organizationId, ACCEPTANCE_MODULE, 'existing')
     const taskId = toTaskId(rawTaskId)
+    const now = await this.deps.clock.now(organizationId)
     const criteria = await this.deps.unitOfWork.run(organizationId, async (repositories) => {
       const task = await repositories.tasks.findById(organizationId, taskId)
       if (!task) throw new NotFoundError('Tarefa não encontrada')
       assertCanEdit(actor, task)
-      const next = transform(await repositories.taskCriteria.listByTask(organizationId, taskId))
+      const before = await repositories.taskCriteria.listByTask(organizationId, taskId)
+      const next = transform(before)
+      const events = await timelineEventsFor(
+        this.deps,
+        organizationId,
+        taskId,
+        actor,
+        now,
+        drafts(before, next),
+      )
       await repositories.taskCriteria.replaceForTask(organizationId, taskId, next)
+      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
       return next
     })
     await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [taskId] })
@@ -130,45 +152,103 @@ function assertCanEdit(actor: Actor, task: Task): void {
   if (task.archivedAt !== null) throw new ValidationError(ARCHIVED_CRITERIA_MESSAGE)
 }
 
+/** Critério de uma lista já validada pelo core; ausente só se o id não pertence à tarefa. */
+function criterionIn(
+  criteria: readonly AcceptanceCriterion[],
+  id: AcceptanceCriterionId,
+): AcceptanceCriterion {
+  const found = criteria.find((criterion) => criterion.id === id)
+  if (!found) throw new NotFoundError('Critério não encontrado')
+  return found
+}
+
 export class AddCriterion extends AcceptanceChange {
   async execute(ctx: TenantContext, actor: Actor, input: AddCriterionInput) {
     const organizationId = assertTenant(ctx, actor)
     // O id é gerado antes da transação; só entra na lista se a edição for permitida.
     const id = toAcceptanceCriterionId(await this.deps.idGenerator.generate(organizationId))
-    return this.change(ctx, actor, input.taskId, (criteria) =>
-      addCriterion(criteria, { id, text: input.text }),
+    return this.change(
+      ctx,
+      actor,
+      input.taskId,
+      (criteria) => addCriterion(criteria, { id, text: input.text }),
+      (_before, after) => [
+        { type: 'criterion_added', payload: { text: criterionIn(after, id).text } },
+      ],
     )
   }
 }
 
 export class EditCriterion extends AcceptanceChange {
   async execute(ctx: TenantContext, actor: Actor, input: EditCriterionInput) {
-    return this.change(ctx, actor, input.taskId, (criteria) =>
-      editCriterionText(criteria, parseCriterionId(input.criterionId), input.text),
+    return this.change(
+      ctx,
+      actor,
+      input.taskId,
+      (criteria) => editCriterionText(criteria, parseCriterionId(input.criterionId), input.text),
+      (before, after) => {
+        const id = parseCriterionId(input.criterionId)
+        const text = criterionIn(after, id).text
+        // Mesmo texto não é edição: sem evento.
+        return criterionIn(before, id).text === text
+          ? []
+          : [{ type: 'criterion_edited', payload: { text } }]
+      },
     )
   }
 }
 
 export class SetCriterionDone extends AcceptanceChange {
   async execute(ctx: TenantContext, actor: Actor, input: SetCriterionDoneInput) {
-    return this.change(ctx, actor, input.taskId, (criteria) =>
-      setCriterionDone(criteria, parseCriterionId(input.criterionId), input.done),
+    return this.change(
+      ctx,
+      actor,
+      input.taskId,
+      (criteria) => setCriterionDone(criteria, parseCriterionId(input.criterionId), input.done),
+      (before, after) => {
+        const id = parseCriterionId(input.criterionId)
+        const previous = criterionIn(before, id)
+        const current = criterionIn(after, id)
+        // Repetir a mesma marcação é idempotente: sem evento.
+        return previous.done === current.done
+          ? []
+          : [
+              {
+                type: 'criterion_done_changed',
+                payload: { text: current.text, done: current.done },
+              },
+            ]
+      },
     )
   }
 }
 
 export class RemoveCriterion extends AcceptanceChange {
   async execute(ctx: TenantContext, actor: Actor, input: RemoveCriterionInput) {
-    return this.change(ctx, actor, input.taskId, (criteria) =>
-      removeCriterion(criteria, parseCriterionId(input.criterionId)),
+    return this.change(
+      ctx,
+      actor,
+      input.taskId,
+      (criteria) => removeCriterion(criteria, parseCriterionId(input.criterionId)),
+      (before) => [
+        {
+          type: 'criterion_removed',
+          payload: { text: criterionIn(before, parseCriterionId(input.criterionId)).text },
+        },
+      ],
     )
   }
 }
 
 export class ReorderCriterion extends AcceptanceChange {
   async execute(ctx: TenantContext, actor: Actor, input: ReorderCriterionInput) {
-    return this.change(ctx, actor, input.taskId, (criteria) =>
-      reorderCriterion(criteria, parseCriterionId(input.criterionId), input.toIndex),
+    // Reordenar não gera linha do tempo (como o backlog).
+    return this.change(
+      ctx,
+      actor,
+      input.taskId,
+      (criteria) => reorderCriterion(criteria, parseCriterionId(input.criterionId), input.toIndex),
+      () => [],
     )
   }
 }

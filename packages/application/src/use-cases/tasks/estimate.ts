@@ -6,12 +6,13 @@ import {
   toTaskId,
   ValidationError,
 } from '@agilebox/core'
-import type { Actor, Task, TenantContext } from '@agilebox/core'
+import type { Actor, Task, TenantContext, TimelineEventDraft } from '@agilebox/core'
 import { toTaskDto } from '../../mappers'
 import type { TaskViewDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { ESTIMATES_HOURS_MODULE, requireModuleAccess } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
+import { timelineEventsFor } from './timeline-events'
 
 /*
  * Estimativa em horas da tarefa (M3.7, ADR-07). Regras:
@@ -20,8 +21,8 @@ import { assertTenant } from '../tenant-scope'
  * - Valor em centésimos de hora, validado pelo core (não negativo, inteiro, até 1000 h). Nulo limpa.
  * - Não toca nas horas realizadas: cada participação mantém as suas.
  * - Tarefa arquivada não recebe estimativa nova (mesma regra do backlog e dos critérios).
- * - Pendente: a linha do tempo "estimativa alterada" (com marcação Gestor). Exige tipo novo de
- *   evento no core, que ainda não existe.
+ * - Linha do tempo (M3.7b), na mesma transação: `estimate_changed` com antes e depois em centésimos,
+ *   só se o valor mudou. Leva autor, data/hora e marcação Gestor. Não traz valor monetário.
  */
 
 const ARCHIVED_ESTIMATE_MESSAGE =
@@ -53,12 +54,32 @@ export class SetTaskEstimate {
         ...setEstimatedHours(task, input.estimatedHoursHundredths),
         updatedAt: now,
       }
+      const events = await timelineEventsFor(
+        this.deps,
+        organizationId,
+        taskId,
+        actor,
+        now,
+        estimateDrafts(task, next),
+      )
       await repositories.tasks.save(organizationId, next)
+      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
       return next
     })
     await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [taskId] })
     return toTaskDto(updated, actor)
   }
+}
+
+/** Evento só quando a estimativa muda de fato; repetir o mesmo valor não gera linha do tempo. */
+function estimateDrafts(before: Task, after: Task): TimelineEventDraft[] {
+  if (before.estimatedHours === after.estimatedHours) return []
+  return [
+    {
+      type: 'estimate_changed',
+      payload: { before: before.estimatedHours, after: after.estimatedHours },
+    },
+  ]
 }
 
 function assertCanEstimate(actor: Actor, task: Task): void {

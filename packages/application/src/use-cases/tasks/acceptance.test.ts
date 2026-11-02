@@ -705,3 +705,220 @@ describe('critérios de aceite: resumo nas telas da tarefa', () => {
     expect(detail.acceptance).toEqual({ done: 0, total: 0 })
   })
 })
+
+describe('critérios de aceite: linha do tempo (M3.6b)', () => {
+  const timelineOf = (repos: UnitOfWorkRepositories) =>
+    repos.timeline.listByTask(organizationId, taskId)
+
+  it('acrescentar grava criterion_added com o texto guardado, autor e data/hora', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+
+    await useCases.acceptance.add.execute(...call(creator), { taskId, text: '  Login funciona  ' })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({
+        type: 'criterion_added',
+        taskId,
+        payload: { text: 'Login funciona' },
+        actorUserId: creatorId,
+        asManager: false,
+        at: now,
+      }),
+    ])
+  })
+
+  it('apoio que acrescenta gera o evento sem marcação Gestor', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+
+    await useCases.acceptance.add.execute(...call(support), { taskId, text: 'Pelo apoio' })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({
+        type: 'criterion_added',
+        actorUserId: supportId,
+        asManager: false,
+      }),
+    ])
+  })
+
+  it('gestor que acrescenta em tarefa de colaborador grava o evento marcado como Gestor', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+
+    await useCases.acceptance.add.execute(...call(manager), { taskId, text: 'Pedido do gestor' })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({ type: 'criterion_added', actorUserId: managerId, asManager: true }),
+    ])
+  })
+
+  it('trocar o texto grava criterion_edited com o texto novo', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'Texto antigo')])
+
+    await useCases.acceptance.edit.execute(...call(creator), {
+      taskId,
+      criterionId: criterionId(501),
+      text: 'Texto novo',
+    })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({ type: 'criterion_edited', payload: { text: 'Texto novo' } }),
+    ])
+  })
+
+  it('editar com o mesmo texto não grava evento', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'Igual')])
+
+    await useCases.acceptance.edit.execute(...call(creator), {
+      taskId,
+      criterionId: criterionId(501),
+      text: 'Igual',
+    })
+
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('marcar grava criterion_done_changed; repetir o mesmo valor não grava evento', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'A')])
+
+    const mark = { taskId, criterionId: criterionId(501), done: true }
+    await useCases.acceptance.setDone.execute(...call(creator), mark)
+    await useCases.acceptance.setDone.execute(...call(creator), mark)
+
+    const events = await timelineOf(repos)
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'criterion_done_changed',
+        payload: { text: 'A', done: true },
+      }),
+    ])
+  })
+
+  it('desmarcar grava criterion_done_changed com done falso', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'A', true)])
+
+    await useCases.acceptance.setDone.execute(...call(creator), {
+      taskId,
+      criterionId: criterionId(501),
+      done: false,
+    })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({
+        type: 'criterion_done_changed',
+        payload: { text: 'A', done: false },
+      }),
+    ])
+  })
+
+  it('remover grava criterion_removed com o texto que saiu', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'A'), criterion(502, 'B')])
+
+    await useCases.acceptance.remove.execute(...call(creator), {
+      taskId,
+      criterionId: criterionId(502),
+    })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({ type: 'criterion_removed', payload: { text: 'B' } }),
+    ])
+  })
+
+  it('reordenar não grava evento', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'A'), criterion(502, 'B')])
+
+    await useCases.acceptance.reorder.execute(...call(creator), {
+      taskId,
+      criterionId: criterionId(502),
+      toIndex: 0,
+    })
+
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('operação recusada (permissão) não grava evento', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+
+    await expect(
+      useCases.acceptance.add.execute(...call(member), { taskId, text: 'Não entra' }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError)
+
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('falha ao gravar a linha do tempo desfaz a alteração dos critérios', async () => {
+    const { useCases, repos, unitOfWork } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'Antes')])
+    vi.spyOn(unitOfWork.repositories.timeline, 'saveMany').mockRejectedValueOnce(
+      new Error('falha na linha do tempo'),
+    )
+
+    await expect(
+      useCases.acceptance.add.execute(...call(creator), { taskId, text: 'Depois' }),
+    ).rejects.toThrow('falha na linha do tempo')
+
+    const stored = await repos.taskCriteria.listByTask(organizationId, taskId)
+    expect(stored.map((item) => item.text)).toEqual(['Antes'])
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('falha ao gravar os critérios não deixa evento na linha do tempo', async () => {
+    const { useCases, repos, unitOfWork } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await seedCriteria(repos, [criterion(501, 'Antes')])
+    vi.spyOn(unitOfWork.repositories.taskCriteria, 'replaceForTask').mockRejectedValueOnce(
+      new Error('falha na lista'),
+    )
+
+    await expect(
+      useCases.acceptance.remove.execute(...call(creator), {
+        taskId,
+        criterionId: criterionId(501),
+      }),
+    ).rejects.toThrow('falha na lista')
+
+    expect(await repos.taskCriteria.listByTask(organizationId, taskId)).toHaveLength(1)
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('membro do projeto vê o evento de critério na linha do tempo, sem valor monetário', async () => {
+    const { useCases, repos } = setup()
+    await setModuleState(repos, organizationId, 'acceptance', 'active')
+    await seedTask(repos)
+    await useCases.acceptance.add.execute(...call(creator), { taskId, text: 'Login funciona' })
+
+    const events = await useCases.timeline.list.execute(...call(member), { taskId })
+
+    const added = events.find((event) => event.type === 'criterion_added')
+    expect(added?.text).toContain('Login funciona')
+    expect(events.some((event) => event.text.includes('R$'))).toBe(false)
+  })
+})

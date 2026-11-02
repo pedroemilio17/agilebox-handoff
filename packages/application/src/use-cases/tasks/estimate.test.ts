@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   addParticipant,
   createTenantContext,
@@ -410,5 +410,142 @@ describe('custo estimado e realizado no DTO (visibilidade)', () => {
       estimatedHoursHundredths: 1000,
     })
     expect(forManager.estimatedCost).toBe(585)
+  })
+})
+
+describe('estimativa em horas: linha do tempo (M3.7b)', () => {
+  const timelineOf = (repos: UnitOfWorkRepositories) =>
+    repos.timeline.listByTask(organizationId, taskId)
+
+  it('definir grava estimate_changed com antes e depois em centésimos, autor e data/hora', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1250,
+    })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({
+        type: 'estimate_changed',
+        taskId,
+        payload: { before: null, after: 1250 },
+        actorUserId: creatorId,
+        asManager: false,
+        at: now,
+      }),
+    ])
+  })
+
+  it('trocar um valor por outro grava o antes e o depois', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1000,
+    })
+
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 800,
+    })
+
+    const events = await timelineOf(repos)
+    expect(events.map((event) => event.payload)).toEqual([
+      { before: 1000, after: 800 },
+      { before: null, after: 1000 },
+    ])
+  })
+
+  it('limpar grava estimate_changed com depois nulo', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1000,
+    })
+
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: null,
+    })
+
+    const [latest] = await timelineOf(repos)
+    expect(latest).toMatchObject({
+      type: 'estimate_changed',
+      payload: { before: 1000, after: null },
+    })
+  })
+
+  it('repetir o mesmo valor não grava evento', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1000,
+    })
+
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1000,
+    })
+
+    expect(await timelineOf(repos)).toHaveLength(1)
+  })
+
+  it('gestor que define a estimativa grava o evento marcado como Gestor', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+
+    await useCases.estimates.set.execute(...call(manager), {
+      taskId,
+      estimatedHoursHundredths: 800,
+    })
+
+    expect(await timelineOf(repos)).toEqual([
+      expect.objectContaining({
+        type: 'estimate_changed',
+        actorUserId: managerId,
+        asManager: true,
+      }),
+    ])
+  })
+
+  it('falha ao gravar a linha do tempo desfaz a estimativa', async () => {
+    const { useCases, repos, unitOfWork } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+    vi.spyOn(unitOfWork.repositories.timeline, 'saveMany').mockRejectedValueOnce(
+      new Error('falha na linha do tempo'),
+    )
+
+    await expect(
+      useCases.estimates.set.execute(...call(creator), { taskId, estimatedHoursHundredths: 800 }),
+    ).rejects.toThrow('falha na linha do tempo')
+
+    expect((await repos.tasks.findById(organizationId, taskId))?.estimatedHours).toBeNull()
+    expect(await timelineOf(repos)).toEqual([])
+  })
+
+  it('membro do projeto vê o evento de estimativa, sem valor monetário', async () => {
+    const { useCases, repos } = setup()
+    await setEstimateModule(repos, organizationId, 'active')
+    await seedTask(repos)
+    await useCases.estimates.set.execute(...call(creator), {
+      taskId,
+      estimatedHoursHundredths: 1000,
+    })
+
+    const events = await useCases.timeline.list.execute(...call(member), { taskId })
+
+    const estimated = events.find((event) => event.type === 'estimate_changed')
+    expect(estimated?.text).toContain('10')
+    expect(events.some((event) => event.text.includes('R$'))).toBe(false)
   })
 })
