@@ -1,6 +1,8 @@
+import { MODULE_IDS } from '@agilebox/core'
 import type {
   Contributor,
   Meeting,
+  ModuleId,
   OrganizationId,
   Participation,
   Project,
@@ -17,9 +19,15 @@ import type {
   ProjectRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamModule,
+  TeamModuleRepository,
+  TeamSettings,
+  TeamSettingsRepository,
   TimelineRepository,
   UserRepository,
 } from '../../ports'
+
+const moduleOrder = (moduleId: ModuleId) => MODULE_IDS.indexOf(moduleId)
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
@@ -31,6 +39,8 @@ export interface InMemoryState {
   members: Map<OrganizationId, Map<string, ProjectMember>>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  teamModules: Map<OrganizationId, Map<string, TeamModule>>
+  teamSettings: Map<OrganizationId, TeamSettings>
   timeline: Map<OrganizationId, Map<string, TimelineEvent>>
   users: Map<OrganizationId, Map<string, User>>
 }
@@ -44,6 +54,8 @@ export function createInMemoryState(): InMemoryState {
     members: new Map(),
     taskOpens: new Map(),
     tasks: new Map(),
+    teamModules: new Map(),
+    teamSettings: new Map(),
     timeline: new Map(),
     users: new Map(),
   }
@@ -256,6 +268,32 @@ export class InMemoryTaskRepository implements TaskRepository {
           (part) => part.participant.kind === 'user' && part.participant.userId === userId,
         ),
     )
+  }
+}
+
+export class InMemoryTeamModuleRepository implements TeamModuleRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async list(org: OrganizationId) {
+    await Promise.resolve()
+    return [...bucket(this.state.teamModules, org).values()].sort(
+      (a, b) => moduleOrder(a.moduleId) - moduleOrder(b.moduleId),
+    )
+  }
+  async save(org: OrganizationId, value: TeamModule) {
+    await Promise.resolve()
+    bucket(this.state.teamModules, org).set(value.moduleId, value)
+  }
+}
+
+export class InMemoryTeamSettingsRepository implements TeamSettingsRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async find(org: OrganizationId) {
+    await Promise.resolve()
+    return this.state.teamSettings.get(org) ?? null
+  }
+  async save(org: OrganizationId, value: TeamSettings) {
+    await Promise.resolve()
+    this.state.teamSettings.set(org, value)
   }
 }
 

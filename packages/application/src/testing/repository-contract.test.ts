@@ -1,4 +1,4 @@
-import { describeRepositoryContract } from './repository-contract'
+import { describeRepositoryContract, describeTeamRepositoryContract } from './repository-contract'
 import {
   InMemoryContributorRepository,
   InMemoryMeetingRepository,
@@ -6,6 +6,8 @@ import {
   InMemoryProjectRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
+  InMemoryTeamModuleRepository,
+  InMemoryTeamSettingsRepository,
   InMemoryTimelineRepository,
   InMemoryUserRepository,
   createInMemoryState,
@@ -22,5 +24,13 @@ describeRepositoryContract('repositórios em memória', () => {
     tasks: new InMemoryTaskRepository(state),
     timeline: new InMemoryTimelineRepository(state),
     users: new InMemoryUserRepository(state),
+  }
+})
+
+describeTeamRepositoryContract('repositórios em memória', () => {
+  const state = createInMemoryState()
+  return {
+    teamModules: new InMemoryTeamModuleRepository(state),
+    teamSettings: new InMemoryTeamSettingsRepository(state),
   }
 })

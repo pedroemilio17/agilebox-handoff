@@ -16,6 +16,8 @@ import type {
   ProjectRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamModuleRepository,
+  TeamSettingsRepository,
   TimelineRepository,
   UserRepository,
 } from '../ports'
@@ -232,6 +234,70 @@ export function describeRepositoryContract(
       await expect(
         repositories.participations.findById(organizationId, participation.id),
       ).resolves.toBeNull()
+    })
+  })
+}
+
+export interface TeamRepositoryContractAdapters {
+  readonly teamModules: TeamModuleRepository
+  readonly teamSettings: TeamSettingsRepository
+}
+
+const changedAt = '2026-01-03T00:00:00.000Z'
+
+export function describeTeamRepositoryContract(
+  name: string,
+  makeAdapters: () => TeamRepositoryContractAdapters,
+): void {
+  describe(`contrato dos repositórios de time: ${name}`, () => {
+    it('grava módulos do time e lista na ordem do catálogo, substituindo o mesmo módulo', async () => {
+      const { teamModules } = makeAdapters()
+      const base = { state: 'active' as const, config: {}, changedBy: userId, changedAt }
+      await teamModules.save(organizationId, { ...base, moduleId: 'sprints' })
+      await teamModules.save(organizationId, { ...base, moduleId: 'agenda' })
+      await teamModules.save(organizationId, {
+        ...base,
+        moduleId: 'sprints',
+        state: 'winding_down',
+        config: { maxActive: 1 },
+      })
+
+      await expect(teamModules.list(organizationId)).resolves.toEqual([
+        { ...base, moduleId: 'agenda' },
+        { ...base, moduleId: 'sprints', state: 'winding_down', config: { maxActive: 1 } },
+      ])
+    })
+
+    it('isola módulos do time por organização', async () => {
+      const { teamModules } = makeAdapters()
+      await teamModules.save(organizationId, {
+        moduleId: 'agenda',
+        state: 'active',
+        config: {},
+        changedBy: userId,
+        changedAt,
+      })
+
+      await expect(teamModules.list(otherOrganizationId)).resolves.toEqual([])
+    })
+
+    it('grava, relê e substitui as preferências do time, sem configuração devolve null', async () => {
+      const { teamSettings } = makeAdapters()
+      await expect(teamSettings.find(organizationId)).resolves.toBeNull()
+
+      await teamSettings.save(organizationId, { level: 'basic', changedBy: userId, changedAt })
+      await teamSettings.save(organizationId, {
+        level: 'advanced',
+        changedBy: userId,
+        changedAt: '2026-01-04T00:00:00.000Z',
+      })
+
+      await expect(teamSettings.find(organizationId)).resolves.toEqual({
+        level: 'advanced',
+        changedBy: userId,
+        changedAt: '2026-01-04T00:00:00.000Z',
+      })
+      await expect(teamSettings.find(otherOrganizationId)).resolves.toBeNull()
     })
   })
 }

@@ -180,3 +180,17 @@ Sem commit. Só `packages/core`, sem tela, banco nem caso de uso. D5 aplicada co
 - Testes: `capabilities.test.ts` cobre módulo desativado em todos os níveis, nível alto sem ativar nada, efeito passivo no básico, telas a partir do `minLevel`, ordem e deduplicação, papel, id desconhecido, e a comparação de níveis.
 - Decisão de execução: a função recebe os módulos já resolvidos e não distingue `winding_down` de `active`. Quem chama decide o que passar. O guard do M1.8 usa `canUseExistingItems` e `canAcceptNewItems`, não esta função.
 - `pnpm check` com saída 0: 123 arquivos, 1005 testes, lint com zero avisos, build ok. Cobertura de `modules/` (com `capabilities.ts`): 100% de statements, branches, funções e linhas.
+
+## M1.5a · Portas de módulos e nível (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (portas, fake e contrato), sem SQLite, tela nem caso de uso. M1.5b (migração `0003`) não foi iniciado.
+
+- `ports/team-module-repository.ts`: `TeamModule` (`moduleId`, `state`, `config`, `changedBy`, `changedAt`) e `TeamModuleRepository` (`list`, `save`). `list` devolve na ordem do catálogo (`MODULE_IDS`), e módulo nunca gravado não aparece.
+- `ports/team-settings-repository.ts`: `TeamSettings` (`level`, `changedBy`, `changedAt`) e `TeamSettingsRepository` (`find` devolve `null` sem preferências gravadas, `save`). Um registro por time (time = organização, D1).
+- Decisão de execução (não estava explícita): `config` é um objeto de valores simples (`string | number | boolean | null`), para caber em JSON na `team_modules` do M1.5b. O plano não define o conteúdo de `config`; nenhum módulo usa ainda.
+- Desvio da lista de arquivos do M1.5a: as portas NÃO entraram em `AppDeps` (`deps.ts`) nem em `UnitOfWorkRepositories`. Motivo: torná-las obrigatórias quebraria `apps/desktop/src/main/composition-root.ts`, `create-use-cases.test.ts`, `set-default-rate.test.ts` e o `SqliteUnitOfWork`, e a fiação real só faz sentido com o adaptador SQLite (M1.5b) e os casos de uso (M1.6). Entram lá nesses marcos.
+- Fakes: `InMemoryTeamModuleRepository` e `InMemoryTeamSettingsRepository` em `testing/fakes/in-memory-repositories.ts`, com estado novo (`teamModules`, `teamSettings`) copiado no rollback do `InMemoryUnitOfWork`.
+- Contrato: `describeTeamRepositoryContract` em `testing/repository-contract.ts`, separado do `describeRepositoryContract` para não quebrar o contrato SQLite atual. Roda só no fake por enquanto. Cobre: gravar e listar na ordem do catálogo, substituir o mesmo módulo, isolar por organização, gravar/reler/substituir preferências, `null` sem preferências. No M1.5b, o adaptador SQLite passa a rodar esse mesmo contrato.
+- `ports/ports.test.ts`: asserções de tipo para o primeiro parâmetro (`OrganizationId`) das quatro operações novas.
+- `pnpm check` com saída 0: 123 arquivos, 1008 testes, lint com zero avisos, build ok. `pnpm format` rodou sobre o repositório; nenhum outro arquivo mudou além dos listados abaixo.
+- Arquivos: `packages/application/src/ports/{index,ports.test,team-module-repository,team-settings-repository}.ts`, `packages/application/src/testing/{repository-contract,repository-contract.test}.ts`, `packages/application/src/testing/fakes/{in-memory-repositories,in-memory-unit-of-work}.ts`.

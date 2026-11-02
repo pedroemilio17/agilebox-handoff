@@ -50,6 +50,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       members: copyMap(this.state.members),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
+      teamModules: copyMap(this.state.teamModules),
+      teamSettings: new Map(this.state.teamSettings),
       timeline: copyMap(this.state.timeline),
       users: copyMap(this.state.users),
     }

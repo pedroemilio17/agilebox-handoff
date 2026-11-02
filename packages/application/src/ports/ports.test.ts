@@ -9,6 +9,8 @@ import type {
   ProjectRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamModuleRepository,
+  TeamSettingsRepository,
   TimelineRepository,
   UnitOfWork,
   UserRepository,
@@ -25,6 +27,10 @@ it('define portas assíncronas e recebe a organização primeiro', () => {
   expectTypeOf<TaskOpenRepository['recordOpen']>().parameter(0).toEqualTypeOf<OrganizationId>()
   expectTypeOf<MeetingRepository['findById']>().parameter(0).toEqualTypeOf<OrganizationId>()
   expectTypeOf<UserRepository['findById']>().parameter(0).toEqualTypeOf<OrganizationId>()
+  expectTypeOf<TeamModuleRepository['list']>().parameter(0).toEqualTypeOf<OrganizationId>()
+  expectTypeOf<TeamModuleRepository['save']>().parameter(0).toEqualTypeOf<OrganizationId>()
+  expectTypeOf<TeamSettingsRepository['find']>().parameter(0).toEqualTypeOf<OrganizationId>()
+  expectTypeOf<TeamSettingsRepository['save']>().parameter(0).toEqualTypeOf<OrganizationId>()
   expectTypeOf<UnitOfWork['run']>().returns.toMatchTypeOf<Promise<unknown>>()
   expectTypeOf<Clock['now']>().parameter(0).toEqualTypeOf<OrganizationId>()
   expectTypeOf<Clock['now']>().returns.toEqualTypeOf<Promise<string>>()
