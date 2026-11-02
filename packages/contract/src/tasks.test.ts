@@ -9,6 +9,7 @@ import {
   moveTaskInputSchema,
   recordTaskOpenInputSchema,
   searchTasksInputSchema,
+  taskListScopeSchema,
   taskUpdateInputSchema,
 } from './tasks'
 
@@ -94,6 +95,18 @@ describe('schemas de tarefas', () => {
       taskId,
       status: 'review',
     })
+  })
+
+  it('aceita os escopos mine e team na listagem e rejeita outros valores', () => {
+    expect(taskListScopeSchema.parse('mine')).toBe('mine')
+    expect(taskListScopeSchema.parse('team')).toBe('team')
+    expect(taskListScopeSchema.safeParse('all').success).toBe(false)
+    expect(taskListScopeSchema.safeParse('').success).toBe(false)
+    expect(listBoardInputSchema.parse({ projectId, scope: 'team' })).toEqual({
+      projectId,
+      scope: 'team',
+    })
+    expect(listBoardInputSchema.safeParse({ scope: 'todos' }).success).toBe(false)
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

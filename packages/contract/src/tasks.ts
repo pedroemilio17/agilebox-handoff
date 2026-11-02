@@ -3,6 +3,7 @@ import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
 export const taskDeadlineSchema = z.iso.date().nullable()
+export const taskListScopeSchema = z.enum(['mine', 'team'])
 
 export const taskDtoSchema = z.object({
   id: ulidSchema,
@@ -23,6 +24,7 @@ export const taskDtoSchema = z.object({
 export const listBoardInputSchema = z.object({
   projectId: ulidSchema.optional(),
   forUserId: ulidSchema.optional(),
+  scope: taskListScopeSchema.optional(),
 })
 export const getBoardFlowOutputSchema = z.object({
   cycleDays: z.number().nonnegative().nullable(),
