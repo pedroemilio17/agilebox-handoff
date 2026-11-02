@@ -15,6 +15,13 @@
       "when": 1793597706167,
       "tag": "0001_archived_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793600505759,
+      "tag": "0002_projects_active_name_unique",
+      "breakpoints": true
     }
   ]
 }

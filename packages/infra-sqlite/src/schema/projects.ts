@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { organizations } from './organizations.js'
 import { users } from './users.js'
@@ -18,6 +19,9 @@ export const projects = sqliteTable(
     archivedAt: text('archived_at'),
   },
   (table) => [
-    uniqueIndex('projects_organization_name_key_unique').on(table.organizationId, table.nameKey),
+    // Único só entre projetos ativos: um arquivado não bloqueia um novo com o mesmo nome.
+    uniqueIndex('projects_organization_name_key_unique')
+      .on(table.organizationId, table.nameKey)
+      .where(sql`archived_at IS NULL`),
   ],
 )

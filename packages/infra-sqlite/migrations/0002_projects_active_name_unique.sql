@@ -1,0 +1,2 @@
+DROP INDEX `projects_organization_name_key_unique`;--> statement-breakpoint
+CREATE UNIQUE INDEX `projects_organization_name_key_unique` ON `projects` (`organization_id`,`name_key`) WHERE archived_at IS NULL;

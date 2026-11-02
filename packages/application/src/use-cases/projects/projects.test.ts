@@ -67,6 +67,17 @@ describe('casos de uso de projetos', () => {
     expect(reused.id).toBe(created.id)
   })
 
+  it('não reaproveita projeto arquivado com o mesmo nome e cria um projeto novo', async () => {
+    const { useCases } = setup()
+    const archived = await useCases.projects.createProject.execute(actor, { name: 'Gestão Ágil' })
+    await useCases.projects.archiveProject.execute(actor, { projectId: archived.id })
+    const created = await useCases.projects.createProject.execute(actor, { name: 'gestao agil' })
+    expect(created.id).not.toBe(archived.id)
+    expect(await useCases.projects.listProjects.execute(actor)).toEqual([
+      expect.objectContaining({ id: created.id }),
+    ])
+  })
+
   it('rejeita nome de projeto vazio', async () => {
     const { useCases } = setup()
     await expect(
