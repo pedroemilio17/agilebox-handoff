@@ -29,9 +29,9 @@ Notas desta sessão (M0.9):
 - Feito: nada de código. M0.9 não foi iniciado.
 - Falta: M0.8 (renomear, outra sessão), depois M0.9, depois M0.11.
 - Próximo item independente: nenhum. M0.9 depende de M0.8 (botão Renomear chama `renameProject`). M0.11 é a varredura final e depende de M0.8 e M0.9. M0.10 já está concluído.
-- `pnpm check` falhou em `format:check` por causa de `PROGRESS_2.md` (formatação do Prettier), não de código.
+- `pnpm check` falhou na primeira rodada: `format:check` (formatação deste arquivo, corrigida com Prettier) e um teste de `apps/desktop/src/renderer/panel/App.manager.test.tsx` por timeout de `findByRole` sob carga. Passou sozinho e na segunda rodada completa (950/950). Teste instável, não tocado.
 
-BLOQUEIO: (vazio)
+BLOQUEIO: (vazio) — M0.8 concluído em `e9748ab`, M0.9 liberado.
 
 Pendências para o Pedro:
 
