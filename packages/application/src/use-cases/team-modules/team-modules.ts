@@ -15,10 +15,12 @@ import type {
   ModuleImpact,
   ModuleResolution,
   ModuleState,
+  TenantContext,
 } from '@agilebox/core'
 import type { AppDeps } from '../../deps'
 import type { TeamModuleConfig } from '../../ports'
 import { effectiveModuleStates } from '../../modules/guard'
+import { assertTenant } from '../tenant-scope'
 
 const EMPTY_CONFIG: TeamModuleConfig = {}
 
@@ -67,9 +69,10 @@ function nextState(current: ModuleState, wanted: boolean): ModuleState {
 export class GetTeamModules {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<readonly TeamModuleStatus[]> {
-    const stored = await this.deps.unitOfWork.run(actor.organizationId, ({ teamModules }) =>
-      teamModules.list(actor.organizationId),
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TeamModuleStatus[]> {
+    const organizationId = assertTenant(ctx, actor)
+    const stored = await this.deps.unitOfWork.run(organizationId, ({ teamModules }) =>
+      teamModules.list(organizationId),
     )
     return toStatuses(effectiveModuleStates(stored))
   }
@@ -78,7 +81,12 @@ export class GetTeamModules {
 export class ChangeTeamModules {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: ChangeTeamModulesInput): Promise<readonly TeamModuleStatus[]> {
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: ChangeTeamModulesInput,
+  ): Promise<readonly TeamModuleStatus[]> {
+    const organizationId = assertTenant(ctx, actor)
     if (!canManageTeamModules(actor)) {
       throw new PermissionDeniedError('Só o gestor altera as ferramentas do time')
     }
@@ -86,48 +94,44 @@ export class ChangeTeamModules {
       enable: (input.enable ?? []).map(toModuleId),
       disable: (input.disable ?? []).map(toModuleId),
     }
-    const now = await this.deps.clock.now(actor.organizationId)
+    const now = await this.deps.clock.now(organizationId)
 
-    return this.deps.unitOfWork.run(
-      actor.organizationId,
-      async ({ teamModules, teamModuleEvents }) => {
-        const organizationId = actor.organizationId
-        const stored = await teamModules.list(organizationId)
-        const storedById = new Map(stored.map((item) => [item.moduleId, item]))
-        const current = new Map(effectiveModuleStates(stored))
+    return this.deps.unitOfWork.run(organizationId, async ({ teamModules, teamModuleEvents }) => {
+      const stored = await teamModules.list(organizationId)
+      const storedById = new Map(stored.map((item) => [item.moduleId, item]))
+      const current = new Map(effectiveModuleStates(stored))
 
-        // Dependências contam módulos encerrando também, porque eles ainda têm itens em uso.
-        const inSet = MODULE_IDS.filter((id) => current.get(id) !== 'disabled')
-        const resolution = resolveModuleSet(inSet, change)
-        if (!resolution.ok) throw new ValidationError(describeRefusal(resolution))
+      // Dependências contam módulos encerrando também, porque eles ainda têm itens em uso.
+      const inSet = MODULE_IDS.filter((id) => current.get(id) !== 'disabled')
+      const resolution = resolveModuleSet(inSet, change)
+      if (!resolution.ok) throw new ValidationError(describeRefusal(resolution))
 
-        const desired = new Set<ModuleId>(resolution.enabled)
-        const next = new Map(current)
-        for (const moduleId of MODULE_IDS) {
-          const from = current.get(moduleId) ?? 'disabled'
-          const to = nextState(from, desired.has(moduleId))
-          if (to === from) continue
+      const desired = new Set<ModuleId>(resolution.enabled)
+      const next = new Map(current)
+      for (const moduleId of MODULE_IDS) {
+        const from = current.get(moduleId) ?? 'disabled'
+        const to = nextState(from, desired.has(moduleId))
+        if (to === from) continue
 
-          next.set(moduleId, to)
-          await teamModules.save(organizationId, {
-            moduleId,
-            state: to,
-            config: storedById.get(moduleId)?.config ?? EMPTY_CONFIG,
-            changedBy: actor.userId,
-            changedAt: now,
-          })
-          await teamModuleEvents.append(organizationId, {
-            id: await this.deps.idGenerator.generate(organizationId),
-            moduleId,
-            fromState: from,
-            toState: to,
-            changedBy: actor.userId,
-            changedAt: now,
-          })
-        }
-        return toStatuses(next)
-      },
-    )
+        next.set(moduleId, to)
+        await teamModules.save(organizationId, {
+          moduleId,
+          state: to,
+          config: storedById.get(moduleId)?.config ?? EMPTY_CONFIG,
+          changedBy: actor.userId,
+          changedAt: now,
+        })
+        await teamModuleEvents.append(organizationId, {
+          id: await this.deps.idGenerator.generate(organizationId),
+          moduleId,
+          fromState: from,
+          toState: to,
+          changedBy: actor.userId,
+          changedAt: now,
+        })
+      }
+      return toStatuses(next)
+    })
   }
 }
 
@@ -144,14 +148,15 @@ export class PreviewTeamModuleImpact {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(
+    ctx: TenantContext,
     actor: Actor,
     input: PreviewTeamModuleImpactInput,
   ): Promise<readonly ModuleImpact[]> {
+    const organizationId = assertTenant(ctx, actor)
     if (!canManageTeamModules(actor)) {
       throw new PermissionDeniedError('Só o gestor vê a prévia de ferramentas do time')
     }
     const wanted = new Set((input.disable ?? []).map(toModuleId))
-    const organizationId = actor.organizationId
 
     const available: ItemCounts = await this.deps.unitOfWork.run(
       organizationId,
