@@ -17,15 +17,10 @@ import type {
   ModuleState,
 } from '@agilebox/core'
 import type { AppDeps } from '../../deps'
-import type { TeamModule, TeamModuleConfig } from '../../ports'
+import type { TeamModuleConfig } from '../../ports'
+import { effectiveModuleStates } from '../../modules/guard'
 
 const EMPTY_CONFIG: TeamModuleConfig = {}
-
-/**
- * Estado de um módulo como o time o vê. Módulo nunca gravado usa o preset "Kanban simples"
- * (núcleo e agenda ativos), que é o que o time já tinha antes de haver ferramentas.
- */
-const DEFAULT_ACTIVE_MODULES: readonly ModuleId[] = ['core', 'agenda']
 
 export interface TeamModuleStatus {
   readonly moduleId: ModuleId
@@ -35,17 +30,6 @@ export interface TeamModuleStatus {
 export interface ChangeTeamModulesInput {
   readonly enable?: readonly string[]
   readonly disable?: readonly string[]
-}
-
-function effectiveStates(stored: readonly TeamModule[]): Map<ModuleId, ModuleState> {
-  const states = new Map<ModuleId, ModuleState>(
-    MODULE_IDS.map((moduleId) => [
-      moduleId,
-      DEFAULT_ACTIVE_MODULES.includes(moduleId) ? 'active' : 'disabled',
-    ]),
-  )
-  for (const teamModule of stored) states.set(teamModule.moduleId, teamModule.state)
-  return states
 }
 
 function toStatuses(states: ReadonlyMap<ModuleId, ModuleState>): TeamModuleStatus[] {
@@ -87,7 +71,7 @@ export class GetTeamModules {
     const stored = await this.deps.unitOfWork.run(actor.organizationId, ({ teamModules }) =>
       teamModules.list(actor.organizationId),
     )
-    return toStatuses(effectiveStates(stored))
+    return toStatuses(effectiveModuleStates(stored))
   }
 }
 
@@ -110,7 +94,7 @@ export class ChangeTeamModules {
         const organizationId = actor.organizationId
         const stored = await teamModules.list(organizationId)
         const storedById = new Map(stored.map((item) => [item.moduleId, item]))
-        const current = effectiveStates(stored)
+        const current = new Map(effectiveModuleStates(stored))
 
         // Dependências contam módulos encerrando também, porque eles ainda têm itens em uso.
         const inSet = MODULE_IDS.filter((id) => current.get(id) !== 'disabled')

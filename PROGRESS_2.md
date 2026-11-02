@@ -259,3 +259,20 @@ Sem commit. Sem tela (a prévia visível é do M2). D4 aplicada como decidida: c
   - Contrato de repositórios: contagem por organização, nos dois adaptadores.
 - **Verificação:** `pnpm check` com saída 0: 126 arquivos de teste, 1040 testes, lint com zero avisos, tipos e build ok.
 - **Fora deste marco:** IPC e contrato Zod da prévia, tela (M2), guard da agenda (M1.8).
+
+## M1.8 · Guard de módulo na agenda (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (guard, agenda e teste). Sem tela, banco novo nem mudança em `packages/core`. D3 aplicada como decidida: só a Agenda.
+
+- `packages/application/src/modules/guard.ts`:
+  - `requireModuleAccess(deps, organizationId, moduleId, access)`: lê o estado do módulo no time e recusa com `ValidationError`. `access: 'new'` usa `canAcceptNewItems` (só `active`); `access: 'existing'` usa `canUseExistingItems` (tudo menos `disabled`).
+  - `effectiveModuleStates(stored)`: estado efetivo de cada módulo. Saiu de `team-modules.ts` para ser compartilhado. Sem registro, o preset "Kanban simples" vale (núcleo e agenda ativos).
+- `use-cases/meetings/meetings.ts`: listar (mês e próximos) usa `existing`; criar usa `new`; editar e excluir usam `existing`. Em criar, editar e excluir, `requireManager` roda antes do guard, então colaborador continua recebendo `PermissionDeniedError`.
+- `use-cases/team-modules/team-modules.ts`: troca a função local pela compartilhada. Comportamento igual.
+- Testes em `meetings.test.ts` (bloco "guard de módulo na agenda (M1.8)"): agenda desligada recusa listar, criar, editar e excluir até para o gestor, sem gravar nada; agenda encerrando lista, edita e exclui, mas não cria; agenda ativa segue o fluxo normal; organização sem registro usa o preset e a agenda funciona.
+- Decisões de execução (não estavam explícitas):
+  - Recusa de módulo usa `ValidationError` com o id do módulo na mensagem (`O módulo agenda está desativado neste time`), no mesmo critério do M1.6. Rótulo em pt-BR fica para o M2.
+  - Listagens também passam pelo guard, porque o plano diz "listar, criar, editar, excluir". Com agenda desligada, a listagem falha em vez de devolver vazio.
+- **Verificação:** `pnpm check` com saída 0: 126 arquivos de teste, 1044 testes, lint com zero avisos, tipos e build ok.
+- **Fora deste marco:** guard nos demais casos de uso (só a Agenda existe hoje), IPC e tela (M2), e `finishWindingDown` como caso de uso.
+- **Pendências:** nenhuma nova. D10 segue aberto (arquivo lido pelo laço).

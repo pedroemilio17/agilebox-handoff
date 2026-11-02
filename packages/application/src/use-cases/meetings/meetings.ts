@@ -10,6 +10,9 @@ import type { Actor } from '@agilebox/core'
 import type { CreateMeetingInput, MeetingDto, UpdateMeetingInput } from '@agilebox/contract'
 import { toMeetingDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { requireModuleAccess } from '../../modules/guard'
+
+const AGENDA = 'agenda'
 
 interface ListMonthInput {
   readonly month: string
@@ -28,6 +31,7 @@ export class ListMonthMeetings {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor, input: ListMonthInput): Promise<readonly MeetingDto[]> {
+    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
     const meetings = await this.deps.meetings.listByMonth(actor.organizationId, input.month)
     return meetings.map(toMeetingDto)
   }
@@ -37,6 +41,7 @@ export class ListUpcomingMeetings {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor): Promise<readonly MeetingDto[]> {
+    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
     const today = (await this.deps.clock.now(actor.organizationId)).slice(0, 10)
     const meetings = await this.deps.meetings.listUpcoming(
       actor.organizationId,
@@ -51,6 +56,7 @@ export class CreateMeeting {
 
   async execute(actor: Actor, input: CreateMeetingInput): Promise<MeetingDto> {
     requireManager(actor)
+    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'new')
     const now = await this.deps.clock.now(actor.organizationId)
     const meeting = createMeeting({
       id: toMeetingId(await this.deps.idGenerator.generate(actor.organizationId)),
@@ -79,6 +85,7 @@ export class UpdateMeeting {
 
   async execute(actor: Actor, input: UpdateMeetingInput): Promise<MeetingDto> {
     requireManager(actor)
+    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
     const meetingId = toMeetingId(input.meetingId)
     const existing = await this.deps.meetings.findById(actor.organizationId, meetingId)
     if (!existing) throw new NotFoundError('Agendamento não encontrado')
@@ -106,6 +113,7 @@ export class DeleteMeeting {
 
   async execute(actor: Actor, input: MeetingIdInput): Promise<void> {
     requireManager(actor)
+    await requireModuleAccess(this.deps, actor.organizationId, AGENDA, 'existing')
     const meetingId = toMeetingId(input.meetingId)
     const existing = await this.deps.meetings.findById(actor.organizationId, meetingId)
     if (!existing) throw new NotFoundError('Agendamento não encontrado')

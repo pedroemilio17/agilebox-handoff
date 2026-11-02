@@ -5,6 +5,7 @@ import {
   toMeetingId,
   toOrganizationId,
   toUserId,
+  ValidationError,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aMeeting } from '../../testing/builders'
@@ -153,5 +154,107 @@ describe('casos de uso da agenda', () => {
     await expect(useCases.meetings.delete.execute(manager, { meetingId })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
+  })
+})
+
+describe('guard de módulo na agenda (M1.8)', () => {
+  const AGENDA_CHANGED_AT = '2026-01-01T00:00:00.000Z'
+
+  async function setAgendaState(
+    unitOfWork: ReturnType<typeof setup>['unitOfWork'],
+    state: 'active' | 'winding_down' | 'disabled',
+  ): Promise<void> {
+    await unitOfWork.repositories.teamModules.save(organizationId, {
+      moduleId: 'agenda',
+      state,
+      config: {},
+      changedBy: managerId,
+      changedAt: AGENDA_CHANGED_AT,
+    })
+  }
+
+  const newMeeting = {
+    title: 'Planejamento',
+    date: '2026-02-10',
+    time: '09:30',
+    participants: [userId],
+  }
+
+  it('agenda desligada recusa listar, criar, editar e excluir, até para o gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const existing = aMeeting().build()
+    await unitOfWork.repositories.meetings.save(organizationId, existing)
+    await setAgendaState(unitOfWork, 'disabled')
+
+    await expect(
+      useCases.meetings.listMonth.execute(manager, { month: '2026-02' }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(useCases.meetings.listUpcoming.execute(manager)).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+    await expect(useCases.meetings.create.execute(manager, newMeeting)).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+    await expect(
+      useCases.meetings.update.execute(manager, {
+        meetingId: existing.id,
+        changes: { title: 'Não deve gravar' },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      useCases.meetings.delete.execute(manager, { meetingId: existing.id }),
+    ).rejects.toBeInstanceOf(ValidationError)
+
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
+    await expect(
+      unitOfWork.repositories.meetings.findById(organizationId, existing.id),
+    ).resolves.toMatchObject({ title: existing.title })
+  })
+
+  it('agenda encerrando deixa listar, editar e excluir o que existe, mas não criar', async () => {
+    const { useCases, unitOfWork } = setup()
+    const existing = aMeeting()
+      .with({ date: parseDateOnly('2026-02-02') })
+      .build()
+    await unitOfWork.repositories.meetings.save(organizationId, existing)
+    await setAgendaState(unitOfWork, 'winding_down')
+
+    await expect(
+      useCases.meetings.listMonth.execute(actor, { month: '2026-02' }),
+    ).resolves.toMatchObject([{ id: existing.id }])
+    await expect(useCases.meetings.create.execute(manager, newMeeting)).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
+
+    const updated = await useCases.meetings.update.execute(manager, {
+      meetingId: existing.id,
+      changes: { time: '11:00' },
+    })
+    expect(updated).toMatchObject({ time: '11:00' })
+    await useCases.meetings.delete.execute(manager, { meetingId: existing.id })
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(0)
+  })
+
+  it('agenda ativa permite o fluxo completo do gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    await setAgendaState(unitOfWork, 'active')
+
+    const created = await useCases.meetings.create.execute(manager, newMeeting)
+    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toMatchObject([
+      { id: created.id },
+    ])
+    await useCases.meetings.delete.execute(manager, { meetingId: created.id })
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(0)
+  })
+
+  it('organização sem registro de módulos usa o preset: agenda ativa', async () => {
+    const { useCases, unitOfWork } = setup()
+
+    await expect(unitOfWork.repositories.teamModules.list(organizationId)).resolves.toEqual([])
+    await expect(useCases.meetings.create.execute(manager, newMeeting)).resolves.toMatchObject({
+      title: newMeeting.title,
+    })
+    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toHaveLength(1)
   })
 })
