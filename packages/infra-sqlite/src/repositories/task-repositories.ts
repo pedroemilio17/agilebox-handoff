@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
 import { toTaskId } from '@agilebox/core'
 import type {
@@ -61,6 +61,17 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
     return mapped
   }
 
+  /**
+   * Listagens, buscas e contagens: tarefa arquivada fica de fora.
+   * `findById` e `findByProjectNameKey` usam `findTaskRows` direto, sem esse filtro.
+   */
+  function findActiveTaskRows(
+    organizationId: OrganizationId,
+    condition: SQLWrapper | undefined,
+  ): Promise<readonly Task[]> {
+    return findTaskRows(organizationId, and(isNull(tasks.archivedAt), condition))
+  }
+
   async function taskIdsForUser(userId: UserId) {
     return database
       .select({ taskId: taskParticipations.taskId })
@@ -107,7 +118,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       )
     },
     async listByProject(organizationId, projectId) {
-      const result = await findTaskRows(organizationId, eq(tasks.projectId, projectId))
+      const result = await findActiveTaskRows(organizationId, eq(tasks.projectId, projectId))
       return [...result].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     },
     async listBoard(organizationId, query) {
@@ -125,7 +136,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
           )!,
         )
       }
-      const result = await findTaskRows(
+      const result = await findActiveTaskRows(
         organizationId,
         filters.length ? and(...filters) : undefined,
       )
@@ -138,7 +149,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
     },
     async listRecent(organizationId, userId) {
       const participationTaskIds = await taskIdsForUser(userId)
-      const result = await findTaskRows(
+      const result = await findActiveTaskRows(
         organizationId,
         or(
           eq(tasks.createdBy, userId),
@@ -161,6 +172,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
             eq(tasks.organizationId, organizationId),
             eq(users.organizationId, organizationId),
             eq(taskOpens.userId, userId),
+            isNull(tasks.archivedAt),
           ),
         )
         .orderBy(desc(taskOpens.lastOpenedAt), desc(taskOpens.openCount))
@@ -188,7 +200,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         .trim()
       if (!normalized) return []
       const participationTaskIds = await taskIdsForUser(userId)
-      return findTaskRows(
+      return findActiveTaskRows(
         organizationId,
         and(
           like(tasks.searchText, `%${normalized}%`),
@@ -206,7 +218,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       const [row] = await database
         .select({ value: sql<number>`count(*)` })
         .from(tasks)
-        .where(eq(tasks.organizationId, organizationId))
+        .where(and(eq(tasks.organizationId, organizationId), isNull(tasks.archivedAt)))
       return Number(row?.value ?? 0)
     },
     async save(organizationId, task) {
@@ -341,7 +353,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         .select({ value: sql<number>`count(*)` })
         .from(taskParticipations)
         .innerJoin(tasks, eq(taskParticipations.taskId, tasks.id))
-        .where(eq(tasks.organizationId, organizationId))
+        .where(and(eq(tasks.organizationId, organizationId), isNull(tasks.archivedAt)))
       return Number(row?.value ?? 0)
     },
     async remove(organizationId, participationId) {

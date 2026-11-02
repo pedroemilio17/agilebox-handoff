@@ -148,6 +148,68 @@ export function describeRepositoryContract(
       )
     })
 
+    it('listagens, buscas e contagens ocultam tarefas arquivadas, e findById continua trazendo a arquivada', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const activeTask = aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBE'),
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBF'),
+          organizationId,
+          createdBy: userId,
+          title: 'Tarefa ativa',
+        })
+        .inProject(project)
+        .build()
+      const archivedTask = {
+        ...aTask()
+          .with({
+            id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBG'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBH'),
+            organizationId,
+            createdBy: userId,
+            title: 'Tarefa arquivada',
+          })
+          .inProject(project)
+          .build(),
+        archivedAt: '2026-01-06T00:00:00.000Z',
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.tasks.save(organizationId, activeTask)
+      await repositories.tasks.save(organizationId, archivedTask)
+      await repositories.taskOpens.recordOpen(organizationId, activeTask.id, userId, timestamp)
+      await repositories.taskOpens.recordOpen(organizationId, archivedTask.id, userId, timestamp)
+
+      await expect(repositories.tasks.listBoard(organizationId, {})).resolves.toEqual([activeTask])
+      await expect(repositories.tasks.listBoard(organizationId, { projectId })).resolves.toEqual([
+        activeTask,
+      ])
+      await expect(repositories.tasks.listBoard(organizationId, { userId })).resolves.toEqual([
+        activeTask,
+      ])
+      await expect(repositories.tasks.listByProject(organizationId, projectId)).resolves.toEqual([
+        activeTask,
+      ])
+      await expect(repositories.tasks.listRecent(organizationId, userId)).resolves.toEqual([
+        activeTask,
+      ])
+      await expect(repositories.tasks.listFrequent(organizationId, userId)).resolves.toEqual([
+        activeTask,
+      ])
+      await expect(repositories.tasks.search(organizationId, 'tarefa', userId)).resolves.toEqual([
+        activeTask,
+      ])
+      // Contagens da prévia de módulos contam só itens ativos: a arquivada e a responsável dela ficam de fora.
+      await expect(repositories.tasks.count(organizationId)).resolves.toBe(1)
+      await expect(repositories.participations.count(organizationId)).resolves.toBe(1)
+      // Leitura por identificador não filtra: a linha do tempo e o desfazer dependem dela.
+      await expect(repositories.tasks.findById(organizationId, archivedTask.id)).resolves.toEqual(
+        archivedTask,
+      )
+    })
+
     it('ordena Recentes e Frequentes e busca sem acentos', async () => {
       const repositories = makeAdapters()
       const older = renameTask(

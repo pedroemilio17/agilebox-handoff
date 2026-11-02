@@ -71,7 +71,8 @@ async function countItems(
 ): Promise<ItemCounts> {
   return {
     tasks: await tasks.count(organizationId),
-    projects: (await projects.list(organizationId)).length,
+    projects: (await projects.list(organizationId)).filter((project) => project.archivedAt === null)
+      .length,
     participations: await participations.count(organizationId),
     meetings: await meetings.count(organizationId),
   }

@@ -159,9 +159,18 @@ export class InMemoryParticipationRepository implements ParticipationRepository 
   }
   async count(org: OrganizationId) {
     await Promise.resolve()
-    // Mesmas linhas que o SQLite conta: participações gravadas e a de responsável de cada tarefa.
-    const ids = new Set(bucket(this.state.participations, org).keys())
-    for (const task of bucket(this.state.tasks, org).values()) {
+    // Mesmas linhas que o SQLite conta: participações gravadas e a de responsável de cada tarefa,
+    // sempre de tarefas ativas (arquivadas ficam de fora).
+    const activeTasks = [...bucket(this.state.tasks, org).values()].filter(
+      (task) => task.archivedAt === null,
+    )
+    const activeIds = new Set(activeTasks.map((task) => task.id))
+    const ids = new Set(
+      [...bucket(this.state.participations, org).values()]
+        .filter((item) => activeIds.has(item.taskId))
+        .map((item) => item.id),
+    )
+    for (const task of activeTasks) {
       for (const participation of task.participations) ids.add(participation.id)
     }
     return ids.size
@@ -237,7 +246,7 @@ export class InMemoryTaskRepository implements TaskRepository {
   async listByProject(org: OrganizationId, projectId: Task['projectId']) {
     await Promise.resolve()
     return [...bucket(this.state.tasks, org).values()]
-      .filter((item) => item.projectId === projectId)
+      .filter((item) => item.projectId === projectId && item.archivedAt === null)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   }
   async listBoard(
@@ -248,6 +257,7 @@ export class InMemoryTaskRepository implements TaskRepository {
     return [...bucket(this.state.tasks, org).values()]
       .filter(
         (item) =>
+          item.archivedAt === null &&
           (query.projectId === undefined || item.projectId === query.projectId) &&
           (query.userId === undefined ||
             item.createdBy === query.userId ||
@@ -296,15 +306,18 @@ export class InMemoryTaskRepository implements TaskRepository {
   }
   async count(org: OrganizationId) {
     await Promise.resolve()
-    return bucket(this.state.tasks, org).size
+    return [...bucket(this.state.tasks, org).values()].filter((item) => item.archivedAt === null)
+      .length
   }
+  /** Listagens de "para mim" (Recentes, Frequentes e busca): tarefas arquivadas ficam de fora. */
   private forUser(org: OrganizationId, userId: User['id']) {
     return [...bucket(this.state.tasks, org).values()].filter(
       (item) =>
-        item.createdBy === userId ||
-        item.participations.some(
-          (part) => part.participant.kind === 'user' && part.participant.userId === userId,
-        ),
+        item.archivedAt === null &&
+        (item.createdBy === userId ||
+          item.participations.some(
+            (part) => part.participant.kind === 'user' && part.participant.userId === userId,
+          )),
     )
   }
 }

@@ -5,6 +5,7 @@ import {
   PermissionDeniedError,
   toOrganizationId,
   toParticipationId,
+  toProjectId,
   toTaskId,
   toUserId,
   ValidationError,
@@ -526,6 +527,28 @@ describe('prévia de impacto das ferramentas', () => {
       participations: 0,
       meetings: 0,
     })
+  })
+
+  it('a prévia de impacto conta só projetos ativos (projeto arquivado fica de fora)', async () => {
+    const { useCases, unitOfWork } = setup()
+    const repositories = unitOfWork.repositories
+    await repositories.projects.save(organizationId, aProject().with({ organizationId }).build())
+    await repositories.projects.save(organizationId, {
+      ...aProject()
+        .with({
+          id: toProjectId('00000000000000000000000030'),
+          name: 'Projeto arquivado',
+          organizationId,
+        })
+        .build(),
+      archivedAt: '2026-01-05T00:00:00.000Z',
+    })
+
+    const impacts = await useCases.teamModules.previewImpact.execute(managerCtx, manager, {
+      disable: ['core'],
+    })
+
+    expect(impactOf(impacts, 'core')).toMatchObject({ projects: 1 })
   })
 
   it('desligar nunca apaga contagem: a prévia não muda dados nem estado do módulo', async () => {
