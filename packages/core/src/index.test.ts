@@ -9,5 +9,7 @@ describe('API pública do core', () => {
     expect(core.diffTask).toBeTypeOf('function')
     expect(core.ValidationError).toBeTypeOf('function')
     expect(core.toTaskId).toBeTypeOf('function')
+    expect(core.resolveModuleSet).toBeTypeOf('function')
+    expect(core.MODULE_REGISTRY.core.core).toBe(true)
   })
 })

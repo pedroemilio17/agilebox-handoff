@@ -35,7 +35,7 @@ Uma consequência importante: um módulo desativado não aparece em nenhum níve
 
 A equipe escolhe quais ferramentas usa a partir de um catálogo fixo no código. O sistema garante que nenhuma fique sem aquilo de que depende e que duas conflitantes nunca estejam ativas juntas. Isso não substitui os níveis: o nível decide o que aparece, a ferramenta decide o que existe.
 
-&#91;embedded content: catálogo de ferramentas · 14 módulos e suas dependências\]
+&#91;embedded content: catálogo de ferramentas · 15 módulos e suas dependências\]
 
 O Núcleo é o único obrigatório; Burndown/velocity é o caso mais exigente, porque precisa de Sprints e de alguma Estimativa ao mesmo tempo. O catálogo é uma proposta inicial; mudar uma seta é mudar uma linha no registro.
 

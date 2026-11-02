@@ -113,3 +113,43 @@ Sequência (cada linha é uma tarefa de ~1 commit; `pnpm check` verde antes de c
 Pendências de confirmação que não travam nada agora: ADR-08 e ADR-09 (são de M4 e M6b), aceite por maioria (M6b) e quem troca de modelo (M9).
 
 Checagem desta proposta: nenhum código foi alterado; só este arquivo.
+
+## Decisões tomadas (recomendadas)
+
+O Pedro mandou seguir a opção recomendada de D1 a D10 (2026-11-02). Cada linha vale como decisão. O que muda na execução está nas notas do M1.
+
+- **D1. Organização é o time.** `tenantId` é o `organizationId` que já existe; `TenantContext` só o embrulha. Sem migração de nome e sem tabela `tenants` no M1.
+- **D2. Módulos e nível em tabelas novas** `team_modules` e `team_settings` (migração `0003`, aditiva). `local_settings` fica para dado da máquina.
+- **D3. Guard de módulo no M1 só na Agenda**, o único caso de uso de módulo que existe hoje.
+- **D4. Prévia de impacto no M1 com contagens do que existe** (tarefas, projetos, participações). Backlog e sprints entram quando chegarem.
+- **D5. `effectiveCapabilities` devolve módulos efetivos, nível e papel.** A permissão continua em `access-policy.ts`.
+- **D6. Gestor é o `role` global `manager`** no M1. Papel por `memberships` fica para o M6a.
+- **D7. Histórico em tabela própria `team_module_events`** (quem, quando, o quê), gravado na mesma transação da mudança.
+- **D8. Catálogo com os 15 ids do plano.** O título do catálogo passou de "14" para "15" no plano. `estimates.points` fica no registro só como par de conflito de teste, sem entrar em preset. A UI do M2 deve escondê-lo até o ADR-07 mudar.
+- **D9. `ctx: TenantContext` obrigatório em cada caso de uso**, em quatro commits (M1.10a a d).
+- **D10. O M1 da 2.0 é lido pelo laço**, com arquivo próprio e ajuste em `run.sh`. Ainda não aplicado (ver pendências).
+
+## M1 · Notas de execução
+
+Sessão Claude, 2026-11-02. M1.1 e M1.2 concluídos, sem commit. Não toquei em tela, banco nem em M1.3 em diante.
+
+- **M1.1 (registro):** `packages/core/src/modules/`
+  - `experience-level.ts`: `ExperienceLevel` (`basic`, `intermediate`, `advanced`), necessário para `minLevel`. M1.4 acrescenta a comparação.
+  - `types.ts`: `MODULE_IDS` (15 ids), `ModuleId`, `ModuleDefinition`, `ModuleChange`, `ModuleResolution`.
+  - `registry.ts`: `MODULE_REGISTRY`, `dependenciesOf` e `findDependencyCycle` (DFS que devolve o ciclo, se houver).
+- **M1.2 (`resolveModuleSet`):**
+  - Ativar puxa as dependências `requires`, que vão para `autoEnabled`.
+  - Desativar é recusado em cascata: `blockedBy` lista quem cairia, na ordem do catálogo.
+  - `requiresAnyOf` não é puxado. Se nenhuma alternativa estiver ativa, a mudança é recusada.
+  - Conflitos são checados no conjunto final. Um conflito que já existia deixa de bloquear quando a mudança resolve o par.
+  - `core` está sempre ativo e não pode ser desligado.
+  - Id desconhecido, e ativar e desativar o mesmo módulo na mesma mudança, lançam `ValidationError`.
+- **Correção durante a implementação:** `requiresAnyOf` do burndown é um único grupo `[estimates.hours, estimates.points]`. Dois grupos exigiriam horas E pontos. Semântica: cada grupo exige ao menos um ativo, e todos os grupos precisam valer.
+- **Arestas inferidas** (o diagrama do catálogo é imagem e não aparece no texto do plano): `checkins → sprints`, `impediments → sprints`, `acceptance → backlog`, `reviewRetro → sprints`. O `minLevel` de `integrations` (Avançado) também é chute. O texto garante só `sprints → backlog`, burndown exige sprints e horas OU pontos, e os níveis dos presets. Conferir com o diagrama antes do M2.
+- **Verificação:** `pnpm check` com saída 0 (121 arquivos, 989 testes; formatação, lint com zero avisos, tipos e build). `pnpm coverage` roda e `modules/` fica com 100% de statements, branches e funções.
+
+### Pendências para o Pedro
+
+- Confirmar as arestas inferidas acima com o diagrama do catálogo.
+- D10 não foi aplicado nesta rodada: falta criar o arquivo lido pelo laço e ajustar `scripts/codex-loop/run.sh`. O pedido citou `PROGRESS_2.md` e a sessão ficou restrita a M1.1 e M1.2. Quer que eu faça na próxima?
+- Ainda abertos da seção anterior: M0.8 e M0.9b e M0.11 (UI), e o teste instável de `App.manager.test.tsx`.
