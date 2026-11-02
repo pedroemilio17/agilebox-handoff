@@ -607,3 +607,67 @@ Pendências do M2.9 (para o Pedro):
 **Status M2.12 (renomear, arquivar, desfazer):** feito. Renomear no lugar (tarefa: F2/Enter/Esc; projeto na barra lateral), arquivar pelo menu "⋯" (tarefa com atalho E; projeto na barra lateral) e desfazer em aviso de 8 s com Ctrl Z (`role=status`). Correções da revisão (M2.12-fix): F2/E ignoram teclas já tratadas, foco na barra lateral e Shift+E; menus fecham no clique fora, na saída do foco e ao abrir outro; avisos de desfazer em fila FIFO nomeando o item; alerta de erro some em 5 s; `canManageProject` no `App.tsx` (gestor ou criador). `desktop-renderer` 334/334. Pendências: foco de destino após arquivar; conferir o foco de fechamento do menu no Electron real; renomear projeto com nome duplicado mostra só mensagem genérica; tarefas arquivadas sem tela de desarquivar.
 
 **Status M2.12c (Ajustes lista projetos arquivados):** feito. Seção "Projetos arquivados" em Ajustes com "Desarquivar projeto <nome>" (criador ou gestor; recusa do servidor em `role=alert`), estado vazio em texto, chave `queryKeys.projects.archived`. A lista sai da diferença entre `projects.list({ includeArchived: true })` e `projects.list()` porque `ProjectDto` não traz `archivedAt` (pendência: expor o campo). `panel/settings` 27/27.
+
+## Antes do M3 — o que o Pedro precisa decidir
+
+Sessão Claude, 2026-11-02. Só leitura de código, notas e `git log`. Nenhum código alterado e nenhum commit. Os commits citados são os de `git log --oneline`.
+
+### 1. Critérios de saída do M2 (plano)
+
+- **Trocar nível ou preset não perde dados: PARCIAL.** Domínio e contrato atendidos: nível grava só `level` (`8c2805e`); desligar com itens vai a `winding_down` e reativar preserva dados (`61a3aa9`, `6654f31`); campos por nível só mudam visibilidade (`13bd9e0`). Falta teste ponta a ponta no Electron real. `finishWindingDown` tem IPC, mas nenhum controle no renderer, então um módulo pode ficar "Encerrando" sem saída pela tela.
+- **Desativar módulo com sprint ativa não deixa item órfão: PARCIAL.** Sprints só existe no M4. O mecanismo vale para a Agenda (reuniões em `winding_down`, `61a3aa9`).
+- **Time Básico trabalha sem saber Scrum: PARCIAL.** Menu filtrado e teste "Essencial não vê Backlog, Sprints nem Dashboard" (`7a45e02`); campos do Essencial (`fc2a47b`). Falta a conferência visual do quadro 07 (pendência do M2.5 e do M2.11).
+- **Entrega: menu por nível e campos avançados ocultos: ATENDIDO** (`7a45e02`, `fc2a47b`); conferência visual pendente.
+- **Entrega: Ferramentas com presets, prévia e aplicação só pelo gestor: ATENDIDO** (`c0c5fc0`, `c72dc7c`, `6654f31`; `canManageTeamModules`).
+- **Portão do M2 (100% das regras de dependência e conflito, M1 a M7): NÃO COMPROVADO.** A última medição de cobertura é do M1.12. Presets, `task-fields`, `labels`, `screens`, `change-plan` e `tool-draft` entraram depois, sem medição registrada.
+
+### 2. Decisões abertas (deduplicadas)
+
+**Bloqueiam o M3**
+
+- **B1. Modelo do backlog.** Como o backlog fica separado da coluna Planejamento? A) campo de ordem e de "fora do quadro" na própria tarefa; B) entidade `backlog_items` que aponta para a tarefa. Rec.: A (as sprints do M4 apontam para a tarefa). Sem decidir: não há migração 0005 nem contrato.
+- **B2. Escopo da ordem.** A) ordem única por time; B) ordem por projeto. Rec.: A (o módulo é do time). Sem decidir: índice e tela não têm escopo.
+- **B3. Quem reordena e edita critérios.** A) só o gestor reordena, e cada participante edita os critérios das suas tarefas; B) qualquer participante reordena. Rec.: A. Sem decidir: a regra de acesso do M3 fica em aberto.
+- **B4. Estimativa.** Hoje a estimativa é a soma das horas por participação (M2.11). A) campo "estimado" próprio na tarefa, separado das horas realizadas; B) manter as horas por participação. Rec.: A (ADR-07 pede estimativa em horas; o custo segue por participação). Sem decidir: estimativa e custo ficam ambíguos.
+- **B5. Nível dos critérios.** Plano: telas do M3 no Intermediário. Handoff (decisão 3, M2.1): critérios são Avançado. A) Avançado; B) Intermediário. Rec.: A (decisão mais nova). Sem decidir: a tela de critérios não tem nível.
+- **B6. Scrum do time.** Plano inclui Estimativas e Critérios; o handoff (decisão 4, já tomada) tirou. A) manter o handoff, e o M3 fica fora do preset; B) voltar ao plano. Rec.: A, com confirmação explícita. Sem decidir: o preset não liga nada novo do M3.
+
+**Podem esperar**
+
+- **P1. Impedimentos ao desligar.** Plano: encerram só depois de resolvidos; decisão 5: viram tarefa no Backlog. Rec.: decisão 5, com recusa se o Backlog sair junto. Vale no M5.
+- **P2. Reuniões ao desligar a Agenda.** M2.3 aplicou B (sem destino novo). Confirmar; rever no M5 para todos os tipos.
+- **P3. Controle para concluir o encerramento.** Rec.: botão no quadro 06 ao lado de "Encerrando". Sem ele, o estado pode ficar preso.
+- **P4. Ligar Sprints com Backlog encerrando** deixa o Backlog em `winding_down` sob Sprints ativo (M2.10c, pendência b). Rec.: aceitar e reavaliar no M4.
+- **P5. Textos de presets e cartões.** Q1 a Q3 seguem o código; o cartão "Estimativa por horas" não está no quadro e "Retro" não está no código. Rec.: ajustar o quadro ou o texto, sem mudar a lógica.
+- **P6. Ferramentas só no Avançado.** O gestor no Padrão chega à troca de nível só em Ajustes. Rec.: manter.
+- **P7. Dashboard** como módulo ou tela fixa do gestor, e ordem do menu (quadro 07 ou quadro 02). Rec.: tela fixa; ordem do quadro 07.
+- **P8. Saídas silenciosas na prévia** de módulos sem cartão (`estimates.points`, M2.10a-fix). Decidir se a prévia as mostra.
+- **P9. Tarefa arquivada sem tela para desarquivar** (só desfazer em 8 s). Rec.: lista de arquivadas por projeto. Idealmente antes do M3, para o backlog não esconder itens.
+- **P10. Permissão de arquivar e renomear projeto** segue `canManageMembers` (M0.7); projeto não tem linha do tempo (M0.8). Confirmar.
+- **P11. Laço Codex lendo o PROGRESS_2.md (D10)** ainda não aplicado. Sem ele, o M3 é manual.
+- **P12. ADR-08, ADR-09 e aceite por maioria** (M4 e M6b). Confirmar antes do M4.
+
+### 3. O que o M3 pede
+
+- **Escopo (plano):** prioridade persistida com reordenação; critérios de aceitação; estimativa em horas ligada ao custo por hora (ADR-07); backlog separado da coluna Planejamento. Pronto quando: reordenar persiste e o backlog fica separado de `planning`.
+- **Módulos:** `backlog` (sem dependência), `acceptance` (exige `backlog`) e `estimates.hours`.
+- **Pacotes:** core (ordem e regra de critérios, funções puras); application (listar, reordenar, critérios, guard de módulo); infra-sqlite (migração 0005 e adaptador); contract (Zod e IPC); renderer (tela Backlog e campos no detalhe).
+- **Faz sem tela:** core, application com testes, migração, adaptador e contrato, depois de B1 a B4. Não depende de design.
+- **Precisa de decisão de design** (nenhum quadro de Backlog existe em `design/` nem no artefato):
+  - layout da tela (lista única ou por projeto);
+  - gesto de reordenar, com alternativa por teclado e botões (exigência de acessibilidade do handoff);
+  - o que cada linha mostra (estimativa, critérios, responsável);
+  - ação para levar o item ao Quadro;
+  - editor de critérios no detalhe (checklist inline);
+  - estado vazio e aviso de escopo ("vale para o time").
+
+### 4. Riscos técnicos acumulados
+
+- **Electron real:** nada do M2 foi rodado no app instalado. Foco ao fechar o menu e foco após arquivar não verificados (M2.12).
+- **E2E e Playwright** adiados para M4 a M6 (CLAUDE.md). Nenhum fluxo de Ferramentas ou de desfazer foi validado ponta a ponta.
+- **Cobertura** do M2 não medida (ver item 1).
+- **`pnpm check` completo não registrado** em `6654f31`, `9190701`, `05a4121`, `fcc1e96` e nos commits de -fix; as notas citam só suítes parciais. Rodar `pnpm check` antes de abrir o M3.
+- **Teste instável** `App.manager.test.tsx` (timeout sob carga), ainda sem tratamento.
+- **Documentação:** M0.9b e M0.11 seguem `[ ]` no checklist, embora `fcc1e96` diga que os fecha. Várias notas dizem "sem commit" para itens já commitados.
+- **Quadros 06 e 07** existem só no artefato, não no repositório.
+- **Plano x código:** o plano diz que desativar Backlog com Sprints ativo é "recusado"; a UI oferece desligar junto (regra 2 do plano). Confirmar, porque afeta o Backlog no M3.
