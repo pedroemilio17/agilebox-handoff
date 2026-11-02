@@ -90,3 +90,18 @@ export function canManageTeamModules(actor: Actor): boolean {
 export function canReorderBacklog(actor: Actor, organizationId: OrganizationId): boolean {
   return actor.organizationId === organizationId && actor.role === 'manager'
 }
+/**
+ * Critérios de aceite (M3.2, B3 A): quem edita a tarefa edita os critérios dela (criou, é
+ * Responsável ou Apoio); o gestor também, e essas edições saem marcadas como Gestor na linha do tempo.
+ * Mesma regra de `canEditTask`, em função própria para que a regra dos critérios possa mudar sem afetar a tarefa.
+ */
+export function canEditAcceptance(actor: Actor, task: Task): boolean {
+  return canEditTask(actor, task)
+}
+/**
+ * Estimativa em horas (M3.3, ADR-07): por padrão, quem edita a tarefa define a estimativa; o gestor
+ * também, e a edição sai marcada como Gestor. Função própria, para que a regra possa mudar sem afetar a tarefa.
+ */
+export function canEditEstimate(actor: Actor, task: Task): boolean {
+  return canEditTask(actor, task)
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ValidationError } from '../shared/errors'
 import { resolveModuleSet } from './resolve-module-set'
-import type { ModuleId } from './types'
+import type { ModuleChange, ModuleId } from './types'
 
 const BASE: readonly ModuleId[] = ['core']
 
@@ -180,5 +180,91 @@ describe('resolveModuleSet', () => {
       'Módulo desconhecido: nope',
     )
     expect(() => resolveModuleSet(BASE, { disable: ['nope' as ModuleId] })).toThrow(ValidationError)
+  })
+})
+
+/**
+ * Regra de desligar reescrita no M3 (PROGRESS_2, "M3 · Decisões do Pedro"): o conjunto final não
+ * pode ter Sprints ou Aceite sem Backlog. Desligar Backlog sozinho é recusado; desligar os dois
+ * juntos é válido.
+ *
+ * Hoje `sprints` exige só `backlog`. Se o M4 fizer Sprints depender de `estimates.hours`
+ * (pergunta aberta), estes testes continuam valendo e um novo caso deve cobrir a estimativa.
+ */
+describe('regra de desligar Backlog com Sprints e Aceite (M3)', () => {
+  it('ativar Aceite puxa Backlog e informa que foi automático', () => {
+    expect(resolveModuleSet(BASE, { enable: ['acceptance'] })).toEqual({
+      ok: true,
+      enabled: ['core', 'backlog', 'acceptance'],
+      autoEnabled: ['backlog'],
+    })
+  })
+
+  it('desligar só Backlog com Aceite ativo é recusado e informa o motivo', () => {
+    expect(resolveModuleSet(['core', 'backlog', 'acceptance'], { disable: ['backlog'] })).toEqual({
+      ok: false,
+      conflicts: [],
+      blockedBy: ['acceptance'],
+    })
+  })
+
+  it('desligar Backlog e Aceite juntos é aceito', () => {
+    expect(
+      resolveModuleSet(['core', 'backlog', 'acceptance'], { disable: ['backlog', 'acceptance'] }),
+    ).toEqual({ ok: true, enabled: ['core'], autoEnabled: [] })
+  })
+
+  it('desligar só Backlog com Sprints e Aceite ativos recusa os dois, na ordem do catálogo', () => {
+    expect(
+      resolveModuleSet(['core', 'backlog', 'sprints', 'acceptance'], { disable: ['backlog'] }),
+    ).toEqual({ ok: false, conflicts: [], blockedBy: ['sprints', 'acceptance'] })
+  })
+
+  it('desligar Backlog, Sprints e Aceite na mesma mudança é aceito', () => {
+    expect(
+      resolveModuleSet(['core', 'backlog', 'sprints', 'acceptance'], {
+        disable: ['backlog', 'sprints', 'acceptance'],
+      }),
+    ).toEqual({ ok: true, enabled: ['core'], autoEnabled: [] })
+  })
+
+  it('desligar Sprints sozinho mantém Backlog e Aceite, que não dependem dele', () => {
+    expect(
+      resolveModuleSet(['core', 'backlog', 'sprints', 'acceptance'], { disable: ['sprints'] }),
+    ).toEqual({ ok: true, enabled: ['core', 'backlog', 'acceptance'], autoEnabled: [] })
+  })
+
+  it('ativar Sprints com Aceite já ligado puxa só Backlog, sem duplicar', () => {
+    expect(resolveModuleSet(['core', 'acceptance'], { enable: ['sprints'] })).toEqual({
+      ok: true,
+      enabled: ['core', 'backlog', 'sprints', 'acceptance'],
+      autoEnabled: ['backlog'],
+    })
+  })
+
+  it('nenhum conjunto aceito deixa Sprints ou Aceite sem Backlog, em qualquer mudança testada', () => {
+    const pool: ModuleId[] = ['backlog', 'sprints', 'checkins', 'impediments', 'acceptance']
+    const changes: ModuleChange[] = [
+      {},
+      { enable: ['sprints'] },
+      { enable: ['acceptance'] },
+      { disable: ['backlog'] },
+      { disable: ['backlog', 'sprints'] },
+      { disable: ['sprints'] },
+      { disable: ['acceptance'] },
+    ]
+
+    for (let mask = 0; mask < 1 << pool.length; mask++) {
+      const current: ModuleId[] = ['core', ...pool.filter((_, index) => mask & (1 << index))]
+      for (const change of changes) {
+        const result = resolveModuleSet(current, change)
+        if (!result.ok) continue
+        const { enabled } = result
+        if (enabled.includes('sprints')) expect(enabled).toContain('backlog')
+        if (enabled.includes('acceptance')) expect(enabled).toContain('backlog')
+        if (enabled.includes('checkins')) expect(enabled).toContain('sprints')
+        if (enabled.includes('impediments')) expect(enabled).toContain('sprints')
+      }
+    }
   })
 })

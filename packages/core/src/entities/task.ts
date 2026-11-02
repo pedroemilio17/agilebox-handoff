@@ -7,6 +7,7 @@ import type { TaskStatus } from '../values/task-status'
 import { createTicket } from '../values/ticket'
 import type { Ticket } from '../values/ticket'
 import { parseBacklogRank } from '../values/backlog-order'
+import { parseEstimatedHours } from '../values/hours'
 import { createParticipation } from './participation'
 import type { Participation, Participant } from './participation'
 import { validateName } from './validation'
@@ -30,6 +31,11 @@ export interface Task {
   readonly backlogRank: number | null
   /** Aparece no quadro quando o módulo Backlog está ligado. Invariante: `onBoard` é `backlogRank === null`. */
   readonly onBoard: boolean
+  /**
+   * Estimativa da tarefa em centésimos de hora (mesma unidade de `hoursHundredths`), ou nulo = sem
+   * estimativa (ADR-07, B4 A). Separada das horas realizadas, que ficam em cada participação e não mudam.
+   */
+  readonly estimatedHours: number | null
   readonly participations: readonly Participation[]
 }
 
@@ -83,6 +89,7 @@ export function createTask(input: CreateTaskInput): Task {
     archivedAt: null,
     backlogRank: null,
     onBoard: true,
+    estimatedHours: null,
     participations: [responsible],
   }
 }
@@ -102,6 +109,13 @@ export function setDeadline(task: Task, deadline: DateOnly | null): Task {
 }
 export function setArchivedAt(task: Task, archivedAt: string | null): Task {
   return { ...task, archivedAt }
+}
+/**
+ * Define a estimativa em centésimos de hora, ou limpa com nulo. Não toca nas participações:
+ * horas realizadas e estimativa são independentes (ADR-07).
+ */
+export function setEstimatedHours(task: Task, estimatedHours: number | null): Task {
+  return { ...task, estimatedHours: parseEstimatedHours(estimatedHours) }
 }
 /** Manda a tarefa ao backlog na posição dada. Fica fora do quadro; o estado (status) não muda. */
 export function sendToBacklog(task: Task, backlogRank: number): Task {

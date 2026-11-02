@@ -29,6 +29,12 @@ describe('mapTaskRow', () => {
     expect(task.onBoard).toBe(true)
   })
 
+  it('usa estimatedHours null enquanto a coluna estimated_hours não existe (M3.9)', () => {
+    const task = mapTaskRow(taskRow, 'Projeto AgileBox', [])
+
+    expect(task.estimatedHours).toBeNull()
+  })
+
   it('mantém os campos já existentes no mapeamento', () => {
     const task = mapTaskRow(taskRow, 'Projeto AgileBox', [])
 

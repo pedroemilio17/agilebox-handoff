@@ -75,11 +75,10 @@ describe('registro de módulos', () => {
     expect(MODULE_REGISTRY['estimates.points'].conflicts).toEqual(['estimates.hours'])
   })
 
-  it('arestas confirmadas no handoff do M2: check-ins, impedimentos e retro dependem de sprints; aceite de backlog', () => {
+  it('arestas confirmadas no handoff do M2: check-ins, impedimentos e retro dependem de sprints', () => {
     expect(MODULE_REGISTRY.checkins.requires).toEqual(['sprints'])
     expect(MODULE_REGISTRY.impediments.requires).toEqual(['sprints'])
     expect(MODULE_REGISTRY.reviewRetro.requires).toEqual(['sprints'])
-    expect(MODULE_REGISTRY.acceptance.requires).toEqual(['backlog'])
   })
 
   it('agenda e integrações não dependem de nada, e integrações é avançado', () => {
@@ -88,9 +87,18 @@ describe('registro de módulos', () => {
     expect(MODULE_REGISTRY.integrations.minLevel).toBe('advanced')
   })
 
-  it('impedimentos e critérios de aceite são de nível avançado, como no menu do handoff', () => {
-    expect(MODULE_REGISTRY.impediments.minLevel).toBe('advanced')
+  it('sprints exige só backlog por enquanto: estimativa para capacidade é pergunta aberta do M4', () => {
+    expect(MODULE_REGISTRY.sprints.requires).toEqual(['backlog'])
+    expect(MODULE_REGISTRY.sprints.requiresAnyOf).toBeUndefined()
+  })
+
+  it('critérios de aceite exigem backlog e são de nível avançado (B5)', () => {
+    expect(MODULE_REGISTRY.acceptance.requires).toEqual(['backlog'])
     expect(MODULE_REGISTRY.acceptance.minLevel).toBe('advanced')
+  })
+
+  it('impedimentos são de nível avançado, como no menu do handoff', () => {
+    expect(MODULE_REGISTRY.impediments.minLevel).toBe('advanced')
   })
 
   it('burndown exige sprints e horas OU pontos', () => {

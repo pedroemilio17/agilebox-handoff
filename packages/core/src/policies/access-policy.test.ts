@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { OrganizationId, ProjectId, TaskId, UserId, ContributorId } from '../shared/ids'
+import type {
+  OrganizationId,
+  ParticipationId,
+  ProjectId,
+  TaskId,
+  UserId,
+  ContributorId,
+} from '../shared/ids'
 import type { Task } from '../entities/task'
 import type { Project } from '../entities/project'
 import type { Actor } from './actor'
@@ -37,6 +44,7 @@ const task: Task = {
   archivedAt: null,
   backlogRank: null,
   onBoard: true,
+  estimatedHours: null,
   participations: [],
 }
 const ownTask = { ...task, createdBy: user }
@@ -153,5 +161,73 @@ describe('reordenar backlog', () => {
     expect(policy.canReorderBacklog(manager, org)).toBe(true)
     expect(policy.canReorderBacklog(collaborator, org)).toBe(false)
     expect(policy.canReorderBacklog(manager, otherOrg)).toBe(false)
+  })
+})
+
+describe('critérios de aceite', () => {
+  const participant: Task = {
+    ...task,
+    createdBy: other,
+    participations: [
+      {
+        id: 'part' as ParticipationId,
+        taskId: task.id,
+        participant: { kind: 'user', userId: user },
+        role: 'support',
+        hoursHundredths: 0,
+        rateCents: 0,
+        addedAt: '',
+      },
+    ],
+  }
+  const creator: Task = { ...task, createdBy: user }
+
+  it('participante (criou, responsável ou apoio) e gestor editam; não participante é recusado', () => {
+    expect(policy.canEditAcceptance(collaborator, creator)).toBe(true)
+    expect(policy.canEditAcceptance(collaborator, participant)).toBe(true)
+    expect(policy.canEditAcceptance(manager, task)).toBe(true)
+    expect(policy.canEditAcceptance(collaborator, task)).toBe(false)
+  })
+
+  it('gestor de outra organização não edita critérios', () => {
+    expect(policy.canEditAcceptance(manager, { ...participant, organizationId: otherOrg })).toBe(
+      false,
+    )
+  })
+
+  it('participante de outra organização não edita critérios', () => {
+    expect(
+      policy.canEditAcceptance({ ...collaborator, organizationId: otherOrg }, participant),
+    ).toBe(false)
+  })
+})
+
+describe('estimativa em horas', () => {
+  const participant: Task = {
+    ...task,
+    createdBy: other,
+    participations: [
+      {
+        id: 'part' as ParticipationId,
+        taskId: task.id,
+        participant: { kind: 'user', userId: user },
+        role: 'support',
+        hoursHundredths: 0,
+        rateCents: 0,
+        addedAt: '',
+      },
+    ],
+  }
+
+  it('segue canEditTask: participante e gestor editam; não participante é recusado', () => {
+    expect(policy.canEditEstimate(collaborator, participant)).toBe(true)
+    expect(policy.canEditEstimate(manager, task)).toBe(true)
+    expect(policy.canEditEstimate(collaborator, task)).toBe(false)
+  })
+
+  it('não vale para outra organização', () => {
+    expect(policy.canEditEstimate({ ...manager, organizationId: otherOrg }, participant)).toBe(
+      false,
+    )
   })
 })

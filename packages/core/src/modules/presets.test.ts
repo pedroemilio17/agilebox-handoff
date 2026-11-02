@@ -78,4 +78,41 @@ describe('presets de ferramentas', () => {
     expect(TEAM_PRESETS.quadroSimples).not.toContain('integrations')
     expect(TEAM_PRESETS.scrumDoTime).not.toContain('integrations')
   })
+
+  it('Scrum do time resolve sem estimativa em horas e sem critérios de aceite (B6)', () => {
+    const resolution = resolveModuleSet([], { enable: TEAM_PRESETS.scrumDoTime })
+    expect(resolution.ok).toBe(true)
+    if (!resolution.ok) return
+    expect(resolution.enabled).not.toContain('estimates.hours')
+    expect(resolution.enabled).not.toContain('acceptance')
+  })
+
+  it('Completo resolve com estimativa em horas e critérios de aceite (B6)', () => {
+    const resolution = resolveModuleSet([], { enable: TEAM_PRESETS.completo })
+    expect(resolution.ok).toBe(true)
+    if (!resolution.ok) return
+    expect(resolution.enabled).toEqual(expect.arrayContaining(['estimates.hours', 'acceptance']))
+  })
+
+  it('no Scrum do time, desligar só Backlog é recusado e lista Sprints, check-ins e impedimentos', () => {
+    const scrum = resolveModuleSet([], { enable: TEAM_PRESETS.scrumDoTime })
+    if (!scrum.ok) throw new Error('Scrum do time deveria resolver')
+
+    expect(resolveModuleSet(scrum.enabled, { disable: ['backlog'] })).toEqual({
+      ok: false,
+      conflicts: [],
+      blockedBy: ['sprints', 'checkins', 'impediments'],
+    })
+  })
+
+  it('no Scrum do time, desligar Backlog junto com Sprints, check-ins e impedimentos é aceito', () => {
+    const scrum = resolveModuleSet([], { enable: TEAM_PRESETS.scrumDoTime })
+    if (!scrum.ok) throw new Error('Scrum do time deveria resolver')
+
+    expect(
+      resolveModuleSet(scrum.enabled, {
+        disable: ['backlog', 'sprints', 'checkins', 'impediments'],
+      }),
+    ).toEqual({ ok: true, enabled: ['core', 'agenda'], autoEnabled: [] })
+  })
 })

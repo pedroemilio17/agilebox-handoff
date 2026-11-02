@@ -42,7 +42,7 @@ O Núcleo é o único obrigatório; Burndown/velocity é o caso mais exigente, p
 ### Regras
 
 1. **Ativar puxa as dependências.** Ativar Sprints com Backlog desligado oferece ativar os dois numa confirmação só.
-2. **Desativar é bloqueado enquanto alguém depende.** Desligar Backlog com Sprints ativo mostra quem depende e oferece desligar os dois.
+2. **Desativar é bloqueado enquanto alguém depende.** O conjunto final não pode ter Sprints ou critérios de aceite sem Backlog. Desligar Backlog sozinho com Sprints ativo é recusado e mostra quem depende; desligar Backlog junto com Sprints (e Aceite, se ativo) na mesma mudança é válido.
 3. **Conflitos são exclusivos.** Estimativa em horas e em pontos não coexistem; trocar exige converter ou arquivar as estimativas antigas. Pelo ADR-07 só horas existe hoje; pontos fica como módulo futuro, e o par serve de caso de teste do conflito.
 4. **O catálogo não tem ciclo.** Um teste roda a cada build e falha se uma dependência circular for criada.
 5. **Desativar esconde, nunca apaga.** Reativar devolve sprints, check-ins e estimativas como estavam.
@@ -238,7 +238,7 @@ A bateria completa roda depois do M9, sobre o sistema inteiro, e termina no pilo
 Casos de teste específicos da camada de ferramentas da equipe:
 
 - Ativar Sprints sem Backlog ativa os dois, com aviso; nunca deixa Sprints sozinho.
-- Desativar Backlog com Sprints ativo é recusado e lista quem depende dele.
+- Desativar Backlog sozinho com Sprints ativo é recusado e lista quem depende dele; desativar Backlog e Sprints na mesma mudança é aceito.
 - Ativar dois módulos em conflito (estimativa em horas e em pontos) é recusado.
 - O registro de módulos não tem ciclo; o teste roda a cada build e falha se alguém criar um.
 - Desativar e reativar um módulo devolve os dados intactos.

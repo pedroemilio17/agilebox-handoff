@@ -57,9 +57,10 @@ export function mapTaskRow(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     archivedAt: row.archivedAt,
-    // Persistência de backlogRank/onBoard vem na M3.9; até lá toda tarefa está no quadro.
+    // Persistência de backlogRank/onBoard e estimatedHours vem na M3.9; até lá toda tarefa está no quadro.
     backlogRank: null,
     onBoard: true,
+    estimatedHours: null,
     participations,
   }
 }

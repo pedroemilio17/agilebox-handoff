@@ -9,6 +9,9 @@ export const MODULE_REGISTRY: Readonly<Record<ModuleId, ModuleDefinition>> = {
   core: { id: 'core', requires: [], minLevel: 'basic', core: true },
   agenda: { id: 'agenda', requires: [], minLevel: 'basic' },
   backlog: { id: 'backlog', requires: [], minLevel: 'intermediate' },
+  // Hoje Sprints exige só Backlog. Pergunta aberta para o M4 (PROGRESS_2, "M3 · Decisões do
+  // Pedro"): se Sprints passar a depender de `estimates.hours` para capacidade, esta linha muda
+  // e o teste "sprints exige só backlog" em registry.test.ts precisa ser atualizado junto.
   sprints: { id: 'sprints', requires: ['backlog'], minLevel: 'intermediate' },
   checkins: { id: 'checkins', requires: ['sprints'], minLevel: 'intermediate' },
   impediments: { id: 'impediments', requires: ['sprints'], minLevel: 'advanced' },
