@@ -153,3 +153,14 @@ Sessão Claude, 2026-11-02. M1.1 e M1.2 concluídos, sem commit. Não toquei em 
 - Confirmar as arestas inferidas acima com o diagrama do catálogo.
 - D10 não foi aplicado nesta rodada: falta criar o arquivo lido pelo laço e ajustar `scripts/codex-loop/run.sh`. O pedido citou `PROGRESS_2.md` e a sessão ficou restrita a M1.1 e M1.2. Quer que eu faça na próxima?
 - Ainda abertos da seção anterior: M0.8 e M0.9b e M0.11 (UI), e o teste instável de `App.manager.test.tsx`.
+
+## M1.3 · Estado do módulo (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/core`, sem tela, banco nem caso de uso.
+
+- `packages/core/src/modules/module-state.ts`: `MODULE_STATES` (`active`, `winding_down`, `disabled`), `ModuleState`, `ModuleStateEvent` (`startWindingDown`, `finishWindingDown`, `reactivate`), `transitionModuleState` (função pura, lança `ValidationError` em transição inválida), `canAcceptNewItems` (só `active`) e `canUseExistingItems` (tudo menos `disabled`; base do guard do M1.8).
+- Transições: `active` → `winding_down`; `winding_down` → `disabled` (concluir) ou `active` (reativar, cancela a saída); `disabled` → `active`. Qualquer outro par é recusado.
+- Decisão de execução (não estava explícita no plano): reativar a partir de `winding_down` volta a `active`, para que cancelar o encerramento seja possível. Se o Pedro preferir proibir, é uma linha na tabela `TRANSITIONS`.
+- Testes: `module-state.test.ts` (transições válidas, todas as inválidas recusadas, predicados, reativar não toca em dados).
+- Exportado por `modules/index.ts`.
+- `pnpm check` com saída 0: 122 arquivos, 997 testes, lint com zero avisos, build ok.
