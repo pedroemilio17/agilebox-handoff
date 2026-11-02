@@ -19,7 +19,7 @@
   align-items: center;
   gap: var(--space-1);
   padding: 3px 6px;
-  border-radius: var(--radius-badge);
+  border-radius: var(--radius-chip);
   font-size: 11px;
   white-space: nowrap;
 }

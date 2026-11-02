@@ -41,8 +41,15 @@
   --surface-card: #1d1c23; /* cartões de tarefa, blocos clicáveis */
   --surface-raised: #26252d; /* hover, chips, faixas */
   --surface-sunken: #0d0c11; /* barra lateral quando a janela é opaca */
+  --surface-selected: #2a2932; /* NOVO: item selecionado, segmento ativo (handoff: selecionado) */
   --color-hairline: rgba(255, 255, 255, 0.07); /* NOVO: bordas finas */
   --color-hairline-strong: rgba(255, 255, 255, 0.12); /* NOVO */
+  --color-border-control: rgba(
+    255,
+    255,
+    255,
+    0.1
+  ); /* NOVO: contorno de botão, campo e interruptor (handoff: .10) */
 
   /* ---------- Vidro: só janela da bandeja, barra lateral e camadas flutuantes ---------- */
   --glass-window: rgba(20, 19, 26, var(--glass-window-alpha)); /* sem o gradiente branco antigo */
@@ -62,6 +69,12 @@
   --shadow-popover:
     inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
     0 30px 80px rgba(0, 0, 0, 0.55); /* NOVO */
+  /* Vidro só para camadas que flutuam sobre a tela (menus, toasts, prévia): handoff, seção 2 */
+  --glass-float: rgba(38, 37, 46, 0.72); /* NOVO */
+  --glass-float-backdrop: blur(20px); /* NOVO */
+  --glass-float-highlight:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 24px 50px rgba(0, 0, 0, 0.55); /* NOVO */
 
   --color-field-bg: rgba(0, 0, 0, 0.24);
   --color-field-border: rgba(255, 255, 255, 0.09); /* NOVO */
@@ -87,6 +100,7 @@
   --color-status-desenvolvendo: #6cb4ff;
   --color-status-revisar: #4fd0c4;
   --color-status-concluido: #6fd39a;
+  --size-status-dot: 9px; /* NOVO: ponto de estado (handoff: 9 px, nunca barra) */
 
   /* ---------- Sinais: a única cor forte da interface (NOVO) ---------- */
   --color-signal-danger: #ff6b7d; /* bloqueada, vencida */

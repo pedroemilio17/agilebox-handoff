@@ -28,6 +28,12 @@
 .button:active:not(:disabled) {
   transform: scale(0.98);
 }
+@media (prefers-reduced-motion: reduce) {
+  .button:hover:not(:disabled),
+  .button:active:not(:disabled) {
+    transform: none;
+  }
+}
 .button:disabled {
   color: var(--color-text-placeholder);
   cursor: not-allowed;
