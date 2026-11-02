@@ -1,12 +1,20 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@agilebox/contract'
 import type {
   CurrentSessionDto,
   TeamCapabilitiesDto,
+  TeamModuleImpactDto,
   TeamModuleStatusDto,
 } from '@agilebox/contract'
-import { MODULE_IDS, MODULE_LABELS, type ModuleId } from '@agilebox/core'
+import {
+  MODULE_IDS,
+  MODULE_LABELS,
+  TEAM_SCOPE_NOTICE,
+  resolveModuleSet,
+  type ModuleId,
+} from '@agilebox/core'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { useActor } from '../../shared/session/useActor'
 import { QueryProvider } from '../../shared/query/QueryProvider'
@@ -19,8 +27,25 @@ const ORG = '01J8Y4G2XK8Z1S6M3Q9W0A5G01'
 const MANAGER = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
 const COLLABORATOR = '01J8Y4G2XK8Z1S6M3Q9W0A5V02'
 
+/** Preferência de movimento do sistema, simulada. Sem ela, `useReducedMotion` não encontra `matchMedia`. */
+function stubMotion(reduced: boolean): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({
+      matches: reduced,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  )
+}
+
+beforeEach(() => {
+  stubMotion(false)
+})
+
 afterEach(() => {
   cleanup()
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
@@ -41,6 +66,20 @@ interface RenderOptions {
   readonly active?: readonly ModuleId[]
   readonly winding?: readonly ModuleId[]
   readonly getError?: Error
+  readonly changeError?: Error
+  /** Prévia que o servidor devolve para cada módulo pedido para desligar. */
+  readonly impacts?: readonly TeamModuleImpactDto[]
+  /** A prévia de impacto nunca termina (carregamento). */
+  readonly impactPending?: boolean
+  /** A prévia de impacto falha. */
+  readonly impactError?: Error
+  /** A gravação só termina quando o teste liberar (`releaseChange`). */
+  readonly holdChange?: boolean
+}
+
+/** Recusa no formato que o servidor usa (`describeRefusal` em team-modules.ts). */
+function refusalOf(blockedBy: readonly ModuleId[]): string {
+  return `Mudança recusada: ${blockedBy.join(', ')} ficaria sem o que precisa`
 }
 
 /**
@@ -53,12 +92,20 @@ function LoadProbe() {
   return <p>{actor && capabilities.data ? 'Sessão e estado carregados' : 'Aguardando'}</p>
 }
 
-/** Renderiza Ferramentas com a API falsa. As gravações são espiadas: o rascunho não deve chamá-las. */
+/**
+ * Renderiza Ferramentas com a API falsa. O servidor fica em memória: `change` aplica a diferença,
+ * e a consulta de estado devolve o resultado, como o servidor real faria depois de invalidar.
+ */
 function renderTools({
   role = 'manager',
   active = ['agenda'],
   winding = [],
   getError,
+  changeError,
+  impacts = [],
+  impactPending = false,
+  impactError,
+  holdChange = false,
 }: RenderOptions = {}) {
   const api = createFakeApi()
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
@@ -66,17 +113,49 @@ function renderTools({
     organizationId: ORG,
     role,
   })
+  // Servidor em memória. Os módulos encerrando (`winding`) ficam fora de `active`, como no servidor.
+  let server: readonly ModuleId[] = active
+  let windingNow: readonly ModuleId[] = winding
   const get = vi.spyOn(api.teamModules, 'get').mockImplementation(() =>
     getError
       ? Promise.reject(getError)
       : Promise.resolve<TeamCapabilitiesDto>({
           level: 'advanced',
           screens: ['projects'],
-          statuses: statusesOf(active, winding),
+          statuses: statusesOf(server, windingNow),
         }),
   )
-  const change = vi.spyOn(api.teamModules, 'change')
-  const preview = vi.spyOn(api.teamModules, 'previewImpact')
+  // Aplica a mesma regra do servidor: a resolução inclui encerrando; recusa se algo ficaria sem o que
+  // precisa. Não reproduz a reativação silenciosa do servidor (ver relatório da M2.10b-fix).
+  function applyOnServer({ enable, disable }: { enable: ModuleId[]; disable: ModuleId[] }) {
+    const inSet = MODULE_IDS.filter(
+      (id) => id === 'core' || server.includes(id) || windingNow.includes(id),
+    )
+    const resolution = resolveModuleSet(inSet, { enable, disable })
+    if (!resolution.ok)
+      return Promise.reject(new ApiError('VALIDATION', refusalOf(resolution.blockedBy)))
+    server = resolution.enabled.filter((id) => !windingNow.includes(id) || enable.includes(id))
+    windingNow = windingNow.filter((id) => !enable.includes(id))
+    return Promise.resolve({ statuses: statusesOf(server, windingNow), windingDown: [] })
+  }
+  let releaseChange = () => {}
+  const gate = new Promise<void>((resolve) => {
+    releaseChange = resolve
+  })
+  const change = vi
+    .spyOn(api.teamModules, 'change')
+    .mockImplementation(({ enable = [], disable = [] }) => {
+      if (changeError) return Promise.reject(changeError)
+      const run = () => applyOnServer({ enable: [...enable], disable: [...disable] })
+      return holdChange ? gate.then(run) : run()
+    })
+  const preview = vi
+    .spyOn(api.teamModules, 'previewImpact')
+    .mockImplementation(({ disable = [] }) => {
+      if (impactError) return Promise.reject(impactError)
+      if (impactPending) return new Promise<TeamModuleImpactDto[]>(() => {})
+      return Promise.resolve(impacts.filter((impact) => disable.includes(impact.moduleId)))
+    })
   render(
     <ApiProvider api={api}>
       <QueryProvider>
@@ -85,7 +164,7 @@ function renderTools({
       </QueryProvider>
     </ApiProvider>,
   )
-  return { get, change, preview }
+  return { get, change, preview, releaseChange }
 }
 
 const card = (name: string) => screen.getByRole('article', { name })
@@ -93,6 +172,9 @@ const toggle = (name: string) => screen.getByRole('switch', { name })
 const isOn = (name: string) => toggle(name).getAttribute('aria-checked') === 'true'
 const preset = (name: string) => screen.getByRole('button', { name })
 const pressed = (name: string) => preset(name).getAttribute('aria-pressed') === 'true'
+const preview = () => screen.getByRole('complementary', { name: 'Impacto da mudança' })
+const applyButton = () => screen.getByRole('button', { name: 'Aplicar mudança' })
+const cancelButton = () => screen.getByRole('button', { name: 'Cancelar' })
 
 describe('Ferramentas: interruptores e estado', () => {
   it('gestor vê um interruptor por ferramenta, marcado conforme o servidor', async () => {
@@ -123,14 +205,23 @@ describe('Ferramentas: interruptores e estado', () => {
     expect(screen.queryByText('Estimativa por pontos')).toBeNull()
   })
 
-  it('mostra a dependência declarada em texto, em cada cartão', async () => {
+  it('mostra a dependência do quadro em texto, em cada cartão', async () => {
     renderTools()
     await screen.findByRole('switch', { name: 'Sprints' })
 
-    expect(within(card('Sprints')).getByText('Depende de Backlog.')).toBeTruthy()
-    expect(within(card('Check-ins')).getByText('Depende de Sprints.')).toBeTruthy()
-    expect(within(card('Agenda')).getByText('Sem dependências.')).toBeTruthy()
-    expect(within(card('Quadro')).getByText('Base do time, sempre ligada.')).toBeTruthy()
+    expect(within(card('Sprints')).getByText('Precisa de Backlog')).toBeTruthy()
+    expect(within(card('Check-ins')).getByText('Precisa de Sprints')).toBeTruthy()
+    expect(within(card('Agenda')).getByText('Independente')).toBeTruthy()
+    expect(within(card('Quadro')).getByText('Base')).toBeTruthy()
+  })
+
+  it('cada cartão traz a descrição do quadro', async () => {
+    renderTools()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    expect(
+      within(card('Backlog')).getByText('Lista priorizada do que ainda não entrou em andamento.'),
+    ).toBeTruthy()
   })
 
   it('o estado aparece em texto: Ligada, Desligada e Encerrando', async () => {
@@ -204,7 +295,7 @@ describe('Ferramentas: rascunho com dependências', () => {
     const ids = (toggle('Sprints').getAttribute('aria-describedby') ?? '').split(' ')
     const described = ids.map((id) => document.getElementById(id)?.textContent)
 
-    expect(described).toEqual(['Depende de Backlog.', 'Desligada'])
+    expect(described).toEqual(['Precisa de Backlog', 'Desligada'])
   })
 })
 
@@ -251,8 +342,8 @@ describe('Ferramentas: presets', () => {
 })
 
 describe('Ferramentas: rascunho não grava nada', () => {
-  it('mexer no rascunho e trocar presets não chama alteração nem prévia do servidor', async () => {
-    const { get, change, preview } = renderTools({ active: ['agenda'] })
+  it('mexer no rascunho e trocar presets não chama alteração', async () => {
+    const { change } = renderTools({ active: ['agenda'] })
     const user = userEvent.setup()
     await screen.findByRole('switch', { name: 'Agenda' })
 
@@ -261,8 +352,247 @@ describe('Ferramentas: rascunho não grava nada', () => {
     await user.click(toggle('Agenda'))
 
     expect(change).not.toHaveBeenCalled()
-    expect(preview).not.toHaveBeenCalled()
-    expect(get).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Ferramentas: prévia em vidro (M2.10b)', () => {
+  it('mostra o título, a escolha e o que entra por dependência', async () => {
+    renderTools({ active: [] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Sprints' })
+
+    await user.click(toggle('Sprints'))
+
+    const panel = preview()
+    expect(within(panel).getByRole('heading', { name: 'Ligar Sprints' })).toBeTruthy()
+    expect(within(panel).getByText('Também entra por dependência:')).toBeTruthy()
+    expect(within(panel).getByText('Backlog')).toBeTruthy()
+  })
+
+  it('mostra o aviso de escopo do time, mesmo sem mudança', async () => {
+    renderTools()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect(within(preview()).getByText(TEAM_SCOPE_NOTICE)).toBeTruthy()
+    expect(within(preview()).getByRole('heading', { name: 'Nada a aplicar' })).toBeTruthy()
+  })
+
+  it('consulta o impacto no servidor e mostra o destino por tipo', async () => {
+    const impacts: TeamModuleImpactDto[] = [
+      {
+        moduleId: 'agenda',
+        counts: { tasks: 0, projects: 0, participations: 0, meetings: 3 },
+        items: [{ kind: 'meetings', destination: 'hidden', count: 3 }],
+      },
+    ]
+    const { preview: previewSpy } = renderTools({ active: ['agenda', 'backlog'], impacts })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Agenda'))
+
+    expect(previewSpy).toHaveBeenCalledWith({ disable: ['agenda'] })
+    const panel = preview()
+    expect(await within(panel).findByText('Reuniões')).toBeTruthy()
+    expect(within(panel).getByText('3 · escondidas')).toBeTruthy()
+  })
+
+  it('módulo sem cartão que sai junto aparece como "Também sai"', async () => {
+    renderTools({ active: ['agenda', 'backlog', 'estimates.points'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(preset('Quadro simples'))
+
+    const panel = preview()
+    expect(within(panel).getByText('Também sai')).toBeTruthy()
+    expect(within(panel).getByText('Estimativa por pontos')).toBeTruthy()
+    expect(screen.queryByRole('switch', { name: 'Estimativa por pontos' })).toBeNull()
+  })
+
+  it('Aplicar fica desabilitado enquanto não há mudança', async () => {
+    renderTools({ active: ['agenda'] })
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect((applyButton() as HTMLButtonElement).disabled).toBe(true)
+    expect((cancelButton() as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('Aplicar envia só a diferença, grava, confirma e refaz o estado do time', async () => {
+    const { change, get } = renderTools({ active: ['agenda'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(applyButton())
+
+    expect(change).toHaveBeenCalledWith({ enable: ['backlog', 'sprints'], disable: [] })
+    expect(await screen.findByText('Mudança aplicada ao time.')).toBeTruthy()
+    await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(1))
+    await waitFor(() => expect(isOn('Sprints')).toBe(true))
+    expect((applyButton() as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('Cancelar descarta o rascunho e não chama alteração', async () => {
+    const { change } = renderTools({ active: ['agenda'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(cancelButton())
+
+    expect(isOn('Sprints')).toBe(false)
+    expect(change).not.toHaveBeenCalled()
+    expect(within(preview()).getByRole('heading', { name: 'Nada a aplicar' })).toBeTruthy()
+  })
+
+  it('falha ao aplicar mostra alerta em texto e mantém o rascunho', async () => {
+    renderTools({
+      active: ['agenda'],
+      changeError: new ApiError('CONFLICT', 'Conflito de teste'),
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(applyButton())
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('Não foi possível aplicar')
+    expect(isOn('Sprints')).toBe(true)
+    expect(screen.queryByText('Mudança aplicada ao time.')).toBeNull()
+  })
+
+  it('Esc cancela a prévia sem gravar e devolve o foco à prévia', async () => {
+    const { change } = renderTools({ active: ['agenda'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.keyboard('{Escape}')
+
+    expect(change).not.toHaveBeenCalled()
+    expect(isOn('Sprints')).toBe(false)
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Nada a aplicar' }))
+  })
+
+  it('com movimento reduzido, a prévia não entra com animação', async () => {
+    stubMotion(true)
+    renderTools({ active: ['agenda'] })
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect(preview().classList.contains('motion-fade-enter')).toBe(false)
+  })
+
+  it('sem movimento reduzido, a prévia entra com a animação de vidro', async () => {
+    renderTools({ active: ['agenda'] })
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect(preview().classList.contains('motion-fade-enter')).toBe(true)
+  })
+})
+
+describe('Ferramentas: módulo encerrando na aplicação (B1)', () => {
+  it('desligar Sprints com Check-ins encerrando mostra Check-ins na prévia e o servidor aceita', async () => {
+    const { change } = renderTools({
+      active: ['agenda', 'backlog', 'sprints'],
+      winding: ['checkins'],
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Sprints' })
+
+    await user.click(toggle('Sprints'))
+
+    // Interruptor de Check-ins continua mostrando "Encerrando", fora do rascunho.
+    expect(isOn('Check-ins')).toBe(false)
+    expect(within(card('Check-ins')).getByText('Encerrando')).toBeTruthy()
+    expect(within(preview()).getByText('Check-ins')).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toContain('Check-ins')
+
+    await user.click(applyButton())
+
+    expect(change).toHaveBeenCalledWith({ enable: [], disable: ['sprints', 'checkins'] })
+    expect(await screen.findByText('Mudança aplicada ao time.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('recusa do servidor aparece com a razão, não só como "Não foi possível aplicar"', async () => {
+    renderTools({
+      active: ['agenda', 'backlog', 'sprints'],
+      changeError: new ApiError('VALIDATION', refusalOf(['checkins'])),
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Sprints' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(applyButton())
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('Não foi possível aplicar')
+    expect(alert.textContent).toContain('Mudança recusada: checkins ficaria sem o que precisa')
+  })
+})
+
+describe('Ferramentas: prévia de impacto carregando ou falhando (B2)', () => {
+  it('com a prévia carregando, mostra "Calculando…" e não diz que não há itens', async () => {
+    renderTools({ active: ['agenda', 'backlog'], impactPending: true })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    await user.click(toggle('Backlog'))
+
+    expect(await within(preview()).findByText('Calculando…')).toBeTruthy()
+    expect(screen.queryByText('Nenhum item depende destas ferramentas.')).toBeNull()
+    expect((applyButton() as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('com a prévia falhando, mostra alerta em texto e Aplicar fica desabilitado', async () => {
+    renderTools({ active: ['agenda', 'backlog'], impactError: new Error('offline') })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    await user.click(toggle('Backlog'))
+
+    const alert = await within(preview()).findByRole('alert')
+    expect(alert.textContent).toContain('Não foi possível calcular o impacto')
+    expect(screen.queryByText('Nenhum item depende destas ferramentas.')).toBeNull()
+    expect((applyButton() as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('com a prévia pronta e sem itens, diz que nenhum item depende e libera Aplicar', async () => {
+    renderTools({ active: ['agenda', 'backlog'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    await user.click(toggle('Backlog'))
+
+    expect(
+      await within(preview()).findByText('Nenhum item depende destas ferramentas.'),
+    ).toBeTruthy()
+    expect((applyButton() as HTMLButtonElement).disabled).toBe(false)
+  })
+})
+
+describe('Ferramentas: gravação em andamento (B3)', () => {
+  it('enquanto aplica, interruptores, presets e Cancelar ficam desabilitados, e o retorno chega', async () => {
+    const { releaseChange } = renderTools({ active: ['agenda', 'backlog'], holdChange: true })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    await user.click(toggle('Backlog'))
+    await user.click(applyButton())
+
+    await waitFor(() => expect((applyButton() as HTMLButtonElement).disabled).toBe(true))
+    expect((toggle('Agenda') as HTMLButtonElement).disabled).toBe(true)
+    expect((toggle('Sprints') as HTMLButtonElement).disabled).toBe(true)
+    expect((preset('Completo') as HTMLButtonElement).disabled).toBe(true)
+    expect((preset('Quadro simples') as HTMLButtonElement).disabled).toBe(true)
+    expect((cancelButton() as HTMLButtonElement).disabled).toBe(true)
+
+    releaseChange()
+
+    expect(await screen.findByText('Mudança aplicada ao time.')).toBeTruthy()
+    await waitFor(() => expect(isOn('Backlog')).toBe(false))
   })
 })
 
@@ -275,6 +605,7 @@ describe('Ferramentas: acesso e carregamento', () => {
 
     expect(screen.queryAllByRole('switch')).toHaveLength(0)
     expect(screen.queryByRole('button', { name: 'Completo' })).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Impacto da mudança' })).toBeNull()
   })
 
   it('falha ao carregar mostra alerta em texto', async () => {

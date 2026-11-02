@@ -79,9 +79,17 @@ export type ToggleResult =
  * - Desligar tira junto os dependentes que ficariam sem o que precisam (`leaving`). O servidor
  *   só aceita essa cascata na mesma mudança, então o rascunho já a monta. Dependentes sem cartão
  *   saem junto, mas não aparecem em `leaving`.
+ * - `windingDown` são os módulos encerrando no servidor. Eles contam como dependência (o servidor
+ *   os mantém na resolução), então entram na cascata de desligar, mas nunca voltam ao rascunho:
+ *   o interruptor continua mostrando "Encerrando".
  * `pulled` e `leaving` só listam ferramentas com cartão.
  */
-export function toggleTool(draft: ToolDraft, id: ModuleId, wanted: boolean): ToggleResult {
+export function toggleTool(
+  draft: ToolDraft,
+  id: ModuleId,
+  wanted: boolean,
+  windingDown: readonly ModuleId[] = [],
+): ToggleResult {
   if (wanted) {
     const result = resolveDroppingHidden(draft, { enable: [id] })
     if (!result.ok) {
@@ -101,16 +109,21 @@ export function toggleTool(draft: ToolDraft, id: ModuleId, wanted: boolean): Tog
   }
 
   if (id === 'core') return { ok: false, conflicts: [], missing: ['core'] }
-  const alone = resolveModuleSet(draft, { disable: [id] })
-  if (alone.ok) return { ok: true, draft: alone.enabled, pulled: [], leaving: [] }
+  // Base da resolução: o rascunho mais o que está encerrando no servidor (ver `windingDown`).
+  const base = unique([...draft, ...windingDown])
+  // Encerrando que a resolução mantém não volta ao rascunho.
+  const keepDraft = (enabled: readonly ModuleId[]) =>
+    enabled.filter((other) => draft.includes(other))
+  const alone = resolveModuleSet(base, { disable: [id] })
+  if (alone.ok) return { ok: true, draft: keepDraft(alone.enabled), pulled: [], leaving: [] }
 
-  const withDependents = resolveModuleSet(draft, { disable: [id, ...alone.blockedBy] })
+  const withDependents = resolveModuleSet(base, { disable: [id, ...alone.blockedBy] })
   if (!withDependents.ok) {
     return { ok: false, conflicts: [], missing: visibleOnly(alone.blockedBy) }
   }
   return {
     ok: true,
-    draft: withDependents.enabled,
+    draft: keepDraft(withDependents.enabled),
     pulled: [],
     leaving: visibleOnly(alone.blockedBy),
   }

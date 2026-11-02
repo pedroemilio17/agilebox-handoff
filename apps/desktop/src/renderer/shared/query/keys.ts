@@ -20,5 +20,10 @@ export const queryKeys = {
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
-  teamModules: { capabilities: ['agilebox', 'teamModules', 'capabilities'] as const },
+  teamModules: {
+    capabilities: ['agilebox', 'teamModules', 'capabilities'] as const,
+    impactAll: ['agilebox', 'teamModules', 'impact'] as const,
+    impact: (disable: readonly string[]) =>
+      ['agilebox', 'teamModules', 'impact', ...disable] as const,
+  },
 } as const

@@ -7,7 +7,10 @@ import { QueryProvider } from '../../shared/query/QueryProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { PanelShell } from './PanelShell'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 function renderShell(screens?: readonly SidebarScreenId[]) {
   const onViewChange = vi.fn()
@@ -144,6 +147,11 @@ describe('Ferramentas na área principal (M2.10a)', () => {
 
   /** Renderiza a shell com a API falsa, porque a tela Ferramentas lê o time pela API. */
   function renderToolsShell(screens: readonly SidebarScreenId[]) {
+    // A prévia da tela Ferramentas consulta a preferência de movimento; o jsdom não tem matchMedia.
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    )
     const api = createFakeApi()
     vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
       userId: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',

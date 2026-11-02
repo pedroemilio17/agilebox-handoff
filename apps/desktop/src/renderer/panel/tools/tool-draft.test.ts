@@ -206,6 +206,31 @@ describe('desligar uma ferramenta no rascunho', () => {
   })
 })
 
+describe('desligar com dependente encerrando (B1)', () => {
+  it('desligar Sprints leva Check-ins junto mesmo com Check-ins encerrando, e avisa', () => {
+    const result = toggleTool(['core', 'backlog', 'sprints'], 'sprints', false, ['checkins'])
+
+    expect(result).toMatchObject({ ok: true, leaving: ['checkins'], pulled: [] })
+    expect(result.ok && result.draft).toEqual(['core', 'backlog'])
+  })
+
+  it('a cascata atravessa dois níveis: desligar Backlog leva Sprints e depois Check-ins', () => {
+    const result = toggleTool(['core', 'backlog', 'sprints'], 'backlog', false, ['checkins'])
+
+    expect(result).toMatchObject({ ok: true, leaving: ['sprints', 'checkins'] })
+    expect(result.ok && result.draft).toEqual(['core'])
+  })
+
+  it('módulo encerrando que não depende do que sai não entra no aviso', () => {
+    const result = toggleTool(['core', 'agenda', 'backlog', 'sprints'], 'agenda', false, [
+      'checkins',
+    ])
+
+    expect(result).toMatchObject({ ok: true, leaving: [] })
+    expect(result.ok && result.draft).toEqual(['core', 'backlog', 'sprints'])
+  })
+})
+
 describe('módulos sem cartão no rascunho', () => {
   it('mantém módulo sem cartão ativo no servidor, para a prévia do M2.10b comparar com o gravado', () => {
     const draft = draftFromStatuses([
