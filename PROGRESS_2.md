@@ -288,3 +288,15 @@ Sem commit. Só `packages/core` (tipo, função e teste). Sem caso de uso, porta
 - Teste `policies/tenant.test.ts`: embrulha só o time, gestor e colaborador geram o mesmo contexto, e recusa sem time, vazio e não texto.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1049 testes, formatação, lint com zero avisos, tipos e build ok).
 - Fora deste marco: `ctx` obrigatório nos casos de uso (M1.10a a d) e teste de tipo do M1.11.
+
+## M1.10a · TenantContext nos casos de uso de projetos (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (projetos e helper), IPC em `apps/desktop/src/main` e seed. Sem tela, banco novo nem mudança de comportamento. D9 aplicada como decidida: `ctx: TenantContext` é o primeiro parâmetro obrigatório.
+
+- Assinatura nova: `execute(ctx, actor, input)` em `ListProjects`, `CreateProject`, `ListProjectMembers`, `AddProjectMember`, `RemoveProjectMember`, `ArchiveProject`, `UnarchiveProject` e `RenameProject`. O `actor` continua, porque a permissão (`canManageMembers`, `canSeeProject`) usa papel e usuário.
+- `packages/application/src/use-cases/tenant-scope.ts`: `assertTenant(ctx, actor)` recusa (`FORBIDDEN`, "Contexto de time não confere com o ator") quando o `ctx` é de outro time que o ator, antes de qualquer leitura ou escrita, e devolve o `organizationId` usado em todas as consultas. Essa checagem não estava no plano; foi necessária porque, com `ctx` e `actor` separados, um contexto de um time com um ator de outro poderia escrever no time errado.
+- Chamadores atualizados com `createTenantContext(actor)`: `register-handlers.ts` (canais `projects.*`, os demais seguem como estão até M1.10b-d), `seed.ts`, `create-use-cases.test.ts` e `projects.test.ts`.
+- Testes novos (bloco "isolamento entre organizações (M1.10a)" em `projects.test.ts`): lista de outro time vazia; projeto alheio dá `NOT_FOUND` em todos os casos de uso e fica intacto; nome igual em outro time gera projeto próprio; contexto de um time com ator de outro dá `FORBIDDEN` e não grava nada.
+- Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1053 testes, formatação, lint com zero avisos, tipos e build ok).
+- Fora deste marco: `ctx` nos casos de uso de tarefas, participações, contribuintes, usuários, sessão, agenda, linha do tempo e dashboard (M1.10b a d), teste de tipo do M1.11.

@@ -1,4 +1,4 @@
-import { createUser, toOrganizationId, toUserId } from '@agilebox/core'
+import { createTenantContext, createUser, toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { describe, expect, it } from 'vitest'
 import { aUser } from './testing/builders'
@@ -44,9 +44,13 @@ describe('composição dos casos de uso', () => {
       users: unitOfWork.repositories.users,
     })
 
-    const project = await useCases.projects.createProject.execute(collaborator, {
-      name: 'Projeto do roteiro',
-    })
+    const project = await useCases.projects.createProject.execute(
+      createTenantContext(collaborator),
+      collaborator,
+      {
+        name: 'Projeto do roteiro',
+      },
+    )
     const task = await useCases.tasks.create.execute(collaborator, {
       projectId: project.id,
       title: 'Preparar entrega',

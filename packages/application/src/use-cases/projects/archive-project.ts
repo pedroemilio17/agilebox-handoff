@@ -1,20 +1,27 @@
 import { canManageMembers, NotFoundError, PermissionDeniedError, toProjectId } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, TenantContext } from '@agilebox/core'
 import type { AppDeps } from '../../deps'
+import { assertTenant } from '../tenant-scope'
 
 abstract class ChangeProjectArchive {
   constructor(protected readonly deps: AppDeps) {}
 
-  protected async setArchived(actor: Actor, projectId: string, archived: boolean): Promise<void> {
-    const project = await this.deps.projects.findById(actor.organizationId, toProjectId(projectId))
+  protected async setArchived(
+    ctx: TenantContext,
+    actor: Actor,
+    projectId: string,
+    archived: boolean,
+  ): Promise<void> {
+    const organizationId = assertTenant(ctx, actor)
+    const project = await this.deps.projects.findById(organizationId, toProjectId(projectId))
     if (!project) throw new NotFoundError('Projeto não encontrado')
     if (!canManageMembers(actor, project))
       throw new PermissionDeniedError('Sem permissão para editar este projeto')
-    const archivedAt = archived ? await this.deps.clock.now(actor.organizationId) : null
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.projects.save(actor.organizationId, { ...project, archivedAt })
+    const archivedAt = archived ? await this.deps.clock.now(organizationId) : null
+    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      await repositories.projects.save(organizationId, { ...project, archivedAt })
     })
-    await this.deps.changeNotifier.publish(actor.organizationId, {
+    await this.deps.changeNotifier.publish(organizationId, {
       kind: 'project',
       ids: [project.id],
     })
@@ -22,13 +29,21 @@ abstract class ChangeProjectArchive {
 }
 
 export class ArchiveProject extends ChangeProjectArchive {
-  async execute(actor: Actor, input: { readonly projectId: string }): Promise<void> {
-    await this.setArchived(actor, input.projectId, true)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly projectId: string },
+  ): Promise<void> {
+    await this.setArchived(ctx, actor, input.projectId, true)
   }
 }
 
 export class UnarchiveProject extends ChangeProjectArchive {
-  async execute(actor: Actor, input: { readonly projectId: string }): Promise<void> {
-    await this.setArchived(actor, input.projectId, false)
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: { readonly projectId: string },
+  ): Promise<void> {
+    await this.setArchived(ctx, actor, input.projectId, false)
   }
 }

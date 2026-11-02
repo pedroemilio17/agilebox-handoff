@@ -1,3 +1,4 @@
+import { createTenantContext } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
 import type { ApiChannel } from '@agilebox/contract'
@@ -41,30 +42,30 @@ export function registerHandlers(
     useCases.users.setDefaultRate.execute(actor, input),
   )
   register('projects.list', (actor, input) =>
-    useCases.projects.listProjects.execute(actor, {
+    useCases.projects.listProjects.execute(createTenantContext(actor), actor, {
       ...(input?.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
   register('projects.create', (actor, input) =>
-    useCases.projects.createProject.execute(actor, input),
+    useCases.projects.createProject.execute(createTenantContext(actor), actor, input),
   )
   register('projects.archiveProject', (actor, input) =>
-    useCases.projects.archiveProject.execute(actor, input),
+    useCases.projects.archiveProject.execute(createTenantContext(actor), actor, input),
   )
   register('projects.unarchiveProject', (actor, input) =>
-    useCases.projects.unarchiveProject.execute(actor, input),
+    useCases.projects.unarchiveProject.execute(createTenantContext(actor), actor, input),
   )
   register('projects.renameProject', (actor, input) =>
-    useCases.projects.renameProject.execute(actor, input),
+    useCases.projects.renameProject.execute(createTenantContext(actor), actor, input),
   )
   register('projects.listMembers', (actor, input) =>
-    useCases.projects.listMembers.execute(actor, input),
+    useCases.projects.listMembers.execute(createTenantContext(actor), actor, input),
   )
   register('projects.addMember', (actor, input) =>
-    useCases.projects.addMember.execute(actor, input),
+    useCases.projects.addMember.execute(createTenantContext(actor), actor, input),
   )
   register('projects.removeMember', (actor, input) =>
-    useCases.projects.removeMember.execute(actor, input),
+    useCases.projects.removeMember.execute(createTenantContext(actor), actor, input),
   )
   register('tasks.getBoardFlow', (actor, input) =>
     useCases.tasks.getBoardFlow.execute(actor, {

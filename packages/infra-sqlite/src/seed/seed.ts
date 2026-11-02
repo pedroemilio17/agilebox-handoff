@@ -1,4 +1,10 @@
-import { createOrganization, createUser, toOrganizationId, toUserId } from '@agilebox/core'
+import {
+  createOrganization,
+  createTenantContext,
+  createUser,
+  toOrganizationId,
+  toUserId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { createUseCases } from '@agilebox/application'
 import type { AppDeps } from '@agilebox/application'
@@ -66,11 +72,17 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   })
   const projects = []
   for (const name of demoSeedData.projects) {
-    const project = await useCases.projects.createProject.execute(actor, { name })
+    const project = await useCases.projects.createProject.execute(
+      createTenantContext(actor),
+      actor,
+      {
+        name,
+      },
+    )
     projects.push(project)
     for (const user of users) {
       if (user.id !== users[0]!.id) {
-        await useCases.projects.addMember.execute(actor, {
+        await useCases.projects.addMember.execute(createTenantContext(actor), actor, {
           projectId: project.id,
           userId: user.id,
         })
