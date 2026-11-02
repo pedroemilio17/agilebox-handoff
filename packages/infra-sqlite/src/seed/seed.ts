@@ -91,7 +91,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   }
 
   for (const name of demoSeedData.contributors) {
-    await useCases.contributors.create.execute(actor, { name })
+    await useCases.contributors.create.execute(createTenantContext(actor), actor, { name })
   }
 
   for (const item of demoSeedData.tasks) {

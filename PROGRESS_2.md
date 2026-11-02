@@ -314,3 +314,18 @@ Sem commit. Só `packages/application` (tarefas, participações e testes), cham
 - Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1059 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110b-check-3.log`.
 - Fora deste marco: `ctx` nos casos de uso de contribuintes, usuários, sessão, agenda, linha do tempo e dashboard (M1.10c e d), teste de tipo do M1.11.
+
+## M1.10c · TenantContext nos casos de uso de contribuintes, usuários e sessão (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (contribuintes, usuários, sessão e testes), chamadores em `apps/desktop/src/main/ipc/register-handlers.ts`, `apps/desktop/src/main/composition-root.test.ts` e `packages/infra-sqlite/src/seed/seed.ts`. Sem tela, banco novo nem mudança de comportamento. D9 aplicada como decidida, no mesmo padrão de M1.10a e M1.10b.
+
+- Escopo seguiu a linha do M1.10c da tabela (`contributors/*.ts`, `users/*.ts`, `session/*.ts`). A agenda (`meetings`) continua na linha do M1.10d, como está no plano; não foi movida para este commit.
+- Assinaturas novas, com `ctx` antes do ator e `assertTenant(ctx, actor)` antes de qualquer leitura ou escrita:
+  - `contributors`: `list(ctx, actor)`, `create(ctx, actor, input)`, `setDefaultRate(ctx, actor, input)`.
+  - `users`: `setDefaultRate(ctx, actor, input)`.
+  - `session`: `listUsers(ctx, actor)`. `getCurrentActor(ctx)` e `switchUser(ctx, input)` não recebem ator no parâmetro: o ator vem da sessão, então o `assertTenant` compara o `ctx` com o ator da sessão. `getCurrentActor` continua síncrono.
+- Chamadores atualizados com `createTenantContext(actor)`: canais `session.*`, `users.*` e `contributors.*` em `register-handlers.ts`; `seed.ts` (criação das entidades de demonstração); `composition-root.test.ts` (usa `root.actorSession.get()` para montar o contexto); e os testes de contribuintes, usuários e sessão.
+- Testes novos (bloco "isolamento entre organizações (M1.10c)" em `contributors.test.ts`, `users/set-default-rate.test.ts` e `session.test.ts`, 9 casos): lista de outro time vazia para colaborador e devolve só a entidade alheia para o gestor de lá; entidade alheia dá `NOT_FOUND` no valor padrão e fica intacta; criar com ator de outro time grava no time do ator; usuário alheio dá `NOT_FOUND` no valor padrão e na troca de sessão, e a sessão não muda; listagem de usuários só traz o time do ator; contexto de um time com ator de outro dá `FORBIDDEN` e não grava nada nem notifica.
+- Limite: o isolamento foi testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1068 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110c-check.log`.
+- Fora deste marco: `ctx` nos casos de uso de agenda, linha do tempo e dashboard (M1.10d) e teste de tipo do M1.11.

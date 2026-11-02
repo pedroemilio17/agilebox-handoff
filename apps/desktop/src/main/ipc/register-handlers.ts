@@ -35,11 +35,17 @@ export function registerHandlers(
     )
   }
 
-  register('session.getCurrent', () => useCases.session.getCurrentActor.execute())
-  register('session.switchUser', (_actor, input) => useCases.session.switchUser.execute(input))
-  register('session.listUsers', (actor) => useCases.session.listUsers.execute(actor))
+  register('session.getCurrent', (actor) =>
+    useCases.session.getCurrentActor.execute(createTenantContext(actor)),
+  )
+  register('session.switchUser', (actor, input) =>
+    useCases.session.switchUser.execute(createTenantContext(actor), input),
+  )
+  register('session.listUsers', (actor) =>
+    useCases.session.listUsers.execute(createTenantContext(actor), actor),
+  )
   register('users.setDefaultRate', (actor, input) =>
-    useCases.users.setDefaultRate.execute(actor, input),
+    useCases.users.setDefaultRate.execute(createTenantContext(actor), actor, input),
   )
   register('projects.list', (actor, input) =>
     useCases.projects.listProjects.execute(createTenantContext(actor), actor, {
@@ -130,12 +136,14 @@ export function registerHandlers(
   register('participations.setRate', (actor, input) =>
     useCases.participations.setRate.execute(createTenantContext(actor), actor, input),
   )
-  register('contributors.list', (actor) => useCases.contributors.list.execute(actor))
+  register('contributors.list', (actor) =>
+    useCases.contributors.list.execute(createTenantContext(actor), actor),
+  )
   register('contributors.create', (actor, input) =>
-    useCases.contributors.create.execute(actor, input),
+    useCases.contributors.create.execute(createTenantContext(actor), actor, input),
   )
   register('contributors.setDefaultRate', (actor, input) =>
-    useCases.contributors.setDefaultRate.execute(actor, input),
+    useCases.contributors.setDefaultRate.execute(createTenantContext(actor), actor, input),
   )
   register('timeline.list', (actor, input) => useCases.timeline.list.execute(actor, input))
   register('dashboard.get', (actor) => useCases.dashboard.get.execute(actor))

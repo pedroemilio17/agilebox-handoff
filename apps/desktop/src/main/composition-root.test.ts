@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toUserId } from '@agilebox/core'
+import { createTenantContext, toOrganizationId, toUserId } from '@agilebox/core'
 import { createCompositionRoot } from './composition-root.js'
 
 describe('composition root do processo principal', () => {
@@ -10,15 +10,16 @@ describe('composition root do processo principal', () => {
       windows: { getAll: () => [] },
     })
 
-    const actor = root.useCases.session.getCurrentActor.execute()
+    const ctx = createTenantContext(root.actorSession.get())
+    const actor = root.useCases.session.getCurrentActor.execute(ctx)
     await expect(
-      root.useCases.session.listUsers.execute({
+      root.useCases.session.listUsers.execute(ctx, {
         userId: toUserId(actor.userId),
         organizationId: toOrganizationId(actor.organizationId),
         role: actor.role,
       }),
     ).resolves.toHaveLength(5)
-    expect(root.useCases.session.getCurrentActor.execute().role).toBe('collaborator')
+    expect(root.useCases.session.getCurrentActor.execute(ctx).role).toBe('collaborator')
     root.close()
   })
 })
