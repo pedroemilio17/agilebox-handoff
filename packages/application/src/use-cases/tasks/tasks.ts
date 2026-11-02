@@ -14,10 +14,12 @@ import {
   createTimelineEvent,
   diffTask,
   isManagerEdit,
+  nextBacklogRank,
   NotFoundError,
   parseDateOnly,
   PermissionDeniedError,
   renameTask,
+  sendToBacklog,
   setArchivedAt,
   setDeadline,
   setDescription,
@@ -41,13 +43,24 @@ import type {
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import type { UnitOfWorkRepositories } from '../../ports'
+import { BACKLOG_MODULE, requireModuleAccess } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
+
+/**
+ * Criação. Com `inBacklog` (Q4, M3.5), a tarefa nasce no fim do backlog do time, fora do quadro, e
+ * exige o módulo Backlog ativo (criar item novo). Sem a opção, o comportamento é o de sempre.
+ * `inBacklog` ainda não está no contrato: entra com a M3.8.
+ */
+export type CreateTaskUseCaseInput = CreateTaskInput & { readonly inBacklog?: boolean }
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(ctx: TenantContext, actor: Actor, input: CreateTaskInput): Promise<TaskDto> {
+  async execute(ctx: TenantContext, actor: Actor, input: CreateTaskUseCaseInput): Promise<TaskDto> {
     const organizationId = assertTenant(ctx, actor)
+    const inBacklog = input.inBacklog === true
+    if (inBacklog) await requireModuleAccess(this.deps, organizationId, BACKLOG_MODULE, 'new')
     const projectId = toProjectId(input.projectId)
     const project = await this.deps.projects.findById(organizationId, projectId)
     if (!project) throw new NotFoundError('Projeto não encontrado')
@@ -76,7 +89,9 @@ export class CreateTask {
       ),
       responsibleRateCents: user.defaultRateCents,
     })
-    let task = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
+    // Q7 (M3.5): no backlog, a tarefa entra em Planejamento, como ao levar ao quadro; o estado pedido não vale.
+    const status = inBacklog ? 'planning' : input.status
+    let task = status === undefined ? initialTask : setStatus(initialTask, status)
     if (input.deadline !== undefined)
       task = setDeadline(task, input.deadline === null ? null : parseDateOnly(input.deadline))
     if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
@@ -119,6 +134,12 @@ export class CreateTask {
       ),
     )
     await this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      // A posição é calculada dentro da transação: duas criações seguidas não recebem o mesmo rank.
+      if (inBacklog)
+        task = sendToBacklog(
+          task,
+          nextBacklogRank(await repositories.tasks.listBacklog(organizationId)),
+        )
       await repositories.tasks.save(organizationId, task)
       await repositories.timeline.saveMany(organizationId, [event, ...initialEvents])
     })
@@ -194,41 +215,54 @@ export class GetTaskDetail {
 abstract class ChangeTask {
   constructor(protected readonly deps: AppDeps) {}
 
+  /**
+   * Lê, transforma e grava a tarefa numa só transação. O `transform` recebe os repositórios da
+   * transação, para quem precisa ler o estado do time ao mudar a tarefa (ex.: a posição no backlog).
+   */
   protected async change(
     ctx: TenantContext,
     actor: Actor,
     rawTaskId: string,
-    transform: (task: Task, now: string) => Task,
+    transform: (
+      task: Task,
+      now: string,
+      repositories: UnitOfWorkRepositories,
+    ) => Promise<Task> | Task,
     extraEvents: readonly TimelineEventDraft[] = [],
   ): Promise<TaskDto> {
     const organizationId = assertTenant(ctx, actor)
     const taskId = toTaskId(rawTaskId)
-    const task = await this.deps.tasks.findById(organizationId, taskId)
-    if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (!canEditTask(actor, task))
-      throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
     const now = await this.deps.clock.now(organizationId)
-    const changed = transform(task, now)
-    const updated: Task = { ...changed, updatedAt: now }
-    const drafts = [...diffTask(task, updated), ...extraEvents]
-    const events = await Promise.all(
-      drafts.map(async (draft) =>
-        createTimelineEvent({
-          ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(organizationId)),
-          taskId: task.id,
-          at: now,
-          actorUserId: actor.userId,
-          asManager: isManagerEdit(actor),
-        }),
-      ),
+    const { updated, events } = await this.deps.unitOfWork.run(
+      organizationId,
+      async (repositories) => {
+        const task = await repositories.tasks.findById(organizationId, taskId)
+        if (!task) throw new NotFoundError('Tarefa não encontrada')
+        if (!canEditTask(actor, task))
+          throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
+        const changed = await transform(task, now, repositories)
+        const next: Task = { ...changed, updatedAt: now }
+        const drafts = [...diffTask(task, next), ...extraEvents]
+        const timelineEvents = await Promise.all(
+          drafts.map(async (draft) =>
+            createTimelineEvent({
+              ...draft,
+              id: toEventId(await this.deps.idGenerator.generate(organizationId)),
+              taskId: task.id,
+              at: now,
+              actorUserId: actor.userId,
+              asManager: isManagerEdit(actor),
+            }),
+          ),
+        )
+        await repositories.tasks.save(organizationId, next)
+        if (timelineEvents.length > 0)
+          await repositories.timeline.saveMany(organizationId, timelineEvents)
+        return { updated: next, events: timelineEvents }
+      },
     )
-    await this.deps.unitOfWork.run(organizationId, async (repositories) => {
-      await repositories.tasks.save(organizationId, updated)
-      if (events.length > 0) await repositories.timeline.saveMany(organizationId, events)
-    })
     if (events.length > 0)
-      await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [task.id] })
+      await this.deps.changeNotifier.publish(organizationId, { kind: 'task', ids: [updated.id] })
     return toTaskDto(updated)
   }
 }
@@ -302,7 +336,14 @@ export class UnarchiveTask extends ChangeTask {
     actor: Actor,
     input: { readonly taskId: string },
   ): Promise<TaskDto> {
-    return this.change(ctx, actor, input.taskId, (task) => setArchivedAt(task, null))
+    return this.change(ctx, actor, input.taskId, async (task, _now, repositories) => {
+      const unarchived = setArchivedAt(task, null)
+      if (task.backlogRank === null) return unarchived
+      // Arquivar não mexe na posição. Enquanto estava fora, outras tarefas podem ter ocupado o
+      // rank dela, então volta ao fim do backlog, na mesma transação (M3.5).
+      const backlog = await repositories.tasks.listBacklog(task.organizationId)
+      return sendToBacklog(unarchived, nextBacklogRank(backlog))
+    })
   }
 }
 

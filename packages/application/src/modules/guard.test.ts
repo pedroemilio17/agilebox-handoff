@@ -24,4 +24,15 @@ describe('guard de módulo', () => {
       'desativado',
     )
   })
+
+  it('a mensagem de módulo desativado cita o nome da interface, não o id', async () => {
+    const deps = depsWithoutStoredModules()
+
+    await expect(requireModuleAccess(deps, organizationId, 'backlog', 'new')).rejects.toThrow(
+      'O módulo Backlog está desativado neste time',
+    )
+    await expect(requireModuleAccess(deps, organizationId, 'backlog', 'existing')).rejects.toThrow(
+      'O módulo Backlog está desativado neste time',
+    )
+  })
 })

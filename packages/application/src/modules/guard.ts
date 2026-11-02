@@ -1,4 +1,10 @@
-import { canAcceptNewItems, canUseExistingItems, MODULE_IDS, ValidationError } from '@agilebox/core'
+import {
+  canAcceptNewItems,
+  canUseExistingItems,
+  MODULE_IDS,
+  MODULE_LABELS,
+  ValidationError,
+} from '@agilebox/core'
 import type { ModuleId, ModuleState, OrganizationId } from '@agilebox/core'
 import type { AppDeps } from '../deps'
 import type { TeamModule } from '../ports'
@@ -24,11 +30,26 @@ export function effectiveModuleStates(
   return states
 }
 
+/** Módulo do backlog (M3.5): ordem do time, levar ao quadro, devolver e criar no backlog. */
+export const BACKLOG_MODULE: ModuleId = 'backlog'
+
 /**
  * `new`: criar itens. Exige módulo ativo.
  * `existing`: ler, editar e excluir o que já existe. Aceita módulo encerrando; recusa só se desativado.
  */
 export type ModuleAccess = 'new' | 'existing'
+
+/** Estado efetivo de um módulo no time (desativado quando nunca foi gravado). Não recusa nada. */
+export async function readModuleState(
+  deps: AppDeps,
+  organizationId: OrganizationId,
+  moduleId: ModuleId,
+): Promise<ModuleState> {
+  const stored = await deps.unitOfWork.run(organizationId, ({ teamModules }) =>
+    teamModules.list(organizationId),
+  )
+  return effectiveModuleStates(stored).get(moduleId) ?? 'disabled'
+}
 
 /**
  * Guard de módulo (M1.8). Lê o estado do módulo no time e recusa com `ValidationError` quando o
@@ -40,14 +61,13 @@ export async function requireModuleAccess(
   moduleId: ModuleId,
   access: ModuleAccess,
 ): Promise<void> {
-  const stored = await deps.unitOfWork.run(organizationId, ({ teamModules }) =>
-    teamModules.list(organizationId),
-  )
-  const state = effectiveModuleStates(stored).get(moduleId) ?? 'disabled'
+  const state = await readModuleState(deps, organizationId, moduleId)
   const allowed = access === 'new' ? canAcceptNewItems(state) : canUseExistingItems(state)
   if (allowed) return
+  // Mensagem para a pessoa: nome da interface (MODULE_LABELS). Id fora do catálogo cai no próprio id.
+  const name = Object.hasOwn(MODULE_LABELS, moduleId) ? MODULE_LABELS[moduleId] : moduleId
   if (state === 'disabled') {
-    throw new ValidationError(`O módulo ${moduleId} está desativado neste time`)
+    throw new ValidationError(`O módulo ${name} está desativado neste time`)
   }
-  throw new ValidationError(`O módulo ${moduleId} está encerrando e não aceita itens novos`)
+  throw new ValidationError(`O módulo ${name} está encerrando e não aceita itens novos`)
 }

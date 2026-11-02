@@ -1,5 +1,6 @@
 import {
   canViewTask,
+  isVisibleOnBoard,
   staleDays,
   flowWeeks,
   flowMetrics,
@@ -12,15 +13,30 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, TenantContext } from '@agilebox/core'
+import type { Actor, OrganizationId, Task, TenantContext } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { BACKLOG_MODULE, readModuleState } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
 
 export interface ListBoardInput {
   readonly projectId?: string
   readonly forUserId?: string
+}
+
+/**
+ * Quadro (B1 A, M3.5): com o módulo Backlog ativo ou encerrando, só aparecem as tarefas `onBoard`.
+ * Desligado (ou nunca gravado), o quadro mostra tudo, como antes do backlog. Exportado para que o
+ * dashboard conte exatamente o que o quadro mostra.
+ */
+export async function onlyBoardTasks(
+  deps: AppDeps,
+  organizationId: OrganizationId,
+  tasks: readonly Task[],
+): Promise<readonly Task[]> {
+  const backlogState = await readModuleState(deps, organizationId, BACKLOG_MODULE)
+  return tasks.filter((task) => isVisibleOnBoard(task, backlogState))
 }
 
 async function scopedBoard(deps: AppDeps, ctx: TenantContext, actor: Actor, input: ListBoardInput) {
@@ -31,7 +47,7 @@ async function scopedBoard(deps: AppDeps, ctx: TenantContext, actor: Actor, inpu
     ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
     userId: input.forUserId === undefined ? actor.userId : toUserId(input.forUserId),
   }
-  return deps.tasks.listBoard(organizationId, query)
+  return onlyBoardTasks(deps, organizationId, await deps.tasks.listBoard(organizationId, query))
 }
 
 export class GetBoardFlow {
@@ -92,9 +108,10 @@ export class ListTeamBoard {
   ): Promise<readonly TaskDto[]> {
     const organizationId = assertTenant(ctx, actor)
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
-    const tasks = await this.deps.tasks.listBoard(
+    const tasks = await onlyBoardTasks(
+      this.deps,
       organizationId,
-      projectId === undefined ? {} : { projectId },
+      await this.deps.tasks.listBoard(organizationId, projectId === undefined ? {} : { projectId }),
     )
     return tasks
       .filter((task) => actor.role === 'manager' || participates(actor, task))

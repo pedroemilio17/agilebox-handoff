@@ -17,6 +17,7 @@ import type { Actor, TenantContext } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { onlyBoardTasks } from '../tasks/list-tasks'
 import { assertTenant } from '../tenant-scope'
 
 export class GetDashboard {
@@ -27,10 +28,12 @@ export class GetDashboard {
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
-    const [tasks, users] = await Promise.all([
+    const [listed, users] = await Promise.all([
       this.deps.tasks.listBoard(organizationId, {}),
       this.deps.users.list(organizationId),
     ])
+    // Mesma visibilidade do quadro (B1 A): tarefas do backlog não entram nas contas do gestor.
+    const tasks = await onlyBoardTasks(this.deps, organizationId, listed)
     const collaborators = users
       .map((user) => ({ user, ...collaboratorStats(tasks, organizationId, user.id) }))
       .filter((stat) => stat.taskCount > 0)

@@ -34,6 +34,12 @@ import {
   SearchTasks,
 } from './use-cases/tasks/list-tasks'
 import {
+  ListBacklog,
+  ReorderBacklog,
+  SendToBacklog,
+  TakeToBoard,
+} from './use-cases/backlog/backlog'
+import {
   AddParticipation,
   RemoveParticipation,
   SetParticipationHours,
@@ -100,6 +106,12 @@ export function createUseCases(deps: AppDeps) {
       listFrequent: new ListFrequentTasks(deps),
       search: new SearchTasks(deps),
       recordOpen: new RecordTaskOpen(deps),
+    },
+    backlog: {
+      list: new ListBacklog(deps),
+      reorder: new ReorderBacklog(deps),
+      takeToBoard: new TakeToBoard(deps),
+      sendToBacklog: new SendToBacklog(deps),
     },
     participations: {
       add: new AddParticipation(deps),
