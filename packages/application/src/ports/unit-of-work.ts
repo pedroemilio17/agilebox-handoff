@@ -7,6 +7,7 @@ import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
 import type { TeamModuleEventRepository } from './team-module-event-repository'
 import type { TeamModuleRepository } from './team-module-repository'
+import type { TeamSettingsRepository } from './team-settings-repository'
 import type { TimelineRepository } from './timeline-repository'
 import type { UserRepository } from './user-repository'
 
@@ -19,6 +20,7 @@ export interface UnitOfWorkRepositories {
   readonly tasks: TaskRepository
   readonly teamModuleEvents: TeamModuleEventRepository
   readonly teamModules: TeamModuleRepository
+  readonly teamSettings: TeamSettingsRepository
   readonly timeline: TimelineRepository
   readonly users: UserRepository
 }

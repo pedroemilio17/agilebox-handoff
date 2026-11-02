@@ -95,6 +95,12 @@ import {
   previewTeamModuleImpactInputSchema,
   previewTeamModuleImpactOutputSchema,
 } from './team-modules'
+import {
+  getTeamLevelInputSchema,
+  getTeamLevelOutputSchema,
+  setTeamLevelInputSchema,
+  setTeamLevelOutputSchema,
+} from './team-settings'
 import { API_CHANNELS, type ApiChannel } from './channels'
 
 type SchemaPair = { input: z.ZodType; output: z.ZodType }
@@ -197,6 +203,8 @@ export const API_SCHEMA_REGISTRY = {
     input: finishTeamModuleWindingDownInputSchema,
     output: finishTeamModuleWindingDownOutputSchema,
   },
+  'teamSettings.getLevel': { input: getTeamLevelInputSchema, output: getTeamLevelOutputSchema },
+  'teamSettings.setLevel': { input: setTeamLevelInputSchema, output: setTeamLevelOutputSchema },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
@@ -263,6 +271,10 @@ export interface AgileBoxApi {
     previewImpact: Method<'teamModules.previewImpact'>
     change: Method<'teamModules.change'>
     finishWindingDown: Method<'teamModules.finishWindingDown'>
+  }
+  teamSettings: {
+    getLevel: Method<'teamSettings.getLevel'>
+    setLevel: Method<'teamSettings.setLevel'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

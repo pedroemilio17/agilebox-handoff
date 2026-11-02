@@ -64,4 +64,15 @@ describe('cliente IPC', () => {
     expect(onChanges).toHaveBeenCalledWith(callback)
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
+
+  it('envia leitura e gravação do nível do time pelos canais de teamSettings', async () => {
+    const invoke = vi.fn().mockResolvedValue({ ok: true, value: 'advanced' })
+    const client = createIpcClient({ invoke, onChanges: () => () => undefined })
+
+    await client.teamSettings.getLevel()
+    await client.teamSettings.setLevel({ level: 'advanced' })
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'teamSettings.getLevel', undefined)
+    expect(invoke).toHaveBeenNthCalledWith(2, 'teamSettings.setLevel', { level: 'advanced' })
+  })
 })

@@ -1,6 +1,8 @@
 import { useId, useState } from 'react'
+import { canManageTeamModules } from '@agilebox/core'
 import { Button, GlassSurface, SegmentedControl } from '@agilebox/ui'
 import type { AppearanceMode } from '@agilebox/contract'
+import { useActor } from '../../shared/session/useActor'
 import {
   readWindowOpacity,
   saveWindowOpacity,
@@ -9,6 +11,7 @@ import {
   WINDOW_OPACITY_MIN,
 } from '../../shared/lib/window-opacity'
 import { panelCopy } from '../copy'
+import { TeamLevelSection } from './TeamLevelSection'
 import { UpdatesSection } from './UpdatesSection'
 import styles from './SettingsView.module.css'
 
@@ -25,6 +28,8 @@ export function SettingsView() {
   const [appearance, setAppearance] = useState<AppearanceMode>(currentAppearance)
   const sliderId = useId()
   const hintId = useId()
+  const { actor } = useActor()
+  const canChangeTeamLevel = actor !== undefined && canManageTeamModules(actor)
 
   return (
     <div className={styles.view}>
@@ -86,6 +91,7 @@ export function SettingsView() {
           </Button>
         </div>
       </GlassSurface>
+      {canChangeTeamLevel ? <TeamLevelSection /> : null}
       <UpdatesSection />
     </div>
   )

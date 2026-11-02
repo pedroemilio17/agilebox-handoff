@@ -176,3 +176,58 @@ describe('handlers de ferramentas do time', () => {
     expect(value).toMatchObject({ windingDown: [] })
   })
 })
+
+describe('handlers do nível do time (M2.9b)', () => {
+  it('o nível começa no sugerido (Padrão), e o colaborador consegue ler', async () => {
+    await expect(handlersFor(collaborator)('teamSettings.getLevel')).resolves.toEqual({
+      ok: true,
+      value: 'intermediate',
+    })
+  })
+
+  it('gestor grava o nível e teamModules.get passa a devolver o gravado (Avançado mostra Ferramentas)', async () => {
+    const call = handlersFor(manager)
+
+    await expect(call('teamSettings.setLevel', { level: 'advanced' })).resolves.toEqual({
+      ok: true,
+      value: 'advanced',
+    })
+
+    const result = await call('teamModules.get')
+    expect(result).toMatchObject({ ok: true, value: { level: 'advanced' } })
+    if (!result.ok) return
+    expect((result.value as { screens: string[] }).screens).toContain('tools')
+  })
+
+  it('colaborador não grava o nível e o time continua no padrão', async () => {
+    const call = handlersFor(collaborator)
+
+    const result = await call('teamSettings.setLevel', { level: 'advanced' })
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } })
+    expect(await call('teamSettings.getLevel')).toEqual({ ok: true, value: 'intermediate' })
+  })
+
+  it('nível fora do catálogo é recusado pelo schema, antes do caso de uso', async () => {
+    await expect(
+      handlersFor(manager)('teamSettings.setLevel', { level: 'expert' }),
+    ).resolves.toEqual({
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Entrada inválida' },
+    })
+  })
+
+  it('no nível gravado Essencial, Backlog ligado não aparece no menu', async () => {
+    const call = handlersFor(manager)
+    await call('teamModules.change', { enable: ['backlog'] })
+    await call('teamSettings.setLevel', { level: 'basic' })
+
+    const result = await call('teamModules.get')
+
+    expect(result).toMatchObject({ ok: true, value: { level: 'basic' } })
+    if (!result.ok) return
+    const value = result.value as { screens: string[]; statuses: { moduleId: string }[] }
+    expect(value.screens).not.toContain('backlog')
+    expect(value.statuses).toContainEqual({ moduleId: 'backlog', state: 'active' })
+  })
+})

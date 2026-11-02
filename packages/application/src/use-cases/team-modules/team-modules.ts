@@ -49,7 +49,8 @@ export interface FinishTeamModuleWindingDownInput {
   readonly moduleId: string
 }
 
-function toStatuses(states: ReadonlyMap<ModuleId, ModuleState>): TeamModuleStatus[] {
+/** Estado de cada módulo do catálogo, na ordem do catálogo (módulo sem registro vira desligado). */
+export function toStatuses(states: ReadonlyMap<ModuleId, ModuleState>): TeamModuleStatus[] {
   return MODULE_IDS.map((moduleId) => ({ moduleId, state: states.get(moduleId) ?? 'disabled' }))
 }
 

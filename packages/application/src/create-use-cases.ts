@@ -47,6 +47,11 @@ import {
   PreviewTeamModuleImpact,
 } from './use-cases/team-modules/team-modules'
 import {
+  GetTeamCapabilities,
+  GetTeamLevel,
+  SetTeamLevel,
+} from './use-cases/team-settings/team-settings'
+import {
   CreateMeeting,
   DeleteMeeting,
   ListMonthMeetings,
@@ -111,6 +116,11 @@ export function createUseCases(deps: AppDeps) {
       change: new ChangeTeamModules(deps),
       previewImpact: new PreviewTeamModuleImpact(deps),
       finishWindingDown: new FinishTeamModuleWindingDown(deps),
+      capabilities: new GetTeamCapabilities(deps),
+    },
+    teamSettings: {
+      getLevel: new GetTeamLevel(deps),
+      setLevel: new SetTeamLevel(deps),
     },
     meetings: {
       listMonth: new ListMonthMeetings(deps),

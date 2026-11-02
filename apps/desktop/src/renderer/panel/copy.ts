@@ -71,6 +71,9 @@ export const panelCopy = {
   windowBackgroundHint:
     'Translúcido usa o vidro do sistema (Acrylic no Windows 11, Liquid Glass no GNOME). As janelas são recriadas ao trocar.',
   opacityOnlyTranslucent: 'A opacidade só vale no modo translúcido.',
+  teamLevel: 'Nível do time',
+  teamLevelOptions: 'Opções de nível do time',
+  teamLevelError: 'Não foi possível trocar o nível do time. Tente de novo.',
   updates: 'Atualizações',
   checkUpdates: 'Procurar atualizações',
   checkingUpdates: 'Procurando…',

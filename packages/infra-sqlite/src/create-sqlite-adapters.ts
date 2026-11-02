@@ -21,10 +21,10 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     meetings: createSqliteMeetingRepository(database),
     teamModuleEvents: teamRepositories.teamModuleEvents,
     teamModules: teamRepositories.teamModules,
+    teamSettings: teamRepositories.teamSettings,
   }
   return {
     ...repositories,
-    teamSettings: teamRepositories.teamSettings,
     unitOfWork: createSqliteUnitOfWork(database, repositories),
     async hasOrganizations() {
       const [row] = await database.select({ id: organizations.id }).from(organizations).limit(1)

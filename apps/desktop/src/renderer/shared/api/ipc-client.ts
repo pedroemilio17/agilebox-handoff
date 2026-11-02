@@ -77,6 +77,10 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       change: (input) => call('teamModules.change', input),
       finishWindingDown: (input) => call('teamModules.finishWindingDown', input),
     },
+    teamSettings: {
+      getLevel: () => call('teamSettings.getLevel', undefined),
+      setLevel: (input) => call('teamSettings.setLevel', input),
+    },
     onChanges: bridge.onChanges,
   }
 }

@@ -33,6 +33,40 @@ describe('createSqliteAdapters', () => {
     }
   })
 
+  it('grava e lê o nível do time dentro da unidade de trabalho (M2.9b)', async () => {
+    const adapters = createSqliteAdapters(':memory:')
+    const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+    const user = aUser().with({ organizationId }).build()
+
+    try {
+      await adapters.saveOrganization({
+        id: organizationId,
+        name: 'AgileBox',
+        createdAt: user.createdAt,
+      })
+      await adapters.users.save(organizationId, user)
+      await adapters.unitOfWork.run(organizationId, (repositories) =>
+        repositories.teamSettings.save(organizationId, {
+          level: 'advanced',
+          changedBy: user.id,
+          changedAt: '2026-01-02T10:00:00.000Z',
+        }),
+      )
+
+      await expect(
+        adapters.unitOfWork.run(organizationId, (repositories) =>
+          repositories.teamSettings.find(organizationId),
+        ),
+      ).resolves.toEqual({
+        level: 'advanced',
+        changedBy: user.id,
+        changedAt: '2026-01-02T10:00:00.000Z',
+      })
+    } finally {
+      adapters.close()
+    }
+  })
+
   it('persiste criação, edição e mudança de estado após fechar e reabrir o banco', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'agilebox-persistencia-'))
     const filename = join(directory, 'agilebox.sqlite')

@@ -37,6 +37,8 @@ export const API_CHANNELS = [
   'teamModules.previewImpact',
   'teamModules.change',
   'teamModules.finishWindingDown',
+  'teamSettings.getLevel',
+  'teamSettings.setLevel',
   'meetings.list',
   'meetings.listUpcoming',
   'meetings.create',

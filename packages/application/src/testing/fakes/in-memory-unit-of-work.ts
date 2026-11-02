@@ -10,6 +10,7 @@ import {
   InMemoryTaskRepository,
   InMemoryTeamModuleEventRepository,
   InMemoryTeamModuleRepository,
+  InMemoryTeamSettingsRepository,
   InMemoryTimelineRepository,
   InMemoryUserRepository,
 } from './in-memory-repositories'
@@ -35,6 +36,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       tasks: new InMemoryTaskRepository(state),
       teamModuleEvents: new InMemoryTeamModuleEventRepository(state),
       teamModules: new InMemoryTeamModuleRepository(state),
+      teamSettings: new InMemoryTeamSettingsRepository(state),
       timeline: new InMemoryTimelineRepository(state),
       users: new InMemoryUserRepository(state),
     }

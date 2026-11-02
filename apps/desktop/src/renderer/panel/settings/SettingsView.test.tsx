@@ -1,8 +1,18 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@agilebox/contract'
+import type { CurrentSessionDto, TeamCapabilitiesDto } from '@agilebox/contract'
+import { LEVEL_LABELS, TEAM_SCOPE_NOTICE } from '@agilebox/core'
+import { ApiProvider } from '../../shared/api/ApiProvider'
+import { QueryProvider } from '../../shared/query/QueryProvider'
+import { createFakeApi } from '../../shared/testing/fake-api'
 import { WINDOW_OPACITY_KEY } from '../../shared/lib/window-opacity'
 import { SettingsView } from './SettingsView'
+
+const ORG = '01J8Y4G2XK8Z1S6M3Q9W0A5G01'
+const MANAGER = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
+const COLLABORATOR = '01J8Y4G2XK8Z1S6M3Q9W0A5V02'
 
 const updates = {
   check: () => Promise.resolve({ state: 'up-to-date', commit: 'x' }),
@@ -24,9 +34,59 @@ afterEach(() => {
   delete document.documentElement.dataset.glass
 })
 
+interface SettingsOptions {
+  readonly role?: CurrentSessionDto['role']
+  readonly level?: TeamCapabilitiesDto['level']
+  readonly setLevelError?: ApiError
+}
+
+/**
+ * Renderiza Ajustes com a API falsa. `setLevel` grava no estado da própria API falsa, e `get`
+ * devolve o nível atual, como o servidor faria, para o teste ver a tela atualizada.
+ */
+function renderSettings({
+  role = 'collaborator',
+  level = 'intermediate',
+  setLevelError,
+}: SettingsOptions = {}) {
+  const api = createFakeApi()
+  let current = level
+  const sessionCall = Promise.resolve<CurrentSessionDto>({
+    userId: role === 'manager' ? MANAGER : COLLABORATOR,
+    organizationId: ORG,
+    role,
+  })
+  vi.spyOn(api.session, 'getCurrent').mockReturnValue(sessionCall)
+  const getModules = vi
+    .spyOn(api.teamModules, 'get')
+    .mockImplementation(() =>
+      Promise.resolve({ level: current, screens: ['projects', 'agenda'], statuses: [] }),
+    )
+  const setLevel = vi.spyOn(api.teamSettings, 'setLevel').mockImplementation(({ level: next }) => {
+    if (setLevelError) return Promise.reject(setLevelError)
+    current = next
+    return Promise.resolve(next)
+  })
+  render(
+    <ApiProvider api={api}>
+      <QueryProvider>
+        <SettingsView />
+      </QueryProvider>
+    </ApiProvider>,
+  )
+  return { api, getModules, setLevel, sessionCall }
+}
+
+/** Espera a sessão responder para que a ausência de um bloco não seja só corrida de render. */
+async function settleSession(sessionCall: Promise<unknown>) {
+  await act(async () => {
+    await sessionCall
+  })
+}
+
 describe('Ajustes: opacidade da janela', () => {
   it('mostra o padrão, salva o novo valor e restaura', async () => {
-    render(<SettingsView />)
+    renderSettings()
     const slider = screen.getByLabelText<HTMLInputElement>('Opacidade da janela')
     expect(slider.value).toBe('68')
     expect(screen.getByText('68%')).toBeTruthy()
@@ -42,7 +102,7 @@ describe('Ajustes: opacidade da janela', () => {
 
   it('abre com o valor salvo antes', () => {
     window.localStorage.setItem(WINDOW_OPACITY_KEY, '0.5')
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByLabelText<HTMLInputElement>('Opacidade da janela').value).toBe('50')
   })
 })
@@ -52,7 +112,7 @@ describe('Ajustes: fundo da janela', () => {
     const setAppearance = vi.fn()
     vi.stubGlobal('agilebox', { shell: { setAppearance }, updates })
     document.documentElement.dataset.glass = 'native'
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByRole('button', { name: 'Translúcido' }).getAttribute('aria-pressed')).toBe(
       'true',
     )
@@ -64,7 +124,80 @@ describe('Ajustes: fundo da janela', () => {
 
   it('no modo opaco mostra "Opaco" selecionado', () => {
     document.documentElement.dataset.glass = 'opaque'
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByRole('button', { name: 'Opaco' }).getAttribute('aria-pressed')).toBe('true')
+  })
+})
+
+describe('Ajustes: nível do time (M2.9b)', () => {
+  const groupName = 'Opções de nível do time'
+
+  it('gestor vê as três opções, o nível atual, a descrição e o aviso de escopo', async () => {
+    renderSettings({ role: 'manager', level: 'intermediate' })
+
+    const group = await screen.findByRole('group', { name: groupName })
+    expect(
+      within(group).getByRole('button', { name: 'Essencial' }).getAttribute('aria-pressed'),
+    ).toBe('false')
+    expect(within(group).getByRole('button', { name: 'Padrão' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
+    expect(
+      within(group).getByRole('button', { name: 'Avançado' }).getAttribute('aria-pressed'),
+    ).toBe('false')
+    expect(screen.getByText(LEVEL_LABELS.intermediate.description)).toBeTruthy()
+    expect(screen.getByText(TEAM_SCOPE_NOTICE)).toBeTruthy()
+  })
+
+  it('colaborador não vê o controle de nível nem o aviso', async () => {
+    const { sessionCall } = renderSettings({ role: 'collaborator' })
+    await settleSession(sessionCall)
+
+    expect(screen.queryByRole('group', { name: groupName })).toBeNull()
+    expect(screen.queryByText(TEAM_SCOPE_NOTICE)).toBeNull()
+  })
+
+  it('gestor escolhe Avançado: grava o nível, atualiza o cache de capacidades e marca a opção', async () => {
+    const { setLevel, getModules } = renderSettings({ role: 'manager', level: 'intermediate' })
+    const group = await screen.findByRole('group', { name: groupName })
+    expect(getModules).toHaveBeenCalledTimes(1)
+
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Avançado' }))
+
+    expect(setLevel).toHaveBeenCalledWith({ level: 'advanced' })
+    await waitFor(() => expect(getModules).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(
+        within(group).getByRole('button', { name: 'Avançado' }).getAttribute('aria-pressed'),
+      ).toBe('true'),
+    )
+  })
+
+  it('escolher o nível que já vale não chama o servidor', async () => {
+    const { setLevel } = renderSettings({ role: 'manager', level: 'intermediate' })
+    const group = await screen.findByRole('group', { name: groupName })
+
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Padrão' }))
+
+    expect(setLevel).not.toHaveBeenCalled()
+  })
+
+  it('falha ao gravar mostra aviso em texto e mantém o nível anterior marcado', async () => {
+    renderSettings({
+      role: 'manager',
+      level: 'intermediate',
+      setLevelError: new ApiError('CONFLICT', 'falhou'),
+    })
+    const group = await screen.findByRole('group', { name: groupName })
+
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Essencial' }))
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByRole('alert').textContent).toBe(
+      'Não foi possível trocar o nível do time. Tente de novo.',
+    )
+    expect(within(group).getByRole('button', { name: 'Padrão' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
   })
 })
