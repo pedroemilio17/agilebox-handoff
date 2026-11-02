@@ -65,3 +65,10 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-label);
 }
+
+.profileRole {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  line-height: 1.4;
+}

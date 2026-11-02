@@ -35,6 +35,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     },
     tasks: {
       listBoard: (input) => call('tasks.listBoard', input),
+      getBoardFlow: (input) => call('tasks.getBoardFlow', input),
       listTeamBoard: (input) => call('tasks.listTeamBoard', input),
       get: (input) => call('tasks.get', input),
       create: (input) => call('tasks.create', input),

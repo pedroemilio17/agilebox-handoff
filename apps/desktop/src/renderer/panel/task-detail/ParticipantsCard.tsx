@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { GetTaskDto, Participant } from '@agilebox/contract'
-import { Avatar, Button, GlassSurface } from '@agilebox/ui'
+import { Avatar, Button } from '@agilebox/ui'
 import { useSessionUsers } from '../hooks/use-session-users'
 import { panelCopy } from '../copy'
+import { PropertyRow } from './PropertyRow'
 import { SaveError } from './SaveError'
 import {
   useAddParticipation,
@@ -72,89 +73,90 @@ export function ParticipantsCard({ task, readOnly }: ParticipantsCardProps) {
   }
 
   return (
-    <GlassSurface variant="group" className={styles.card} aria-label={panelCopy.participantsCard}>
-      <h3 className={styles.cardTitle}>{panelCopy.participantsCard}</h3>
-      {task.participations.length === 0 ? (
-        <p className={styles.helper}>{panelCopy.noParticipants}</p>
-      ) : (
-        <ul className={styles.list}>
-          {task.participations.map((participation) => (
-            <li key={participation.id} className={styles.participant}>
-              <Avatar name={participation.participantName} />
-              <span className={styles.grow}>{participation.participantName}</span>
-              <span className={styles.helper}>
-                {participation.role === 'responsible' ? panelCopy.responsible : panelCopy.support}
-              </span>
-              {readOnly ? null : (
-                <button
-                  type="button"
-                  className={styles.iconButton}
-                  aria-label={panelCopy.removeParticipant(participation.participantName)}
-                  disabled={remove.isPending}
-                  onClick={() => remove.mutate(participation.id)}
-                >
-                  ×
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {readOnly ? null : (
-        <div className={styles.addForm}>
-          <select
-            aria-label={panelCopy.participantToAdd}
-            className={styles.select}
-            value={selected}
-            onChange={(event) => setSelected(event.currentTarget.value)}
-          >
-            <option value="">{panelCopy.addParticipant}</option>
-            <optgroup label={panelCopy.users}>
-              {availableUsers.map((user) => (
-                <option key={user.id} value={`user:${user.id}`}>
-                  {user.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label={panelCopy.entities}>
-              {availableContributors.map((contributor) => (
-                <option key={contributor.id} value={`contributor:${contributor.id}`}>
-                  {contributor.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-          <select
-            aria-label={panelCopy.participantRole}
-            className={styles.select}
-            value={roleAllowed ? role : 'support'}
-            onChange={(event) => setRole(event.currentTarget.value as 'responsible' | 'support')}
-          >
-            <option value="support">{panelCopy.support}</option>
-            <option value="responsible" disabled={participant?.kind === 'contributor'}>
-              {panelCopy.responsible}
-            </option>
-          </select>
-          <Button type="button" disabled={!participant || add.isPending} onClick={submitAdd}>
-            {panelCopy.add}
-          </Button>
-          <input
-            aria-label={panelCopy.newEntityName}
-            className={styles.select}
-            placeholder={panelCopy.newEntityName}
-            value={entityName}
-            onChange={(event) => setEntityName(event.currentTarget.value)}
-          />
-          <Button
-            type="button"
-            disabled={!entityName.trim() || createContributor.isPending}
-            onClick={submitEntity}
-          >
-            {panelCopy.createEntity}
-          </Button>
-          <SaveError error={add.error ?? remove.error ?? createContributor.error} />
-        </div>
-      )}
-    </GlassSurface>
+    <PropertyRow label={panelCopy.participantsCard}>
+      <div className={styles.propertyContent}>
+        {task.participations.length === 0 ? (
+          <p className={styles.helper}>{panelCopy.noParticipants}</p>
+        ) : (
+          <ul className={styles.list}>
+            {task.participations.map((participation) => (
+              <li key={participation.id} className={styles.participant}>
+                <Avatar name={participation.participantName} />
+                <span className={styles.grow}>{participation.participantName}</span>
+                <span className={styles.helper}>
+                  {participation.role === 'responsible' ? panelCopy.responsible : panelCopy.support}
+                </span>
+                {readOnly ? null : (
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={panelCopy.removeParticipant(participation.participantName)}
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(participation.id)}
+                  >
+                    ×
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {readOnly ? null : (
+          <div className={styles.addForm}>
+            <select
+              aria-label={panelCopy.participantToAdd}
+              className={styles.select}
+              value={selected}
+              onChange={(event) => setSelected(event.currentTarget.value)}
+            >
+              <option value="">{panelCopy.addParticipant}</option>
+              <optgroup label={panelCopy.users}>
+                {availableUsers.map((user) => (
+                  <option key={user.id} value={`user:${user.id}`}>
+                    {user.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label={panelCopy.entities}>
+                {availableContributors.map((contributor) => (
+                  <option key={contributor.id} value={`contributor:${contributor.id}`}>
+                    {contributor.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <select
+              aria-label={panelCopy.participantRole}
+              className={styles.select}
+              value={roleAllowed ? role : 'support'}
+              onChange={(event) => setRole(event.currentTarget.value as 'responsible' | 'support')}
+            >
+              <option value="support">{panelCopy.support}</option>
+              <option value="responsible" disabled={participant?.kind === 'contributor'}>
+                {panelCopy.responsible}
+              </option>
+            </select>
+            <Button type="button" disabled={!participant || add.isPending} onClick={submitAdd}>
+              {panelCopy.add}
+            </Button>
+            <input
+              aria-label={panelCopy.newEntityName}
+              className={styles.select}
+              placeholder={panelCopy.newEntityName}
+              value={entityName}
+              onChange={(event) => setEntityName(event.currentTarget.value)}
+            />
+            <Button
+              type="button"
+              disabled={!entityName.trim() || createContributor.isPending}
+              onClick={submitEntity}
+            >
+              {panelCopy.createEntity}
+            </Button>
+            <SaveError error={add.error ?? remove.error ?? createContributor.error} />
+          </div>
+        )}
+      </div>
+    </PropertyRow>
   )
 }

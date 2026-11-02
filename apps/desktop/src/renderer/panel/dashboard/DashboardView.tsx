@@ -1,49 +1,218 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { TASK_STATUSES } from '@agilebox/core'
-import { EmptyState, Skeleton } from '@agilebox/ui'
+import { addDays, differenceInCalendarDays, format, getISOWeek, parseISO } from 'date-fns'
+import {
+  Avatar,
+  BarChart,
+  Eyebrow,
+  MetricTile,
+  SignalBadge,
+  Skeleton,
+  Sparkline,
+} from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { panelCopy } from '../copy'
-import { CollaboratorTable } from './CollaboratorTable'
-import { StackedBar } from './StackedBar'
-import { StatCard } from './StatCard'
 import type { CollaboratorStat } from './types'
 import styles from './Dashboard.module.css'
 
 export interface DashboardViewProps {
   readonly onOpenProjects: (user: CollaboratorStat['user']) => void
+  readonly onOpenException?: (exception: 'aging' | 'overdue') => void
+  readonly onOpenTask?: (taskId: string) => void
 }
+const days = (value: number | null) =>
+  value === null ? '—' : `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d`
 
-export function DashboardView({ onOpenProjects }: DashboardViewProps) {
+export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: DashboardViewProps) {
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const api = useApi()
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
   })
-
-  if (dashboard.isPending) {
+  if (dashboard.isPending)
     return (
       <div className={styles.view} role="status" aria-label={panelCopy.dashboardLoading}>
         <Skeleton />
         <Skeleton />
       </div>
     )
-  }
-  if (dashboard.isError) return <p role="alert">{panelCopy.dashboardError}</p>
-
-  const { distribution, collaborators } = dashboard.data
-  const empty = TASK_STATUSES.every((status) => distribution[status] === 0)
-  if (empty && collaborators.length === 0) return <EmptyState title={panelCopy.dashboardEmpty} />
-
+  if (dashboard.isError || !dashboard.data.insights)
+    return <p role="alert">{panelCopy.dashboardError}</p>
+  const data = dashboard.data.insights
+  const period = data.weeks.find((item) => item.start === selectedWeek)
+  const adherence = period ? (period.upToDatePercentage ?? null) : data.upToDatePercentage
+  const cycle = period ? (period.cycleDays ?? null) : data.cycleDays
+  const lead = period ? (period.leadDays ?? null) : data.leadDays
+  const throughput = period?.throughput ?? data.throughput
+  const index = period ? data.weeks.indexOf(period) : data.weeks.length - 1
+  const previous = data.weeks[index - 1]?.upToDatePercentage
+  const delta = adherence !== null && previous != null ? Math.round(adherence - previous) : null
   return (
     <div className={styles.view}>
-      <StackedBar distribution={distribution} label={panelCopy.dashboardOverview} />
-      <div className={styles.stats}>
-        {TASK_STATUSES.map((status) => (
-          <StatCard key={status} status={status} percentage={distribution[status]} />
-        ))}
+      <header className={styles.period}>
+        <select
+          aria-label="Semana do dashboard"
+          className={styles.weekSelect}
+          value={period?.start ?? data.weekStart}
+          onChange={(event) => setSelectedWeek(event.currentTarget.value)}
+        >
+          {data.weeks.map((item) => (
+            <option key={item.start} value={item.start}>
+              Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
+              {format(addDays(parseISO(item.start), 6), 'dd/MM')}
+            </option>
+          ))}
+        </select>
+        <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
+      </header>
+      <div className={styles.overview}>
+        <section className={styles.panel} aria-label="Quadro em dia">
+          <Eyebrow>Quadro em dia</Eyebrow>
+          <p className={styles.adoption}>
+            {adherence === null ? (
+              '—'
+            ) : (
+              <>
+                {Math.round(adherence)}
+                <span>%</span>
+              </>
+            )}
+          </p>
+          <Sparkline
+            label="Quadro em dia nas últimas seis semanas"
+            data={data.weeks.slice(0, index + 1).map((item) => ({
+              label: `S${getISOWeek(parseISO(item.start))}`,
+              value: item.upToDatePercentage ?? null,
+            }))}
+          />
+          <p className={styles.caption}>
+            das tarefas ativas foram atualizadas nas últimas 48h
+            {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
+          </p>
+        </section>
+        <div className={styles.exceptions}>
+          <MetricTile
+            label="Paradas"
+            value={data.agingCount}
+            caption="há mais de 4 dias"
+            onClick={() => onOpenException?.('aging')}
+          />
+          <MetricTile
+            label="Vencidas"
+            value={data.overdueCount}
+            caption="prazo de entrega passou"
+            signal="danger"
+            onClick={() => onOpenException?.('overdue')}
+          />
+        </div>
       </div>
-      <CollaboratorTable collaborators={collaborators} onOpenProjects={onOpenProjects} />
+      <div className={styles.overview}>
+        <section className={styles.panel} aria-label="Fluxo de seis semanas">
+          <Eyebrow>Fluxo · 6 semanas</Eyebrow>
+          <div className={styles.flowMetrics}>
+            <p>
+              <strong>{days(cycle)}</strong>
+              <span>tempo de ciclo médio</span>
+            </p>
+            <p>
+              <strong>{days(lead)}</strong>
+              <span>do pedido à entrega</span>
+            </p>
+            <p>
+              <strong>{throughput === 0 ? '—' : throughput}</strong>
+              <span>concluídas nesta semana</span>
+            </p>
+          </div>
+          {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
+          <BarChart
+            label="Concluídas por semana"
+            data={data.weeks.map((item) => ({
+              label: `S${getISOWeek(parseISO(item.start))}`,
+              value: item.throughput,
+            }))}
+          />
+        </section>
+        <section className={styles.panel} aria-label="Mudou desde ontem">
+          <Eyebrow>Mudou desde ontem</Eyebrow>
+          {data.recentChanges.length === 0 ? (
+            <p className={styles.caption}>Nenhuma mudança desde ontem.</p>
+          ) : (
+            <ul className={styles.changeList}>
+              {data.recentChanges.map((event) => (
+                <li key={event.id}>
+                  <button
+                    className={styles.change}
+                    onClick={() => onOpenTask?.(event.taskId)}
+                    type="button"
+                  >
+                    <Avatar name={event.actorName} />
+                    <span>
+                      <strong>{event.taskTitle}</strong>
+                      <span>
+                        {event.actorName}
+                        {event.asManager ? ' · Gestor' : ''} {event.text}
+                      </span>
+                    </span>
+                    <time dateTime={event.at}>{format(parseISO(event.at), 'HH:mm')}</time>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+      <section className={styles.panel} aria-label="Equipe">
+        <Eyebrow>Equipe</Eyebrow>
+        <div className={styles.teamScroll}>
+          <div className={styles.teamHeader}>
+            <span>Pessoa</span>
+            <span>Em andamento</span>
+            <span>Sinais</span>
+            <span>Última atualização</span>
+          </div>
+          {data.team.length === 0 ? (
+            <p className={styles.caption}>Nenhuma tarefa ainda.</p>
+          ) : (
+            data.team.map((person) => (
+              <button
+                className={styles.teamRow}
+                key={person.user.id}
+                type="button"
+                aria-label={panelCopy.openProjectsOf(person.user.name)}
+                onClick={() => onOpenProjects(person.user)}
+              >
+                <span className={styles.person}>
+                  <Avatar name={person.user.name} />
+                  {person.user.name}
+                </span>
+                <span className={styles.figure}>{person.inProgress}</span>
+                <span className={styles.signals}>
+                  {person.agingCount > 0 && (
+                    <SignalBadge variant="aging">
+                      {person.agingCount} {person.agingCount === 1 ? 'parada' : 'paradas'}
+                    </SignalBadge>
+                  )}
+                  {person.overdueCount > 0 && (
+                    <SignalBadge variant="overdue">
+                      {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
+                    </SignalBadge>
+                  )}
+                  {person.agingCount === 0 && person.overdueCount === 0 && '—'}
+                </span>
+                <span
+                  className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
+                >
+                  {person.lastUpdatedAt
+                    ? format(parseISO(person.lastUpdatedAt), 'dd/MM HH:mm')
+                    : '—'}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,0 +1,45 @@
+.sparkline,
+.bars {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.sparkline {
+  max-height: 70px;
+  animation: reveal var(--motion-duration-chart) var(--ease-ios) both;
+}
+.bars {
+  max-height: 180px;
+}
+.bars text {
+  fill: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+}
+.bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow var(--motion-duration-chart) var(--ease-ios) both;
+}
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sparkline,
+  .bar {
+    animation: none;
+  }
+}

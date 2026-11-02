@@ -52,8 +52,47 @@ function setup(role: 'manager' | 'collaborator', month: MeetingDto[] = [M1]) {
 }
 
 describe('Agenda: calendário', () => {
+  it('mantém carregamento explícito e depois informa falha em vez de mostrar agenda vazia', async () => {
+    const api = createFakeApi()
+    let rejectList!: (reason: Error) => void
+    const pending = new Promise<MeetingDto[]>((_resolve, reject) => {
+      rejectList = reject
+    })
+    vi.spyOn(api.meetings, 'list').mockReturnValue(pending)
+    vi.spyOn(api.meetings, 'listUpcoming').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <AgendaView today="2026-11-02" />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    expect(screen.getByRole('status', { name: 'Carregando agenda' })).toBeTruthy()
+    rejectList(new Error('Sem conexão'))
+    expect(await screen.findByText('Não foi possível carregar os agendamentos.')).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Agenda semanal' })).toBeNull()
+  })
+
+  it('começa em semana seg–dom, consulta os dois meses e navega também por dia', async () => {
+    const { list, user } = setup('manager')
+    expect(await screen.findByRole('region', { name: 'Agenda semanal' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Semana' }).getAttribute('aria-pressed')).toBe('true')
+    await waitFor(() => expect(list).toHaveBeenCalledWith({ month: '2026-10' }))
+    expect(list).toHaveBeenCalledWith({ month: '2026-11' })
+    await user.click(screen.getByRole('button', { name: 'Dia' }))
+    expect(screen.getByRole('region', { name: 'Agenda diária' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    expect(
+      screen
+        .getByRole('button', { name: /segunda-feira, 2 de novembro/i })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
   it('mostra o mês, marca hoje e carrega os agendamentos do mês', async () => {
     const { list } = setup('manager')
+    await userEvent.click(screen.getByRole('button', { name: 'Mês' }))
     expect(await screen.findByRole('heading', { name: /novembro de 2026/i })).toBeTruthy()
     expect(
       screen.getByRole('button', { name: /domingo, 1 de novembro/i }).getAttribute('aria-current'),
@@ -66,6 +105,7 @@ describe('Agenda: calendário', () => {
 
   it('navega entre meses e vira o ano', async () => {
     const { list, user } = setup('manager')
+    await user.click(screen.getByRole('button', { name: 'Mês' }))
     await screen.findByRole('heading', { name: /novembro de 2026/i })
     await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
     await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
@@ -77,6 +117,7 @@ describe('Agenda: calendário', () => {
 
   it('seleciona o dia, move pelo teclado e não abre o formulário', async () => {
     const { user } = setup('manager')
+    await user.click(screen.getByRole('button', { name: 'Mês' }))
     const day = await screen.findByRole('button', { name: /terça-feira, 10 de novembro/i })
     await user.click(day)
     expect(day.getAttribute('aria-pressed')).toBe('true')
@@ -103,6 +144,7 @@ describe('Agenda: calendário', () => {
       meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M03', 'C', '2026-11-10', '10:00'),
       meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M04', 'D', '2026-11-10', '11:00'),
     ])
+    await userEvent.click(screen.getByRole('button', { name: 'Mês' }))
     const day = await screen.findByRole('button', { name: /terça-feira, 10 de novembro/i })
     expect(await within(day).findByText('+2 mais')).toBeTruthy()
     expect(within(day).queryByText(/10:00 C/)).toBeNull()
@@ -113,11 +155,12 @@ describe('Agenda: gestor', () => {
   it('cria um agendamento com a data do dia selecionado', async () => {
     const { api, user } = setup('manager')
     const create = vi.spyOn(api.meetings, 'create').mockResolvedValue(M1)
+    await user.click(screen.getByRole('button', { name: 'Mês' }))
     await user.click(await screen.findByRole('button', { name: /sexta-feira, 20 de novembro/i }))
     await user.click(screen.getByRole('button', { name: 'Novo agendamento' }))
     await user.type(await screen.findByLabelText('Título'), 'Retrospectiva')
     expect(screen.getByLabelText<HTMLInputElement>('Data').value).toBe('2026-11-20')
-    await user.click(await screen.findByLabelText('Ana Souza'))
+    await user.click(await screen.findByRole('checkbox', { name: 'Ana Souza' }))
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
     await waitFor(() =>
       expect(create).toHaveBeenCalledWith({

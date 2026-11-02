@@ -16,11 +16,18 @@ export const taskDtoSchema = z.object({
   ticketUrl: z.url().nullable(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
+  agingDays: z.number().int().nonnegative().nullable().optional(),
+  overdue: z.boolean().optional(),
 })
 
 export const listBoardInputSchema = z.object({
   projectId: ulidSchema.optional(),
   forUserId: ulidSchema.optional(),
+})
+export const getBoardFlowOutputSchema = z.object({
+  cycleDays: z.number().nonnegative().nullable(),
+  weekStart: z.iso.date(),
+  updatedAt: isoDateTimeSchema,
 })
 export const listTeamBoardInputSchema = z.object({ projectId: ulidSchema.optional() })
 export const listBoardOutputSchema = z.array(taskDtoSchema)
@@ -36,10 +43,17 @@ export const getTaskOutputSchema = taskDtoSchema
   .refine((task) => task.canEdit !== task.readOnly, {
     message: 'Detalhe deve ser editável ou somente leitura',
   })
-export const createTaskInputSchema = z.object({ projectId: ulidSchema, title: nameSchema })
+export const createTaskInputSchema = z.object({
+  projectId: ulidSchema,
+  title: nameSchema,
+  status: taskStatusSchema.optional(),
+  responsibleId: ulidSchema.optional(),
+  deadline: taskDeadlineSchema.optional(),
+})
 export const createTaskOutputSchema = taskDtoSchema
 export const taskUpdateChangesSchema = z
   .object({
+    progressConfirmed: z.literal(true).optional(),
     title: nameSchema.optional(),
     description: z.string().optional(),
     deadline: taskDeadlineSchema.optional(),

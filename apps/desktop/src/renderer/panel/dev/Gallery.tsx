@@ -2,6 +2,15 @@ import { useState } from 'react'
 import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
+  Kbd,
+  Eyebrow,
+  SignalBadge,
+  ProjectSwatch,
+  MetricTile,
+  WipMeter,
+  Sparkline,
+  BarChart,
+  Drawer,
   Button,
   DateField,
   EmptyState,
@@ -39,6 +48,7 @@ export function Gallery() {
   const [view, setView] = useState<(typeof views)[number]['value']>('board')
   const [display, setDisplay] = useState<(typeof displayOptions)[number]['value']>('compact')
   const [status, setStatus] = useState<TaskStatus>('todo')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -59,6 +69,44 @@ export function Gallery() {
       </header>
 
       <div className={styles.sections}>
+        <section className={styles.section} aria-label="Componentes v2">
+          <Eyebrow>Componentes v2 · dados de demonstração</Eyebrow>
+          <div className={styles.row}>
+            <Kbd>Ctrl K</Kbd>
+            <ProjectSwatch index={0} name="AgileBox" />
+            <SignalBadge variant="aging">Parada há 5 dias</SignalBadge>
+            <SignalBadge variant="overdue">Vencida há 2 dias</SignalBadge>
+            <WipMeter count={2} capacity={3} />
+            <MetricTile
+              label="Paradas"
+              value={0}
+              caption="Sem ocorrências"
+              onClick={() => undefined}
+            />
+          </div>
+          <Sparkline
+            label="Exemplo de fluxo"
+            data={[
+              { label: 'S44', value: 2 },
+              { label: 'S45', value: 3 },
+            ]}
+          />
+          <BarChart
+            label="Exemplo de vazão"
+            data={[
+              { label: 'S44', value: 2 },
+              { label: 'S45', value: 3 },
+            ]}
+          />
+          <Button onClick={() => setDrawerOpen(true)}>Abrir painel de exemplo</Button>
+          <Drawer
+            open={drawerOpen}
+            title="Exemplo de painel lateral"
+            onClose={() => setDrawerOpen(false)}
+          >
+            <Button onClick={() => setDrawerOpen(false)}>Fechar painel</Button>
+          </Drawer>
+        </section>
         <section className={styles.section} aria-labelledby="gallery-surfaces">
           <h2 id="gallery-surfaces">Superfícies</h2>
           <div className={styles.surfaceGrid}>
@@ -93,7 +141,9 @@ export function Gallery() {
             onChange={setDisplay}
           />
           <div className={styles.row}>
-            <Button variant="primary">Salvar alterações</Button>
+            <Button variant="primary" shortcut="Ctrl Enter">
+              Salvar alterações
+            </Button>
             <Button variant="secondary">Cancelar</Button>
             <Button disabled>Indisponível</Button>
             <IconButton aria-label="Adicionar tarefa" type="button">

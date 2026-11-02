@@ -1,12 +1,11 @@
 .avatar {
   display: inline-grid;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 50%;
-  background: var(--glass-control);
+  background: var(--color-avatar-bg);
   color: var(--color-text-primary);
   font-size: var(--font-size-small);
   font-weight: 600;

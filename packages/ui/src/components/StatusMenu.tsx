@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
+import { TASK_STATUSES } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import styles from './StatusMenu.module.css'
+import { StatusChip } from './StatusChip'
 
 export interface StatusMenuProps {
   readonly value: TaskStatus
@@ -51,7 +52,7 @@ export function StatusMenu({ value, onChange, onClose }: StatusMenuProps) {
             close()
           }}
         >
-          <span>{TASK_STATUS_LABELS[status]}</span>
+          <StatusChip status={status} />
           <span className={styles.check} aria-hidden="true">
             {status === value ? '✓' : ''}
           </span>

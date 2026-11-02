@@ -42,3 +42,18 @@ export { Tooltip } from './components/Tooltip'
 export type { TooltipProps } from './components/Tooltip'
 export { WindowControls } from './components/WindowControls'
 export type { WindowControlsProps } from './components/WindowControls'
+export {
+  Kbd,
+  Eyebrow,
+  SignalBadge,
+  ProjectSwatch,
+  MetricTile,
+  WipMeter,
+} from './components/Indicators'
+export type { SignalBadgeProps, MetricTileProps } from './components/Indicators'
+export { Drawer } from './components/Drawer'
+export type { DrawerProps } from './components/Drawer'
+export { Sparkline, BarChart } from './components/Charts'
+export type { ChartDatum, ChartProps } from './components/Charts'
+export { CommandPalette } from './components/CommandPalette'
+export type { CommandPaletteProps, CommandAction } from './components/CommandPalette'

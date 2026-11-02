@@ -52,7 +52,14 @@ export function AccountMenu({
         <span className={avatarClassName} aria-hidden="true">
           {current?.initials ?? 'AG'}
         </span>
-        <span className={labelClassName}>{current?.name ?? panelCopy.account}</span>
+        <span className={labelClassName}>
+          <span>{current?.name ?? panelCopy.account}</span>
+          {current && (
+            <small className={styles.profileRole}>
+              {current.role === 'manager' ? panelCopy.roleManager : panelCopy.roleCollaborator}
+            </small>
+          )}
+        </span>
       </button>
       {open ? (
         <div className={styles.menu} role="menu" aria-label={panelCopy.accountMenu}>

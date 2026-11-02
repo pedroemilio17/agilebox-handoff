@@ -137,7 +137,7 @@ export const panelCopy = {
   deadline: 'Data de entrega',
   participantsCard: 'Envolvidos',
   costCard: 'Custo',
-  timelineCard: 'Linha do tempo',
+  timelineCard: 'Atividade',
   noUpdates: 'Sem atualizações ainda.',
   managerMark: 'Gestor',
   hours: 'Horas',
@@ -160,7 +160,7 @@ export const panelCopy = {
   boardLoading: 'Carregando quadro',
   boardError: 'Não foi possível carregar o quadro.',
   boardLabel: 'Quadro kanban',
-  boardColumnEmpty: 'Sem tarefas',
+  boardColumnEmpty: 'Nada aqui.',
   moveTask: 'Mover',
   moveTaskToState: (title: string) => `Mover ${title} para outro estado`,
 } as const

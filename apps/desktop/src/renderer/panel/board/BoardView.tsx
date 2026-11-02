@@ -1,5 +1,5 @@
 import { useQueries } from '@tanstack/react-query'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -28,12 +28,21 @@ import {
 } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import type { TaskStatus } from '@agilebox/core'
-import { Avatar, Skeleton } from '@agilebox/ui'
+import {
+  Avatar,
+  Button,
+  EmptyState,
+  Skeleton,
+  StatusChip,
+  ProjectSwatch,
+  SignalBadge,
+} from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { formatTaskCount, formatUpdatedAgo } from './board-status'
 import styles from './BoardView.module.css'
 
 // O destino é a coluna sob o cursor; só sem cursor (teclado) vale a sobreposição do card.
@@ -43,15 +52,47 @@ const detectCollisions: CollisionDetection = (args) => {
 }
 
 export interface BoardViewProps {
+  readonly cycleDays?: number | null
+  readonly flowError?: boolean
+  readonly initialException?: 'aging' | 'overdue' | null
+  readonly selectedTaskId?: string | null
   readonly tasks: readonly TaskDto[] | undefined
   readonly loading: boolean
   readonly error: boolean
+  readonly onCreateTask?: (status: TaskStatus) => void
+  /** Cria tarefa sem estado definido (botão do estado vazio). */
+  readonly onNewTask?: () => void
+  /** Momento (ms) em que a lista foi obtida pela última vez. */
+  readonly updatedAt?: number | undefined
+  /** Há uma busca em andamento sobre dados já exibidos. */
+  readonly refreshing?: boolean
   readonly onOpenTask: (taskId: string) => void
   readonly onMoveTask: (taskId: string, status: TaskStatus) => void
 }
 
-export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: BoardViewProps) {
+export function BoardView({
+  tasks,
+  loading,
+  error,
+  onOpenTask,
+  onMoveTask,
+  onCreateTask,
+  onNewTask,
+  updatedAt,
+  refreshing = false,
+  selectedTaskId,
+  cycleDays = null,
+  flowError = false,
+  initialException = null,
+}: BoardViewProps) {
   const api = useApi()
+  const [exception, setException] = useState<'aging' | 'overdue' | null>(initialException)
+  // Relógio do indicador "atualizado há N min": recalcula a cada 30 s, sem refazer a busca.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
   const [activeTask, setActiveTask] = useState<{ task: TaskDto; width: number } | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const lastDroppedId = useRef<string | null>(null)
@@ -113,39 +154,97 @@ export function BoardView({ tasks, loading, error, onOpenTask, onMoveTask }: Boa
         : null
   }
 
+  const agingCount = (tasks ?? []).filter((task) => (task.agingDays ?? 0) > 4).length
+  const overdueCount = (tasks ?? []).filter((task) => task.overdue).length
+  const visibleTasks = (tasks ?? []).filter((task) =>
+    exception === 'aging'
+      ? (task.agingDays ?? 0) > 4
+      : exception === 'overdue'
+        ? task.overdue
+        : true,
+  )
+  const noTasks = (tasks ?? []).length === 0
   return (
-    <DndContext
-      collisionDetection={detectCollisions}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveTask(null)}
-      sensors={sensors}
-    >
-      <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
-        {TASK_STATUSES.map((status) => (
-          <KanbanColumn
-            key={status}
-            onOpenTask={onOpenTask}
-            onMoveTask={onMoveTask}
-            responsibleNames={
-              new Map(
-                (tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]),
-              )
-            }
-            status={status}
-            tasks={(tasks ?? []).filter((task) => task.status === status)}
-          />
-        ))}
+    <>
+      <div className={styles.filters} aria-label="Filtros do quadro">
+        <button
+          type="button"
+          aria-pressed={exception === 'aging'}
+          onClick={() => setException(exception === 'aging' ? null : 'aging')}
+        >
+          Paradas · {agingCount}
+        </button>
+        <button
+          type="button"
+          aria-pressed={exception === 'overdue'}
+          onClick={() => setException(exception === 'overdue' ? null : 'overdue')}
+        >
+          Vencidas · {overdueCount}
+        </button>
+        <span>
+          {formatTaskCount(visibleTasks.length)} ·{' '}
+          {refreshing
+            ? 'atualizando…'
+            : updatedAt === undefined
+              ? '—'
+              : formatUpdatedAgo(updatedAt, now)}
+        </span>
       </div>
-      {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
-      <DragOverlay dropAnimation={null}>
-        {activeTask ? (
-          <div className={styles.overlay} style={{ width: activeTask.width }}>
-            <TaskCard onOpen={() => undefined} responsibleName={undefined} task={activeTask.task} />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      {noTasks && (
+        <EmptyState
+          className={styles.emptyBoard}
+          title="Nenhuma tarefa ainda"
+          description="Crie a primeira tarefa para começar a acompanhar o trabalho do time."
+          action={
+            onNewTask ? (
+              <Button variant="primary" shortcut="N" onClick={onNewTask}>
+                Nova tarefa
+              </Button>
+            ) : null
+          }
+        />
+      )}
+      <DndContext
+        collisionDetection={detectCollisions}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveTask(null)}
+        sensors={sensors}
+      >
+        <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
+          {TASK_STATUSES.map((status) => (
+            <KanbanColumn
+              key={status}
+              cycleDays={cycleDays}
+              flowError={flowError}
+              selectedTaskId={selectedTaskId}
+              onCreateTask={onCreateTask}
+              onOpenTask={onOpenTask}
+              onMoveTask={onMoveTask}
+              responsibleNames={
+                new Map(
+                  (tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]),
+                )
+              }
+              status={status}
+              tasks={visibleTasks.filter((task) => task.status === status)}
+            />
+          ))}
+        </div>
+        {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? (
+            <div className={styles.overlay} style={{ width: activeTask.width }}>
+              <TaskCard
+                onOpen={() => undefined}
+                responsibleName={undefined}
+                task={activeTask.task}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   )
 }
 
@@ -240,6 +339,10 @@ export function moveTaskAfterDrop(
 }
 
 interface KanbanColumnProps {
+  readonly cycleDays: number | null
+  readonly flowError: boolean
+  readonly selectedTaskId: BoardViewProps['selectedTaskId']
+  readonly onCreateTask: BoardViewProps['onCreateTask']
   readonly status: TaskStatus
   readonly tasks: readonly TaskDto[]
   readonly responsibleNames: ReadonlyMap<string, string | undefined>
@@ -251,6 +354,10 @@ function KanbanColumn({
   status,
   tasks,
   responsibleNames,
+  cycleDays,
+  flowError,
+  selectedTaskId,
+  onCreateTask,
   onOpenTask,
   onMoveTask,
 }: KanbanColumnProps) {
@@ -268,8 +375,20 @@ function KanbanColumn({
       role="region"
     >
       <header className={styles.columnHeading}>
-        <h2>{title}</h2>
+        <h2>
+          <StatusChip status={status} />
+        </h2>
         <span aria-label={`${tasks.length} tarefas`}>{tasks.length}</span>
+        {onCreateTask && (
+          <button
+            type="button"
+            className={styles.addTask}
+            aria-label={`Nova tarefa em ${title}`}
+            onClick={() => onCreateTask(status)}
+          >
+            +
+          </button>
+        )}
       </header>
       <SortableContext
         items={sortedTasks.map((task) => task.id)}
@@ -282,6 +401,7 @@ function KanbanColumn({
             sortedTasks.map((task) => (
               <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
                 <TaskCard
+                  selected={selectedTaskId === task.id}
                   onOpen={() => onOpenTask(task.id)}
                   responsibleName={responsibleNames.get(task.id)}
                   task={task}
@@ -291,6 +411,13 @@ function KanbanColumn({
           )}
         </ul>
       </SortableContext>
+      {status === 'done' && (
+        <p className={styles.cycle} {...(flowError ? { role: 'alert' } : {})}>
+          {flowError
+            ? 'Não foi possível calcular o ciclo.'
+            : `Ciclo médio desta semana: ${cycleDays === null ? '—' : `${cycleDays.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d`}`}
+        </p>
+      )}
     </section>
   )
 }
@@ -350,25 +477,37 @@ function SortableTaskCard({
 }
 
 interface TaskCardProps {
+  readonly selected?: boolean
   readonly task: TaskDto
   readonly responsibleName: string | undefined
   readonly onOpen: () => void
 }
 
-function TaskCard({ task, responsibleName, onOpen }: TaskCardProps) {
+function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardProps) {
   const deadline = describeDeadline(task)
 
   return (
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
+      aria-pressed={selected}
       aria-label={task.title}
       className={styles.cardButton}
       onClick={onOpen}
       type="button"
     >
-      <span className={styles.taskTitle}>{task.title}</span>
-      <span className={styles.projectName} id={`${task.id}-project`}>
-        {task.projectName}
+      <span className={styles.cardTop}>
+        <span className={styles.projectName} id={`${task.id}-project`}>
+          {task.projectName}
+        </span>
+        <ProjectSwatch
+          index={Array.from(task.projectId).reduce((sum, char) => sum + char.charCodeAt(0), 0)}
+          name={task.projectName}
+        />
+      </span>
+      <span
+        className={`${styles.taskTitle} ${task.status === 'done' ? styles.completedTitle : ''}`}
+      >
+        {task.title}
       </span>
       <span className={styles.cardMeta} id={`${task.id}-meta`}>
         {deadline ? (
@@ -381,6 +520,9 @@ function TaskCard({ task, responsibleName, onOpen }: TaskCardProps) {
           </time>
         ) : (
           <span />
+        )}
+        {(task.agingDays ?? 0) > 4 && (
+          <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
         )}
         {responsibleName ? (
           <Avatar aria-label={`Responsável: ${responsibleName}`} name={responsibleName} />

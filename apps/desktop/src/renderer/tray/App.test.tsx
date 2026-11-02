@@ -1,7 +1,7 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ProjectDto, TaskDto } from '@agilebox/contract'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { ProjectDto, TaskDto, AgileBoxApi } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
 import { createFakeApi } from '../shared/testing/fake-api'
@@ -11,6 +11,24 @@ import { App } from './App'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+// jsdom não traz matchMedia; sem movimento reduzido, a bandeja anima a altura como no app.
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  })
 })
 
 const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
@@ -30,7 +48,7 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
 const A = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC1', 'Revisão do relatório')
 const B = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC2', 'Publicar versão', 'Boreal')
 
-function setup(recent: TaskDto[] = [A, B]) {
+function setup(recent: TaskDto[] = [A, B], configure?: (api: AgileBoxApi) => void) {
   const shell = {
     minimize: vi.fn(),
     close: vi.fn(),
@@ -44,6 +62,7 @@ function setup(recent: TaskDto[] = [A, B]) {
   const listFrequent = vi.spyOn(api.tasks, 'listFrequent').mockResolvedValue([B])
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
+  configure?.(api)
   render(
     <ApiProvider api={api}>
       <QueryProvider>
@@ -55,6 +74,38 @@ function setup(recent: TaskDto[] = [A, B]) {
 }
 
 describe('Bandeja: tela inicial', () => {
+  it('cria pelo rodapé com projeto e prazo interpretados e abre o detalhe', async () => {
+    const { api, user } = setup([A], (api) => {
+      vi.spyOn(api.projects, 'list').mockResolvedValue([
+        {
+          id: A.projectId,
+          name: 'Aurora',
+          createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
+          createdAt: A.createdAt,
+        },
+      ])
+      vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
+      vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id }))
+    })
+    const create = vi.mocked(api.tasks.create)
+    await user.type(
+      screen.getByRole('textbox', { name: 'Criação rápida' }),
+      'Preparar entrega #Aurora hoje',
+    )
+    await user.keyboard('{Enter}')
+    await waitFor(() =>
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Preparar entrega',
+          projectId: A.projectId,
+          status: 'todo',
+        }),
+      ),
+    )
+    expect(create?.mock.calls[0]?.[0]?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    await waitFor(() => expect(api.tasks.recordOpen).toHaveBeenCalledWith({ taskId: A.id }))
+  })
+
   it('lista as tarefas recentes e ajusta a altura pelo número de linhas', async () => {
     const { shell } = setup()
     expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
@@ -86,6 +137,34 @@ describe('Bandeja: tela inicial', () => {
     await user.click(screen.getByRole('button', { name: 'Frequentes' }))
     await waitFor(() => expect(listFrequent).toHaveBeenCalled())
     expect(await screen.findByRole('button', { name: /Publicar versão/ })).toBeTruthy()
+  })
+})
+
+describe('Bandeja: atalhos e atualização entre janelas', () => {
+  it('a tecla N foca a criação rápida, mas não rouba letras digitadas na busca', async () => {
+    const { user } = setup()
+    await screen.findByRole('button', { name: /Revisão do relatório/ })
+    const quick = screen.getByRole('textbox', { name: 'Criação rápida' })
+    await user.keyboard('n')
+    expect(quick).toBe(document.activeElement)
+    await user.click(screen.getByLabelText('Buscar tarefa'))
+    await user.keyboard('n')
+    expect(screen.getByLabelText<HTMLInputElement>('Buscar tarefa').value).toBe('n')
+    expect(quick).not.toBe(document.activeElement)
+  })
+
+  it('recarrega as tarefas quando outra janela avisa uma mudança', async () => {
+    let notify: Parameters<AgileBoxApi['onChanges']>[0] = () => undefined
+    const { listRecent } = setup([A], (api) => {
+      vi.spyOn(api, 'onChanges').mockImplementation((callback) => {
+        notify = callback
+        return () => undefined
+      })
+    })
+    await screen.findByRole('button', { name: /Revisão do relatório/ })
+    expect(listRecent).toHaveBeenCalledTimes(1)
+    act(() => notify({ kind: 'task', ids: [A.id] }))
+    await waitFor(() => expect(listRecent).toHaveBeenCalledTimes(2))
   })
 })
 
@@ -132,6 +211,25 @@ describe('Bandeja: atualizar tarefa', () => {
 })
 
 describe('Bandeja: nova tarefa', () => {
+  it('interpreta projeto e data também no formulário de criação', async () => {
+    const { api, user } = setup([], (api) => {
+      vi.spyOn(api.projects, 'list').mockResolvedValue([
+        { id: A.projectId, name: 'Aurora', createdBy: A.id, createdAt: A.createdAt },
+      ])
+      vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
+      vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id }))
+    })
+    await user.click(screen.getByRole('button', { name: 'Nova tarefa' }))
+    await user.type(screen.getByLabelText('Título'), 'Revisar #Aurora hoje')
+    await user.click(screen.getByRole('button', { name: 'Criar tarefa' }))
+    await waitFor(() =>
+      expect(api.tasks.create).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Revisar', projectId: A.projectId, status: 'todo' }),
+      ),
+    )
+    expect(vi.mocked(api.tasks.create).mock.calls[0]?.[0]?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
   it('cria, abre a tarefa e ao voltar mostra "Tarefa criada"', async () => {
     const { api, shell, user } = setup()
     const projects: ProjectDto[] = [

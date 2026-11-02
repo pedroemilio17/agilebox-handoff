@@ -52,6 +52,12 @@ const base = {
 }
 
 describe('linha do tempo', () => {
+  it('descreve a confirmação sem inventar uma mudança de estado', () => {
+    expect(describeEvent({ ...base, type: 'progress_confirmed', payload: {} }, viewer, names)).toBe(
+      'confirmou que a tarefa segue em andamento',
+    )
+  })
+
   it('gera mudanças de campos e envolvimentos, sem alterações espúrias', () => {
     const before = {
       ...task,

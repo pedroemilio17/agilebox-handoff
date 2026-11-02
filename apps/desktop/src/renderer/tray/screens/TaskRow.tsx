@@ -1,5 +1,5 @@
 import type { TaskDto } from '@agilebox/contract'
-import { StatusChip } from '@agilebox/ui'
+import { StatusChip, SignalBadge } from '@agilebox/ui'
 import { formatRelativeDate } from '../../shared/lib/format-date'
 import styles from '../Tray.module.css'
 
@@ -21,10 +21,21 @@ export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
       >
         <span className={styles.rowTop}>
           <span className={styles.rowTitle}>{task.title}</span>
-          <StatusChip status={task.status} />
+          {(task.agingDays ?? 0) > 4 ? (
+            <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
+          ) : (
+            <StatusChip status={task.status} />
+          )}
         </span>
         <span className={styles.rowMeta}>
-          {task.projectName} · {formatRelativeDate(new Date(task.updatedAt), now)}
+          {task.projectName} ·{' '}
+          {task.deadline ? (
+            <time dateTime={task.deadline}>
+              prazo {task.deadline.slice(8, 10)}/{task.deadline.slice(5, 7)}
+            </time>
+          ) : (
+            formatRelativeDate(new Date(task.updatedAt), now)
+          )}
         </span>
       </button>
     </li>

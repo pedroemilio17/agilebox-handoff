@@ -1,0 +1,91 @@
+.kbd {
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+.signal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px 6px;
+  border-radius: var(--radius-badge);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.danger {
+  color: var(--color-signal-danger-text);
+  background: var(--color-signal-danger-bg);
+}
+.warning {
+  color: var(--color-signal-warning-text);
+  background: var(--color-signal-warning-bg);
+}
+.swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 2px;
+}
+.metric {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-panel);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.metric:hover {
+  background: var(--surface-raised);
+}
+.metricLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.value {
+  font-family: var(--font-family-display);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-display);
+}
+.caption,
+.neutral {
+  color: var(--color-text-subtle);
+}
+.wip {
+  display: inline-flex;
+  gap: 3px;
+}
+.slot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 3px;
+}
+.filled {
+  background: var(--color-text-muted);
+}
+.excess {
+  opacity: 0.3;
+}

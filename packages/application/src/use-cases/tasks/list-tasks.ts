@@ -1,5 +1,10 @@
 import {
   canViewTask,
+  staleDays,
+  flowWeeks,
+  flowMetrics,
+  isOverdueTask,
+  toDateOnly,
   NotFoundError,
   PermissionDeniedError,
   participates,
@@ -17,22 +22,61 @@ export interface ListBoardInput {
   readonly forUserId?: string
 }
 
+async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
+  if (input.forUserId !== undefined && actor.role !== 'manager')
+    throw new PermissionDeniedError('Somente o gestor pode filtrar por usuário')
+  const query = {
+    ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
+    ...(input.forUserId !== undefined
+      ? { userId: toUserId(input.forUserId) }
+      : actor.role === 'manager'
+        ? {}
+        : { userId: actor.userId }),
+  }
+  return deps.tasks.listBoard(actor.organizationId, query)
+}
+
+export class GetBoardFlow {
+  constructor(private readonly deps: AppDeps) {}
+  async execute(actor: Actor, input: ListBoardInput) {
+    const tasks = await scopedBoard(this.deps, actor, input)
+    const now = await this.deps.clock.now(actor.organizationId)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const week = flowWeeks(toDateOnly(new Date(now), timeZone), timeZone)[5]!
+    const events = (
+      await Promise.all(
+        tasks.map((task) => this.deps.timeline.listByTask(actor.organizationId, task.id)),
+      )
+    ).flat()
+    return {
+      cycleDays: flowMetrics(tasks, events, week, now).cycleDays,
+      weekStart: week.start,
+      updatedAt: now,
+    }
+  }
+}
+
 export class ListBoard {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor, input: ListBoardInput): Promise<readonly TaskDto[]> {
-    if (input.forUserId !== undefined && actor.role !== 'manager')
-      throw new PermissionDeniedError('Somente o gestor pode filtrar por usuário')
-    const query = {
-      ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
-      ...(input.forUserId !== undefined
-        ? { userId: toUserId(input.forUserId) }
-        : actor.role === 'manager'
-          ? {}
-          : { userId: actor.userId }),
-    }
-    const tasks = await this.deps.tasks.listBoard(actor.organizationId, query)
-    return tasks.map(toTaskDto)
+    const tasks = await scopedBoard(this.deps, actor, input)
+    const now = await this.deps.clock.now(actor.organizationId)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const today = toDateOnly(new Date(now), timeZone)
+    return Promise.all(
+      tasks.map(async (task) => {
+        const events =
+          task.status === 'in_progress' || task.status === 'review'
+            ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
+            : []
+        return {
+          ...toTaskDto(task),
+          agingDays: staleDays(task, events, today, timeZone),
+          overdue: isOverdueTask(task, today),
+        }
+      }),
+    )
   }
 }
 

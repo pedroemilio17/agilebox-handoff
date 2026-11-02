@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AgileBox — paleta de comandos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&amp;family=Geist:wght@400..600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#111015}
+a{color:#c8f03c}a:hover{color:#e2ff7a}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.lbl{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8d8a97}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;color:#b3b0bd;padding:2px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.14)}
+.row{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:10px;color:#f2f0f6;font-size:13.5px;text-decoration:none}
+.ico{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);color:#b3b0bd;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.sk{border-radius:12px;background:#1d1c23;border:1px solid rgba(255,255,255,0.06)}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;position:relative;overflow:hidden;background:#111015;font-family:'Geist',system-ui,sans-serif;color:#f2f0f6">
+
+  <!-- Quadro ao fundo -->
+  <div aria-hidden="true" style="position:absolute;inset:0;display:flex">
+    <div style="width:232px;background:#0d0c11;border-right:1px solid rgba(255,255,255,0.06)"></div>
+    <div style="flex:1;padding:80px 24px 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="height:96px"></div><div class="sk" style="height:84px"></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="height:120px"></div><div class="sk" style="height:84px"></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="height:96px"></div><div class="sk" style="height:110px"></div><div class="sk" style="height:84px"></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="height:96px"></div><div class="sk" style="height:84px"></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="height:84px"></div></div>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgba(6,6,9,0.62)"></div>
+
+  <!-- Paleta -->
+  <div role="dialog" aria-label="Buscar ou criar" style="position:absolute;left:50%;top:110px;transform:translateX(-50%);width:680px;border-radius:20px;background:rgba(30,29,37,0.82);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.11),0 0 0 1px rgba(255,255,255,0.10),0 40px 100px rgba(0,0,0,0.7);overflow:hidden">
+
+    <div style="padding:18px 20px 14px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <label style="display:flex;align-items:center;gap:12px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b3b0bd" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="text" aria-label="Buscar ou criar" value="Revisar logs do webhook @C3 amanhã #suporte !alta" style="flex:1;min-width:0;border:0;background:transparent;color:#f2f0f6;font:500 17px 'Geist',system-ui;outline:none">
+        <span class="kbd">Esc</span>
+      </label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding-left:30px">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;background:rgba(255,255,255,0.07);font-size:12px"><span style="width:18px;height:18px;border-radius:50%;background:#34323d;font-size:8.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center">C3</span>Colaborador 3</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;background:rgba(255,255,255,0.07);font-size:12px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b3b0bd" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path></svg><span class="mono">seg, 02 nov</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;background:rgba(255,255,255,0.07);font-size:12px"><span style="width:8px;height:8px;border-radius:2px;background:#4fd0c4"></span>Projeto C · Suporte</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;background:rgba(242,180,90,0.14);color:#f4c27a;font-size:12px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path><path d="M6 20l6-6 6 6"></path></svg>Alta</span>
+        <span style="display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:7px;font-size:12px;color:#8d8a97">entra em <span style="color:#f2f0f6;margin-left:4px">A fazer</span></span>
+      </div>
+    </div>
+
+    <div style="padding:10px 10px 6px;display:flex;flex-direction:column;gap:2px">
+      <span class="lbl" style="padding:6px 12px">Ações</span>
+      <a class="row" href="Quadro.dc.html" style="background:rgba(200,240,60,0.10);box-shadow:inset 0 0 0 1px rgba(200,240,60,0.22)">
+        <span class="ico" style="background:{{accent}};color:#15160c"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>
+        <span style="flex:1">Criar tarefa <span style="color:#b3b0bd">“Revisar logs do webhook”</span></span>
+        <span class="kbd">Enter</span>
+      </a>
+      <a class="row" href="Quadro.dc.html">
+        <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg></span>
+        <span style="flex:1">Criar e abrir os detalhes</span>
+        <span class="kbd">Shift Enter</span>
+      </a>
+    </div>
+
+    <div style="padding:4px 10px 6px;display:flex;flex-direction:column;gap:2px">
+      <span class="lbl" style="padding:6px 12px">Tarefas parecidas</span>
+      <a class="row" href="Quadro.dc.html">
+        <span class="ico"><span style="width:8px;height:8px;border-radius:50%;background:#6cb4ff"></span></span>
+        <span class="mono" style="font-size:12px;color:#8d8a97">AB-118</span>
+        <span style="flex:1">Revisar integração de chamados</span>
+        <span style="font-size:12px;color:#8d8a97">Desenvolvendo · Pedro</span>
+      </a>
+      <a class="row" href="Quadro.dc.html">
+        <span class="ico"><span style="width:8px;height:8px;border-radius:50%;background:#4fd0c4"></span></span>
+        <span class="mono" style="font-size:12px;color:#8d8a97">AB-124</span>
+        <span style="flex:1">Organizar fila de chamados</span>
+        <span style="font-size:12px;color:#8d8a97">Revisar · Colaborador 3</span>
+      </a>
+    </div>
+
+    <div style="padding:4px 10px 10px;display:flex;flex-direction:column;gap:2px">
+      <span class="lbl" style="padding:6px 12px">Ir para</span>
+      <a class="row" href="Dashboard.dc.html"><span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path></svg></span><span style="flex:1">Dashboard</span><span class="kbd">G D</span></a>
+      <a class="row" href="Agenda.dc.html"><span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path></svg></span><span style="flex:1">Agenda</span><span class="kbd">G A</span></a>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:12px 20px;border-top:1px solid rgba(255,255,255,0.07);background:rgba(0,0,0,0.18);font-size:12px;color:#8d8a97">
+      <span style="display:inline-flex;align-items:center;gap:6px"><span class="kbd">↑↓</span>navegar</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span class="kbd">Tab</span>completar</span>
+      <span style="flex:1"></span>
+      <span><span class="mono" style="color:#b3b0bd">@</span> pessoa · <span class="mono" style="color:#b3b0bd">#</span> projeto · <span class="mono" style="color:#b3b0bd">!</span> prioridade · datas em português</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#c8f03c","options":["#c8f03c","#ff7a4d","#9d8cff","#4fd0c4"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#c8f03c' };
+  }
+}
+</script>
+</body>
+</html>

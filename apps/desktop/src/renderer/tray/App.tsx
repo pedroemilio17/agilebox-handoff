@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useReducer, useState } from 'react'
-import { Button, Toast, WindowControls } from '@agilebox/ui'
-import { autoHeight, TRAY_COLLAPSED_HEIGHT } from './auto-height'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { Button, Toast, WindowControls, useReducedMotion } from '@agilebox/ui'
+import {
+  autoHeight,
+  tweenHeight,
+  TRAY_COLLAPSED_HEIGHT,
+  TRAY_HEIGHT_DURATION_MS,
+} from './auto-height'
 import { trayCopy } from './copy'
 import { HomeScreen } from './screens/HomeScreen'
 import { NewTaskScreen } from './screens/NewTaskScreen'
@@ -19,10 +24,43 @@ export function App() {
 
   const automatic = autoHeight(screen.kind, visibleTasks)
   const height = collapsed ? TRAY_COLLAPSED_HEIGHT : (manualHeight ?? automatic)
+  const reducedMotion = useReducedMotion()
+  // Última altura enviada à janela; a transição parte dela, mesmo se for interrompida.
+  const sentHeight = useRef<number | null>(null)
 
   useEffect(() => {
-    window.agilebox.shell.setTrayHeight({ height })
-  }, [height])
+    const send = (value: number) => {
+      sentHeight.current = value
+      window.agilebox.shell.setTrayHeight({ height: value })
+    }
+    const from = sentHeight.current
+    // Só mudanças automáticas (troca de tela, linhas visíveis) animam; arrastar, teclado e recolher são imediatos.
+    const animate =
+      from !== null &&
+      from !== height &&
+      manualHeight === null &&
+      !collapsed &&
+      !dragging &&
+      !reducedMotion &&
+      typeof requestAnimationFrame === 'function'
+    if (!animate) {
+      send(height)
+      return
+    }
+    const start = performance.now()
+    let frame = 0
+    const step = () => {
+      const progress = (performance.now() - start) / TRAY_HEIGHT_DURATION_MS
+      if (progress >= 1) {
+        send(height)
+        return
+      }
+      send(tweenHeight(from, height, progress))
+      frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [height, manualHeight, collapsed, dragging, reducedMotion])
 
   // Mudar de tela volta ao tamanho automático daquela tela.
   const screenKey = screen.kind
@@ -41,7 +79,12 @@ export function App() {
       <ResizeHandle height={height} onResize={setManualHeight} onDragChange={setDragging} />
       <header className={styles.header}>
         {screen.kind === 'home' ? (
-          <h1>{trayCopy.title}</h1>
+          <h1 className={styles.brand}>
+            <span className={styles.mark} aria-hidden="true">
+              A
+            </span>
+            {trayCopy.title}
+          </h1>
         ) : (
           <Button type="button" onClick={() => dispatch({ type: 'back' })}>
             ← {trayCopy.back}
@@ -64,6 +107,7 @@ export function App() {
               highlightTaskId={state.highlightTaskId}
               onOpenTask={(taskId) => dispatch({ type: 'openTask', taskId })}
               onNewTask={() => dispatch({ type: 'newTask' })}
+              onCreated={(taskId) => dispatch({ type: 'taskCreated', taskId })}
               onVisibleCount={onVisibleCount}
             />
           ) : screen.kind === 'new' ? (

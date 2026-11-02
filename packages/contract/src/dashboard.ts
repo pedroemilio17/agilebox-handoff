@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { userSummaryDtoSchema } from './shared-schemas'
+import { isoDateTimeSchema, ulidSchema } from './shared-schemas'
 import { taskStatusSchema } from './tasks'
 
 export const taskStatusDistributionSchema = z
@@ -22,7 +23,49 @@ export const collaboratorDashboardStatSchema = z.object({
   completedPercentage: z.number().int().min(0).max(100),
 })
 
+export const dashboardInsightsSchema = z.object({
+  updatedAt: isoDateTimeSchema,
+  weekStart: z.iso.date(),
+  upToDatePercentage: z.number().min(0).max(100).nullable(),
+  agingCount: z.number().int().nonnegative(),
+  overdueCount: z.number().int().nonnegative(),
+  cycleDays: z.number().nonnegative().nullable(),
+  leadDays: z.number().nonnegative().nullable(),
+  throughput: z.number().int().nonnegative(),
+  weeks: z.array(
+    z.object({
+      start: z.iso.date(),
+      throughput: z.number().int().nonnegative(),
+      cycleDays: z.number().nonnegative().nullable().optional(),
+      leadDays: z.number().nonnegative().nullable().optional(),
+      upToDatePercentage: z.number().min(0).max(100).nullable().optional(),
+    }),
+  ),
+  recentChanges: z.array(
+    z.object({
+      id: ulidSchema,
+      taskId: ulidSchema,
+      taskTitle: z.string(),
+      actorUserId: ulidSchema,
+      actorName: z.string(),
+      at: isoDateTimeSchema,
+      text: z.string(),
+      asManager: z.boolean(),
+    }),
+  ),
+  team: z.array(
+    z.object({
+      user: userSummaryDtoSchema,
+      inProgress: z.number().int().nonnegative(),
+      agingCount: z.number().int().nonnegative(),
+      overdueCount: z.number().int().nonnegative(),
+      lastUpdatedAt: isoDateTimeSchema.nullable(),
+    }),
+  ),
+})
+
 export const dashboardDtoSchema = z.object({
+  insights: dashboardInsightsSchema.optional(),
   distribution: taskStatusDistributionSchema,
   collaborators: z.array(collaboratorDashboardStatSchema),
 })

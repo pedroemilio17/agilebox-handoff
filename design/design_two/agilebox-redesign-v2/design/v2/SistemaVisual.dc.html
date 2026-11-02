@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AgileBox — sistema visual</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&amp;family=Geist:wght@400..600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#0b0a0e}
+a{color:#c8f03c}a:hover{color:#e2ff7a}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.disp{font-family:'Bricolage Grotesque','Geist',system-ui,sans-serif}
+.lbl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8d8a97}
+</style>
+</helmet>
+<div style="width:1440px;height:1000px;box-sizing:border-box;padding:64px 72px;background:#111015;color:#f2f0f6;font-family:'Geist',system-ui,sans-serif;display:grid;grid-template-columns:420px 1fr;gap:72px">
+
+  <div style="display:flex;flex-direction:column;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:10px;background:{{accent}};display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15160c" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7v10H4z"></path><path d="M13 4h7v7h-7z"></path><path d="M13 14h7v6h-7z"></path></svg>
+        </div>
+        <span class="disp" style="font-size:22px;font-weight:650;letter-spacing:-0.01em">AgileBox</span>
+        <span class="mono" style="font-size:11px;color:#8d8a97;border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:2px 6px">v2 · direção</span>
+      </div>
+      <h1 class="disp" style="margin:0;font-size:76px;line-height:0.95;font-weight:640;letter-spacing:-0.035em">Quente,<br>preciso,<br><span style="color:{{accent}}">sem atrito.</span></h1>
+      <p style="margin:0;font-size:16px;line-height:1.55;color:#b3b0bd;max-width:360px">Uma base escura com leve tom violeta, superfícies em degraus, uma única cor de ação e vidro reservado às camadas que flutuam.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span class="lbl">Profundidade</span>
+      <div style="position:relative;height:200px;border-radius:16px;background:#17161c;border:1px solid rgba(255,255,255,0.07);overflow:hidden">
+        <div style="position:absolute;left:20px;top:20px;width:190px;height:120px;border-radius:12px;background:#1d1c23;border:1px solid rgba(255,255,255,0.07);padding:14px;box-sizing:border-box">
+          <div class="mono" style="font-size:11px;color:#8d8a97">Cartão · sólido</div>
+          <div style="margin-top:10px;height:8px;width:120px;border-radius:4px;background:#26252d"></div>
+          <div style="margin-top:8px;height:8px;width:80px;border-radius:4px;background:#26252d"></div>
+        </div>
+        <div style="position:absolute;right:20px;bottom:20px;width:210px;height:130px;border-radius:16px;background:rgba(38,37,46,0.72);backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 0 0 1px rgba(255,255,255,0.09),0 24px 50px rgba(0,0,0,0.55);padding:14px;box-sizing:border-box">
+          <div class="mono" style="font-size:11px;color:#b3b0bd">Vidro · só flutuante</div>
+          <div style="margin-top:12px;display:flex;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{accent}}"></span><span style="height:8px;width:110px;border-radius:4px;background:rgba(255,255,255,0.14)"></span></div>
+          <div style="margin-top:8px;height:8px;width:140px;border-radius:4px;background:rgba(255,255,255,0.10)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 48px;align-content:start">
+
+    <section style="display:flex;flex-direction:column;gap:14px;grid-column:span 2">
+      <span class="lbl">Superfícies e texto</span>
+      <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px">
+        <sc-for list="{{swatches}}" as="s" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="height:72px;border-radius:12px;border:1px solid rgba(255,255,255,0.09);background:{{s.hex}}"></div>
+            <div style="font-size:13px;font-weight:500">{{s.name}}</div>
+            <div class="mono" style="font-size:11px;color:#8d8a97">{{s.hex}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <span class="lbl">Status — pontos, não barras</span>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{status}}" as="st" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px">
+            <span style="width:9px;height:9px;border-radius:50%;background:{{st.c}}"></span>
+            <span style="flex:1">{{st.n}}</span>
+            <span class="mono" style="font-size:11px;color:#8d8a97">{{st.c}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <span class="lbl">Sinais — a única cor forte</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;background:rgba(255,107,125,0.14);color:#ff8a98;font-size:12px;font-weight:500">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M5.6 5.6l12.8 12.8"></path></svg>Bloqueada</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;background:rgba(242,180,90,0.14);color:#f4c27a;font-size:12px;font-weight:500">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Parada 6d</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:8px;background:rgba(255,107,125,0.14);color:#ff8a98;font-size:12px;font-weight:500">Venceu há 2 dias</span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:8px;background:rgba(242,180,90,0.14);color:#f4c27a;font-size:12px">WIP 4/3</span>
+      </div>
+      <p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#8d8a97">Vermelho e âmbar aparecem só quando algo exige ação.</p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:16px;grid-column:span 2">
+      <span class="lbl">Tipografia — três famílias, três papéis</span>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:16px">
+        <div style="background:#17161c;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px">
+          <span class="disp" style="font-size:64px;line-height:1;font-weight:640;letter-spacing:-0.03em">Aa 32</span>
+          <span style="font-size:13px;font-weight:500">Bricolage Grotesque</span>
+          <span style="font-size:12px;color:#8d8a97">Títulos, números grandes, saudações</span>
+        </div>
+        <div style="background:#17161c;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:22px;line-height:1.3;font-weight:500;letter-spacing:-0.01em">Configurar ambiente de homologação</span>
+          <span style="font-size:13px;font-weight:500">Geist</span>
+          <span style="font-size:12px;color:#8d8a97">Interface e texto · 13–15 px</span>
+        </div>
+        <div style="background:#17161c;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px">
+          <span class="mono" style="font-size:22px;line-height:1.3;color:#b3b0bd">AB-142 · 14:30<br>4,2d · 3/3</span>
+          <span style="font-size:13px;font-weight:500">Geist Mono</span>
+          <span style="font-size:12px;color:#8d8a97">IDs, horários, métricas, atalhos</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px;grid-column:span 2">
+      <span class="lbl">Componentes base</span>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px">
+        <button type="button" style="height:40px;padding:0 14px 0 16px;border:0;border-radius:10px;background:{{accent}};color:#15160c;font:600 14px 'Geist',system-ui;display:inline-flex;align-items:center;gap:10px">Nova tarefa <span class="mono" style="font-size:11px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,0.12)">N</span></button>
+        <button type="button" style="height:40px;padding:0 16px;border-radius:10px;background:#1d1c23;border:1px solid rgba(255,255,255,0.10);color:#f2f0f6;font:500 14px 'Geist',system-ui">Secundário</button>
+        <div style="display:inline-flex;padding:3px;border-radius:10px;background:#17161c;border:1px solid rgba(255,255,255,0.07)">
+          <button type="button" style="height:32px;padding:0 14px;border:0;border-radius:8px;background:#2a2932;color:#f2f0f6;font:500 13px 'Geist',system-ui">Minhas</button>
+          <button type="button" style="height:32px;padding:0 14px;border:0;border-radius:8px;background:transparent;color:#8d8a97;font:500 13px 'Geist',system-ui">Equipe</button>
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;background:#17161c;border:1px solid rgba(255,255,255,0.10);color:#8d8a97;font-size:13px;width:240px;box-sizing:border-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input type="text" placeholder="Buscar ou criar…" aria-label="Buscar" style="flex:1;min-width:0;border:0;background:transparent;color:#f2f0f6;font:13px 'Geist',system-ui;outline:none">
+          <span class="mono" style="font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid rgba(255,255,255,0.12)">Ctrl K</span>
+        </label>
+        <div style="width:250px;background:#1d1c23;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:11px;color:#8d8a97">AB-118</span><span style="flex:1"></span><span style="width:7px;height:7px;border-radius:50%;background:#6cb4ff"></span></div>
+          <div style="font-size:14px;font-weight:500;line-height:1.35">Revisar integração de chamados</div>
+          <div style="display:flex;align-items:center;gap:6px"><span class="mono" style="font-size:11px;color:#b3b0bd">sex 06</span><span style="flex:1"></span><span style="width:22px;height:22px;border-radius:50%;background:#34323d;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">P</span></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#c8f03c","options":["#c8f03c","#ff7a4d","#9d8cff","#4fd0c4"]},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#c8f03c',
+      swatches: [
+        { name: 'Tinta', hex: '#111015' },
+        { name: 'Painel', hex: '#17161c' },
+        { name: 'Cartão', hex: '#1d1c23' },
+        { name: 'Elevado', hex: '#26252d' },
+        { name: 'Texto', hex: '#f2f0f6' },
+        { name: 'Texto 2', hex: '#b3b0bd' },
+        { name: 'Texto 3', hex: '#8d8a97' },
+        { name: 'Ação', hex: this.props.accent ?? '#c8f03c' }
+      ],
+      status: [
+        { n: 'Planejamento', c: '#a99cf7' },
+        { n: 'A fazer', c: '#8d8a97' },
+        { n: 'Desenvolvendo', c: '#6cb4ff' },
+        { n: 'Revisar', c: '#4fd0c4' },
+        { n: 'Concluído', c: '#6fd39a' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

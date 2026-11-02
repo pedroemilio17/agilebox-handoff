@@ -3,6 +3,7 @@ import { isoDateTimeSchema, ulidSchema } from './shared-schemas'
 
 export const timelineEventTypeSchema = z.enum([
   'task_created',
+  'progress_confirmed',
   'status_changed',
   'deadline_changed',
   'renamed',

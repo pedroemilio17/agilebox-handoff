@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createUser, toOrganizationId, toTaskId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aProject, aTask, aUser } from '../../testing/builders'
@@ -38,6 +38,152 @@ function setup() {
 }
 
 describe('casos de uso de tarefas', () => {
+  it('cria com prazo e responsável interpretados, tarifas próprias e histórico completo', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    await unitOfWork.repositories.users.save(
+      organizationId,
+      aUser().with({ id: otherUserId, name: 'Bruno', defaultRateCents: 7200 }).build(),
+    )
+    const created = await useCases.tasks.create.execute(
+      { ...actor, role: 'manager' },
+      {
+        projectId: project.id,
+        title: 'Criação rápida',
+        status: 'todo',
+        responsibleId: otherUserId,
+        deadline: '2026-01-12',
+      },
+    )
+    const saved = await unitOfWork.repositories.tasks.findById(organizationId, toTaskId(created.id))
+    expect(created).toMatchObject({ status: 'todo', deadline: '2026-01-12' })
+    expect(saved?.participations).toHaveLength(2)
+    expect(saved?.participations.find((person) => person.role === 'responsible')).toMatchObject({
+      participant: { kind: 'user', userId: otherUserId },
+      rateCents: 7200,
+    })
+    expect(
+      saved?.participations.find(
+        (person) => person.participant.kind === 'user' && person.participant.userId === userId,
+      )?.role,
+    ).toBe('support')
+    const events = await unitOfWork.repositories.timeline.listByTask(
+      organizationId,
+      toTaskId(created.id),
+    )
+    expect(events.map((event) => event.type)).toEqual(
+      expect.arrayContaining([
+        'task_created',
+        'status_changed',
+        'deadline_changed',
+        'responsible_changed',
+        'participant_added',
+      ]),
+    )
+    expect(events.every((event) => event.asManager)).toBe(true)
+  })
+  it('não deixa uma tarefa parcial se o responsável não existir ou se o histórico falhar', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+    const project = aProject().build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    const manager = { ...actor, role: 'manager' as const }
+    await expect(
+      useCases.tasks.create.execute(manager, {
+        projectId: project.id,
+        title: 'Inválida',
+        responsibleId: otherUserId,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    vi.spyOn(unitOfWork.repositories.timeline, 'saveMany').mockRejectedValue(
+      new Error('Falha ao persistir histórico'),
+    )
+    await expect(
+      useCases.tasks.create.execute(manager, {
+        projectId: project.id,
+        title: 'Falha',
+        deadline: '2026-01-12',
+      }),
+    ).rejects.toThrow('Falha ao persistir histórico')
+    expect(await unitOfWork.repositories.tasks.listBoard(organizationId, {})).toEqual([])
+    expect(notifier.changes).toHaveLength(0)
+  })
+
+  it('confirma andamento com evento próprio, marca Gestor e preserva o estado', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+    const task = { ...aTask().build(), status: 'review' as const }
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    const result = await useCases.tasks.update.execute(
+      { ...actor, role: 'manager' },
+      { taskId: task.id, changes: { progressConfirmed: true } },
+    )
+    expect(result.status).toBe('review')
+    expect(result.updatedAt).toBe('2026-01-02T00:00:00.000Z')
+    expect(
+      await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
+    ).toMatchObject([
+      { type: 'progress_confirmed', payload: {}, asManager: true, actorUserId: userId },
+    ])
+    expect(notifier.changes).toHaveLength(1)
+  })
+  it('nega confirmar uma tarefa sem permissão ou fora dos estados em andamento', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await expect(
+      useCases.tasks.update.execute(
+        { ...actor, userId: otherUserId },
+        { taskId: task.id, changes: { progressConfirmed: true } },
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      useCases.tasks.update.execute(actor, {
+        taskId: task.id,
+        changes: { progressConfirmed: true },
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+    expect(await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).toEqual([])
+  })
+
+  it.each(['planning', 'todo', 'in_progress', 'review', 'done'] as const)(
+    'cria diretamente em %s e registra a mudança na mesma transação como Gestor',
+    async (status) => {
+      const { useCases, unitOfWork, notifier } = setup()
+      const project = aProject().build()
+      await unitOfWork.repositories.projects.save(organizationId, project)
+      await unitOfWork.repositories.users.save(
+        organizationId,
+        createUser({ ...aUser().build(), id: managerId, role: 'manager' }),
+      )
+      const manager: Actor = { organizationId, userId: managerId, role: 'manager' }
+      const created = await useCases.tasks.create.execute(manager, {
+        projectId: project.id,
+        title: 'Tarefa por coluna',
+        status,
+      })
+      expect(created.status).toBe(status)
+      const saved = await unitOfWork.repositories.tasks.findById(
+        organizationId,
+        toTaskId(created.id),
+      )
+      expect(saved?.status).toBe(status)
+      const events = await unitOfWork.repositories.timeline.listByTask(
+        organizationId,
+        toTaskId(created.id),
+      )
+      expect(events).toHaveLength(status === 'planning' ? 1 : 2)
+      expect(events.every((event) => event.asManager && event.actorUserId === managerId)).toBe(true)
+      expect(events.find((event) => event.type === 'task_created')).toBeTruthy()
+      if (status !== 'planning')
+        expect(events.find((event) => event.type === 'status_changed')).toMatchObject({
+          payload: { before: 'planning', after: status },
+        })
+      expect(notifier.changes).toHaveLength(1)
+    },
+  )
+
   it('cria tarefa com o criador responsável e registra evento na mesma transação', async () => {
     const { useCases, unitOfWork, notifier } = setup()
     const project = aProject().build()

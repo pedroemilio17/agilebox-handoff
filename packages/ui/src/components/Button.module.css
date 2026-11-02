@@ -1,11 +1,21 @@
 .button {
+  --button-fill: var(--surface-card);
+  --button-line: var(--color-hairline-strong);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-height: var(--size-touch-target);
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: 0;
+  background: transparent;
   border-radius: var(--radius-button);
   color: var(--color-text-primary);
   font: inherit;
   font-size: var(--font-size-title-small);
+  font-weight: 600;
   cursor: pointer;
   transition:
     background-color var(--motion-duration-control) var(--ease-ios),
@@ -24,16 +34,27 @@
   opacity: 0.55;
 }
 .primary {
-  background: var(--color-primary-bg);
+  color: var(--color-on-primary);
+  --button-fill: var(--color-primary-bg);
+  --button-line: transparent;
 }
 .primary:hover:not(:disabled) {
-  background: var(--color-primary-bg-hover);
+  --button-fill: var(--color-primary-bg-hover);
 }
 .secondary {
-  background: var(--glass-control);
-  border-color: rgba(255, 255, 255, 0.16);
-  backdrop-filter: var(--glass-control-backdrop);
+  --button-fill: var(--surface-card);
+  --button-line: var(--color-hairline-strong);
 }
 .secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.18);
+  --button-fill: var(--surface-raised);
+}
+
+.button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border: 1px solid var(--button-line);
+  border-radius: var(--radius-button);
+  background: var(--button-fill);
+  content: '';
 }

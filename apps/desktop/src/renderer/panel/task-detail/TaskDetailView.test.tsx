@@ -32,6 +32,21 @@ function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
 }
 
 describe('Detalhe da tarefa', () => {
+  it('mostra o alerta de parada e confirma andamento pela API', async () => {
+    const { update, user } = setup({ detail: makeDetail({ agingDays: 5 }) })
+    expect(
+      await screen.findByText('Parada há 5 dias em Desenvolvendo. Algo está travando?'),
+    ).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Segue em andamento' }))
+    expect(update).toHaveBeenCalledWith({ taskId: TASK_ID, changes: { progressConfirmed: true } })
+  })
+  it('desabilita confirmação para somente leitura', async () => {
+    setup({ detail: makeDetail({ agingDays: 5, readOnly: true, canEdit: false }) })
+    expect(
+      (await screen.findByRole('button', { name: 'Segue em andamento' })).hasAttribute('disabled'),
+    ).toBe(true)
+  })
+
   it('registra a abertura e mostra título e descrição', async () => {
     const { api } = setup()
     expect(await screen.findByDisplayValue('Revisar integração')).toBeTruthy()
@@ -155,6 +170,46 @@ describe('Card Prazo', () => {
 })
 
 describe('Card Linha do tempo', () => {
+  it('expande um grupo e conserva textos, horários e marca de gestor de cada alteração', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())
+    vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+    vi.spyOn(api.contributors, 'list').mockResolvedValue([])
+    vi.spyOn(api.session, 'listUsers').mockResolvedValue([
+      { id: USER_ID, name: 'Ana Souza', initials: 'AS', role: 'manager', defaultRate: null },
+    ])
+    vi.spyOn(api.timeline, 'list').mockResolvedValue([
+      makeEvent({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5E01',
+        at: '2026-10-31T10:00:00Z',
+        text: 'Primeira mudança',
+        asManager: true,
+      }),
+      makeEvent({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5E02',
+        at: '2026-10-31T12:00:00Z',
+        text: 'Segunda mudança',
+        asManager: true,
+      }),
+    ])
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    const summary = await screen.findByText(/Ana Souza moveu esta tarefa 2 vezes/)
+    const details = summary.closest('details')!
+    expect(details.open).toBe(false)
+    await userEvent.click(summary)
+    expect(details.open).toBe(true)
+    expect(details.textContent).toContain('Primeira mudança')
+    expect(details.textContent).toContain('Segunda mudança')
+    expect(details.querySelectorAll('ol li')).toHaveLength(2)
+    expect(details.querySelectorAll('ol li')[0]!.textContent).toContain('Gestor')
+  })
+
   it('lista a mais recente no topo, marca Gestor e mostra o autor', async () => {
     const api = createFakeApi()
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())

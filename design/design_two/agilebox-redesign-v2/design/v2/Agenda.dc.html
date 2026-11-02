@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AgileBox — agenda semanal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&amp;family=Geist:wght@400..600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#111015}
+a{color:#c8f03c}a:hover{color:#e2ff7a}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.disp{font-family:'Bricolage Grotesque','Geist',system-ui,sans-serif}
+.lbl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8d8a97}
+.nav{height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:9px;color:#b3b0bd;font-size:13.5px;text-decoration:none}
+.nav:hover{background:#1d1c23;color:#f2f0f6}
+.ib{width:32px;height:32px;border:1px solid rgba(255,255,255,0.09);border-radius:8px;background:#17161c;color:#b3b0bd;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.av{width:22px;height:22px;border-radius:50%;background:#34323d;color:#f2f0f6;font:600 9px 'Geist',system-ui;display:inline-flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 2px #17161c}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#8d8a97}
+.in{height:36px;box-sizing:border-box;border:0;border-radius:9px;padding:0 10px;background:#111015;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.09);color:#f2f0f6;font:13px 'Geist',system-ui;outline:none;width:100%}
+</style>
+</helmet>
+<div style="min-height:900px;display:flex;flex-wrap:wrap;background:#111015;color:#f2f0f6;font-family:'Geist',system-ui,sans-serif">
+
+  <nav aria-label="Principal" style="flex:0 0 232px;box-sizing:border-box;padding:16px 12px;background:#0d0c11;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 14px">
+      <div style="width:26px;height:26px;border-radius:8px;background:{{accent}};display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15160c" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7v10H4z"></path><path d="M13 4h7v7h-7z"></path><path d="M13 14h7v6h-7z"></path></svg></div>
+      <span class="disp" style="font-size:17px;font-weight:650">AgileBox</span>
+    </div>
+    <a href="Comandos.dc.html" style="height:36px;display:flex;align-items:center;gap:8px;padding:0 10px;margin-bottom:10px;border-radius:9px;background:#17161c;border:1px solid rgba(255,255,255,0.08);color:#8d8a97;font-size:13px;text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex:1">Buscar ou criar</span><span class="mono" style="font-size:10.5px">Ctrl K</span></a>
+    <a class="nav" href="Bandeja.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 13l3-8h10l3 8v6H4z"></path><path d="M4 13h5l1 2h4l1-2h5"></path></svg>Início</a>
+    <a class="nav" href="Quadro.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"></rect><rect x="10" y="4" width="5" height="11" rx="1.5"></rect><rect x="17" y="4" width="4" height="7" rx="1.5"></rect></svg>Quadro</a>
+    <a class="nav" href="Dashboard.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>Dashboard</a>
+    <a class="nav" href="Agenda.dc.html" aria-current="page" style="background:#1d1c23;color:#f2f0f6"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M8 3v4"></path><path d="M16 3v4"></path></svg><span style="flex:1">Agenda</span><span style="width:6px;height:6px;border-radius:50%;background:{{accent}}"></span></a>
+    <a class="nav" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 3v5"></path><path d="M15 3v5"></path><path d="M6 8h12v3a6 6 0 01-12 0z"></path><path d="M12 17v4"></path></svg>Plug-ins</a>
+    <span style="flex:1"></span>
+    <a class="nav" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>Ajustes</a>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px">
+      <span class="av" style="width:30px;height:30px;font-size:12px;background:#3a3550;box-shadow:none">P</span>
+      <span style="display:flex;flex-direction:column;flex:1"><span style="font-size:13px;font-weight:500">Pedro</span><span style="font-size:11.5px;color:#8d8a97">Gestor · Desenvolvimento</span></span>
+    </div>
+  </nav>
+
+  <main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:20px 24px 24px;display:flex;flex-wrap:wrap;gap:20px;align-content:flex-start">
+    <header style="flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <h1 class="disp" style="margin:0;font-size:24px;font-weight:620;letter-spacing:-0.02em">Agenda</h1>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button type="button" class="ib" aria-label="Semana anterior"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <button type="button" class="ib" aria-label="Próxima semana"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+      </div>
+      <span style="font-size:15px;font-weight:500">02 – 08 de novembro</span>
+      <span class="mono" style="font-size:12px;color:#8d8a97">semana 45</span>
+      <span style="flex:1"></span>
+      <label style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:#b3b0bd"><input type="checkbox" checked style="width:15px;height:15px;accent-color:{{accent}}">Mostrar prazos de tarefas</label>
+      <div role="group" aria-label="Visualização" style="display:inline-flex;padding:3px;border-radius:10px;background:#17161c;border:1px solid rgba(255,255,255,0.07)">
+        <button type="button" style="height:28px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:#8d8a97;font:500 12.5px 'Geist',system-ui">Dia</button>
+        <button type="button" aria-pressed="true" style="height:28px;padding:0 12px;border:0;border-radius:7px;background:#2a2932;color:#f2f0f6;font:500 12.5px 'Geist',system-ui">Semana</button>
+        <button type="button" style="height:28px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:#8d8a97;font:500 12.5px 'Geist',system-ui">Mês</button>
+      </div>
+    </header>
+
+    <!-- Calendário -->
+    <section aria-label="Semana" style="flex:999 1 620px;min-width:0;overflow-x:auto;background:#17161c;border:1px solid rgba(255,255,255,0.07);border-radius:16px">
+      <div style="min-width:760px">
+        <div style="display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));border-bottom:1px solid rgba(255,255,255,0.07)">
+          <span></span>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <div style="padding:12px 10px 10px;display:flex;align-items:baseline;gap:6px;border-left:1px solid rgba(255,255,255,0.05)">
+              <span style="font-size:12px;color:#8d8a97">{{d.wd}}</span>
+              <span class="disp" style="font-size:20px;font-weight:600;{{d.numStyle}}">{{d.n}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));border-bottom:1px solid rgba(255,255,255,0.07);min-height:44px">
+          <span class="mono" style="font-size:10px;color:#8d8a97;padding:10px 0 0 10px">prazos</span>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <div style="padding:6px;border-left:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:4px">
+              <sc-for list="{{d.due}}" as="u" hint-placeholder-count="0">
+                <a href="Quadro.dc.html" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 7px;border-radius:6px;background:#26252d;color:#f2f0f6;font-size:11.5px;text-decoration:none;overflow:hidden;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;flex:none;background:{{u.c}}"></span><span class="mono" style="color:#8d8a97;flex:none">{{u.id}}</span><span style="overflow:hidden;text-overflow:ellipsis">{{u.t}}</span></a>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr))">
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{hours}}" as="h" hint-placeholder-count="10"><span class="mono" style="height:52px;font-size:10.5px;color:#8d8a97;padding:4px 0 0 10px;box-sizing:border-box">{{h}}</span></sc-for>
+          </div>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <div style="position:relative;height:520px;border-left:1px solid rgba(255,255,255,0.05);background-image:repeating-linear-gradient(to bottom, rgba(255,255,255,0.045) 0, rgba(255,255,255,0.045) 1px, transparent 1px, transparent 52px);{{d.colStyle}}">
+              <sc-for list="{{d.ev}}" as="e" hint-placeholder-count="0">
+                <button type="button" style="position:absolute;left:4px;right:4px;border:0;border-radius:9px;padding:7px 8px;text-align:left;display:flex;flex-direction:column;gap:3px;overflow:hidden;font-family:'Geist',system-ui;{{e.style}}">
+                  <span style="font-size:12px;font-weight:600;line-height:1.25">{{e.t}}</span>
+                  <span class="mono" style="font-size:10.5px;opacity:.85">{{e.time}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- Painel lateral -->
+    <aside style="flex:1 1 290px;max-width:340px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center"><span class="lbl">Próximos</span><span style="flex:1"></span><span class="mono" style="font-size:11px;color:#8d8a97">4 esta semana</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:#17161c;border:1px solid rgba(255,255,255,0.07)">
+          <div style="width:40px;display:flex;flex-direction:column;align-items:center"><span style="font-size:10.5px;color:#8d8a97">SEG</span><span class="disp" style="font-size:18px;font-weight:600">02</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:13px;font-weight:500">Alinhamento semanal</span><span style="font-size:11.5px;color:#8d8a97"><span class="mono">09:00</span> · semanal · 4 pessoas</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:#17161c;border:1px solid rgba(255,255,255,0.07)">
+          <div style="width:40px;display:flex;flex-direction:column;align-items:center"><span style="font-size:10.5px;color:#8d8a97">SEX</span><span class="disp" style="font-size:18px;font-weight:600">06</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:13px;font-weight:500">Revisão de entrega</span><span style="font-size:11.5px;color:#8d8a97"><span class="mono">14:30</span> · Projeto B</span></div>
+        </div>
+        <button type="button" style="height:30px;border:0;background:transparent;color:#8d8a97;font:500 12px 'Geist',system-ui;text-align:left;padding:0 4px">+ 2 mais</button>
+      </div>
+
+      <form style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:16px;background:#1d1c23;box-shadow:inset 0 0 0 1px rgba(200,240,60,0.25)">
+        <div style="display:flex;align-items:center"><span style="font-size:14px;font-weight:600">Novo agendamento</span><span style="flex:1"></span><span class="mono" style="font-size:10.5px;color:#8d8a97">Esc fecha</span></div>
+        <label class="fld">Título<input class="in" type="text" value="Retrospectiva da semana"></label>
+        <div role="group" aria-label="Tipo" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:3px;border-radius:10px;background:#111015">
+          <button type="button" style="height:30px;border:0;border-radius:7px;background:transparent;color:#8d8a97;font:500 12px 'Geist',system-ui">Reunião</button>
+          <button type="button" style="height:30px;border:0;border-radius:7px;background:transparent;color:#8d8a97;font:500 12px 'Geist',system-ui">Revisão</button>
+          <button type="button" aria-pressed="true" style="height:30px;border:0;border-radius:7px;background:#2a2932;color:#f2f0f6;font:500 12px 'Geist',system-ui">Retro</button>
+          <button type="button" style="height:30px;border:0;border-radius:7px;background:transparent;color:#8d8a97;font:500 12px 'Geist',system-ui">Prazo</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px">
+          <label class="fld">Dia<input class="in mono" type="text" value="sex 06"></label>
+          <label class="fld">Início<input class="in mono" type="text" value="16:00"></label>
+          <label class="fld">Fim<input class="in mono" type="text" value="17:00"></label>
+        </div>
+        <div class="fld">Participantes
+          <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:9px;background:#111015;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.09)">
+            <span style="display:inline-flex"><span class="av">P</span><span class="av" style="margin-left:-5px">C2</span><span class="av" style="margin-left:-5px">C3</span><span class="av" style="margin-left:-5px">C4</span></span>
+            <span style="font-size:12.5px;color:#b3b0bd;flex:1">Toda a equipe</span>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#b3b0bd"><input type="checkbox" checked style="width:15px;height:15px;accent-color:{{accent}}">Repetir toda semana</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#b3b0bd"><input type="checkbox" checked style="width:15px;height:15px;accent-color:{{accent}}">Gerar lista de combinados ao final</label>
+        <div style="display:flex;gap:8px;margin-top:2px">
+          <button type="button" style="height:38px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:#b3b0bd;font:500 13px 'Geist',system-ui">Cancelar</button>
+          <span style="flex:1"></span>
+          <button type="button" style="height:38px;padding:0 16px;border:0;border-radius:10px;background:{{accent}};color:#15160c;font:600 13px 'Geist',system-ui">Criar</button>
+        </div>
+      </form>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#c8f03c","options":["#c8f03c","#ff7a4d","#9d8cff","#4fd0c4"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#c8f03c';
+    const H = 52, START = 8;
+    const ev = (t, s, e, kind) => {
+      const tones = {
+        meet: 'background:rgba(157,140,255,0.18);color:#d6cfff',
+        review: 'background:rgba(79,208,196,0.16);color:#a8eee7',
+        retro: 'background:rgba(200,240,60,0.14);color:#e2f5a8',
+        work: 'background:rgba(108,180,255,0.16);color:#bcdcff',
+        draft: 'background:transparent;color:#e2f5a8;box-shadow:inset 0 0 0 1.5px ' + accent + ''
+      };
+      const top = (s - START) * H + 2, h = Math.max((e - s) * H - 4, 34);
+      const fmt = (x) => String(Math.floor(x)).padStart(2, '0') + ':' + (x % 1 ? '30' : '00');
+      return { t, time: fmt(s) + '–' + fmt(e), style: 'top:' + top + 'px;height:' + h + 'px;' + tones[kind] };
+    };
+    const d = (wd, n, extra) => ({ wd, n, numStyle: '', colStyle: '', due: [], ev: [], ...(extra || {}) });
+    return {
+      accent,
+      hours: ['08', '09', '10', '11', '12', '13', '14', '15', '16', '17'],
+      days: [
+        d('seg', '02', { ev: [ev('Alinhamento semanal', 9, 10, 'meet')] }),
+        d('ter', '03', {}),
+        d('qua', '04', { ev: [ev('Pareamento: webhook GLPI', 14, 15.5, 'work')] }),
+        d('qui', '05', { due: [{ id: 'AB-131', t: 'Documentação da API', c: '#6cb4ff' }], ev: [ev('Homologação GLPI', 10, 11, 'work')] }),
+        d('sex', '06', { due: [{ id: 'AB-118', t: 'Integração de chamados', c: '#6cb4ff' }], ev: [ev('Revisão de entrega', 14.5, 15.5, 'review'), ev('Retrospectiva', 16, 17, 'draft')] }),
+        d('sáb', '07', { numStyle: 'color:#8d8a97', colStyle: 'background-color:rgba(0,0,0,0.18)', due: [{ id: 'AB-124', t: 'Fila de chamados', c: '#4fd0c4' }] }),
+        d('dom', '08', { numStyle: 'color:#8d8a97', colStyle: 'background-color:rgba(0,0,0,0.18)' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

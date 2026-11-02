@@ -52,6 +52,30 @@ const task: TaskDto = {
 }
 
 const dashboard: DashboardDto = {
+  insights: {
+    updatedAt: '2026-11-01T12:00:00Z',
+    weekStart: '2026-10-26',
+    upToDatePercentage: 75,
+    agingCount: 1,
+    overdueCount: 0,
+    cycleDays: 3,
+    leadDays: 5,
+    throughput: 2,
+    weeks: [
+      { start: '2026-10-19', throughput: 1, cycleDays: 6, leadDays: 8, upToDatePercentage: 50 },
+      { start: '2026-10-26', throughput: 2, cycleDays: 3, leadDays: 5, upToDatePercentage: 75 },
+    ],
+    recentChanges: [],
+    team: [
+      {
+        user: { id: BRUNO, name: 'Bruno Lima', initials: 'BL', role: 'collaborator' },
+        inProgress: 2,
+        agingCount: 1,
+        overdueCount: 0,
+        lastUpdatedAt: '2026-10-31T12:00:00Z',
+      },
+    ],
+  },
   distribution: { planning: 10, todo: 20, in_progress: 30, review: 15, done: 25 },
   collaborators: [
     {
@@ -63,7 +87,7 @@ const dashboard: DashboardDto = {
   ],
 }
 
-function setup(currentUserId: string) {
+function setup(currentUserId: string, boardTasks: TaskDto[] = [task]) {
   let current = currentUserId
   const api = createFakeApi()
   const role = () => (current === MANAGER ? ('manager' as const) : ('collaborator' as const))
@@ -76,7 +100,7 @@ function setup(currentUserId: string) {
     return Promise.resolve({ userId, organizationId: ORG, role: role() })
   })
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardTasks)
   vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboard)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
@@ -125,32 +149,60 @@ describe('Perfis e permissões na tela', () => {
 })
 
 describe('Dashboard do gestor', () => {
-  it('mostra porcentagens em texto e abre os projetos de um colaborador', async () => {
+  it('seleciona semana e mostra o histórico de adesão e fluxo correspondente', async () => {
+    const { user } = setup(MANAGER)
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Semana do dashboard' }),
+      '2026-10-19',
+    )
+    expect(screen.getByText('50')).toBeTruthy()
+    expect(screen.getByText('6d')).toBeTruthy()
+    expect(
+      screen
+        .getByRole('img', { name: /Quadro em dia nas últimas seis semanas/ })
+        .getAttribute('aria-label'),
+    ).toContain('50')
+  })
+
+  it('abre o quadro com o filtro da métrica selecionada', async () => {
+    const { user } = setup(MANAGER, [{ ...task, agingDays: 5, overdue: false }])
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    await user.click(await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ }))
+    const filter = await screen.findByRole('button', { name: 'Paradas · 1' })
+    expect(filter.getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: task.title })).toBeTruthy()
+  })
+
+  it('mostra adesão, fluxo e sinais e abre os projetos de um colaborador', async () => {
     const { listBoard, user } = setup(MANAGER)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const overview = await screen.findByRole('img', { name: /Distribuição das tarefas por estado/ })
-    expect(overview.getAttribute('aria-label')).toContain('Concluído 25%')
-    expect(screen.getByText('30%')).toBeTruthy()
-
-    const row = screen.getByRole('row', { name: /Bruno Lima/ })
-    expect(within(row).getByText('4')).toBeTruthy()
-    expect(within(row).getByText('50%')).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Quadro em dia' })).toBeTruthy()
+    expect(screen.getByText('75')).toBeTruthy()
+    expect(screen.getByRole('img', { name: /Concluídas por semana/ })).toBeTruthy()
+    const row = screen.getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    expect(within(row).getByText('2')).toBeTruthy()
+    expect(within(row).getByText('1 parada')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
-    expect(await screen.findByText('Tarefas de Bruno Lima · editando como Gestor')).toBeTruthy()
+    expect(await screen.findByRole('status', { name: 'Tarefas de Bruno Lima' })).toBeTruthy()
     await waitFor(() => expect(listBoard).toHaveBeenLastCalledWith({ forUserId: BRUNO }))
 
     await user.click(screen.getByRole('button', { name: 'Voltar às minhas' }))
-    expect(screen.queryByText(/editando como Gestor/)).toBeNull()
+    expect(screen.queryByText('Edições aparecem como gestor')).toBeNull()
     await waitFor(() => expect(listBoard).toHaveBeenLastCalledWith({}))
   })
 })
 
 describe('Membros do projeto', () => {
   async function openDialog(user: ReturnType<typeof userEvent.setup>, projectName: string) {
-    await user.click(await screen.findByRole('button', { name: /Todos os projetos/ }))
+    await user.click(
+      await screen.findByRole('button', { name: /Projeto atual: Todos os projetos/ }),
+    )
     await user.click(screen.getByRole('option', { name: projectName }))
-    await user.click(await screen.findByRole('button', { name: new RegExp(projectName) }))
+    await user.click(
+      await screen.findByRole('button', { name: new RegExp(`Projeto atual: ${projectName}`) }),
+    )
   }
 
   it('o criador vê o botão; quem não criou não vê', async () => {
@@ -158,9 +210,9 @@ describe('Membros do projeto', () => {
     await openDialog(user, 'Projeto Aurora')
     expect(screen.getByRole('button', { name: 'Membros' })).toBeTruthy()
     await user.keyboard('{Escape}')
-    await user.click(screen.getByRole('button', { name: /Projeto Aurora/ }))
+    await user.click(screen.getByRole('button', { name: /Projeto atual: Projeto Aurora/ }))
     await user.click(screen.getByRole('option', { name: 'Projeto Boreal' }))
-    await user.click(await screen.findByRole('button', { name: /Projeto Boreal/ }))
+    await user.click(await screen.findByRole('button', { name: /Projeto atual: Projeto Boreal/ }))
     expect(screen.queryByRole('button', { name: 'Membros' })).toBeNull()
   })
 

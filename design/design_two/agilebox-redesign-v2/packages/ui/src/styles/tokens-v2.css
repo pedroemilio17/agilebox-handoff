@@ -1,0 +1,177 @@
+/*
+ * AgileBox · tokens da direção visual v2 (proposta)
+ *
+ * Como usar: substituir o conteúdo de packages/ui/src/styles/tokens.css por este arquivo
+ * (depois de aprovado o ADR 0004). TODOS os nomes que já existem foram mantidos, para que
+ * os componentes atuais continuem funcionando e o tokens.test.ts continue passando.
+ * Os tokens novos estão marcados com "NOVO".
+ *
+ * Fontes: empacotadas com @fontsource (o app é desktop e precisa funcionar offline):
+ *   @fontsource-variable/geist, @fontsource-variable/geist-mono,
+ *   @fontsource-variable/bricolage-grotesque  (substituem @fontsource-variable/inter)
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Texto ---------- */
+  --color-text-primary: #f2f0f6;
+  --color-text-muted: #b3b0bd;
+  --color-text-placeholder: #8d8a97; /* 5,6:1 sobre a tinta; 5,0:1 sobre o cartão */
+  --color-text-subtle: #8d8a97; /* NOVO: metadados, IDs, horários */
+  --color-text-body: #d8d5df; /* NOVO: parágrafos longos (descrição, comentários) */
+
+  /* ---------- Ação (uma única cor) ---------- */
+  --color-primary-bg: #c8f03c;
+  --color-primary-bg-hover: #d6f765;
+  --color-on-primary: #15160c; /* NOVO: texto SOBRE o botão primário. O botão atual usa texto claro: trocar. */
+  --color-accent-text: #c8f03c; /* links, item ativo, menções */
+  --color-accent-soft: rgba(200, 240, 60, 0.1); /* NOVO: fundo de destaque (daily, item selecionado na paleta) */
+  --color-accent-border: rgba(200, 240, 60, 0.24); /* NOVO */
+  --color-focus-ring: #c8f03c;
+
+  /* ---------- Superfícies sólidas (NOVO) ---------- */
+  --surface-canvas: #111015; /* fundo da área de conteúdo do painel */
+  --surface-panel: #17161c; /* seções, colunas, cartões grandes do dashboard */
+  --surface-card: #1d1c23; /* cartões de tarefa, blocos clicáveis */
+  --surface-raised: #26252d; /* hover, chips, faixas */
+  --surface-sunken: #0d0c11; /* barra lateral quando a janela é opaca */
+  --color-hairline: rgba(255, 255, 255, 0.07); /* NOVO: bordas finas */
+  --color-hairline-strong: rgba(255, 255, 255, 0.12); /* NOVO */
+
+  /* ---------- Vidro: só janela da bandeja, barra lateral e camadas flutuantes ---------- */
+  --glass-window: rgba(20, 19, 26, var(--glass-window-alpha)); /* sem o gradiente branco antigo */
+  --glass-window-alpha: 0.68;
+  --glass-window-backdrop: blur(28px) saturate(140%);
+  --glass-window-border: 1px solid rgba(255, 255, 255, 0.09);
+  --glass-window-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-window: 0 30px 80px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --glass-group: rgba(255, 255, 255, 0.05); /* grupos DENTRO da bandeja */
+  --glass-group-border: 1px solid rgba(255, 255, 255, 0.07);
+  --glass-control: rgba(255, 255, 255, 0.07);
+  --glass-control-backdrop: blur(8px);
+  --glass-control-border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Painel de detalhe, paleta Ctrl+K, menus, modais: vidro CSS sobre o conteúdo do app */
+  --glass-popover: rgba(30, 29, 37, 0.84);
+  --glass-popover-backdrop: blur(26px) saturate(140%);
+  --shadow-popover: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 30px 80px rgba(0, 0, 0, 0.55); /* NOVO */
+
+  --color-field-bg: rgba(0, 0, 0, 0.24);
+  --color-field-border: rgba(255, 255, 255, 0.09); /* NOVO */
+  --color-rail-bg: rgba(13, 12, 17, 0.55); /* barra lateral translúcida (deixa o Acrylic/Liquid Glass aparecer) */
+  --color-rail-border: rgba(255, 255, 255, 0.06);
+  --color-rail-hover: #1d1c23;
+  --color-rail-selected: #1d1c23;
+  --color-control-segment-selected: #2a2932;
+  --color-control-segment-border: rgba(255, 255, 255, 0.07);
+  --color-primary-border: transparent;
+  --color-focus-overlay: rgba(6, 6, 9, 0.62);
+  --color-account-avatar: #3a3550;
+  --color-avatar-bg: #34323d; /* NOVO: avatares de pessoas */
+
+  /* ---------- Estados: dessaturados, usados como PONTO (8 px), não como barra ---------- */
+  --color-status-planejamento: #a99cf7;
+  --color-status-afazer: #8d8a97;
+  --color-status-desenvolvendo: #6cb4ff;
+  --color-status-revisar: #4fd0c4;
+  --color-status-concluido: #6fd39a;
+
+  /* ---------- Sinais: a única cor forte da interface (NOVO) ---------- */
+  --color-signal-danger: #ff6b7d; /* bloqueada, vencida */
+  --color-signal-danger-text: #ff8a98;
+  --color-signal-danger-bg: rgba(255, 107, 125, 0.14);
+  --color-signal-warning: #f2b45a; /* parada, WIP no limite, prioridade alta */
+  --color-signal-warning-text: #f4c27a;
+  --color-signal-warning-bg: rgba(242, 180, 90, 0.14);
+  --color-danger: #ff6b7d;
+  --color-danger-hover: rgba(255, 107, 125, 0.9);
+
+  /* Gestor deixa de ser vermelho (vermelho = alarme). Neutro violeta. */
+  --color-manager-text: #c9c0ff;
+  --color-manager-bg: rgba(157, 140, 255, 0.16);
+  --color-manager-dot: #9d8cff;
+
+  /* Cores de projeto (quadradinho de 8–10 px) (NOVO) */
+  --color-project-1: #9d8cff;
+  --color-project-2: #6cb4ff;
+  --color-project-3: #4fd0c4;
+  --color-project-4: #f4a6c8;
+  --color-project-5: #e8c46a;
+
+  /* ---------- Raios ---------- */
+  --radius-window: 22px;
+  --radius-group: 16px; /* era 14: seções e painéis */
+  --radius-card: 12px; /* NOVO: cartão de tarefa */
+  --radius-field: 10px; /* era 11 */
+  --radius-button: 10px; /* era 14 */
+  --radius-chip: 8px; /* era 10 */
+  --radius-badge: 6px; /* NOVO: selos, teclas */
+  --radius-drawer: 18px; /* NOVO */
+
+  /* ---------- Espaço (inalterado) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px; /* NOVO */
+
+  /* ---------- Tipografia: três famílias, três papéis ---------- */
+  --font-family-sans: 'Geist Variable', 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-display: 'Bricolage Grotesque Variable', 'Geist Variable', system-ui, sans-serif; /* NOVO */
+  --font-family-mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', monospace; /* NOVO */
+  --font-size-chip: 11px;
+  --font-size-label: 12px;
+  --font-size-small: 12.5px;
+  --font-size-body-small: 13.5px;
+  --font-size-body: 14px; /* era 15: a interface ficou mais densa */
+  --font-size-title-small: 16px;
+  --font-size-title: 20px;
+  --font-size-month: 24px;
+  --font-size-heading: 24px; /* títulos de tela, em display */
+  --font-size-display: 30px; /* NOVO: saudação da bandeja, título do detalhe */
+  --font-size-metric: 72px; /* NOVO: número herói do dashboard */
+  --letter-spacing-display: -0.02em; /* NOVO */
+  --letter-spacing-eyebrow: 0.08em; /* NOVO: rótulos em caixa alta (mono 11 px) */
+
+  /* ---------- Movimento (inalterado) ---------- */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-duration-window-open: 600ms;
+  --motion-duration-close: 320ms;
+  --motion-duration-screen: 450ms;
+  --motion-duration-control: 380ms;
+  --motion-duration-highlight: 600ms;
+  --motion-duration-toast: 500ms;
+  --motion-duration-toast-check: 500ms;
+  --motion-delay-toast-check: 200ms;
+  --motion-duration-fade: 350ms;
+  --motion-duration-menu: 280ms;
+  --motion-duration-project-menu: 320ms;
+  --motion-duration-view: 450ms;
+  --motion-duration-card: 450ms;
+  --motion-duration-card-hover: 250ms;
+  --motion-duration-modal-backdrop: 300ms;
+  --motion-duration-modal: 420ms;
+  --motion-duration-form: 500ms;
+  --motion-duration-chart: 500ms;
+  --motion-duration-drawer: 420ms; /* NOVO */
+
+  --size-touch-target: 44px;
+  --color-glass-fallback: rgba(20, 19, 26, 0.94);
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.22);
+}
+
+/* Janela sólida (Linux sem Liquid Glass): barra lateral e conteúdo opacos. */
+:root[data-glass='opaque'] {
+  --glass-window: #111015;
+  --glass-window-backdrop: none;
+  --color-rail-bg: var(--surface-sunken);
+}
+
+/* Vidro desenhado pelo sistema (Liquid Glass no GNOME ou Acrylic no Windows 11). */
+:root[data-glass='compositor'],
+:root[data-glass='native'] {
+  --glass-window-backdrop: none;
+}

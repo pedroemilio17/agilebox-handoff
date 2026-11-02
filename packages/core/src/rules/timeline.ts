@@ -100,6 +100,8 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
   const ticket = (value: Ticket | null) =>
     value ? `#${value.id}${value.url ? ` (${value.url})` : ''}` : 'sem chamado'
   switch (event.type) {
+    case 'progress_confirmed':
+      return 'confirmou que a tarefa segue em andamento'
     case 'task_created':
       return 'criou a tarefa'
     case 'status_changed':

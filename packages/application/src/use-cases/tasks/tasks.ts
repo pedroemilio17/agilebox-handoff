@@ -1,4 +1,11 @@
 import {
+  addParticipant,
+  createParticipation,
+  changeResponsible,
+  toUserId,
+  ValidationError,
+  staleDays,
+  toDateOnly,
   canCreateTask,
   canEditTask,
   canViewTask,
@@ -20,7 +27,15 @@ import {
   toTaskId,
   toParticipationId,
 } from '@agilebox/core'
-import type { Actor, ContributorId, Task, TaskId, TimelineNames, UserId } from '@agilebox/core'
+import type {
+  Actor,
+  ContributorId,
+  Task,
+  TaskId,
+  TimelineNames,
+  TimelineEventDraft,
+  UserId,
+} from '@agilebox/core'
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
@@ -44,7 +59,7 @@ export class CreateTask {
     const user = await this.deps.users.findById(actor.organizationId, actor.userId)
     if (!user) throw new NotFoundError('Usuário não encontrado')
     const now = await this.deps.clock.now(actor.organizationId)
-    const task = createTask({
+    const initialTask = createTask({
       id: toTaskId(await this.deps.idGenerator.generate(actor.organizationId)),
       organizationId: actor.organizationId,
       projectId,
@@ -57,6 +72,27 @@ export class CreateTask {
       ),
       responsibleRateCents: user.defaultRateCents,
     })
+    let task = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
+    if (input.deadline !== undefined)
+      task = setDeadline(task, input.deadline === null ? null : parseDateOnly(input.deadline))
+    if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
+      const responsibleId = toUserId(input.responsibleId)
+      const responsible = await this.deps.users.findById(actor.organizationId, responsibleId)
+      if (!responsible) throw new NotFoundError('Responsável não encontrado')
+      task = addParticipant(
+        task,
+        createParticipation({
+          id: toParticipationId(await this.deps.idGenerator.generate(actor.organizationId)),
+          taskId: task.id,
+          participant: { kind: 'user', userId: responsibleId },
+          role: 'support',
+          hoursHundredths: 0,
+          rateCents: responsible.defaultRateCents,
+          addedAt: now,
+        }),
+      )
+      task = changeResponsible(task, responsibleId)
+    }
     const event = createTimelineEvent({
       id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
       taskId: task.id,
@@ -66,9 +102,21 @@ export class CreateTask {
       type: 'task_created',
       payload: {},
     })
+    const initialEvents = await Promise.all(
+      diffTask(initialTask, task).map(async (draft) =>
+        createTimelineEvent({
+          ...draft,
+          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+          taskId: task.id,
+          at: now,
+          actorUserId: actor.userId,
+          asManager: isManagerEdit(actor),
+        }),
+      ),
+    )
     await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
       await repositories.tasks.save(actor.organizationId, task)
-      await repositories.timeline.saveMany(actor.organizationId, [event])
+      await repositories.timeline.saveMany(actor.organizationId, [event, ...initialEvents])
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
     return toTaskDto(task)
@@ -85,7 +133,16 @@ export class GetTaskDetail {
     if (!canViewTask(actor, task, isMember))
       throw new PermissionDeniedError('Sem acesso a esta tarefa')
     const names = await this.getNames(task)
-    return toTaskDetailDto(task, actor, isMember, names)
+    const now = await this.deps.clock.now(actor.organizationId)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const events =
+      task.status === 'in_progress' || task.status === 'review'
+        ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
+        : []
+    return {
+      ...toTaskDetailDto(task, actor, isMember, names),
+      agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
+    }
   }
 
   private async getTask(organizationId: Actor['organizationId'], rawTaskId: string) {
@@ -132,6 +189,7 @@ abstract class ChangeTask {
     actor: Actor,
     rawTaskId: string,
     transform: (task: Task) => Task,
+    extraEvents: readonly TimelineEventDraft[] = [],
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -141,7 +199,7 @@ abstract class ChangeTask {
     const changed = transform(task)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...changed, updatedAt: now }
-    const drafts = diffTask(task, updated)
+    const drafts = [...diffTask(task, updated), ...extraEvents]
     const events = await Promise.all(
       drafts.map(async (draft) =>
         createTimelineEvent({
@@ -166,30 +224,43 @@ abstract class ChangeTask {
 
 export class UpdateTask extends ChangeTask {
   async execute(actor: Actor, input: TaskUpdateInput): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => {
-      let updated = task
-      if (input.changes.title !== undefined) updated = renameTask(updated, input.changes.title)
-      if (input.changes.description !== undefined)
-        updated = setDescription(updated, input.changes.description)
-      if (input.changes.deadline !== undefined)
-        updated = setDeadline(
-          updated,
-          input.changes.deadline === null ? null : parseDateOnly(input.changes.deadline),
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => {
+        let updated = task
+        if (input.changes.title !== undefined) updated = renameTask(updated, input.changes.title)
+        if (input.changes.description !== undefined)
+          updated = setDescription(updated, input.changes.description)
+        if (input.changes.deadline !== undefined)
+          updated = setDeadline(
+            updated,
+            input.changes.deadline === null ? null : parseDateOnly(input.changes.deadline),
+          )
+        if (input.changes.ticketId !== undefined || input.changes.ticketUrl !== undefined) {
+          const ticketId =
+            input.changes.ticketId === undefined
+              ? (task.ticket?.id ?? null)
+              : input.changes.ticketId
+          const ticketUrl =
+            input.changes.ticketUrl === undefined
+              ? (task.ticket?.url ?? null)
+              : input.changes.ticketUrl
+          updated = setTicket(
+            updated,
+            ticketId === null ? null : createTicket(ticketId, ticketUrl ?? undefined),
+          )
+        }
+        if (
+          input.changes.progressConfirmed &&
+          updated.status !== 'in_progress' &&
+          updated.status !== 'review'
         )
-      if (input.changes.ticketId !== undefined || input.changes.ticketUrl !== undefined) {
-        const ticketId =
-          input.changes.ticketId === undefined ? (task.ticket?.id ?? null) : input.changes.ticketId
-        const ticketUrl =
-          input.changes.ticketUrl === undefined
-            ? (task.ticket?.url ?? null)
-            : input.changes.ticketUrl
-        updated = setTicket(
-          updated,
-          ticketId === null ? null : createTicket(ticketId, ticketUrl ?? undefined),
-        )
-      }
-      return updated
-    })
+          throw new ValidationError('Só é possível confirmar tarefas em desenvolvimento ou revisão')
+        return updated
+      },
+      input.changes.progressConfirmed ? [{ type: 'progress_confirmed', payload: {} }] : [],
+    )
   }
 }
 

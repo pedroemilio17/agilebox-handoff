@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { TaskStatus } from '@agilebox/core'
 import type { ProjectDto, TaskDto } from '@agilebox/contract'
 import { Button, Modal } from '@agilebox/ui'
 import { useCreateTask } from '../hooks/use-create-task'
@@ -6,6 +7,7 @@ import { panelCopy } from '../copy'
 import styles from './NewTaskDialog.module.css'
 
 export interface NewTaskDialogProps {
+  readonly initialStatus?: TaskStatus
   readonly open: boolean
   readonly projects: readonly ProjectDto[]
   readonly selectedProjectId: string | null
@@ -15,6 +17,7 @@ export interface NewTaskDialogProps {
 
 export function NewTaskDialog({
   open,
+  initialStatus,
   projects,
   selectedProjectId,
   onClose,
@@ -43,7 +46,11 @@ export function NewTaskDialog({
     const trimmedTitle = title.trim()
     if (!projectId || !trimmedTitle || createTask.isPending) return
     try {
-      const task = await createTask.mutateAsync({ projectId, title: trimmedTitle })
+      const task = await createTask.mutateAsync({
+        projectId,
+        title: trimmedTitle,
+        ...(initialStatus ? { status: initialStatus } : {}),
+      })
       close()
       onCreated(task)
     } catch {

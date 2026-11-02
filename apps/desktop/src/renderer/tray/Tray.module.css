@@ -311,3 +311,131 @@ li + li .row {
     animation: none;
   }
 }
+.home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.greeting {
+  padding-top: 10px;
+}
+.greeting h2 {
+  margin: 0;
+  font: 600 30px var(--font-family-display);
+  letter-spacing: var(--letter-spacing-display);
+}
+.greeting p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-subtle);
+}
+.count {
+  font-family: var(--font-family-mono);
+}
+.search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+.search::placeholder {
+  color: var(--color-text-subtle);
+}
+.search:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.focusHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.focusHeading button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.quickFooter {
+  flex: none;
+  padding: 8px 16px 16px;
+}
+.quickInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 8px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+}
+.quickInput input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+.quickInput button {
+  padding: 0 8px;
+}
+.quickTokens {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font: 10.5px var(--font-family-mono);
+  color: var(--color-text-muted);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--color-primary-bg);
+  color: var(--color-on-primary);
+  font-size: 13px;
+}
+/* Duas linhas de 64 px com 8 px entre cartões: a lista rola além disso. */
+.home .list {
+  flex-shrink: 0;
+  gap: 8px;
+  max-height: 136px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.home .list li {
+  background: var(--glass-group);
+  border-radius: var(--radius-card);
+}
+.home .list li + li {
+  margin-top: 0;
+}
+.home .row {
+  padding: 0 12px;
+}
+.home .list li + li .row {
+  border-top: 0;
+}

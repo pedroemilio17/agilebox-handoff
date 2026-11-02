@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AgileBox — dashboard do gestor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&amp;family=Geist:wght@400..600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#111015}
+a{color:#c8f03c}a:hover{color:#e2ff7a}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.disp{font-family:'Bricolage Grotesque','Geist',system-ui,sans-serif}
+.lbl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8d8a97}
+.nav{height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:9px;color:#b3b0bd;font-size:13.5px;text-decoration:none}
+.nav:hover{background:#1d1c23;color:#f2f0f6}
+.card{background:#17161c;border:1px solid rgba(255,255,255,0.07);border-radius:16px}
+.av{width:28px;height:28px;border-radius:50%;background:#34323d;color:#f2f0f6;font:600 10.5px 'Geist',system-ui;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.tile{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:14px;text-decoration:none;color:#f2f0f6;background:#1d1c23;border:1px solid rgba(255,255,255,0.07)}
+.tile:hover{border-color:rgba(255,255,255,0.18)}
+</style>
+</helmet>
+<div style="min-height:1040px;display:flex;flex-wrap:wrap;background:#111015;color:#f2f0f6;font-family:'Geist',system-ui,sans-serif">
+
+  <nav aria-label="Principal" style="flex:0 0 232px;box-sizing:border-box;padding:16px 12px;background:#0d0c11;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 14px">
+      <div style="width:26px;height:26px;border-radius:8px;background:{{accent}};display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15160c" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7v10H4z"></path><path d="M13 4h7v7h-7z"></path><path d="M13 14h7v6h-7z"></path></svg></div>
+      <span class="disp" style="font-size:17px;font-weight:650">AgileBox</span>
+    </div>
+    <a href="Comandos.dc.html" style="height:36px;display:flex;align-items:center;gap:8px;padding:0 10px;margin-bottom:10px;border-radius:9px;background:#17161c;border:1px solid rgba(255,255,255,0.08);color:#8d8a97;font-size:13px;text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex:1">Buscar ou criar</span><span class="mono" style="font-size:10.5px">Ctrl K</span></a>
+    <a class="nav" href="Bandeja.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 13l3-8h10l3 8v6H4z"></path><path d="M4 13h5l1 2h4l1-2h5"></path></svg>Início</a>
+    <a class="nav" href="Quadro.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"></rect><rect x="10" y="4" width="5" height="11" rx="1.5"></rect><rect x="17" y="4" width="4" height="7" rx="1.5"></rect></svg>Quadro</a>
+    <a class="nav" href="Dashboard.dc.html" aria-current="page" style="background:#1d1c23;color:#f2f0f6"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg><span style="flex:1">Dashboard</span><span style="width:6px;height:6px;border-radius:50%;background:{{accent}}"></span></a>
+    <a class="nav" href="Agenda.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M8 3v4"></path><path d="M16 3v4"></path></svg>Agenda</a>
+    <a class="nav" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 3v5"></path><path d="M15 3v5"></path><path d="M6 8h12v3a6 6 0 01-12 0z"></path><path d="M12 17v4"></path></svg>Plug-ins</a>
+    <span style="flex:1"></span>
+    <a class="nav" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>Ajustes</a>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px">
+      <span class="av" style="width:30px;height:30px;font-size:12px;background:#3a3550">P</span>
+      <span style="display:flex;flex-direction:column;flex:1"><span style="font-size:13px;font-weight:500">Pedro</span><span style="font-size:11.5px;color:#8d8a97">Gestor · Desenvolvimento</span></span>
+    </div>
+  </nav>
+
+  <main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:20px 28px 32px;display:flex;flex-direction:column;gap:20px">
+    <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <h1 class="disp" style="margin:0;font-size:24px;font-weight:620;letter-spacing:-0.02em">Dashboard</h1>
+      <button type="button" style="height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#b3b0bd;font:500 14px 'Geist',system-ui">Semana 45 · <span class="mono" style="font-size:12.5px">03–07 nov</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <span style="flex:1"></span>
+      <span class="mono" style="font-size:11.5px;color:#8d8a97">dados do quadro · atualizado há 4 min</span>
+      <button type="button" style="height:34px;padding:0 14px;border-radius:9px;background:#1d1c23;border:1px solid rgba(255,255,255,0.10);color:#f2f0f6;font:500 13px 'Geist',system-ui">Exportar resumo</button>
+    </header>
+
+    <!-- Linha 1: saúde + exceções -->
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+        <span class="lbl">Quadro em dia</span>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <span class="disp" style="font-size:72px;line-height:0.9;font-weight:650;letter-spacing:-0.04em">78<span style="font-size:40px;color:#b3b0bd">%</span></span>
+          <svg width="150" height="48" viewBox="0 0 150 48" role="img" aria-label="Últimas 6 semanas: 52, 58, 55, 63, 66, 78 por cento" style="margin-bottom:6px"><polyline points="2,40 30,32 58,36 86,25 114,21 146,6" fill="none" stroke="{{accent}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline><circle cx="146" cy="6" r="3.5" fill="{{accent}}"></circle></svg>
+        </div>
+        <span style="font-size:13.5px;line-height:1.5;color:#b3b0bd">das tarefas ativas foram atualizadas nas últimas 48h · <span style="color:{{accent}}">+12 pts</span> vs. semana passada</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+        <a class="tile" href="Quadro.dc.html"><span style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#ff8a98"><span style="width:7px;height:7px;border-radius:50%;background:#ff6b7d"></span>Bloqueadas</span><span class="disp" style="font-size:40px;line-height:1;font-weight:640">1</span><span style="font-size:12px;color:#8d8a97">AB-109 · aguarda acesso GLPI</span></a>
+        <a class="tile" href="Quadro.dc.html"><span style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#f4c27a"><span style="width:7px;height:7px;border-radius:50%;background:#f2b45a"></span>Paradas há +4 dias</span><span class="disp" style="font-size:40px;line-height:1;font-weight:640">2</span><span style="font-size:12px;color:#8d8a97">AB-118 · AB-121</span></a>
+        <a class="tile" href="Quadro.dc.html"><span style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#ff8a98"><span style="width:7px;height:7px;border-radius:50%;background:#ff6b7d"></span>Vencidas</span><span class="disp" style="font-size:40px;line-height:1;font-weight:640">1</span><span style="font-size:12px;color:#8d8a97">AB-112 · há 2 dias</span></a>
+        <a class="tile" href="Quadro.dc.html"><span style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#b3b0bd"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6fd39a" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>Acima do limite</span><span class="disp" style="font-size:40px;line-height:1;font-weight:640;color:#8d8a97">0</span><span style="font-size:12px;color:#8d8a97">Desenvolvendo no limite (3/3)</span></a>
+      </div>
+    </section>
+
+    <!-- Linha 2: fluxo + mudanças -->
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+      <div class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:center;gap:12px"><span class="lbl">Fluxo · 6 semanas</span><span style="flex:1"></span><span style="font-size:12px;color:#8d8a97">tarefas concluídas por semana</span></div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="mono" style="font-size:28px;font-weight:500">4,2d</span><span style="font-size:12px;color:#8d8a97">tempo de ciclo médio</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="mono" style="font-size:28px;font-weight:500">6,8d</span><span style="font-size:12px;color:#8d8a97">do pedido à entrega</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="mono" style="font-size:28px;font-weight:500">7</span><span style="font-size:12px;color:#8d8a97">concluídas nesta semana</span></div>
+        </div>
+        <div role="img" aria-label="Concluídas por semana: S40 3, S41 5, S42 4, S43 6, S44 4, S45 7" style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:end;height:150px;padding-top:8px;border-bottom:1px solid rgba(255,255,255,0.08)">
+          <sc-for list="{{weeks}}" as="w" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%">
+              <span class="mono" style="font-size:11px;color:#b3b0bd">{{w.v}}</span>
+              <div style="width:100%;max-width:44px;border-radius:6px 6px 2px 2px;{{w.style}}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:-10px">
+          <sc-for list="{{weeks}}" as="w" hint-placeholder-count="6"><span class="mono" style="font-size:11px;color:#8d8a97;text-align:center">{{w.l}}</span></sc-for>
+        </div>
+      </div>
+
+      <div class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center"><span class="lbl">Mudou desde ontem</span><span style="flex:1"></span><span class="mono" style="font-size:11px;color:#8d8a97">9 eventos</span></div>
+        <sc-for list="{{feed}}" as="f" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span class="av" style="width:26px;height:26px;font-size:9.5px">{{f.who}}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+              <span style="font-size:13px;line-height:1.4"><span class="mono" style="color:#8d8a97">{{f.id}}</span> {{f.text}}</span>
+              <span style="font-size:11.5px;color:#8d8a97">{{f.when}}</span>
+            </div>
+            <span style="width:7px;height:7px;border-radius:50%;margin-top:6px;background:{{f.c}}"></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- Linha 3: equipe -->
+    <section class="card" style="padding:8px 0 4px;overflow-x:auto">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 24px 10px"><span class="lbl">Equipe</span><span style="flex:1"></span><span style="font-size:12px;color:#8d8a97">clique em uma pessoa para ver o quadro dela</span></div>
+      <div style="min-width:860px;font-size:13px">
+        <div style="display:grid;grid-template-columns:2fr 1.3fr 1.6fr 1.2fr 1.2fr;padding:8px 24px;color:#8d8a97;font-size:12px;font-weight:500">
+          <span>Pessoa</span><span>Em andamento</span><span>Sinais</span><span>Daily de hoje</span><span>Última atualização</span>
+        </div>
+        <sc-for list="{{team}}" as="m" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:2fr 1.3fr 1.6fr 1.2fr 1.2fr;align-items:center;padding:12px 24px;border-top:1px solid rgba(255,255,255,0.06)">
+            <a href="Quadro.dc.html" style="display:flex;align-items:center;gap:12px;color:#f2f0f6;text-decoration:none"><span class="av">{{m.ini}}</span><span style="display:flex;flex-direction:column"><span style="font-weight:500">{{m.name}}</span><span style="font-size:12px;color:#8d8a97">{{m.area}}</span></span></a>
+            <div style="display:flex;align-items:center;gap:10px"><span style="display:grid;grid-template-columns:repeat(3,14px);gap:3px">
+              <sc-for list="{{m.slots}}" as="s" hint-placeholder-count="3"><span style="height:14px;border-radius:4px;{{s.style}}"></span></sc-for>
+            </span><span class="mono" style="font-size:12px;color:#b3b0bd">{{m.wip}}</span></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <sc-for list="{{m.signals}}" as="g" hint-placeholder-count="1"><span style="height:22px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;font-size:11.5px;{{g.style}}">{{g.t}}</span></sc-for>
+              <sc-if value="{{m.calm}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;color:#8d8a97">—</span></sc-if>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;{{m.dailyStyle}}">{{m.daily}}</span>
+            <span class="mono" style="font-size:12px;{{m.lastStyle}}">{{m.last}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- Linha 4: combinados -->
+    <section class="card" style="padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px">
+      <span class="lbl">Combinados da última retro · 25 out</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px"><span class="mono" style="color:#8d8a97">1</span>Só mover para Revisar com PR aberto</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px"><span class="mono" style="color:#8d8a97">2</span>Marcar bloqueio no mesmo dia em que surgir</span>
+      <span style="flex:1"></span>
+      <a href="Agenda.dc.html" style="font-size:12.5px;text-decoration:none">Próxima retro · sex 06, 16:00</a>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#c8f03c","options":["#c8f03c","#ff7a4d","#9d8cff","#4fd0c4"]},"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#c8f03c';
+    const vals = [3, 5, 4, 6, 4, 7];
+    const weeks = vals.map((v, i) => ({
+      v: String(v), l: 'S' + (40 + i),
+      style: 'height:' + Math.round(v / 7 * 100) + 'px;background:' + (i === 5 ? accent : '#34323d')
+    }));
+    const red = 'background:rgba(255,107,125,0.14);color:#ff8a98';
+    const amb = 'background:rgba(242,180,90,0.14);color:#f4c27a';
+    const slots = (n, max) => [0, 1, 2].map((i) => ({
+      style: i >= max ? 'background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);opacity:.3'
+        : i < n ? 'background:#6cb4ff' : 'background:#26252d'
+    }));
+    const ok = 'color:#6fd39a';
+    const no = 'color:#8d8a97';
+    return {
+      accent, weeks,
+      feed: [
+        { who: 'P', id: 'AB-131', text: 'foi para Revisar', when: 'hoje, 15:42', c: '#4fd0c4' },
+        { who: 'P', id: 'AB-109', text: 'marcada como bloqueada — aguarda acesso ao GLPI', when: 'hoje, 11:10', c: '#ff6b7d' },
+        { who: 'C2', id: 'AB-115', text: 'recebeu 2 commits', when: 'hoje, 10:05', c: '#6cb4ff' },
+        { who: 'C3', id: 'AB-124', text: 'prazo alterado para sáb 07', when: 'ontem, 17:30', c: '#8d8a97' },
+        { who: 'P', id: 'AB-096', text: 'concluída', when: 'ontem, 16:12', c: '#6fd39a' }
+      ],
+      team: [
+        { ini: 'P', name: 'Pedro', area: 'Desenvolvimento', wip: '2/3', slots: slots(2, 3), signals: [{ t: 'parada 6d', style: amb }], calm: false, daily: '✓ respondida', dailyStyle: ok, last: 'há 20 min', lastStyle: 'color:#b3b0bd' },
+        { ini: 'C2', name: 'Colaborador 2', area: 'Desenvolvimento', wip: '1/3', slots: slots(1, 3), signals: [], calm: true, daily: '✓ respondida', dailyStyle: ok, last: 'há 3 h', lastStyle: 'color:#b3b0bd' },
+        { ini: 'C3', name: 'Colaborador 3', area: 'Suporte', wip: '1/2', slots: slots(1, 2), signals: [], calm: true, daily: '✓ respondida', dailyStyle: ok, last: 'há 1 h', lastStyle: 'color:#b3b0bd' },
+        { ini: 'C4', name: 'Colaborador 4', area: 'Automação', wip: '1/2', slots: slots(1, 2), signals: [{ t: 'vencida', style: red }, { t: 'parada 4d', style: amb }], calm: false, daily: 'pendente', dailyStyle: no, last: 'há 3 dias', lastStyle: 'color:#f4c27a' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { GetTaskDto, ParticipationSummaryDto } from '@agilebox/contract'
 import { formatBRL, parseHours, parseMoney, subtotal } from '@agilebox/core'
-import { GlassSurface } from '@agilebox/ui'
+import { PropertyRow } from './PropertyRow'
 import { panelCopy } from '../copy'
 import { SaveError } from './SaveError'
 import { useSetHours, useSetRate } from './use-participations'
@@ -86,46 +86,49 @@ export function CostCard({ task, readOnly }: CostCardProps) {
   }
 
   return (
-    <GlassSurface variant="group" className={styles.card} aria-label={panelCopy.costCard}>
-      <h3 className={styles.cardTitle}>{panelCopy.costCard}</h3>
-      <ul className={styles.list}>
-        {lines.map(({ participation, value }) => (
-          <li key={participation.id} className={styles.costRow}>
-            <span className={styles.grow}>{participation.participantName}</span>
-            <input
-              aria-label={panelCopy.hoursOf(participation.participantName)}
-              className={styles.numberInput}
-              inputMode="decimal"
-              disabled={readOnly}
-              value={drafts[participation.id]?.hours ?? hoursText(participation.hours)}
-              onChange={(event) => patch(participation.id, { hours: event.currentTarget.value })}
-              onBlur={() => saveHours(participation)}
-            />
-            {participation.rate === null ? null : (
-              <>
-                <span aria-hidden="true">×</span>
-                <input
-                  aria-label={panelCopy.rateOf(participation.participantName)}
-                  className={styles.numberInput}
-                  inputMode="decimal"
-                  disabled={readOnly}
-                  value={drafts[participation.id]?.rate ?? rateText(participation.rate)}
-                  onChange={(event) => patch(participation.id, { rate: event.currentTarget.value })}
-                  onBlur={() => saveRate(participation)}
-                />
-                <output className={styles.subtotal}>{formatBRL(value ?? 0)}</output>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-      {total === null ? null : (
-        <p className={styles.total}>
-          <span>{panelCopy.total}</span>
-          <output aria-label={panelCopy.total}>{formatBRL(total)}</output>
-        </p>
-      )}
-      <SaveError error={setHours.error ?? setRate.error} />
-    </GlassSurface>
+    <PropertyRow label="Horas e custo">
+      <div className={styles.propertyContent}>
+        <ul className={styles.list}>
+          {lines.map(({ participation, value }) => (
+            <li key={participation.id} className={styles.costRow}>
+              <span className={styles.grow}>{participation.participantName}</span>
+              <input
+                aria-label={panelCopy.hoursOf(participation.participantName)}
+                className={styles.numberInput}
+                inputMode="decimal"
+                disabled={readOnly}
+                value={drafts[participation.id]?.hours ?? hoursText(participation.hours)}
+                onChange={(event) => patch(participation.id, { hours: event.currentTarget.value })}
+                onBlur={() => saveHours(participation)}
+              />
+              {participation.rate === null ? null : (
+                <>
+                  <span aria-hidden="true">×</span>
+                  <input
+                    aria-label={panelCopy.rateOf(participation.participantName)}
+                    className={styles.numberInput}
+                    inputMode="decimal"
+                    disabled={readOnly}
+                    value={drafts[participation.id]?.rate ?? rateText(participation.rate)}
+                    onChange={(event) =>
+                      patch(participation.id, { rate: event.currentTarget.value })
+                    }
+                    onBlur={() => saveRate(participation)}
+                  />
+                  <output className={styles.subtotal}>{formatBRL(value ?? 0)}</output>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        {total === null ? null : (
+          <p className={styles.total}>
+            <span>{panelCopy.total}</span>
+            <output aria-label={panelCopy.total}>{formatBRL(total)}</output>
+          </p>
+        )}
+        <SaveError error={setHours.error ?? setRate.error} />
+      </div>
+    </PropertyRow>
   )
 }

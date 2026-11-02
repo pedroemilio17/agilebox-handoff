@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, SegmentedControl, TextField } from '@agilebox/ui'
+import { parseQuickAdd } from '@agilebox/core'
+import { todayDateOnly } from '../../shared/lib/today'
+import { useSessionUsers } from '../../panel/hooks/use-session-users'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { useProjects } from '../../panel/hooks/use-projects'
@@ -15,18 +18,31 @@ export function NewTaskScreen({ onCreated }: NewTaskScreenProps) {
   const api = useApi()
   const queryClient = useQueryClient()
   const projects = useProjects()
+  const people = useSessionUsers()
   const [title, setTitle] = useState('')
   const [chosenProject, setChosenProject] = useState('')
   const list = projects.data ?? []
-  const projectId = chosenProject || list[0]?.id || ''
+  const parsed = parseQuickAdd(title, {
+    today: todayDateOnly(),
+    people: people.data ?? [],
+    projects: list,
+  })
+  const projectId = parsed.projectId || chosenProject || list[0]?.id || ''
   const create = useMutation({
-    mutationFn: () => api.tasks.create({ projectId, title: title.trim() }),
+    mutationFn: () =>
+      api.tasks.create({
+        projectId,
+        title: parsed.title,
+        ...(parsed.tokens.length ? { status: 'todo' as const } : {}),
+        ...(parsed.responsibleId ? { responsibleId: parsed.responsibleId } : {}),
+        ...(parsed.deadline ? { deadline: parsed.deadline } : {}),
+      }),
     onSuccess: async (task) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       onCreated(task.id)
     },
   })
-  const canCreate = title.trim() !== '' && projectId !== '' && !create.isPending
+  const canCreate = parsed.title !== '' && projectId !== '' && !create.isPending
 
   return (
     <form
@@ -44,6 +60,14 @@ export function NewTaskScreen({ onCreated }: NewTaskScreenProps) {
         autoComplete="off"
         onChange={(event) => setTitle(event.currentTarget.value)}
       />
+      {parsed.tokens.length > 0 && (
+        <div className={styles.quickTokens}>
+          {parsed.tokens.map((token) => (
+            <span key={token.start}>{token.label}</span>
+          ))}
+          <span>A fazer</span>
+        </div>
+      )}
       {list.length >= 2 && list.length <= 3 ? (
         <SegmentedControl
           aria-label={trayCopy.project}

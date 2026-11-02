@@ -1,6 +1,5 @@
 .view {
-  display: grid;
-  grid-template-columns: 1fr minmax(260px, 20%);
+  display: flex;
   gap: var(--space-4);
   height: 100%;
   min-height: 0;
@@ -257,4 +256,206 @@
   .formWrap {
     transition: none;
   }
+}
+.calendarArea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+.viewControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.viewControls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.weekCalendar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.weekNumber {
+  color: var(--color-text-subtle);
+  font: 11px var(--font-family-mono);
+}
+.weekScroll {
+  overflow: auto;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+.weekGrid {
+  display: grid;
+  grid-template-columns: 48px repeat(var(--agenda-days), minmax(100px, 1fr));
+  min-width: min-content;
+  padding: 12px 0 20px;
+}
+.dayHeading {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.dayHeading span {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.dayHeading strong {
+  font: 20px var(--font-family-display);
+}
+.dayHeading[aria-current='date'] strong {
+  color: var(--color-accent-text);
+}
+.dayHeading[aria-pressed='true'] {
+  box-shadow: inset 0 -2px var(--color-primary-bg);
+}
+.weekend {
+  background: var(--surface-sunken);
+}
+.deadlineLabel {
+  padding: 12px 4px;
+  color: var(--color-text-subtle);
+  font: 10.5px var(--font-family-mono);
+}
+.deadlineCell {
+  min-height: 44px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.deadlineTask {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-badge);
+  background: var(--surface-raised);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+/* Alvo clicável de 44 px sobre o chip visual de 24 px (mesmo padrão dos filtros do quadro). */
+.deadlineTask::before {
+  content: '';
+  position: absolute;
+  inset: -10px 0;
+}
+.deadlineTask > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hours {
+  position: relative;
+  height: 520px;
+}
+.hours span {
+  position: absolute;
+  right: 6px;
+  color: var(--color-text-subtle);
+  font: 10.5px var(--font-family-mono);
+  transform: translateY(-50%);
+}
+.hourColumn {
+  position: relative;
+  height: 520px;
+  border-left: 1px solid var(--color-hairline);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--color-hairline) 0 1px,
+    transparent 1px 52px
+  );
+}
+.weekEvent {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  overflow: hidden;
+  padding: 4px 6px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 6px;
+  background: var(--color-manager-bg);
+  color: var(--color-manager-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.weekEvent time {
+  font: 10.5px var(--font-family-mono);
+}
+.weekEvent span {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.weekEvent:disabled {
+  cursor: default;
+}
+.side {
+  max-width: 340px;
+}
+.outsideHours {
+  padding: 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-panel);
+}
+.outsideHours h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.outsideHours button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.meetingPeople {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.meetingPeople > span {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
+.calendarArea {
+  flex: 3 1 auto;
+}
+.side {
+  flex: 1 1 290px;
+  min-width: 260px;
+  max-width: 340px;
 }

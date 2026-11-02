@@ -9,6 +9,7 @@ export const API_CHANNELS = [
   'projects.addMember',
   'projects.removeMember',
   'tasks.listBoard',
+  'tasks.getBoardFlow',
   'tasks.listTeamBoard',
   'tasks.get',
   'tasks.create',

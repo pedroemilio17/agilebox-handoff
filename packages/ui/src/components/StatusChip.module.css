@@ -2,12 +2,22 @@
   display: inline-flex;
   min-height: 24px;
   align-items: center;
-  padding: 0 var(--space-2);
-  border: 1px solid currentColor;
-  border-radius: var(--radius-chip);
+  gap: var(--space-2);
   font-size: var(--font-size-chip);
   line-height: 1;
   white-space: nowrap;
+}
+.chip::before {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+.compact {
+  font-size: 0;
+  gap: 0;
 }
 .planning {
   color: var(--color-status-planejamento);

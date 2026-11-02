@@ -19,6 +19,7 @@
   backdrop-filter: var(--glass-control-backdrop);
 }
 .popover {
+  box-shadow: var(--shadow-popover);
   background: var(--glass-popover);
   border-radius: var(--radius-group);
   backdrop-filter: var(--glass-popover-backdrop);

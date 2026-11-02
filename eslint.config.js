@@ -15,6 +15,7 @@ export default defineConfig([
     ignores: [
       '**/node_modules/**',
       'design/**',
+      '.agents/**',
       '.loop/**',
       '**/dist/**',
       '**/out/**',

@@ -1,6 +1,7 @@
 .gallery {
   min-height: 100vh;
   padding: var(--space-6);
+  background: var(--surface-canvas);
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
 }
@@ -15,6 +16,7 @@
 
 .header h1 {
   margin: var(--space-1) 0;
+  font-family: var(--font-family-display);
   font-size: var(--font-size-heading);
 }
 
@@ -98,4 +100,12 @@
   .fieldGrid {
     grid-template-columns: 1fr;
   }
+}
+
+.gallery :global([role='tooltip']) {
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  transform: none;
+  max-width: min(240px, calc(100vw - 48px));
 }

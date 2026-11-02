@@ -271,7 +271,15 @@ Tudo acontece **dentro da organização do ator**; nada cruza organizações (3.
 - Texto, descrição, horas e valor/hora são gravados **ao sair do campo** (responsabilidade da UI: um `update` por blur).
 - Ordem: mais recente no topo.
 
-### 6.5 Dashboard (`core/rules/dashboard.ts`)
+### 6.5 Dashboard (`core/rules/dashboard.ts` e `flow.ts`)
+
+Redesign v2 aprovado pelo Pedro: a tela passa a priorizar exceções e fluxo (HANDOFF-v2 4.4).
+O gestor recebe tarefas paradas (mais de 4 dias em Desenvolvendo/Revisar), vencidas, quadro em dia
+(atualizadas nas últimas 48h), ciclo e lead time médios das conclusões da semana, vazão em seis
+semanas de segunda a domingo, até cinco mudanças desde ontem e última edição por pessoa.
+Tudo é calculado dentro da organização e a consulta continua restrita ao gestor. Bloqueio,
+prioridade e limites de WIP ficam na fase B; daily permanece na fase C. Distribuições existentes
+continuam no contrato durante a transição, mas deixam de ser os indicadores principais da tela.
 
 - % de tarefas em cada estado (todos os projetos e colaboradores); soma = 100% (o arredondamento distribui a sobra no maior resto).
 - Por colaborador: nº de tarefas (de que participa), distribuição por estado, % concluído.

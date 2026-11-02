@@ -14,16 +14,15 @@ const showGallery =
 applyGlassMode()
 applyWindowOpacity()
 
-const api = createIpcClient(window.agilebox)
-
-createRoot(document.getElementById('root')!).render(
-  showGallery ? (
-    <Gallery />
-  ) : (
+function PanelApp() {
+  const api = createIpcClient(window.agilebox)
+  return (
     <ApiProvider api={api}>
       <QueryProvider>
         <App />
       </QueryProvider>
     </ApiProvider>
-  ),
-)
+  )
+}
+
+createRoot(document.getElementById('root')!).render(showGallery ? <Gallery /> : <PanelApp />)

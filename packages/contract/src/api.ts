@@ -27,6 +27,7 @@ import {
   createTaskOutputSchema,
   getTaskInputSchema,
   getTaskOutputSchema,
+  getBoardFlowOutputSchema,
   listBoardInputSchema,
   listBoardOutputSchema,
   listFrequentTasksInputSchema,
@@ -102,6 +103,7 @@ export const API_SCHEMA_REGISTRY = {
     output: removeProjectMemberOutputSchema,
   },
   'tasks.listBoard': { input: listBoardInputSchema, output: listBoardOutputSchema },
+  'tasks.getBoardFlow': { input: listBoardInputSchema, output: getBoardFlowOutputSchema },
   'tasks.listTeamBoard': { input: listTeamBoardInputSchema, output: listTeamBoardOutputSchema },
   'tasks.get': { input: getTaskInputSchema, output: getTaskOutputSchema },
   'tasks.create': { input: createTaskInputSchema, output: createTaskOutputSchema },
@@ -173,6 +175,7 @@ export interface AgileBoxApi {
     removeMember: Method<'projects.removeMember'>
   }
   tasks: {
+    getBoardFlow: Method<'tasks.getBoardFlow'>
     listBoard: Method<'tasks.listBoard'>
     listTeamBoard: Method<'tasks.listTeamBoard'>
     get: Method<'tasks.get'>

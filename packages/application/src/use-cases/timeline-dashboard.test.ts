@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  parseDateOnly,
   createUser,
   createTimelineEvent,
   toEventId,
@@ -45,6 +46,59 @@ function setup() {
 }
 
 describe('linha do tempo e dashboard', () => {
+  it('entrega sinais, fluxo semanal, mudanças e equipe com dados reais da organização', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = {
+      ...aTask().build(),
+      status: 'review' as const,
+      createdAt: '2025-12-20T12:00:00Z',
+      updatedAt: '2026-01-01T12:00:00Z',
+      deadline: parseDateOnly('2025-12-30'),
+    }
+    const done = { ...task, id: toTaskId('00000000000000000000000026'), status: 'done' as const }
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await unitOfWork.repositories.tasks.save(organizationId, done)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    const event = {
+      id: toEventId('00000000000000000000000027'),
+      taskId: done.id,
+      actorUserId: userId,
+      asManager: false,
+      at: '2025-12-29T12:00:00Z',
+      type: 'status_changed' as const,
+      payload: { before: 'todo' as const, after: 'in_progress' as const },
+    }
+    await unitOfWork.repositories.timeline.saveMany(organizationId, [
+      event,
+      {
+        ...event,
+        id: toEventId('00000000000000000000000028'),
+        at: '2026-01-01T12:00:00Z',
+        payload: { before: 'in_progress', after: 'done' },
+      },
+    ])
+    const result = await useCases.dashboard.get.execute(manager)
+    expect(result.insights).toMatchObject({
+      agingCount: 1,
+      overdueCount: 1,
+      throughput: 1,
+      cycleDays: 3,
+      leadDays: 12,
+      upToDatePercentage: 100,
+      weekStart: '2025-12-29',
+    })
+    expect(result.insights?.weeks).toHaveLength(6)
+    expect(result.insights?.weeks[5]?.throughput).toBe(1)
+    expect(result.insights?.recentChanges).toHaveLength(1)
+    expect(result.insights?.recentChanges[0]?.text).toContain('para Concluído')
+    expect(result.insights?.team[0]).toMatchObject({
+      inProgress: 1,
+      agingCount: 1,
+      overdueCount: 1,
+      lastUpdatedAt: '2026-01-01T12:00:00Z',
+    })
+  })
+
   it('lista a linha do tempo mais recente primeiro e gera o texto para o viewer', async () => {
     const { useCases, unitOfWork } = setup()
     const task = aTask().build()

@@ -15,6 +15,7 @@ import { SetContributorDefaultRate } from './use-cases/contributors/set-default-
 import { CreateContributor } from './use-cases/contributors/create-contributor'
 import { CreateTask, GetTaskDetail, MoveTask, UpdateTask } from './use-cases/tasks/tasks'
 import {
+  GetBoardFlow,
   ListBoard,
   ListFrequentTasks,
   ListRecentTasks,
@@ -66,6 +67,7 @@ export function createUseCases(deps: AppDeps) {
       update: new UpdateTask(deps),
       move: new MoveTask(deps),
       listBoard: new ListBoard(deps),
+      getBoardFlow: new GetBoardFlow(deps),
       listTeamBoard: new ListTeamBoard(deps),
       listRecent: new ListRecentTasks(deps),
       listFrequent: new ListFrequentTasks(deps),

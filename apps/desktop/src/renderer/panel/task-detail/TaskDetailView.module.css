@@ -8,8 +8,9 @@
 
 .header {
   display: flex;
+  min-height: 44px;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .title {
@@ -22,7 +23,9 @@
   background: transparent;
   color: var(--color-text-primary);
   font: inherit;
-  font-size: var(--font-size-title);
+  font-family: var(--font-family-display);
+  letter-spacing: var(--letter-spacing-display);
+  font-size: 24px;
   font-weight: 600;
 }
 
@@ -39,7 +42,7 @@
 
 .columns {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--space-4);
   align-items: start;
 }
@@ -53,7 +56,7 @@
 .card {
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: 0;
   animation: cardRise var(--motion-duration-card, 0.4s) var(--ease-ios) both;
 }
 
@@ -276,4 +279,134 @@
   color: var(--color-manager-text);
   font-size: var(--font-size-chip);
   font-weight: 600;
+}
+
+.card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.card:hover {
+  transform: none;
+}
+.projectLabel {
+  flex: 1;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+}
+
+.activitySummary {
+  cursor: pointer;
+  line-height: 1.5;
+}
+.activitySummary:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.activityGroup {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0 0 16px;
+  list-style: none;
+}
+
+.agingAlert {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-card);
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+}
+.agingAlert p {
+  margin: 0;
+}
+.agingAlert button {
+  justify-self: start;
+}
+
+.properties {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.propertyRow {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: start;
+  min-height: 34px;
+  gap: 8px;
+  padding: 4px 0;
+}
+.propertyRow dt {
+  padding-top: 10px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+.propertyRow dd {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+.propertyContent {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.propertyInput {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+}
+.ticketFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ticketFields .inlineInput {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.propertyRow .costRow {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.propertyRow .costRow .grow {
+  flex-basis: 100%;
+}
+.propertyRow .numberInput {
+  width: 60px;
+}
+.propertyRow .participant {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.propertyRow .addForm > input,
+.propertyRow .addForm > select {
+  max-width: 100%;
+}
+.descriptionSection {
+  color: var(--color-text-body);
+}
+.descriptionSection label > span {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-eyebrow);
+}
+
+.projectLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -53,6 +53,12 @@ export function registerHandlers(
   register('projects.removeMember', (actor, input) =>
     useCases.projects.removeMember.execute(actor, input),
   )
+  register('tasks.getBoardFlow', (actor, input) =>
+    useCases.tasks.getBoardFlow.execute(actor, {
+      ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+      ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+    }),
+  )
   register('tasks.listBoard', (actor, input) =>
     useCases.tasks.listBoard.execute(actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),

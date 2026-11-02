@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toProjectId, toTaskId, toUserId } from '@agilebox/core'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  toOrganizationId,
+  toProjectId,
+  toTaskId,
+  toUserId,
+  parseDateOnly,
+  toEventId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aProject, aTask } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -50,6 +57,92 @@ async function addProjectMember(
 }
 
 describe('listas de tarefas', () => {
+  it('calcula ciclo semanal só do quadro autorizado e não libera filtro de outra pessoa ao colaborador', async () => {
+    const { useCases, unitOfWork } = setup()
+    const mine = { ...aTask().build(), status: 'done' as const, createdAt: '2025-12-28T12:00:00Z' }
+    const other = {
+      ...mine,
+      id: toTaskId('00000000000000000000000020'),
+      createdBy: otherUserId,
+      participations: [],
+    }
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, other)
+    await unitOfWork.repositories.timeline.saveMany(organizationId, [
+      {
+        id: toEventId('00000000000000000000000021'),
+        taskId: mine.id,
+        actorUserId: userId,
+        asManager: false,
+        at: '2025-12-29T12:00:00Z',
+        type: 'status_changed',
+        payload: { before: 'todo', after: 'in_progress' },
+      },
+      {
+        id: toEventId('00000000000000000000000022'),
+        taskId: mine.id,
+        actorUserId: userId,
+        asManager: false,
+        at: '2026-01-01T12:00:00Z',
+        type: 'status_changed',
+        payload: { before: 'in_progress', after: 'done' },
+      },
+    ])
+    const timeline = vi.spyOn(unitOfWork.repositories.timeline, 'listByTask')
+    expect(await useCases.tasks.getBoardFlow.execute(actor, {})).toMatchObject({
+      cycleDays: 3,
+      weekStart: '2025-12-29',
+    })
+    expect(timeline).toHaveBeenCalledExactlyOnceWith(organizationId, mine.id)
+    await expect(
+      useCases.tasks.getBoardFlow.execute(actor, { forUserId: otherUserId }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(
+      await useCases.tasks.getBoardFlow.execute(
+        { ...actor, role: 'manager' },
+        { forUserId: otherUserId },
+      ),
+    ).toMatchObject({ cycleDays: null })
+  })
+
+  it('deriva sinais apenas das tarefas acessíveis e usa mudança de estado em vez da última edição', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const mine = {
+      ...aTask().inProject(project).build(),
+      status: 'review' as const,
+      createdAt: '2025-12-01T12:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+      deadline: parseDateOnly('2025-12-30'),
+    }
+    const hidden = {
+      ...mine,
+      id: toTaskId('00000000000000000000000010'),
+      createdBy: otherUserId,
+      participations: [],
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, hidden)
+    await unitOfWork.repositories.timeline.saveMany(organizationId, [
+      {
+        id: toEventId('00000000000000000000000011'),
+        taskId: mine.id,
+        at: '2025-12-20T12:00:00.000Z',
+        actorUserId: userId,
+        asManager: false,
+        type: 'status_changed',
+        payload: { before: 'in_progress', after: 'review' },
+      },
+    ])
+    const timeline = vi.spyOn(unitOfWork.repositories.timeline, 'listByTask')
+    const result = await useCases.tasks.listBoard.execute(actor, {})
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ id: mine.id, overdue: true })
+    expect(result[0]!.agingDays).toBeGreaterThan(4)
+    expect(timeline).toHaveBeenCalledExactlyOnceWith(organizationId, mine.id)
+  })
+
   it('lista no quadro pessoal só tarefas de que o colaborador participa', async () => {
     const { useCases, unitOfWork } = setup()
     const project = aProject().build()
