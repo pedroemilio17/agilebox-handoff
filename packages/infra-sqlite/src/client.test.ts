@@ -23,6 +23,8 @@ describe('createSqliteClient', () => {
         'meetings',
         'meeting_participants',
         'local_settings',
+        'team_modules',
+        'team_settings',
       ].sort(),
     )
 

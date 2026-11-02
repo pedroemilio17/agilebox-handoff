@@ -2,6 +2,7 @@ import { createSqliteClient } from './client.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+import { createSqliteTeamRepositories } from './repositories/team-repositories.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
 import { organizations } from './schema/index.js'
 import { toOrganizationId } from '@agilebox/core'
@@ -20,6 +21,8 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
   }
   return {
     ...repositories,
+    // Fora da unidade de trabalho até o M1.6: as mudanças de ferramentas entram nela junto com o histórico.
+    ...createSqliteTeamRepositories(database),
     unitOfWork: createSqliteUnitOfWork(database, repositories),
     async hasOrganizations() {
       const [row] = await database.select({ id: organizations.id }).from(organizations).limit(1)

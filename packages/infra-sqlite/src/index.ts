@@ -4,4 +4,5 @@ export { createSqliteAdapters, createSqliteAdaptersForDatabase } from './create-
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 export { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+export { createSqliteTeamRepositories } from './repositories/team-repositories.js'
 export { createSqliteUnitOfWork, SqliteUnitOfWork } from './unit-of-work.js'

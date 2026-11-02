@@ -194,3 +194,20 @@ Sem commit. Só `packages/application` (portas, fake e contrato), sem SQLite, te
 - `ports/ports.test.ts`: asserções de tipo para o primeiro parâmetro (`OrganizationId`) das quatro operações novas.
 - `pnpm check` com saída 0: 123 arquivos, 1008 testes, lint com zero avisos, build ok. `pnpm format` rodou sobre o repositório; nenhum outro arquivo mudou além dos listados abaixo.
 - Arquivos: `packages/application/src/ports/{index,ports.test,team-module-repository,team-settings-repository}.ts`, `packages/application/src/testing/{repository-contract,repository-contract.test}.ts`, `packages/application/src/testing/fakes/{in-memory-repositories,in-memory-unit-of-work}.ts`.
+
+## M1.5b · Tabelas de módulos e nível (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/infra-sqlite` (schema, migração, mapper, adaptador) e testes. Sem tela, sem caso de uso, sem mudança no composition-root.
+
+- Migração `0003_team_modules_settings.sql` gerada por `pnpm db:generate` (snapshot `meta/0003_snapshot.json`). Só `CREATE TABLE`, aditiva. Antes de gerar, o `db:generate` confirmou que o snapshot 0002 estava em dia.
+- `schema/team-modules.ts`: `team_modules` com `organization_id`, `module_id`, `state`, `config` (JSON, via `mode: 'json'`), `changed_by` (FK em `users`) e `changed_at`. Chave primária composta `(organization_id, module_id)`.
+- `schema/team-settings.ts`: `team_settings` com `organization_id` como chave primária (um registro por time, D1), `level`, `changed_by` (FK em `users`) e `changed_at`.
+- `mappers/team-mappers.ts` e `repositories/team-repositories.ts`: `createSqliteTeamRepositories(database)` devolve `{ teamModules, teamSettings }`. `save` usa upsert pela chave. `list` ordena pelo catálogo (`MODULE_IDS`).
+- `create-sqlite-adapters.ts`: os dois repositórios saem em `createSqliteAdaptersForDatabase`, fora de `UnitOfWorkRepositories`.
+- `composition-root.ts`: sem alteração. As portas chegam ao composition-root pelo spread de `createSqliteAdapters`, mas nenhum caso de uso as usa ainda. Para a fiação entrar em `AppDeps` e na unidade de trabalho, ver M1.6 (o histórico `team_module_events` precisa entrar na mesma transação).
+- Testes:
+  - `describeTeamRepositoryContract` roda agora no SQLite (`repository-contract.test.ts`) e continua no fake.
+  - `client.test.ts` lista as tabelas novas.
+  - `repositories/team-repositories.test.ts`: chave única por time e módulo (mesmo módulo em outro time é aceito) e substituição sem duplicar linha.
+- Decisão de execução: `config` como JSON de valores simples (`string | number | boolean | null`), conforme pedido. Nenhum módulo grava config ainda.
+- `pnpm check` com saída 0: 124 arquivos, 1013 testes, lint com zero avisos, build ok.
