@@ -5,6 +5,7 @@ import {
   PermissionDeniedError,
   previewModuleImpact,
   resolveModuleSet,
+  transitionModuleState,
   ValidationError,
 } from '@agilebox/core'
 import type {
@@ -15,10 +16,11 @@ import type {
   ModuleImpact,
   ModuleResolution,
   ModuleState,
+  OrganizationId,
   TenantContext,
 } from '@agilebox/core'
 import type { AppDeps } from '../../deps'
-import type { TeamModuleConfig } from '../../ports'
+import type { TeamModuleConfig, UnitOfWorkRepositories } from '../../ports'
 import { effectiveModuleStates } from '../../modules/guard'
 import { assertTenant } from '../tenant-scope'
 
@@ -34,6 +36,19 @@ export interface ChangeTeamModulesInput {
   readonly disable?: readonly string[]
 }
 
+export interface ChangeTeamModulesResult {
+  readonly statuses: readonly TeamModuleStatus[]
+  /**
+   * Módulos que entraram em encerramento nesta mudança, com a prévia do que continua no time
+   * até o encerramento terminar. Vazio quando não havia itens a encerrar.
+   */
+  readonly windingDown: readonly ModuleImpact[]
+}
+
+export interface FinishTeamModuleWindingDownInput {
+  readonly moduleId: string
+}
+
 function toStatuses(states: ReadonlyMap<ModuleId, ModuleState>): TeamModuleStatus[] {
   return MODULE_IDS.map((moduleId) => ({ moduleId, state: states.get(moduleId) ?? 'disabled' }))
 }
@@ -41,6 +56,24 @@ function toStatuses(states: ReadonlyMap<ModuleId, ModuleState>): TeamModuleStatu
 function toModuleId(value: string): ModuleId {
   if (!isModuleId(value)) throw new ValidationError(`Módulo desconhecido: ${value}`)
   return value
+}
+
+type ItemRepositories = Pick<
+  UnitOfWorkRepositories,
+  'tasks' | 'projects' | 'participations' | 'meetings'
+>
+
+/** Quantos itens de cada tipo existem no time (base da prévia de impacto). */
+async function countItems(
+  organizationId: OrganizationId,
+  { tasks, projects, participations, meetings }: ItemRepositories,
+): Promise<ItemCounts> {
+  return {
+    tasks: await tasks.count(organizationId),
+    projects: (await projects.list(organizationId)).length,
+    participations: await participations.count(organizationId),
+    meetings: await meetings.count(organizationId),
+  }
 }
 
 function describeRefusal(resolution: Extract<ModuleResolution, { ok: false }>): string {
@@ -57,13 +90,53 @@ function describeRefusal(resolution: Extract<ModuleResolution, { ok: false }>): 
 }
 
 /**
- * Próximo estado de um módulo quando o gestor pede para (não) tê-lo ativo.
- * Só o gestor chega aqui, e a aplicação é direta: o encerramento gradual entra no M2,
- * então desativar leva direto a `disabled` e os dados ficam guardados.
+ * Próximo estado de um módulo quando o gestor pede para (não) tê-lo ativo (M2.4).
+ * - Pedir ativo: `disabled` ou `winding_down` viram `active`. Reativar cancela o encerramento.
+ * - Desligar um `active`: vai a `winding_down` se há itens que dependem dele; sem itens, `disabled`.
+ * - Desligar um `winding_down` não muda nada: ele sai de `winding_down` só por
+ *   `FinishTeamModuleWindingDown` ou por reativação.
  */
-function nextState(current: ModuleState, wanted: boolean): ModuleState {
-  if (wanted) return current === 'disabled' || current === 'winding_down' ? 'active' : current
-  return current === 'disabled' ? current : 'disabled'
+function nextState(current: ModuleState, wanted: boolean, hasItems: boolean): ModuleState {
+  if (wanted) return 'active'
+  if (current === 'active') return hasItems ? 'winding_down' : 'disabled'
+  return current
+}
+
+function hasItems(impact: ModuleImpact): boolean {
+  return Object.values(impact.counts).some((count) => count > 0)
+}
+
+interface Transition {
+  readonly moduleId: ModuleId
+  readonly from: ModuleState
+  readonly to: ModuleState
+  readonly config: TeamModuleConfig
+  readonly repositories: Pick<UnitOfWorkRepositories, 'teamModules' | 'teamModuleEvents'>
+}
+
+/** Grava o novo estado e acrescenta o evento no histórico, na mesma transação (D7). */
+async function recordTransition(
+  deps: AppDeps,
+  organizationId: OrganizationId,
+  actor: Actor,
+  changedAt: string,
+  { moduleId, from, to, config, repositories }: Transition,
+): Promise<void> {
+  await repositories.teamModules.save(organizationId, {
+    moduleId,
+    state: to,
+    config,
+    changedBy: actor.userId,
+    changedAt,
+  })
+  await repositories.teamModuleEvents.append(organizationId, {
+    id: await deps.idGenerator.generate(organizationId),
+    moduleId,
+    fromState: from,
+    toState: to,
+    changedBy: actor.userId,
+    changedAt,
+  })
 }
 
 export class GetTeamModules {
@@ -85,7 +158,7 @@ export class ChangeTeamModules {
     ctx: TenantContext,
     actor: Actor,
     input: ChangeTeamModulesInput,
-  ): Promise<readonly TeamModuleStatus[]> {
+  ): Promise<ChangeTeamModulesResult> {
     const organizationId = assertTenant(ctx, actor)
     if (!canManageTeamModules(actor)) {
       throw new PermissionDeniedError('Só o gestor altera as ferramentas do time')
@@ -96,8 +169,8 @@ export class ChangeTeamModules {
     }
     const now = await this.deps.clock.now(organizationId)
 
-    return this.deps.unitOfWork.run(organizationId, async ({ teamModules, teamModuleEvents }) => {
-      const stored = await teamModules.list(organizationId)
+    return this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      const stored = await repositories.teamModules.list(organizationId)
       const storedById = new Map(stored.map((item) => [item.moduleId, item]))
       const current = new Map(effectiveModuleStates(stored))
 
@@ -106,30 +179,72 @@ export class ChangeTeamModules {
       const resolution = resolveModuleSet(inSet, change)
       if (!resolution.ok) throw new ValidationError(describeRefusal(resolution))
 
+      const available = await countItems(organizationId, repositories)
       const desired = new Set<ModuleId>(resolution.enabled)
       const next = new Map(current)
+      const windingDown: ModuleImpact[] = []
       for (const moduleId of MODULE_IDS) {
         const from = current.get(moduleId) ?? 'disabled'
-        const to = nextState(from, desired.has(moduleId))
+        const impact = previewModuleImpact(moduleId, available)
+        const to = nextState(from, desired.has(moduleId), hasItems(impact))
         if (to === from) continue
 
+        if (to === 'winding_down') windingDown.push(impact)
         next.set(moduleId, to)
-        await teamModules.save(organizationId, {
+        await recordTransition(this.deps, organizationId, actor, now, {
           moduleId,
-          state: to,
+          from,
+          to,
           config: storedById.get(moduleId)?.config ?? EMPTY_CONFIG,
-          changedBy: actor.userId,
-          changedAt: now,
-        })
-        await teamModuleEvents.append(organizationId, {
-          id: await this.deps.idGenerator.generate(organizationId),
-          moduleId,
-          fromState: from,
-          toState: to,
-          changedBy: actor.userId,
-          changedAt: now,
+          repositories,
         })
       }
+      return { statuses: toStatuses(next), windingDown }
+    })
+  }
+}
+
+/**
+ * Conclui o encerramento de um módulo (`winding_down` → `disabled`). Gestor only. Recusa se outro
+ * módulo ainda ativo ou encerrando depende dele, pela mesma regra de dependência da mudança.
+ */
+export class FinishTeamModuleWindingDown {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(
+    ctx: TenantContext,
+    actor: Actor,
+    input: FinishTeamModuleWindingDownInput,
+  ): Promise<readonly TeamModuleStatus[]> {
+    const organizationId = assertTenant(ctx, actor)
+    if (!canManageTeamModules(actor)) {
+      throw new PermissionDeniedError('Só o gestor altera as ferramentas do time')
+    }
+    const moduleId = toModuleId(input.moduleId)
+    const now = await this.deps.clock.now(organizationId)
+
+    return this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      const stored = await repositories.teamModules.list(organizationId)
+      const storedById = new Map(stored.map((item) => [item.moduleId, item]))
+      const current = effectiveModuleStates(stored)
+      const from = current.get(moduleId) ?? 'disabled'
+      if (from !== 'winding_down') {
+        throw new ValidationError(`O módulo ${moduleId} não está encerrando`)
+      }
+
+      const others = MODULE_IDS.filter((id) => id !== moduleId && current.get(id) !== 'disabled')
+      const resolution = resolveModuleSet(others, {})
+      if (!resolution.ok) throw new ValidationError(describeRefusal(resolution))
+
+      const to = transitionModuleState(from, 'finishWindingDown')
+      const next = new Map(current).set(moduleId, to)
+      await recordTransition(this.deps, organizationId, actor, now, {
+        moduleId,
+        from,
+        to,
+        config: storedById.get(moduleId)?.config ?? EMPTY_CONFIG,
+        repositories,
+      })
       return toStatuses(next)
     })
   }
@@ -158,14 +273,8 @@ export class PreviewTeamModuleImpact {
     }
     const wanted = new Set((input.disable ?? []).map(toModuleId))
 
-    const available: ItemCounts = await this.deps.unitOfWork.run(
-      organizationId,
-      async ({ tasks, projects, participations, meetings }) => ({
-        tasks: await tasks.count(organizationId),
-        projects: (await projects.list(organizationId)).length,
-        participations: await participations.count(organizationId),
-        meetings: await meetings.count(organizationId),
-      }),
+    const available = await this.deps.unitOfWork.run(organizationId, (repositories) =>
+      countItems(organizationId, repositories),
     )
     return MODULE_IDS.filter((id) => wanted.has(id)).map((id) => previewModuleImpact(id, available))
   }

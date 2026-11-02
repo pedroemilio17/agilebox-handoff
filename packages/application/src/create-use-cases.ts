@@ -42,6 +42,7 @@ import { GetDashboard } from './use-cases/dashboard/get-dashboard'
 import { ListTimeline } from './use-cases/timeline/list-timeline'
 import {
   ChangeTeamModules,
+  FinishTeamModuleWindingDown,
   GetTeamModules,
   PreviewTeamModuleImpact,
 } from './use-cases/team-modules/team-modules'
@@ -109,6 +110,7 @@ export function createUseCases(deps: AppDeps) {
       get: new GetTeamModules(deps),
       change: new ChangeTeamModules(deps),
       previewImpact: new PreviewTeamModuleImpact(deps),
+      finishWindingDown: new FinishTeamModuleWindingDown(deps),
     },
     meetings: {
       listMonth: new ListMonthMeetings(deps),

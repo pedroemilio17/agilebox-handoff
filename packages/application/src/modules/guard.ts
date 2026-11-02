@@ -4,8 +4,9 @@ import type { AppDeps } from '../deps'
 import type { TeamModule } from '../ports'
 
 /**
- * Módulos que um time ganha sem nunca ter gravado nada (preset "Kanban simples": núcleo e agenda).
- * É o que o time já tinha antes de haver ferramentas, então a agenda não some para times antigos.
+ * Módulos que um time ganha sem nunca ter gravado nada: núcleo e agenda, o que o time já tinha
+ * antes de haver ferramentas. Não é um preset (os presets estão em `core`); só garante que a agenda
+ * não some para times antigos.
  */
 const DEFAULT_ACTIVE_MODULES: readonly ModuleId[] = ['core', 'agenda']
 

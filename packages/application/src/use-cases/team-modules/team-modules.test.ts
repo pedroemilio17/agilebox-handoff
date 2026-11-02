@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTenantContext,
+  parseDateOnly,
   PermissionDeniedError,
   toOrganizationId,
   toParticipationId,
@@ -89,7 +90,7 @@ describe('ferramentas do time', () => {
   it('gestor ativa um módulo e as dependências dele, e grava histórico com quem, quando e o quê', async () => {
     const { useCases, unitOfWork } = setup()
 
-    const statuses = await useCases.teamModules.change.execute(managerCtx, manager, {
+    const { statuses } = await useCases.teamModules.change.execute(managerCtx, manager, {
       enable: ['sprints'],
     })
 
@@ -178,6 +179,185 @@ describe('ferramentas do time', () => {
     await useCases.teamModules.change.execute(managerCtx, manager, { enable: ['agenda'] })
 
     expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toEqual([])
+  })
+})
+
+describe('encerramento gradual (M2.4)', () => {
+  const FEBRUARY_DATE = parseDateOnly('2026-02-02')
+
+  async function withMeeting(unitOfWork: InMemoryUnitOfWork) {
+    const meeting = aMeeting().with({ organizationId, date: FEBRUARY_DATE }).build()
+    await unitOfWork.repositories.meetings.save(organizationId, meeting)
+    return meeting
+  }
+
+  it('desligar agenda com reunião passa por encerrando: reunião intacta, guard recusa criar e aceita listar e editar', async () => {
+    const { useCases, unitOfWork } = setup()
+    const meeting = await withMeeting(unitOfWork)
+
+    const { statuses, windingDown } = await useCases.teamModules.change.execute(
+      managerCtx,
+      manager,
+      { disable: ['agenda'] },
+    )
+
+    expect(stateOf(statuses, 'agenda')).toBe('winding_down')
+    expect(windingDown.map((impact) => impact.moduleId)).toEqual(['agenda'])
+    expect(windingDown[0]?.items).toEqual([{ kind: 'meetings', destination: 'hidden', count: 1 }])
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.map((event) => [event.moduleId, event.fromState, event.toState])).toEqual([
+      ['agenda', 'active', 'winding_down'],
+    ])
+    expect(events[0]).toMatchObject({ changedBy: manager.userId, changedAt: now })
+
+    await expect(
+      useCases.meetings.listMonth.execute(managerCtx, manager, { month: '2026-02' }),
+    ).resolves.toMatchObject([{ id: meeting.id }])
+    await expect(
+      useCases.meetings.create.execute(managerCtx, manager, {
+        title: 'Nova',
+        date: '2026-02-10',
+        time: '09:30',
+        participants: [],
+      }),
+    ).rejects.toThrow(/encerrando/)
+    await expect(
+      useCases.meetings.update.execute(managerCtx, manager, {
+        meetingId: meeting.id,
+        changes: { time: '11:00' },
+      }),
+    ).resolves.toMatchObject({ time: '11:00' })
+    await expect(unitOfWork.repositories.meetings.count(organizationId)).resolves.toBe(1)
+  })
+
+  it('desligar agenda sem reuniões vai direto a desativado e não devolve prévia', async () => {
+    const { useCases, unitOfWork } = setup()
+
+    const { statuses, windingDown } = await useCases.teamModules.change.execute(
+      managerCtx,
+      manager,
+      { disable: ['agenda'] },
+    )
+
+    expect(stateOf(statuses, 'agenda')).toBe('disabled')
+    expect(windingDown).toEqual([])
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.map((event) => [event.fromState, event.toState])).toEqual([
+      ['active', 'disabled'],
+    ])
+  })
+
+  it('concluir o encerramento vira desativado, grava histórico com data e autor, e mantém a reunião guardada', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withMeeting(unitOfWork)
+    await useCases.teamModules.change.execute(managerCtx, manager, { disable: ['agenda'] })
+
+    const statuses = await useCases.teamModules.finishWindingDown.execute(managerCtx, manager, {
+      moduleId: 'agenda',
+    })
+
+    expect(stateOf(statuses, 'agenda')).toBe('disabled')
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.map((event) => [event.fromState, event.toState])).toEqual([
+      ['active', 'winding_down'],
+      ['winding_down', 'disabled'],
+    ])
+    expect(events[1]).toMatchObject({ changedBy: manager.userId, changedAt: now })
+    expect(await unitOfWork.repositories.meetings.count(organizationId)).toBe(1)
+    await expect(
+      useCases.meetings.listMonth.execute(managerCtx, manager, { month: '2026-02' }),
+    ).rejects.toThrow(/desativado/)
+  })
+
+  it('reativar durante o encerramento cancela e devolve o módulo ativo com as reuniões', async () => {
+    const { useCases, unitOfWork } = setup()
+    const meeting = await withMeeting(unitOfWork)
+    await useCases.teamModules.change.execute(managerCtx, manager, { disable: ['agenda'] })
+
+    const { statuses, windingDown } = await useCases.teamModules.change.execute(
+      managerCtx,
+      manager,
+      { enable: ['agenda'] },
+    )
+
+    expect(stateOf(statuses, 'agenda')).toBe('active')
+    expect(windingDown).toEqual([])
+    await expect(
+      useCases.meetings.listMonth.execute(managerCtx, manager, { month: '2026-02' }),
+    ).resolves.toMatchObject([{ id: meeting.id }])
+    const events = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
+    expect(events.map((event) => [event.fromState, event.toState])).toEqual([
+      ['active', 'winding_down'],
+      ['winding_down', 'active'],
+    ])
+  })
+
+  it('desligar de novo um módulo já encerrando não muda nada e não grava evento', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withMeeting(unitOfWork)
+    await useCases.teamModules.change.execute(managerCtx, manager, { disable: ['agenda'] })
+
+    const { statuses, windingDown } = await useCases.teamModules.change.execute(
+      managerCtx,
+      manager,
+      { disable: ['agenda'] },
+    )
+
+    expect(stateOf(statuses, 'agenda')).toBe('winding_down')
+    expect(windingDown).toEqual([])
+    expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toHaveLength(1)
+  })
+
+  it('concluir só vale para módulo encerrando', async () => {
+    const { useCases, unitOfWork } = setup()
+
+    await expect(
+      useCases.teamModules.finishWindingDown.execute(managerCtx, manager, { moduleId: 'agenda' }),
+    ).rejects.toThrow(/não está encerrando/)
+
+    expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toEqual([])
+  })
+
+  it('concluir recusa enquanto outro módulo encerrando ou ativo ainda depende dele, sem gravar', async () => {
+    const { useCases, unitOfWork } = setup()
+    await unitOfWork.repositories.teamModules.save(organizationId, {
+      moduleId: 'sprints',
+      state: 'winding_down',
+      config: {},
+      changedBy: manager.userId,
+      changedAt: now,
+    })
+    await unitOfWork.repositories.teamModules.save(organizationId, {
+      moduleId: 'backlog',
+      state: 'winding_down',
+      config: {},
+      changedBy: manager.userId,
+      changedAt: now,
+    })
+    const before = await unitOfWork.repositories.teamModules.list(organizationId)
+
+    await expect(
+      useCases.teamModules.finishWindingDown.execute(managerCtx, manager, { moduleId: 'backlog' }),
+    ).rejects.toThrow(/sprints ficaria sem o que precisa/)
+
+    expect(await unitOfWork.repositories.teamModules.list(organizationId)).toEqual(before)
+    expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toEqual([])
+  })
+
+  it('colaborador não conclui o encerramento e nada é gravado', async () => {
+    const { useCases, unitOfWork } = setup()
+    await withMeeting(unitOfWork)
+    await useCases.teamModules.change.execute(managerCtx, manager, { disable: ['agenda'] })
+
+    await expect(
+      useCases.teamModules.finishWindingDown.execute(collaboratorCtx, collaborator, {
+        moduleId: 'agenda',
+      }),
+    ).rejects.toThrow(PermissionDeniedError)
+
+    const stored = await unitOfWork.repositories.teamModules.list(organizationId)
+    expect(stored.find((item) => item.moduleId === 'agenda')?.state).toBe('winding_down')
+    expect(await unitOfWork.repositories.teamModuleEvents.list(organizationId)).toHaveLength(1)
   })
 })
 
@@ -336,7 +516,7 @@ describe('isolamento entre organizações (M1.10e)', () => {
     await useCases.teamModules.change.execute(managerCtx, manager, { enable: ['sprints'] })
     const beforeEvents = await unitOfWork.repositories.teamModuleEvents.list(organizationId)
 
-    const statuses = await useCases.teamModules.change.execute(outsiderCtx, outsider, {
+    const { statuses } = await useCases.teamModules.change.execute(outsiderCtx, outsider, {
       enable: ['backlog'],
     })
 
