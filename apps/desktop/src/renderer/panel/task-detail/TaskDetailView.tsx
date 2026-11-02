@@ -7,8 +7,10 @@ import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { useDismissOnOutside } from '../hooks/use-dismiss-on-outside'
 import { useTeamCapabilities } from '../hooks/use-team-capabilities'
+import { AcceptanceCard } from './AcceptanceCard'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
+import { EstimateField } from './EstimateField'
 import { StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
 import { PropertyRow } from './PropertyRow'
 import { ParticipantsCard } from './ParticipantsCard'
@@ -307,6 +309,7 @@ export function TaskDetailView({
           readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
+        {shows('estimate') ? <EstimateField task={task!} readOnly={readOnly} /> : null}
         {shows('estimate') || shows('hourlyCost') ? (
           <CostCard
             task={task!}
@@ -344,6 +347,7 @@ export function TaskDetailView({
         readOnly={readOnly}
         onUpdate={(changes) => update.mutate(changes)}
       />
+      {shows('acceptanceCriteria') ? <AcceptanceCard taskId={taskId} readOnly={readOnly} /> : null}
       {shows('timeline') ? <TimelineCard taskId={taskId} /> : null}
     </section>
   )

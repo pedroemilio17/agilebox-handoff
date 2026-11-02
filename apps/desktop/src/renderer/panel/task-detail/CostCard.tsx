@@ -4,13 +4,14 @@ import { formatBRL, parseHours, parseMoney, subtotal } from '@agilebox/core'
 import { PropertyRow } from './PropertyRow'
 import { panelCopy } from '../copy'
 import { SaveError } from './SaveError'
+import { taskDetailCopy } from './copy'
 import { useSetHours, useSetRate } from './use-participations'
 import styles from './TaskDetailView.module.css'
 
 export interface CostCardProps {
   readonly task: GetTaskDto
   readonly readOnly: boolean
-  /** Horas editáveis: é o campo Estimativa, que some sem o módulo `estimates.hours` (M2.11). */
+  /** Horas realizadas editáveis. Sem o módulo `estimates.hours` ficam só como texto (M2.11). */
   readonly showHours: boolean
   /**
    * Valor/hora, subtotal e total: é o campo Custo por hora (M2.11). Sem permissão, o DTO já vem
@@ -57,11 +58,6 @@ function lineSubtotal(
     hoursDraft === undefined ? recorded : safeHundredths(parseHours, hoursDraft, recorded)
   const rate = safeHundredths(parseMoney, draft?.rate ?? '', Math.round(participation.rate * 100))
   return subtotal(hours, rate)
-}
-
-function cardLabel(showHours: boolean, showRate: boolean): string {
-  if (showHours && showRate) return 'Horas e custo'
-  return showHours ? 'Estimativa de horas' : 'Custo por hora'
 }
 
 export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps) {
@@ -117,7 +113,7 @@ export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps)
   const error = (showHours ? setHours.error : null) ?? (showRate ? setRate.error : null)
 
   return (
-    <PropertyRow label={cardLabel(showHours, showRate)}>
+    <PropertyRow label={taskDetailCopy.realizedLabel}>
       <div className={styles.propertyContent}>
         <ul className={styles.list}>
           {lines.map(({ participation, value }) => (
@@ -163,6 +159,14 @@ export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps)
             <span>{panelCopy.total}</span>
             <output aria-label={panelCopy.total}>{formatBRL(total)}</output>
           </p>
+        )}
+        {task.realizedCost === null ? null : (
+          <div className={styles.costRow}>
+            <span className={styles.grow}>{taskDetailCopy.realizedCost}</span>
+            <output aria-label={taskDetailCopy.realizedCost}>
+              {formatBRL(Math.round(task.realizedCost * 100))}
+            </output>
+          </div>
         )}
         <SaveError error={error} />
       </div>

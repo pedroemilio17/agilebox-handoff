@@ -1,4 +1,10 @@
-import type { GetTaskDto, ParticipationSummaryDto, TimelineEventDto } from '@agilebox/contract'
+import type {
+  AcceptanceCriterionDto,
+  CriteriaViewDto,
+  GetTaskDto,
+  ParticipationSummaryDto,
+  TimelineEventDto,
+} from '@agilebox/contract'
 
 export const TASK_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5BCD'
 export const USER_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
@@ -55,5 +61,26 @@ export function makeEvent(overrides: Partial<TimelineEventDto> = {}): TimelineEv
     type: 'status_changed',
     text: 'Status: A fazer → Desenvolvendo',
     ...overrides,
+  }
+}
+
+export const CRITERION_FIRST_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5K01'
+export const CRITERION_SECOND_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5K02'
+export const CRITERION_THIRD_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5K03'
+
+export function makeCriterion(
+  overrides: Partial<AcceptanceCriterionDto> = {},
+): AcceptanceCriterionDto {
+  return { id: CRITERION_FIRST_ID, text: 'Aceita PNG e JPG até 5 MB', done: false, ...overrides }
+}
+
+/** Resposta de critérios com o resumo n/m calculado a partir da lista. */
+export function makeCriteriaView(criteria: readonly AcceptanceCriterionDto[]): CriteriaViewDto {
+  return {
+    criteria: [...criteria],
+    summary: {
+      done: criteria.filter((criterion) => criterion.done).length,
+      total: criteria.length,
+    },
   }
 }

@@ -10,7 +10,15 @@ import { queryKeys } from '../../shared/query/keys'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { UndoProvider } from '../layout/UndoProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
-import { makeDetail, makeEvent, makeParticipation, TASK_ID, USER_ID } from './fixtures'
+import {
+  makeCriteriaView,
+  makeCriterion,
+  makeDetail,
+  makeEvent,
+  makeParticipation,
+  TASK_ID,
+  USER_ID,
+} from './fixtures'
 import { TaskDetailView } from './TaskDetailView'
 
 afterEach(cleanup)
@@ -40,12 +48,19 @@ function fakeApi(level: Level = 'advanced', active?: readonly string[]) {
   return api
 }
 
-function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
-  const api = fakeApi()
+function setup(
+  overrides: {
+    detail?: ReturnType<typeof makeDetail>
+    level?: Level
+    active?: readonly string[]
+  } = {},
+) {
+  const api = fakeApi(overrides.level ?? 'advanced', overrides.active)
   const detail = overrides.detail ?? makeDetail()
   vi.spyOn(api.tasks, 'get').mockResolvedValue(detail)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
+  vi.spyOn(api.acceptance, 'list').mockResolvedValue(makeCriteriaView([]))
   vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])
   const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(detail)
@@ -613,5 +628,88 @@ describe('Campos por nível (M2.11)', () => {
     expect(screen.queryByRole('group', { name: 'Responsável' })).toBeNull()
     expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Campos avançados' })).toBeNull()
+  })
+})
+
+describe('Critérios e estimativa no detalhe (M3.13)', () => {
+  const withoutModule = (module: string) => TEAM_MODULE_IDS.filter((id) => id !== module)
+
+  it('Avançado com Aceite ligado mostra os critérios, sempre visíveis', async () => {
+    setup()
+    expect(await screen.findByRole('region', { name: 'Critérios de aceite' })).toBeTruthy()
+  })
+
+  it('Padrão não mostra os critérios', async () => {
+    setup({ level: 'intermediate' })
+    await screen.findByDisplayValue('Revisar integração')
+    expect(screen.queryByRole('region', { name: 'Critérios de aceite' })).toBeNull()
+  })
+
+  it('sem o módulo Aceite, o Avançado também não mostra os critérios', async () => {
+    setup({ active: withoutModule('acceptance') })
+    await screen.findByDisplayValue('Revisar integração')
+    expect(screen.queryByRole('region', { name: 'Critérios de aceite' })).toBeNull()
+  })
+
+  it('carrega e mostra os critérios da tarefa com a contagem', async () => {
+    const { api } = setup()
+    vi.spyOn(api.acceptance, 'list').mockResolvedValue(
+      makeCriteriaView([
+        makeCriterion({ done: true }),
+        makeCriterion({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5K02', text: 'Segundo' }),
+      ]),
+    )
+    expect(await screen.findByText('1/2')).toBeTruthy()
+    expect(screen.getByDisplayValue('Segundo')).toBeTruthy()
+  })
+
+  it('Padrão e Avançado mostram Estimativa (h); o bloco do realizado se chama Realizado', async () => {
+    setup({ level: 'intermediate' })
+    expect(await screen.findByLabelText('Estimativa (h)')).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Realizado' })).toBeTruthy()
+    expect(screen.queryByText('Estimativa de horas')).toBeNull()
+  })
+
+  it('sem o módulo estimates.hours, não há campo de estimativa', async () => {
+    setup({ active: withoutModule('estimates.hours') })
+    await screen.findByDisplayValue('Revisar integração')
+    expect(screen.queryByLabelText('Estimativa (h)')).toBeNull()
+  })
+
+  it('mostra o custo realizado que o DTO traz e nada quando vem nulo', async () => {
+    setup({ detail: makeDetail({ realizedCost: 100 }) })
+    expect((await screen.findByLabelText('Custo realizado')).textContent).toBe('R$\u00a0100,00')
+  })
+
+  it('custo realizado nulo não aparece', async () => {
+    setup({ detail: makeDetail({ realizedCost: null }) })
+    await screen.findByDisplayValue('Revisar integração')
+    expect(screen.queryByLabelText('Custo realizado')).toBeNull()
+  })
+
+  it('gravar a estimativa não muda as horas realizadas por participação', async () => {
+    const { api, user } = setup({ detail: makeDetail({ estimatedHours: 4 }) })
+    const set = vi.spyOn(api.estimates, 'set').mockResolvedValue(makeDetail({ estimatedHours: 3 }))
+    const field = await screen.findByLabelText('Estimativa (h)')
+    expect(field).toHaveValue('4')
+    await user.clear(field)
+    await user.type(field, '3')
+    await user.tab()
+    await waitFor(() => expect(set).toHaveBeenCalledWith({ taskId: TASK_ID, estimatedHours: 3 }))
+    expect(screen.getByLabelText('Horas de Ana Souza')).toHaveValue('2,5')
+  })
+
+  it('a linha do tempo mostra o evento de critério com a marca Gestor', async () => {
+    const { api } = setup()
+    vi.spyOn(api.timeline, 'list').mockResolvedValue([
+      makeEvent({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5E09',
+        type: 'criterion_added',
+        asManager: true,
+        text: 'Critério “Revisar logs” adicionado',
+      }),
+    ])
+    expect(await screen.findByText('Critério “Revisar logs” adicionado')).toBeTruthy()
+    expect(screen.getByText('Gestor')).toBeTruthy()
   })
 })

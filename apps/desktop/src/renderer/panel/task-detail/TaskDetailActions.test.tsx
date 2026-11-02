@@ -10,7 +10,7 @@ import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { UndoProvider } from '../layout/UndoProvider'
-import { makeDetail, TASK_ID } from './fixtures'
+import { makeCriteriaView, makeDetail, TASK_ID } from './fixtures'
 import { TaskDetailView } from './TaskDetailView'
 
 beforeEach(() => {
@@ -55,6 +55,7 @@ function setup({ detail = makeDetail(), inDrawer = false, extra }: SetupOptions 
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
   vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])
+  vi.spyOn(api.acceptance, 'list').mockResolvedValue(makeCriteriaView([]))
   const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(detail)
   const archive = vi.spyOn(api.tasks, 'archive').mockResolvedValue(detail)
   const unarchive = vi.spyOn(api.tasks, 'unarchive').mockResolvedValue(detail)
