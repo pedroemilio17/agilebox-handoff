@@ -360,3 +360,15 @@ Sem commit. Só `packages/application` (`use-cases/team-modules/team-modules.ts`
 - Limite: testado no repositório em memória (`fakes`). O SQLite entra no teste de contrato do M1.11.
 - Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1078 testes, formatação, lint com zero avisos, tipos e build ok). `pnpm format` rodado antes do check. Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m110e-check.log`.
 - Fora deste marco: teste de tipo do M1.11 (que confirma que `ctx` é obrigatório em tempo de compilação) e o teste de contrato com SQLite.
+
+## M1.11 · Teste de isolamento entre organizações (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/application` (contrato de repositórios e teste de tipo). Sem tela, banco novo nem mudança de código de produção.
+
+- `testing/repository-contract.ts`: caso novo "nenhuma leitura de porta devolve dado de outra organização (M1.11)", dentro de `describeRepositoryContract`. Grava registros na organização A em users, projects (com membro), contributors, tasks, participations, meetings, timeline e taskOpens; confere antes que A enxerga os dados (controle positivo, para o vazio não ser acidente); depois lê com a organização B em todas as portas de leitura (`findById`, `list`, `findByNameKey`, `listMembers`, `listByProject`, `listBoard` com e sem filtro, `listRecent`, `listFrequent`, `search`, `findByProjectNameKey`, `listByTask`, `listByMonth`, `listUpcoming`, e `count` de tarefas, participações e reuniões). Tudo volta vazio ou `null`.
+- O mesmo contrato roda nos dois adaptadores: em memória (`repository-contract.test.ts`) e SQLite (`infra-sqlite/src/repository-contract.test.ts`). Os repositórios de módulos e preferências do time já tinham isolamento no contrato de time (`describeTeamRepositoryContract`), sem mudança.
+- `create-use-cases.test.ts`: bloco "contexto de time no tipo (M1.11)" com `expectTypeOf`. Exige que todo caso de uso exposto em `createUseCases` tenha `execute` e que o primeiro parâmetro seja `TenantContext`. É checagem de tipo: o `it` não tem efeito em tempo de execução, quem falha é o `tsc` (`pnpm typecheck`).
+- Verificação negativa: trocando o tipo esperado por `Actor` no teste de tipo, o `tsc` falhou (TS2344). O arquivo foi restaurado.
+- Limite: o contrato cobre leituras, contagens e a não exibição de dados alheios. Escritas com identificador de outra organização (um `save` em B com id já existente em A) não estão cobertas; os ids são ULID, então a colisão é improvável, mas vale decidir se entra no M1.12.
+- Verificação: `pnpm check` com saída 0 (127 arquivos de teste, 1081 testes, formatação, lint com zero avisos, tipos e build ok). Log em `/tmp/claude-1000/-home-peeddrroolg--rea-de-trabalho-Projetos-agilebox-handoff/250a56b1-8abf-4bd5-ada3-633af224a55d/scratchpad/m111-check.log`.
+- Fora deste marco: M1.12 (fechamento, cobertura de `modules/` em 100% e notas finais) e D10 (laço lendo este arquivo).

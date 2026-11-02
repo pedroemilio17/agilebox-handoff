@@ -1,6 +1,6 @@
 import { createTenantContext, createUser, toOrganizationId, toUserId } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
-import { describe, expect, it } from 'vitest'
+import type { Actor, TenantContext } from '@agilebox/core'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { aUser } from './testing/builders'
 import { FixedClock } from './testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from './testing/fakes/in-memory-unit-of-work'
@@ -105,5 +105,21 @@ describe('composição dos casos de uso', () => {
     expect(managerEdit?.text).toContain('renomeou')
     expect(collaboratorEdit?.asManager).toBe(false)
     expect(notifier.changes.length).toBeGreaterThan(0)
+  })
+})
+
+type UseCaseGroups = ReturnType<typeof createUseCases>
+/** Todo caso de uso exposto em `createUseCases`, uma união por instância. */
+type AnyUseCase = {
+  [G in keyof UseCaseGroups]: {
+    [K in keyof UseCaseGroups[G]]: UseCaseGroups[G][K]
+  }[keyof UseCaseGroups[G]]
+}[keyof UseCaseGroups]
+type FirstParameter<T> = T extends { execute: (...args: infer A) => unknown } ? A[0] : never
+
+describe('contexto de time no tipo (M1.11)', () => {
+  it('exige TenantContext como primeiro parâmetro de todo caso de uso', () => {
+    expectTypeOf<AnyUseCase>().toExtend<{ execute: (...args: never[]) => unknown }>()
+    expectTypeOf<FirstParameter<AnyUseCase>>().toEqualTypeOf<TenantContext>()
   })
 })

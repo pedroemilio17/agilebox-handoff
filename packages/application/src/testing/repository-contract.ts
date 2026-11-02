@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  parseDateOnly,
   renameTask,
   toEventId,
   toOrganizationId,
@@ -13,6 +14,7 @@ import type {
   ContributorRepository,
   MeetingRepository,
   ParticipationRepository,
+  ProjectMember,
   ProjectRepository,
   TaskOpenRepository,
   TaskRepository,
@@ -243,6 +245,102 @@ export function describeRepositoryContract(
       await expect(repositories.tasks.count(otherOrganizationId)).resolves.toBe(0)
       await expect(repositories.participations.count(otherOrganizationId)).resolves.toBe(0)
       await expect(repositories.meetings.count(otherOrganizationId)).resolves.toBe(0)
+    })
+
+    it('nenhuma leitura de porta devolve dado de outra organização (M1.11)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const contributor = aContributor().with({ organizationId }).build()
+      const task = aTask()
+        .with({ id: taskId, organizationId, createdBy: userId, title: 'Tarefa isolada' })
+        .inProject(project)
+        .build()
+      const participation = aParticipation(task)
+        .with({ participant: { kind: 'contributor', contributorId: contributor.id } })
+        .build()
+      const meeting = aMeeting().with({ organizationId }).build()
+      const member: ProjectMember = { projectId, userId, addedBy: userId, addedAt: timestamp }
+      const event: TimelineEvent = {
+        id: toEventId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+        taskId,
+        at: timestamp,
+        actorUserId: userId,
+        asManager: false,
+        type: 'task_created',
+        payload: {},
+      }
+      const today = parseDateOnly('2026-01-01')
+
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.projects.addMember(organizationId, member)
+      await repositories.contributors.save(organizationId, contributor)
+      await repositories.tasks.save(organizationId, task)
+      await repositories.participations.save(organizationId, participation)
+      await repositories.meetings.save(organizationId, meeting)
+      await repositories.timeline.saveMany(organizationId, [event])
+      await repositories.taskOpens.recordOpen(organizationId, taskId, userId, timestamp)
+
+      // Controle positivo: a organização que gravou enxerga os registros, então o vazio abaixo não é acidente.
+      await expect(repositories.users.list(organizationId)).resolves.not.toHaveLength(0)
+      await expect(
+        repositories.projects.findByNameKey(organizationId, project.nameKey),
+      ).resolves.toEqual(project)
+      await expect(repositories.projects.listMembers(organizationId, projectId)).resolves.toEqual([
+        member,
+      ])
+      await expect(repositories.contributors.list(organizationId)).resolves.not.toHaveLength(0)
+      await expect(
+        repositories.tasks.listByProject(organizationId, projectId),
+      ).resolves.not.toHaveLength(0)
+      await expect(repositories.tasks.listRecent(organizationId, userId)).resolves.not.toHaveLength(
+        0,
+      )
+      await expect(
+        repositories.participations.listByTask(organizationId, taskId),
+      ).resolves.not.toHaveLength(0)
+      await expect(
+        repositories.meetings.listByMonth(organizationId, '2026-01'),
+      ).resolves.not.toHaveLength(0)
+      await expect(
+        repositories.meetings.listUpcoming(organizationId, today),
+      ).resolves.not.toHaveLength(0)
+      await expect(
+        repositories.timeline.listByTask(organizationId, taskId),
+      ).resolves.not.toHaveLength(0)
+
+      const other = otherOrganizationId
+      await expect(repositories.users.findById(other, user.id)).resolves.toBeNull()
+      await expect(repositories.users.list(other)).resolves.toEqual([])
+      await expect(repositories.projects.findById(other, projectId)).resolves.toBeNull()
+      await expect(repositories.projects.findByNameKey(other, project.nameKey)).resolves.toBeNull()
+      await expect(repositories.projects.list(other)).resolves.toEqual([])
+      await expect(repositories.projects.listMembers(other, projectId)).resolves.toEqual([])
+      await expect(repositories.contributors.findById(other, contributor.id)).resolves.toBeNull()
+      await expect(repositories.contributors.list(other)).resolves.toEqual([])
+      await expect(repositories.tasks.findById(other, taskId)).resolves.toBeNull()
+      await expect(
+        repositories.tasks.findByProjectNameKey(other, projectId, 'tarefa isolada'),
+      ).resolves.toBeNull()
+      await expect(repositories.tasks.listByProject(other, projectId)).resolves.toEqual([])
+      await expect(repositories.tasks.listBoard(other, {})).resolves.toEqual([])
+      await expect(repositories.tasks.listBoard(other, { projectId })).resolves.toEqual([])
+      await expect(repositories.tasks.listBoard(other, { userId })).resolves.toEqual([])
+      await expect(repositories.tasks.listRecent(other, userId)).resolves.toEqual([])
+      await expect(repositories.tasks.listFrequent(other, userId)).resolves.toEqual([])
+      await expect(repositories.tasks.search(other, 'isolada', userId)).resolves.toEqual([])
+      await expect(
+        repositories.participations.findById(other, participation.id),
+      ).resolves.toBeNull()
+      await expect(repositories.participations.listByTask(other, taskId)).resolves.toEqual([])
+      await expect(repositories.meetings.findById(other, meeting.id)).resolves.toBeNull()
+      await expect(repositories.meetings.listByMonth(other, '2026-01')).resolves.toEqual([])
+      await expect(repositories.meetings.listUpcoming(other, today)).resolves.toEqual([])
+      await expect(repositories.timeline.listByTask(other, taskId)).resolves.toEqual([])
+      await expect(repositories.tasks.count(other)).resolves.toBe(0)
+      await expect(repositories.participations.count(other)).resolves.toBe(0)
+      await expect(repositories.meetings.count(other)).resolves.toBe(0)
     })
 
     it('remove registros removíveis do contrato', async () => {
