@@ -11,6 +11,7 @@ import {
   MODULE_IDS,
   SIDEBAR_SCREEN_IDS as CORE_SCREEN_IDS,
   toOrganizationId,
+  toTaskId,
   toUserId,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -21,6 +22,9 @@ import {
   InMemoryUnitOfWork,
   RecordingNotifier,
   SequentialIdGenerator,
+  aProject,
+  aTask,
+  aUser,
 } from '@agilebox/application/testing'
 import { registerHandlers } from './register-handlers'
 
@@ -232,5 +236,44 @@ describe('handlers do nível do time (M2.9b)', () => {
     const value = result.value as { screens: string[]; statuses: { moduleId: string }[] }
     expect(value.screens).not.toContain('backlog')
     expect(value.statuses).toContainEqual({ moduleId: 'backlog', state: 'active' })
+  })
+})
+
+describe('tasks.listArchived pelo IPC (M3.0b)', () => {
+  it('colaborador recebe só as arquivadas em que participa; gestor recebe todas', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const me = aUser().build()
+    const bia = aUser()
+      .with({ id: toUserId('00000000000000000000000009'), name: 'Bia Lima' })
+      .build()
+    await unitOfWork.repositories.users.save(organizationId, me)
+    await unitOfWork.repositories.users.save(organizationId, bia)
+    await unitOfWork.repositories.projects.save(organizationId, aProject().build())
+    const mine = {
+      ...aTask()
+        .with({ id: toTaskId('00000000000000000000000031'), title: 'Minha arquivada' })
+        .build(),
+      archivedAt: '2026-01-03T00:00:00.000Z',
+    }
+    const theirs = {
+      ...aTask()
+        .with({ id: toTaskId('00000000000000000000000032'), title: 'Alheia arquivada' })
+        .ownedBy(bia)
+        .build(),
+      archivedAt: '2026-01-04T00:00:00.000Z',
+    }
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, theirs)
+
+    await expect(
+      handlersFor(collaborator, unitOfWork)('tasks.listArchived'),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: [{ title: 'Minha arquivada' }],
+    })
+    await expect(handlersFor(manager, unitOfWork)('tasks.listArchived')).resolves.toMatchObject({
+      ok: true,
+      value: [{ title: 'Alheia arquivada' }, { title: 'Minha arquivada' }],
+    })
   })
 })

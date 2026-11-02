@@ -21,6 +21,7 @@ export const API_CHANNELS = [
   'tasks.archive',
   'tasks.unarchive',
   'tasks.listRecent',
+  'tasks.listArchived',
   'tasks.listFrequent',
   'tasks.search',
   'tasks.recordOpen',

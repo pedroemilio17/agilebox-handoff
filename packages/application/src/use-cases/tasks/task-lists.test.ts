@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createTenantContext,
   toOrganizationId,
+  toParticipationId,
   toProjectId,
   toTaskId,
   toUserId,
@@ -9,7 +10,7 @@ import {
   toEventId,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
-import { aProject, aTask } from '../../testing/builders'
+import { aParticipation, aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
@@ -348,5 +349,108 @@ describe('listas de tarefas', () => {
     const result = await useCases.tasks.listFrequent.execute(createTenantContext(actor), actor)
 
     expect(result.map(({ id }) => id)).toEqual([second.id, first.id])
+  })
+})
+
+describe('tarefas arquivadas (M3.0b)', () => {
+  const managerActor: Actor = { userId: managerId, organizationId, role: 'manager' }
+  const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+  const outsider: Actor = {
+    userId: toUserId('00000000000000000000000077'),
+    organizationId: otherOrganizationId,
+    role: 'manager',
+  }
+
+  async function seedArchived() {
+    const scope = setup()
+    const { unitOfWork } = scope
+    const bia = aUser().with({ id: otherUserId, name: 'Bia Lima' }).build()
+    const project = aProject().build()
+    const mine = {
+      ...aTask()
+        .with({ id: toTaskId('00000000000000000000000031'), title: 'Minha arquivada' })
+        .build(),
+      archivedAt: '2026-01-03T00:00:00.000Z',
+    }
+    const shared = aTask()
+      .with({ id: toTaskId('00000000000000000000000032'), title: 'Apoio arquivada' })
+      .ownedBy(bia)
+      .build()
+    const sharedWithMe = {
+      ...shared,
+      participations: [
+        ...shared.participations,
+        aParticipation(shared)
+          .with({
+            id: toParticipationId('00000000000000000000000033'),
+            participant: { kind: 'user', userId },
+            role: 'support',
+          })
+          .build(),
+      ],
+      archivedAt: '2026-01-04T00:00:00.000Z',
+    }
+    const theirs = {
+      ...aTask()
+        .with({ id: toTaskId('00000000000000000000000034'), title: 'Alheia arquivada' })
+        .ownedBy(bia)
+        .build(),
+      archivedAt: '2026-01-05T00:00:00.000Z',
+    }
+    const active = aTask()
+      .with({ id: toTaskId('00000000000000000000000035'), title: 'Ativa do time' })
+      .ownedBy(bia)
+      .build()
+    await unitOfWork.repositories.users.save(organizationId, bia)
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    for (const task of [mine, sharedWithMe, theirs, active])
+      await unitOfWork.repositories.tasks.save(organizationId, task)
+    return scope
+  }
+
+  it('colaborador vê só as arquivadas em que participa, das mais recentes para as antigas', async () => {
+    const { useCases } = await seedArchived()
+
+    const result = await useCases.tasks.listArchived.execute(createTenantContext(actor), actor)
+
+    expect(result.map(({ title }) => title)).toEqual(['Apoio arquivada', 'Minha arquivada'])
+  })
+
+  it('gestor vê as arquivadas de todo o time, sem trazer as ativas', async () => {
+    const { useCases } = await seedArchived()
+
+    const result = await useCases.tasks.listArchived.execute(
+      createTenantContext(managerActor),
+      managerActor,
+    )
+
+    expect(result.map(({ title }) => title)).toEqual([
+      'Alheia arquivada',
+      'Apoio arquivada',
+      'Minha arquivada',
+    ])
+    expect(result[0]).toMatchObject({ projectName: 'Projeto AgileBox' })
+  })
+
+  it('não lista nada quando não há tarefa arquivada', async () => {
+    const { useCases } = setup()
+
+    await expect(
+      useCases.tasks.listArchived.execute(createTenantContext(actor), actor),
+    ).resolves.toEqual([])
+  })
+
+  it('recusa contexto de outro time antes de ler, e não devolve tarefas deste time', async () => {
+    const { useCases, unitOfWork } = await seedArchived()
+    const spy = vi.spyOn(unitOfWork.repositories.tasks, 'listArchived')
+
+    await expect(
+      useCases.tasks.listArchived.execute(createTenantContext(outsider), outsider),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.tasks.listArchived.execute(createTenantContext(actor), outsider),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenCalledWith(otherOrganizationId)
   })
 })

@@ -102,6 +102,22 @@ export class ListTeamBoard {
   }
 }
 
+/**
+ * Tarefas arquivadas da tela Ajustes (M3.0b). Mesma regra de leitura do quadro de equipe: o gestor
+ * vê todas do time; os demais, só as que participam. A ordem é a da porta (mais recentes primeiro).
+ */
+export class ListArchivedTasks {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(ctx: TenantContext, actor: Actor): Promise<readonly TaskDto[]> {
+    const organizationId = assertTenant(ctx, actor)
+    const archived = await this.deps.tasks.listArchived(organizationId)
+    return archived
+      .filter((task) => actor.role === 'manager' || participates(actor, task))
+      .map(toTaskDto)
+  }
+}
+
 export class ListRecentTasks {
   constructor(private readonly deps: AppDeps) {}
 

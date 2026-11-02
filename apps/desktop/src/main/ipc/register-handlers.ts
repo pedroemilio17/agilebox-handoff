@@ -115,6 +115,9 @@ export function registerHandlers(
   register('tasks.listRecent', (actor) =>
     useCases.tasks.listRecent.execute(createTenantContext(actor), actor),
   )
+  register('tasks.listArchived', (actor) =>
+    useCases.tasks.listArchived.execute(createTenantContext(actor), actor),
+  )
   register('tasks.listFrequent', (actor) =>
     useCases.tasks.listFrequent.execute(createTenantContext(actor), actor),
   )

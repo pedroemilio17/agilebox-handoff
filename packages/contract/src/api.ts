@@ -41,6 +41,8 @@ import {
   listBoardOutputSchema,
   listFrequentTasksInputSchema,
   listFrequentTasksOutputSchema,
+  listArchivedTasksInputSchema,
+  listArchivedTasksOutputSchema,
   listRecentTasksInputSchema,
   listRecentTasksOutputSchema,
   listTeamBoardInputSchema,
@@ -149,6 +151,10 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.archive': { input: archiveTaskInputSchema, output: archiveTaskOutputSchema },
   'tasks.unarchive': { input: unarchiveTaskInputSchema, output: archiveTaskOutputSchema },
   'tasks.listRecent': { input: listRecentTasksInputSchema, output: listRecentTasksOutputSchema },
+  'tasks.listArchived': {
+    input: listArchivedTasksInputSchema,
+    output: listArchivedTasksOutputSchema,
+  },
   'tasks.listFrequent': {
     input: listFrequentTasksInputSchema,
     output: listFrequentTasksOutputSchema,
@@ -242,6 +248,7 @@ export interface AgileBoxApi {
     archive: Method<'tasks.archive'>
     unarchive: Method<'tasks.unarchive'>
     listRecent: Method<'tasks.listRecent'>
+    listArchived: Method<'tasks.listArchived'>
     listFrequent: Method<'tasks.listFrequent'>
     search: Method<'tasks.search'>
     recordOpen: Method<'tasks.recordOpen'>

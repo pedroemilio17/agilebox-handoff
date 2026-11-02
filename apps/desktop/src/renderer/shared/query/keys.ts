@@ -16,6 +16,7 @@ export const queryKeys = {
     board: (projectId?: string, forUserId?: string, scope?: 'mine' | 'team') =>
       ['agilebox', 'tasks', 'board', projectId, forUserId, scope] as const,
     detail: (taskId: string) => ['agilebox', 'tasks', 'detail', taskId] as const,
+    archived: ['agilebox', 'tasks', 'archived'] as const,
   },
   timeline: { list: (taskId: string) => ['agilebox', 'timeline', taskId] as const },
   meetings: { all: ['agilebox', 'meetings'] as const },

@@ -15,6 +15,11 @@ export interface TaskRepository {
   ): Promise<Task | null>
   listByProject(organizationId: OrganizationId, projectId: ProjectId): Promise<readonly Task[]>
   listBoard(organizationId: OrganizationId, query: TaskListQuery): Promise<readonly Task[]>
+  /**
+   * Tarefas arquivadas da organização, das mais recentes para as mais antigas. Não filtra por
+   * participante: quem vê cada uma é decidido no caso de uso (M3.0b).
+   */
+  listArchived(organizationId: OrganizationId): Promise<readonly Task[]>
   listRecent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   listFrequent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   search(organizationId: OrganizationId, query: string, userId: UserId): Promise<readonly Task[]>

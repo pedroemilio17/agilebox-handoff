@@ -97,6 +97,14 @@ describe('Ajustes: projetos arquivados', () => {
     expect(screen.getByRole('heading', { name: 'Projetos arquivados' })).toBeTruthy()
   })
 
+  it('a seção é uma região rotulada pelo próprio título, sem aria-label no div', () => {
+    renderSection()
+
+    const region = screen.getByRole('region', { name: 'Projetos arquivados' })
+    expect(region.contains(screen.getByRole('heading', { name: 'Projetos arquivados' }))).toBe(true)
+    expect(region.hasAttribute('aria-label')).toBe(false)
+  })
+
   it('mostra o estado vazio em texto quando não há arquivados', async () => {
     renderSection({ projects: [ACTIVE], archivedIds: [] })
 

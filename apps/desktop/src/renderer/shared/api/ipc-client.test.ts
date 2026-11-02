@@ -39,6 +39,14 @@ describe('cliente IPC', () => {
     expect(invoke).toHaveBeenCalledWith('projects.list', { includeArchived: true })
   })
 
+  it('lista as tarefas arquivadas pelo canal tasks.listArchived, sem entrada', async () => {
+    const invoke = vi.fn().mockResolvedValue({ ok: true, value: [] })
+    const client = createIpcClient({ invoke, onChanges: () => () => undefined })
+
+    await expect(client.tasks.listArchived()).resolves.toEqual([])
+    expect(invoke).toHaveBeenCalledWith('tasks.listArchived', undefined)
+  })
+
   it('converte falhas do contrato em ApiError', async () => {
     const invoke = vi.fn().mockResolvedValue({
       ok: false,

@@ -210,6 +210,62 @@ export function describeRepositoryContract(
       )
     })
 
+    it('lista só as tarefas arquivadas da organização, das arquivadas mais recentes para as antigas', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject()
+        .with({ id: projectId, organizationId, name: 'Projeto com arquivadas' })
+        .build()
+      const active = aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBP'),
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBQ'),
+          organizationId,
+          createdBy: userId,
+          title: 'Tarefa ativa',
+        })
+        .inProject(project)
+        .build()
+      const archivedEarlier = {
+        ...aTask()
+          .with({
+            id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBR'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBS'),
+            organizationId,
+            createdBy: userId,
+            title: 'Arquivada antiga',
+          })
+          .inProject(project)
+          .build(),
+        archivedAt: '2026-01-05T00:00:00.000Z',
+      }
+      const archivedLater = {
+        ...aTask()
+          .with({
+            id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBT'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBV'),
+            organizationId,
+            createdBy: userId,
+            title: 'Arquivada recente',
+          })
+          .inProject(project)
+          .build(),
+        archivedAt: '2026-01-07T00:00:00.000Z',
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.tasks.save(organizationId, active)
+      await repositories.tasks.save(organizationId, archivedEarlier)
+      await repositories.tasks.save(organizationId, archivedLater)
+
+      await expect(repositories.tasks.listArchived(organizationId)).resolves.toEqual([
+        archivedLater,
+        archivedEarlier,
+      ])
+      // Outra organização não vê as arquivadas daqui, mesmo com o mesmo projeto no banco.
+      await expect(repositories.tasks.listArchived(otherOrganizationId)).resolves.toEqual([])
+    })
+
     it('ordena Recentes e Frequentes e busca sem acentos', async () => {
       const repositories = makeAdapters()
       const older = renameTask(

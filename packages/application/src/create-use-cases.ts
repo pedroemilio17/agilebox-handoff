@@ -25,6 +25,7 @@ import {
 } from './use-cases/tasks/tasks'
 import {
   GetBoardFlow,
+  ListArchivedTasks,
   ListBoard,
   ListFrequentTasks,
   ListRecentTasks,
@@ -94,6 +95,7 @@ export function createUseCases(deps: AppDeps) {
       listBoard: new ListBoard(deps),
       getBoardFlow: new GetBoardFlow(deps),
       listTeamBoard: new ListTeamBoard(deps),
+      listArchived: new ListArchivedTasks(deps),
       listRecent: new ListRecentTasks(deps),
       listFrequent: new ListFrequentTasks(deps),
       search: new SearchTasks(deps),

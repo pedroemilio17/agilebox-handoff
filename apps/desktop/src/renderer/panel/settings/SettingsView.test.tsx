@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
-import type { CurrentSessionDto, TeamCapabilitiesDto } from '@agilebox/contract'
+import type { CurrentSessionDto, TaskDto, TeamCapabilitiesDto } from '@agilebox/contract'
 import { LEVEL_LABELS, TEAM_SCOPE_NOTICE } from '@agilebox/core'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
@@ -38,6 +38,7 @@ interface SettingsOptions {
   readonly role?: CurrentSessionDto['role']
   readonly level?: TeamCapabilitiesDto['level']
   readonly setLevelError?: ApiError
+  readonly archivedTasks?: readonly TaskDto[]
 }
 
 /**
@@ -48,6 +49,7 @@ function renderSettings({
   role = 'collaborator',
   level = 'intermediate',
   setLevelError,
+  archivedTasks = [],
 }: SettingsOptions = {}) {
   const api = createFakeApi()
   let current = level
@@ -59,6 +61,8 @@ function renderSettings({
   vi.spyOn(api.session, 'getCurrent').mockReturnValue(sessionCall)
   // A seção de arquivados lê a lista de projetos; sem mock, o fake falha e cria outro alerta.
   vi.spyOn(api.projects, 'list').mockResolvedValue([])
+  // A seção de tarefas arquivadas lê a lista de arquivadas; sem mock, o fake também falha.
+  vi.spyOn(api.tasks, 'listArchived').mockResolvedValue([...archivedTasks])
   const getModules = vi
     .spyOn(api.teamModules, 'get')
     .mockImplementation(() =>
@@ -106,6 +110,40 @@ describe('Ajustes: opacidade da janela', () => {
     window.localStorage.setItem(WINDOW_OPACITY_KEY, '0.5')
     renderSettings()
     expect(screen.getByLabelText<HTMLInputElement>('Opacidade da janela').value).toBe('50')
+  })
+})
+
+describe('Ajustes: tarefas arquivadas (M3.0b)', () => {
+  const ARCHIVED_TASK: TaskDto = {
+    id: '01J8Y4G2XK8Z1S6M3Q9W0A5T01',
+    projectId: '01J8Y4G2XK8Z1S6M3Q9W0A5P01',
+    projectName: 'Projeto Alfa',
+    title: 'Relatório mensal',
+    description: '',
+    status: 'done',
+    deadline: null,
+    ticketId: null,
+    ticketUrl: null,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  }
+
+  it('mostra a seção Tarefas arquivadas como região com o título', async () => {
+    const { sessionCall } = renderSettings()
+    await settleSession(sessionCall)
+
+    const region = screen.getByRole('region', { name: 'Tarefas arquivadas' })
+    expect(within(region).getByRole('heading', { name: 'Tarefas arquivadas' })).toBeTruthy()
+    expect(await within(region).findByText('Nenhuma tarefa arquivada.')).toBeTruthy()
+  })
+
+  it('mostra a tarefa arquivada com o botão Desarquivar dentro da seção', async () => {
+    renderSettings({ archivedTasks: [ARCHIVED_TASK] })
+
+    const region = screen.getByRole('region', { name: 'Tarefas arquivadas' })
+    expect(
+      await within(region).findByRole('button', { name: 'Desarquivar tarefa Relatório mensal' }),
+    ).toBeTruthy()
   })
 })
 

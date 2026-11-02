@@ -288,6 +288,16 @@ export class InMemoryTaskRepository implements TaskRepository {
           a.createdAt.localeCompare(b.createdAt),
       )
   }
+  async listArchived(org: OrganizationId) {
+    await Promise.resolve()
+    // Mesma ordem que o SQLite: arquivadas mais recentes primeiro; empate pelo identificador.
+    return [...bucket(this.state.tasks, org).values()]
+      .filter((item) => item.archivedAt !== null)
+      .sort(
+        (a, b) =>
+          (b.archivedAt ?? '').localeCompare(a.archivedAt ?? '') || a.id.localeCompare(b.id),
+      )
+  }
   async listRecent(org: OrganizationId, userId: User['id']) {
     await Promise.resolve()
     return this.forUser(org, userId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

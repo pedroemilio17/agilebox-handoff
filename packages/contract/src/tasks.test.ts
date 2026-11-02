@@ -5,6 +5,8 @@ import {
   unarchiveTaskInputSchema,
   createTaskInputSchema,
   getTaskOutputSchema,
+  listArchivedTasksInputSchema,
+  listArchivedTasksOutputSchema,
   listBoardInputSchema,
   listBoardOutputSchema,
   listTeamBoardInputSchema,
@@ -118,6 +120,15 @@ describe('schemas de tarefas', () => {
     expect(archiveTaskOutputSchema.parse(task)).toEqual(task)
     expect(archiveTaskInputSchema.safeParse({}).success).toBe(false)
     expect(unarchiveTaskInputSchema.safeParse({ taskId: 'tarefa-1' }).success).toBe(false)
+  })
+
+  it('lista as tarefas arquivadas sem entrada e devolve a mesma forma de tarefa do quadro', () => {
+    expect(listArchivedTasksInputSchema.parse(undefined)).toBeUndefined()
+    expect(listArchivedTasksInputSchema.safeParse({}).success).toBe(false)
+    expect(listArchivedTasksOutputSchema.parse([task])).toEqual([task])
+    expect(listArchivedTasksOutputSchema.safeParse([{ ...task, id: 'tarefa-1' }]).success).toBe(
+      false,
+    )
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

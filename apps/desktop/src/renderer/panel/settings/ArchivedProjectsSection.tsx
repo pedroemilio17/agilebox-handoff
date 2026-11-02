@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { ApiError } from '@agilebox/contract'
 import type { ProjectDto } from '@agilebox/contract'
 import { Button, GlassSurface } from '@agilebox/ui'
@@ -15,6 +16,7 @@ import settingsStyles from './SettingsView.module.css'
  */
 export function ArchivedProjectsSection() {
   const { actor } = useActor()
+  const headingId = useId()
   const archived = useArchivedProjects()
   const unarchive = useUnarchiveProject()
   const projects = archived.data ?? []
@@ -29,9 +31,12 @@ export function ArchivedProjectsSection() {
     <GlassSurface
       variant="group"
       className={settingsStyles.section}
-      aria-label={panelCopy.archivedProjects}
+      role="region"
+      aria-labelledby={headingId}
     >
-      <h2 className={settingsStyles.sectionTitle}>{panelCopy.archivedProjects}</h2>
+      <h2 id={headingId} className={settingsStyles.sectionTitle}>
+        {panelCopy.archivedProjects}
+      </h2>
       {archived.isError ? (
         <p role="alert">{panelCopy.archivedProjectsError}</p>
       ) : archived.isSuccess && projects.length === 0 ? (

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
 import { toTaskId } from '@agilebox/core'
 import type {
@@ -145,6 +145,14 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         (a, b) =>
           order.indexOf(a.status) - order.indexOf(b.status) ||
           a.createdAt.localeCompare(b.createdAt),
+      )
+    },
+    async listArchived(organizationId) {
+      // Só as arquivadas: `findTaskRows` direto, sem o filtro de ativas. Mesma ordem do fake.
+      const result = await findTaskRows(organizationId, isNotNull(tasks.archivedAt))
+      return [...result].sort(
+        (a, b) =>
+          (b.archivedAt ?? '').localeCompare(a.archivedAt ?? '') || a.id.localeCompare(b.id),
       )
     },
     async listRecent(organizationId, userId) {
