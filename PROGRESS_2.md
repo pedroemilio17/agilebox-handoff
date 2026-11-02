@@ -164,3 +164,19 @@ Sem commit. Só `packages/core`, sem tela, banco nem caso de uso.
 - Testes: `module-state.test.ts` (transições válidas, todas as inválidas recusadas, predicados, reativar não toca em dados).
 - Exportado por `modules/index.ts`.
 - `pnpm check` com saída 0: 122 arquivos, 997 testes, lint com zero avisos, build ok.
+
+## M1.4 · effectiveCapabilities (sessão Claude, 2026-11-02)
+
+Sem commit. Só `packages/core`, sem tela, banco nem caso de uso. D5 aplicada como decidida.
+
+- `packages/core/src/modules/experience-level.ts`: `isAtLeastLevel(level, minimum)`, comparação pela ordem de `EXPERIENCE_LEVELS`.
+- `packages/core/src/modules/capabilities.ts`: `effectiveCapabilities({ modules, level, role })` devolve `{ role, level, modules, screens }`.
+  - `modules`: módulos recebidos, sem repetir, na ordem do catálogo. Efeitos passivos aparecem para estes em qualquer nível.
+  - `screens`: subconjunto de `modules` cujo `minLevel` o nível alcança. Tela só aparece com módulo ativo e nível suficiente.
+  - Id desconhecido lança `ValidationError`.
+  - Desvio do esboço do plano: o plano dizia `Capability[]`, mas D5 pede módulos efetivos, nível e papel. Não existe tipo `Capability` no código e não foi criado.
+  - A permissão continua em `policies/access-policy.ts`. O `role` só é devolvido junto e não altera módulos nem telas. Teste confirma que gestor e colaborador veem o mesmo conjunto.
+- `modules/index.ts` reexporta `capabilities`.
+- Testes: `capabilities.test.ts` cobre módulo desativado em todos os níveis, nível alto sem ativar nada, efeito passivo no básico, telas a partir do `minLevel`, ordem e deduplicação, papel, id desconhecido, e a comparação de níveis.
+- Decisão de execução: a função recebe os módulos já resolvidos e não distingue `winding_down` de `active`. Quem chama decide o que passar. O guard do M1.8 usa `canUseExistingItems` e `canAcceptNewItems`, não esta função.
+- `pnpm check` com saída 0: 123 arquivos, 1005 testes, lint com zero avisos, build ok. Cobertura de `modules/` (com `capabilities.ts`): 100% de statements, branches, funções e linhas.
