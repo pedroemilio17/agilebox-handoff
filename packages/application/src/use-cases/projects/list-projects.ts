@@ -9,7 +9,7 @@ export class ListProjects {
 
   async execute(
     actor: Actor,
-    options: { readonly includeArchived?: boolean } = {},
+    options: { readonly includeArchived?: boolean | undefined } = {},
   ): Promise<readonly ProjectDto[]> {
     const projects = (await this.projects.list(actor.organizationId)).filter(
       (project) => options.includeArchived || project.archivedAt === null,

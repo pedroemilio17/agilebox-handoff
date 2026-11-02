@@ -41,7 +41,9 @@ export function registerHandlers(
     useCases.users.setDefaultRate.execute(actor, input),
   )
   register('projects.list', (actor, input) =>
-    useCases.projects.listProjects.execute(actor, input ?? {}),
+    useCases.projects.listProjects.execute(actor, {
+      ...(input?.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
+    }),
   )
   register('projects.create', (actor, input) =>
     useCases.projects.createProject.execute(actor, input),

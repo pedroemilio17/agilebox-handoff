@@ -12,7 +12,11 @@ describe('cliente IPC', () => {
   })
 
   it('envia arquivar, desarquivar, renomear e a flag de arquivados pelos canais certos', async () => {
-    const invoke = vi.fn().mockResolvedValue({ ok: true, value: undefined })
+    const channels: string[] = []
+    const invoke = vi.fn().mockImplementation((channel: string) => {
+      channels.push(channel)
+      return Promise.resolve({ ok: true, value: undefined })
+    })
     const client = createIpcClient({ invoke, onChanges: () => () => undefined })
     const projectId = '01ARZ3NDEKTSV4RRFFQ69G5FAV'
     const taskId = '01ARZ3NDEKTSV4RRFFQ69G5FAW'
@@ -24,7 +28,7 @@ describe('cliente IPC', () => {
     await client.tasks.archive({ taskId })
     await client.tasks.unarchive({ taskId })
 
-    expect(invoke.mock.calls.map(([channel]) => channel)).toEqual([
+    expect(channels).toEqual([
       'projects.list',
       'projects.archiveProject',
       'projects.unarchiveProject',
