@@ -18,6 +18,7 @@ const project: Project = {
   name: 'P',
   nameKey: 'p',
   createdAt: '',
+  archivedAt: null,
 }
 const task: Task = {
   id: 'task' as TaskId,
@@ -33,6 +34,7 @@ const task: Task = {
   searchText: '',
   createdAt: '',
   updatedAt: '',
+  archivedAt: null,
   participations: [],
 }
 const ownTask = { ...task, createdBy: user }

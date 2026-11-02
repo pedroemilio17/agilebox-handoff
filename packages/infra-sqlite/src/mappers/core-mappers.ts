@@ -56,5 +56,6 @@ export function mapProjectRow(row: ProjectRow): Project {
     name: row.name,
     createdBy: toUserId(row.createdBy),
     createdAt: row.createdAt,
+    archivedAt: row.archivedAt,
   })
 }

@@ -233,6 +233,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         searchText: task.searchText,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
+        archivedAt: task.archivedAt,
       }
       await database
         .insert(tasks)

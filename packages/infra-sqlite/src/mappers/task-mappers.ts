@@ -56,6 +56,7 @@ export function mapTaskRow(
     searchText: row.searchText,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    archivedAt: row.archivedAt,
     participations,
   }
 }

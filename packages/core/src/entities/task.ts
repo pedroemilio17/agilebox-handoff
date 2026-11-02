@@ -24,6 +24,7 @@ export interface Task {
   readonly searchText: string
   readonly createdAt: string
   readonly updatedAt: string
+  readonly archivedAt: string | null
   readonly participations: readonly Participation[]
 }
 
@@ -74,6 +75,7 @@ export function createTask(input: CreateTaskInput): Task {
     searchText: searchText(title, projectName),
     createdAt: input.createdAt,
     updatedAt: input.createdAt,
+    archivedAt: null,
     participations: [responsible],
   }
 }

@@ -8,9 +8,12 @@ export interface Project {
   readonly nameKey: string
   readonly createdBy: UserId
   readonly createdAt: string
+  readonly archivedAt: string | null
 }
 
-export function createProject(input: Omit<Project, 'nameKey'>): Project {
+export function createProject(
+  input: Omit<Project, 'nameKey' | 'archivedAt'> & { readonly archivedAt?: string | null },
+): Project {
   const name = validateName(input.name)
   const nameKey = name
     .normalize('NFD')
@@ -24,5 +27,6 @@ export function createProject(input: Omit<Project, 'nameKey'>): Project {
     nameKey,
     createdBy: input.createdBy,
     createdAt: input.createdAt,
+    archivedAt: input.archivedAt ?? null,
   }
 }

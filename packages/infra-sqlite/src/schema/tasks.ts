@@ -28,6 +28,7 @@ export const tasks = sqliteTable(
     searchText: text('search_text').notNull(),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
+    archivedAt: text('archived_at'),
   },
   (table) => [
     check(

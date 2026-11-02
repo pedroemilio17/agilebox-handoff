@@ -105,6 +105,42 @@ export function describeRepositoryContract(
       ])
     })
 
+    it('grava e recupera archivedAt de tarefa e projeto', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const archivedProject = {
+        ...aProject()
+          .with({
+            id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FBB'),
+            organizationId,
+            name: 'Projeto arquivado',
+          })
+          .build(),
+        archivedAt: '2026-01-05T00:00:00.000Z',
+      }
+      const archivedTask = {
+        ...aTask()
+          .with({
+            id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FBC'),
+            responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FBD'),
+            organizationId,
+          })
+          .inProject(archivedProject)
+          .build(),
+        archivedAt: '2026-01-06T00:00:00.000Z',
+      }
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, archivedProject)
+      await repositories.tasks.save(organizationId, archivedTask)
+
+      await expect(
+        repositories.projects.findById(organizationId, archivedProject.id),
+      ).resolves.toEqual(archivedProject)
+      await expect(repositories.tasks.findById(organizationId, archivedTask.id)).resolves.toEqual(
+        archivedTask,
+      )
+    })
+
     it('ordena Recentes e Frequentes e busca sem acentos', async () => {
       const repositories = makeAdapters()
       const older = renameTask(
