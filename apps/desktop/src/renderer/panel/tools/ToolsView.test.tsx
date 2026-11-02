@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
@@ -75,6 +75,10 @@ interface RenderOptions {
   readonly impactError?: Error
   /** A gravação só termina quando o teste liberar (`releaseChange`). */
   readonly holdChange?: boolean
+  /** Recusa do servidor ao concluir o encerramento (outro módulo ainda depende dele). */
+  readonly finishError?: Error
+  /** O encerramento só termina quando o teste liberar (`releaseFinish`). */
+  readonly holdFinish?: boolean
 }
 
 /** Recusa no formato que o servidor usa (`describeRefusal` em team-modules.ts). */
@@ -106,6 +110,8 @@ function renderTools({
   impactPending = false,
   impactError,
   holdChange = false,
+  finishError,
+  holdFinish = false,
 }: RenderOptions = {}) {
   const api = createFakeApi()
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
@@ -149,6 +155,21 @@ function renderTools({
       const run = () => applyOnServer({ enable: [...enable], disable: [...disable] })
       return holdChange ? gate.then(run) : run()
     })
+  let releaseFinish = () => {}
+  const finishGate = new Promise<void>((resolve) => {
+    releaseFinish = resolve
+  })
+  // Encerramento: tira o módulo de `windingNow` e devolve o estado, como o servidor faz.
+  const finish = vi
+    .spyOn(api.teamModules, 'finishWindingDown')
+    .mockImplementation(({ moduleId }) => {
+      if (finishError) return Promise.reject(finishError)
+      const run = () => {
+        windingNow = windingNow.filter((id) => id !== moduleId)
+        return Promise.resolve(statusesOf(server, windingNow))
+      }
+      return holdFinish ? finishGate.then(run) : run()
+    })
   const preview = vi
     .spyOn(api.teamModules, 'previewImpact')
     .mockImplementation(({ disable = [] }) => {
@@ -164,7 +185,7 @@ function renderTools({
       </QueryProvider>
     </ApiProvider>,
   )
-  return { get, change, preview, releaseChange }
+  return { get, change, finish, preview, releaseChange, releaseFinish }
 }
 
 const card = (name: string) => screen.getByRole('article', { name })
@@ -613,5 +634,167 @@ describe('Ferramentas: acesso e carregamento', () => {
 
     expect(await screen.findByRole('alert')).toBeTruthy()
     await waitFor(() => expect(screen.queryAllByRole('switch')).toHaveLength(0))
+  })
+})
+
+describe('Ferramentas: concluir encerramento (M3.0)', () => {
+  const finishButton = (name: string) =>
+    screen.getByRole('button', { name: `Concluir encerramento de ${name}` })
+
+  it('só o cartão de módulo encerrando tem o botão, com o nome da ferramenta', async () => {
+    renderTools({ active: ['agenda'], winding: ['checkins'] })
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect(finishButton('Check-ins').textContent).toBe('Concluir encerramento')
+    expect(screen.getAllByRole('button', { name: /Concluir encerramento/ })).toHaveLength(1)
+    expect(within(card('Agenda')).queryByRole('button', { name: /Concluir/ })).toBeNull()
+  })
+
+  it('concluir chama finishWindingDown, avisa com GlassToast e tira o botão depois da releitura', async () => {
+    const { finish, get } = renderTools({ active: ['agenda'], winding: ['checkins'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+    const readsBefore = get.mock.calls.length
+
+    await user.click(finishButton('Check-ins'))
+
+    expect(finish).toHaveBeenCalledWith({ moduleId: 'checkins' })
+    expect(await screen.findByText('Encerramento concluído: Check-ins.')).toBeTruthy()
+    await waitFor(() => expect(within(card('Check-ins')).getByText('Desligada')).toBeTruthy())
+    expect(screen.queryByRole('button', { name: 'Concluir encerramento de Check-ins' })).toBeNull()
+    expect(get.mock.calls.length).toBeGreaterThan(readsBefore)
+    expect(screen.queryByRole('alert')).toBeNull()
+    // O botão sumiu; o foco não pode cair no body (WCAG 2.4.3): vai à prévia, como os outros fluxos.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Nada a aplicar' }))
+  })
+
+  it('recusa do servidor aparece em alerta com a razão, e o botão continua disponível', async () => {
+    const reason = 'Mudança recusada: sprints ficaria sem o que precisa'
+    renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      finishError: new ApiError('VALIDATION', reason),
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(finishButton('Check-ins'))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('Não foi possível concluir o encerramento.')
+    expect(alert.textContent).toContain(reason)
+    expect(screen.queryByText(/Encerramento concluído/)).toBeNull()
+    expect((finishButton('Check-ins') as HTMLButtonElement).disabled).toBe(false)
+    expect(finishButton('Check-ins').getAttribute('aria-disabled')).toBeNull()
+  })
+
+  it('durante o envio o botão continua com o foco, marcado como ocupado, sem o atributo disabled', async () => {
+    const { releaseFinish } = renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      holdFinish: true,
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(finishButton('Check-ins'))
+
+    const button = finishButton('Check-ins')
+    expect(button.getAttribute('aria-disabled')).toBe('true')
+    expect(button.hasAttribute('disabled')).toBe(false)
+    expect(document.activeElement).toBe(button)
+
+    releaseFinish()
+
+    expect(await screen.findByText('Encerramento concluído: Check-ins.')).toBeTruthy()
+  })
+
+  it('dois cliques seguidos enquanto envia chamam o servidor uma vez só', async () => {
+    const { finish, releaseFinish } = renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      holdFinish: true,
+    })
+    await screen.findByRole('switch', { name: 'Agenda' })
+    const button = finishButton('Check-ins')
+
+    // Dois cliques disparados em sequência, sem esperar a tela redesenhar: só a guarda os separa.
+    fireEvent.click(button)
+    fireEvent.click(button)
+    await waitFor(() => expect(finish).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(finish).toHaveBeenCalledTimes(1)
+
+    releaseFinish()
+
+    expect(await screen.findByText('Encerramento concluído: Check-ins.')).toBeTruthy()
+  })
+
+  it('com uma gravação de mudança em andamento, o botão de concluir também fica ocupado e não envia', async () => {
+    const { finish, releaseChange } = renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      holdChange: true,
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(applyButton())
+
+    expect(finishButton('Check-ins').getAttribute('aria-disabled')).toBe('true')
+    await user.click(finishButton('Check-ins'))
+    expect(finish).not.toHaveBeenCalled()
+
+    releaseChange()
+
+    expect(await screen.findByText('Mudança aplicada ao time.')).toBeTruthy()
+  })
+
+  it('recusa do encerramento some ao cancelar a prévia', async () => {
+    renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      finishError: new ApiError('VALIDATION', 'Mudança recusada: teste'),
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    // Rascunho com mudança pendente, depois a recusa do encerramento, e então Cancelar.
+    await user.click(toggle('Sprints'))
+    await user.click(finishButton('Check-ins'))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    await user.click(cancelButton())
+
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('recusa do encerramento some ao aplicar a prévia', async () => {
+    renderTools({
+      active: ['agenda'],
+      winding: ['checkins'],
+      finishError: new ApiError('VALIDATION', 'Mudança recusada: teste'),
+    })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Sprints'))
+    await user.click(finishButton('Check-ins'))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+
+    await user.click(applyButton())
+
+    expect(await screen.findByText('Mudança aplicada ao time.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('colaborador não vê a tela de ferramentas, então não vê o botão, mesmo com módulo encerrando', async () => {
+    renderTools({ role: 'collaborator', active: ['agenda'], winding: ['checkins'] })
+
+    await screen.findByText('Sessão e estado carregados')
+
+    expect(screen.queryByRole('button', { name: /Concluir encerramento/ })).toBeNull()
   })
 })

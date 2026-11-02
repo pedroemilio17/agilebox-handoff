@@ -35,6 +35,23 @@ export interface ToolChangeInput {
 }
 
 /**
+ * Conclui o encerramento de um módulo (`winding_down` vira desligado). Só o gestor chega aqui; o
+ * servidor também recusa se outro módulo ainda depende dele. Ao dar certo, relê o estado do time e
+ * a prévia, como a gravação do rascunho.
+ */
+export function useFinishWindingDown() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (moduleId: ModuleId) => api.teamModules.finishWindingDown({ moduleId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.teamModules.capabilities })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.teamModules.impactAll })
+    },
+  })
+}
+
+/**
  * Grava a mudança do rascunho. Ao dar certo, espera a releitura do estado do time e das prévias:
  * o menu e o rascunho da tela dependem do estado gravado, e o rascunho só é descartado depois disso.
  */

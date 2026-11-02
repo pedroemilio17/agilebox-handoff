@@ -8,6 +8,7 @@ import {
   type ModuleState,
   type PresetId,
 } from '@agilebox/core'
+import { ApiError } from '@agilebox/contract'
 import { GlassToast } from '@agilebox/ui'
 import { useActor } from '../../shared/session/useActor'
 import { panelCopy } from '../copy'
@@ -24,7 +25,12 @@ import {
   type ToggleResult,
   type ToolDraft,
 } from './tool-draft'
-import { impactStateOf, useApplyToolChange, useToolImpact } from './use-tool-change'
+import {
+  impactStateOf,
+  useApplyToolChange,
+  useFinishWindingDown,
+  useToolImpact,
+} from './use-tool-change'
 import styles from './ToolsView.module.css'
 
 const listNames = (ids: readonly ModuleId[]) => ids.map((id) => MODULE_LABELS[id]).join(' e ')
@@ -66,8 +72,11 @@ export function ToolsView() {
   const impact = useToolImpact(plan.disable, canManage)
   const impactState = impactStateOf(plan.disable.length > 0, impact)
   const apply = useApplyToolChange()
-  // Enquanto a mudança é gravada, o rascunho fica travado: o retorno da gravação depende dele.
-  const busy = apply.isPending
+  const finish = useFinishWindingDown()
+  const sending = useRef(false)
+  // Enquanto a mudança ou o encerramento são gravados, o rascunho fica travado: o retorno da
+  // gravação depende dele.
+  const busy = apply.isPending || finish.isPending
 
   if (!actor || !canManage) return null
   if (capabilities.isError) {
@@ -87,10 +96,31 @@ export function ToolsView() {
     headingRef.current?.focus()
   }
 
+  /**
+   * Conclui o encerramento do módulo. O aviso sai só depois da releitura do estado, e o foco vai à
+   * prévia, porque o botão some quando o módulo deixa de estar encerrando. `sending` é uma trava
+   * síncrona: dois cliques seguidos, antes de a tela redesenhar, não enviam duas vezes.
+   */
+  async function finishWinding(id: ModuleId) {
+    if (busy || sending.current) return
+    sending.current = true
+    apply.reset()
+    try {
+      await finish.mutateAsync(id)
+      setToast(panelCopy.toolsFinished(MODULE_LABELS[id]))
+      focusPreview()
+    } catch {
+      // O erro já está em `finish.error` e aparece no alerta da tela.
+    } finally {
+      sending.current = false
+    }
+  }
+
   function toggle(id: ModuleId, wanted: boolean) {
     if (busy) return
     const result = toggleTool(current, id, wanted, windingDown)
     apply.reset()
+    finish.reset()
     if (!result.ok) {
       setNotice(
         result.conflicts.length > 0
@@ -106,6 +136,7 @@ export function ToolsView() {
   function choosePreset(presetId: PresetId) {
     if (busy) return
     apply.reset()
+    finish.reset()
     setDraft(applyPreset(presetId))
     setNotice(panelCopy.toolsPresetApplied(PRESET_LABELS[presetId].name))
   }
@@ -113,12 +144,14 @@ export function ToolsView() {
   function cancel() {
     if (busy) return
     apply.reset()
+    finish.reset()
     setDraft(null)
     setNotice('')
     focusPreview()
   }
 
   function applyChange() {
+    finish.reset()
     apply.mutate(
       { enable: plan.enable, disable: plan.disable },
       {
@@ -175,6 +208,12 @@ export function ToolsView() {
           <p role="status" className={styles.notice}>
             {notice}
           </p>
+          {finish.error ? (
+            <p role="alert" className={styles.alert}>
+              {panelCopy.toolsFinishError}
+              {finish.error instanceof ApiError ? ` ${finish.error.message}` : ''}
+            </p>
+          ) : null}
         </div>
         <ul className={styles.grid}>
           {TOOL_IDS.map((id) => (
@@ -185,6 +224,10 @@ export function ToolsView() {
                 serverState={serverStateOf(id)}
                 disabled={busy}
                 onToggle={(wanted) => toggle(id, wanted)}
+                onFinishWindingDown={() => {
+                  void finishWinding(id)
+                }}
+                busy={busy}
               />
             </li>
           ))}

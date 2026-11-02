@@ -45,6 +45,22 @@
   line-height: 1.45;
 }
 
+/* Botão de concluir encerramento: próprio da linha, alvo de 44px (o Button já põe o mínimo). */
+.finish {
+  justify-self: start;
+}
+
+/* Ocupado: mesmo visual do `:disabled` do Button, mas o botão segue focável para não perder o foco. */
+.finish[aria-disabled='true'] {
+  color: var(--color-text-placeholder);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.finish[aria-disabled='true']:hover {
+  transform: none;
+}
+
 .foot {
   display: flex;
   flex-wrap: wrap;

@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { MODULE_LABELS } from '@agilebox/core'
 import type { ModuleId, ModuleState } from '@agilebox/core'
-import { Card, Switch } from '@agilebox/ui'
+import { Button, Card, Switch } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import { dependencyText } from './dependency-text'
 import { toolDescription } from './tool-descriptions'
@@ -17,6 +17,13 @@ export interface ToolCardProps {
   readonly onToggle: (wanted: boolean) => void
   /** Trava o interruptor enquanto a mudança é gravada. O núcleo já é sempre travado. */
   readonly disabled?: boolean
+  /** Conclui o encerramento. Com o módulo encerrando, o cartão mostra o botão (só o gestor vê a tela). */
+  readonly onFinishWindingDown?: () => void
+  /**
+   * Trava o botão de concluir enquanto há gravação em andamento. Usa `aria-disabled`, não `disabled`:
+   * o botão focado continua focado (um `disabled` tira o foco e ele cai no body).
+   */
+  readonly busy?: boolean
 }
 
 const SIGNAL_TEXT: Record<ToolSignal, string> = {
@@ -36,7 +43,15 @@ const SIGNAL_ICON: Record<ToolSignal, string> = {
  * Cartão de uma ferramenta, como no quadro 06: ponto de estado, interruptor (`role="switch"`),
  * descrição, dependência e sinal. O ponto é só decoração; o sinal em texto diz o estado.
  */
-export function ToolCard({ moduleId, on, serverState, onToggle, disabled = false }: ToolCardProps) {
+export function ToolCard({
+  moduleId,
+  on,
+  serverState,
+  onToggle,
+  disabled = false,
+  onFinishWindingDown,
+  busy = false,
+}: ToolCardProps) {
   const name = MODULE_LABELS[moduleId]
   const signal = toolSignal(on, serverState)
   const ids = useId()
@@ -79,6 +94,16 @@ export function ToolCard({ moduleId, on, serverState, onToggle, disabled = false
           {SIGNAL_TEXT[signal]}
         </p>
       </div>
+      {serverState === 'winding_down' && onFinishWindingDown ? (
+        <Button
+          className={styles.finish}
+          aria-label={panelCopy.toolsFinishFor(name)}
+          aria-disabled={busy || undefined}
+          onClick={busy ? undefined : onFinishWindingDown}
+        >
+          {panelCopy.toolsFinishButton}
+        </Button>
+      ) : null}
     </Card>
   )
 }
