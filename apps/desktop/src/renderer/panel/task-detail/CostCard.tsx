@@ -10,6 +10,13 @@ import styles from './TaskDetailView.module.css'
 export interface CostCardProps {
   readonly task: GetTaskDto
   readonly readOnly: boolean
+  /** Horas editáveis: é o campo Estimativa, que some sem o módulo `estimates.hours` (M2.11). */
+  readonly showHours: boolean
+  /**
+   * Valor/hora, subtotal e total: é o campo Custo por hora (M2.11). Sem permissão, o DTO já vem
+   * com `rate` e `total` nulos, então a tela não mostra o que o servidor não enviou.
+   */
+  readonly showRate: boolean
 }
 
 interface Draft {
@@ -39,7 +46,12 @@ function lineSubtotal(participation: ParticipationSummaryDto, draft: Draft | und
   return subtotal(hours, rate)
 }
 
-export function CostCard({ task, readOnly }: CostCardProps) {
+function cardLabel(showHours: boolean, showRate: boolean): string {
+  if (showHours && showRate) return 'Horas e custo'
+  return showHours ? 'Estimativa de horas' : 'Custo por hora'
+}
+
+export function CostCard({ task, readOnly, showHours, showRate }: CostCardProps) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const setHours = useSetHours(task.id)
   const setRate = useSetRate(task.id)
@@ -85,23 +97,31 @@ export function CostCard({ task, readOnly }: CostCardProps) {
     )
   }
 
+  const error = (showHours ? setHours.error : null) ?? (showRate ? setRate.error : null)
+
   return (
-    <PropertyRow label="Horas e custo">
+    <PropertyRow label={cardLabel(showHours, showRate)}>
       <div className={styles.propertyContent}>
         <ul className={styles.list}>
           {lines.map(({ participation, value }) => (
             <li key={participation.id} className={styles.costRow}>
               <span className={styles.grow}>{participation.participantName}</span>
-              <input
-                aria-label={panelCopy.hoursOf(participation.participantName)}
-                className={styles.numberInput}
-                inputMode="decimal"
-                disabled={readOnly}
-                value={drafts[participation.id]?.hours ?? hoursText(participation.hours)}
-                onChange={(event) => patch(participation.id, { hours: event.currentTarget.value })}
-                onBlur={() => saveHours(participation)}
-              />
-              {participation.rate === null ? null : (
+              {showHours ? (
+                <input
+                  aria-label={panelCopy.hoursOf(participation.participantName)}
+                  className={styles.numberInput}
+                  inputMode="decimal"
+                  disabled={readOnly}
+                  value={drafts[participation.id]?.hours ?? hoursText(participation.hours)}
+                  onChange={(event) =>
+                    patch(participation.id, { hours: event.currentTarget.value })
+                  }
+                  onBlur={() => saveHours(participation)}
+                />
+              ) : (
+                <span className={styles.helper}>{hoursText(participation.hours)} h</span>
+              )}
+              {!showRate || participation.rate === null ? null : (
                 <>
                   <span aria-hidden="true">×</span>
                   <input
@@ -121,13 +141,13 @@ export function CostCard({ task, readOnly }: CostCardProps) {
             </li>
           ))}
         </ul>
-        {total === null ? null : (
+        {!showRate || total === null ? null : (
           <p className={styles.total}>
             <span>{panelCopy.total}</span>
             <output aria-label={panelCopy.total}>{formatBRL(total)}</output>
           </p>
         )}
-        <SaveError error={setHours.error ?? setRate.error} />
+        <SaveError error={error} />
       </div>
     </PropertyRow>
   )

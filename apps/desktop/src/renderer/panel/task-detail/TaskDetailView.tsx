@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { TASK_STATUS_LABELS } from '@agilebox/core'
-import type { DateOnly, TaskStatus } from '@agilebox/core'
+import type { DateOnly, TaskFieldId, TaskStatus } from '@agilebox/core'
 import { Button, IconButton, ReadOnlyBadge } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { useTeamCapabilities } from '../hooks/use-team-capabilities'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
 import { StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
@@ -12,6 +13,7 @@ import { PropertyRow } from './PropertyRow'
 import { ParticipantsCard } from './ParticipantsCard'
 import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
+import { detailFieldLayout } from './task-layout'
 import { useBlurSave } from './use-blur-save'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import styles from './TaskDetailView.module.css'
@@ -35,6 +37,11 @@ export function TaskDetailView({
   const detail = useTaskDetail(taskId)
   const update = useUpdateTask(taskId)
   const move = useMoveTaskStatus(taskId)
+  const capabilities = useTeamCapabilities()
+  const layout = detailFieldLayout(capabilities.data)
+  const shows = (field: TaskFieldId) => layout.visible.includes(field)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const advancedId = useId()
   const task = detail.data
   const title = useBlurSave(task?.title ?? '', (next) => {
     if (next.trim() !== '') update.mutate({ title: next.trim() })
@@ -150,35 +157,73 @@ export function TaskDetailView({
         </aside>
       )}
       <dl className={styles.properties}>
-        <StatusProperty
-          task={task!}
-          readOnly={readOnly}
-          onMove={(status: TaskStatus) => move.mutate(status)}
-        />
-        <PropertyRow label={panelCopy.responsible}>
-          {task!.participations.find((person) => person.role === 'responsible')?.participantName ??
-            panelCopy.noResponsible}
-        </PropertyRow>
-        <ParticipantsCard task={task!} readOnly={readOnly} />
-        <DeadlineCard
-          task={task!}
-          readOnly={readOnly}
-          today={today}
-          onUpdate={(changes) => update.mutate(changes)}
-        />
+        {shows('status') ? (
+          <StatusProperty
+            task={task!}
+            readOnly={readOnly}
+            onMove={(status: TaskStatus) => move.mutate(status)}
+          />
+        ) : null}
+        {shows('assignees') ? (
+          <>
+            <PropertyRow label={panelCopy.responsible}>
+              {task!.participations.find((person) => person.role === 'responsible')
+                ?.participantName ?? panelCopy.noResponsible}
+            </PropertyRow>
+            <ParticipantsCard task={task!} readOnly={readOnly} />
+          </>
+        ) : null}
+        {shows('due') ? (
+          <DeadlineCard
+            task={task!}
+            readOnly={readOnly}
+            today={today}
+            onUpdate={(changes) => update.mutate(changes)}
+          />
+        ) : null}
         <TicketProperty
           task={task!}
           readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
-        <CostCard task={task!} readOnly={readOnly} />
+        {shows('estimate') || shows('hourlyCost') ? (
+          <CostCard
+            task={task!}
+            readOnly={readOnly}
+            showHours={shows('estimate')}
+            showRate={shows('hourlyCost')}
+          />
+        ) : null}
       </dl>
+      {layout.collapsed.length > 0 ? (
+        <div className={styles.advanced}>
+          <button
+            type="button"
+            className={styles.disclosure}
+            aria-expanded={advancedOpen}
+            aria-controls={advancedId}
+            onClick={() => setAdvancedOpen((open) => !open)}
+          >
+            Campos avançados
+            <span aria-hidden="true" className={styles.disclosureMark}>
+              {advancedOpen ? '▴' : '▾'}
+            </span>
+          </button>
+          <div id={advancedId} hidden={!advancedOpen} className={styles.advancedBody}>
+            {layout.collapsed.includes('hourlyCost') ? (
+              <dl className={styles.properties}>
+                <CostCard task={task!} readOnly={readOnly} showHours={false} showRate />
+              </dl>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <TaskDescription
         task={task!}
         readOnly={readOnly}
         onUpdate={(changes) => update.mutate(changes)}
       />
-      <TimelineCard taskId={taskId} />
+      {shows('timeline') ? <TimelineCard taskId={taskId} /> : null}
     </section>
   )
 }

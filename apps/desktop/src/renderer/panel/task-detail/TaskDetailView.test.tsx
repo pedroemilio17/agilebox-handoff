@@ -1,6 +1,8 @@
+import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { TEAM_MODULE_IDS } from '@agilebox/contract'
 import { parseDateOnly } from '@agilebox/core'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
@@ -10,8 +12,33 @@ import { TaskDetailView } from './TaskDetailView'
 
 afterEach(cleanup)
 
-function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
+type Level = 'basic' | 'intermediate' | 'advanced'
+
+/** Nível do time e ferramentas ligadas, como `teamModules.get` devolve. Padrão: tudo ligado. */
+function allowTeam(
+  api: ReturnType<typeof createFakeApi>,
+  level: Level,
+  active: readonly string[] = TEAM_MODULE_IDS,
+) {
+  return vi.spyOn(api.teamModules, 'get').mockResolvedValue({
+    level,
+    screens: [],
+    statuses: TEAM_MODULE_IDS.map((moduleId) => ({
+      moduleId,
+      state: active.includes(moduleId) ? 'active' : 'disabled',
+    })),
+  })
+}
+
+/** API falsa com o time já liberado no nível pedido (padrão: Avançado, tudo ligado). */
+function fakeApi(level: Level = 'advanced', active?: readonly string[]) {
   const api = createFakeApi()
+  allowTeam(api, level, active)
+  return api
+}
+
+function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
+  const api = fakeApi()
   const detail = overrides.detail ?? makeDetail()
   vi.spyOn(api.tasks, 'get').mockResolvedValue(detail)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
@@ -129,7 +156,7 @@ describe('Detalhe da tarefa', () => {
   })
 
   it('mostra erro curto quando a tarefa não carrega', async () => {
-    const api = createFakeApi()
+    const api = fakeApi()
     vi.spyOn(api.tasks, 'get').mockRejectedValue(new Error('x'))
     vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     render(
@@ -171,7 +198,7 @@ describe('Card Prazo', () => {
 
 describe('Card Linha do tempo', () => {
   it('expande um grupo e conserva textos, horários e marca de gestor de cada alteração', async () => {
-    const api = createFakeApi()
+    const api = fakeApi()
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())
     vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     vi.spyOn(api.contributors, 'list').mockResolvedValue([])
@@ -211,7 +238,7 @@ describe('Card Linha do tempo', () => {
   })
 
   it('lista a mais recente no topo, marca Gestor e mostra o autor', async () => {
-    const api = createFakeApi()
+    const api = fakeApi()
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())
     vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     vi.spyOn(api.contributors, 'list').mockResolvedValue([])
@@ -350,7 +377,7 @@ describe('Card Envolvidos', () => {
   })
 
   it('adiciona uma entidade como Apoio e permite criar entidade', async () => {
-    const api = createFakeApi()
+    const api = fakeApi()
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail())
     vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     vi.spyOn(api.timeline, 'list').mockResolvedValue([])
@@ -393,5 +420,133 @@ describe('Card Envolvidos', () => {
     await screen.findByText('Somente leitura')
     expect(screen.queryByRole('button', { name: 'Remover Ana Souza' })).toBeNull()
     expect(screen.queryByLabelText('Pessoa ou entidade')).toBeNull()
+  })
+})
+
+describe('Campos por nível (M2.11)', () => {
+  function renderAt(
+    level: Level,
+    options: {
+      active?: readonly string[]
+      detail?: ReturnType<typeof makeDetail>
+      teamFails?: boolean
+    } = {},
+  ) {
+    const api = fakeApi(level, options.active)
+    const detail = options.detail ?? makeDetail()
+    if (options.teamFails) {
+      vi.spyOn(api.teamModules, 'get').mockRejectedValue(new Error('x'))
+    }
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(detail)
+    vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+    vi.spyOn(api.timeline, 'list').mockResolvedValue([makeEvent()])
+    vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
+    vi.spyOn(api.contributors, 'list').mockResolvedValue([])
+    const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(detail)
+    const setRate = vi.spyOn(api.participations, 'setRate').mockResolvedValue(makeParticipation())
+    const setHours = vi.spyOn(api.participations, 'setHours').mockResolvedValue(makeParticipation())
+    const view = render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    return { ...view, user: userEvent.setup(), update, setRate, setHours }
+  }
+
+  it('Essencial mostra só título, estado e prazo', async () => {
+    renderAt('basic')
+    expect(await screen.findByDisplayValue('Revisar integração')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Status' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Data de entrega')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Responsável' })).toBeNull()
+    expect(screen.queryByLabelText('Pessoa ou entidade')).toBeNull()
+    expect(screen.queryByLabelText('Horas de Ana Souza')).toBeNull()
+    expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Atividade' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Campos avançados' })).toBeNull()
+  })
+
+  it('Padrão mostra responsáveis, estimativa e atividade', async () => {
+    renderAt('intermediate')
+    expect(await screen.findByRole('group', { name: 'Responsável' })).toHaveTextContent('Ana Souza')
+    expect(screen.getByLabelText('Pessoa ou entidade')).toBeVisible()
+    expect(screen.getByLabelText('Horas de Ana Souza')).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Atividade' })).toBeVisible()
+  })
+
+  it('Padrão recolhe o valor/hora em Campos avançados, fechado por padrão', async () => {
+    renderAt('intermediate')
+    const toggle = await screen.findByRole('button', { name: 'Campos avançados' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    const region = document.getElementById(toggle.getAttribute('aria-controls') ?? '')
+    expect(region).not.toBeNull()
+    expect(region).not.toBeVisible()
+    expect(screen.getByLabelText('Valor/hora de Ana Souza')).not.toBeVisible()
+  })
+
+  it('Campos avançados abre e fecha pelo próprio botão', async () => {
+    const { user } = renderAt('intermediate')
+    const toggle = await screen.findByRole('button', { name: 'Campos avançados' })
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByLabelText('Valor/hora de Ana Souza')).toBeVisible()
+    expect(screen.getByLabelText('Total')).toHaveTextContent('R$ 100,00')
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByLabelText('Valor/hora de Ana Souza')).not.toBeVisible()
+  })
+
+  it('Avançado mostra valor/hora e total sempre, sem botão de recolher', async () => {
+    renderAt('advanced')
+    expect(await screen.findByLabelText('Valor/hora de Ana Souza')).toBeVisible()
+    expect(screen.getByLabelText('Total')).toHaveTextContent('R$ 100,00')
+    expect(screen.queryByRole('button', { name: 'Campos avançados' })).toBeNull()
+  })
+
+  it('esconde a estimativa sem o módulo estimates.hours, em Padrão e em Avançado', async () => {
+    const active = TEAM_MODULE_IDS.filter((id) => id !== 'estimates.hours')
+    const low = renderAt('intermediate', { active })
+    expect(await screen.findByRole('group', { name: 'Responsável' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Horas de Ana Souza')).toBeNull()
+    low.unmount()
+    renderAt('advanced', { active })
+    expect(await screen.findByLabelText('Valor/hora de Ana Souza')).toBeVisible()
+    expect(screen.queryByLabelText('Horas de Ana Souza')).toBeNull()
+  })
+
+  it('valor/hora e total não aparecem sem permissão, nem recolhidos', async () => {
+    const { user } = renderAt('intermediate', {
+      detail: makeDetail({
+        total: null,
+        participations: [makeParticipation({ rate: null })],
+      }),
+    })
+    await user.click(await screen.findByRole('button', { name: 'Campos avançados' }))
+    expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
+    expect(screen.queryByLabelText('Total')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/R\$/)
+  })
+
+  it('subir de nível não perde dado: valor, horas e total voltam como estavam', async () => {
+    const low = renderAt('basic')
+    expect(await screen.findByDisplayValue('Revisar integração')).toBeInTheDocument()
+    low.unmount()
+    const high = renderAt('advanced')
+    expect(await screen.findByLabelText('Valor/hora de Ana Souza')).toHaveValue('40,00')
+    expect(screen.getByLabelText('Horas de Ana Souza')).toHaveValue('2,5')
+    expect(screen.getByLabelText('Total')).toHaveTextContent('R$ 100,00')
+    expect(high.update).not.toHaveBeenCalled()
+    expect(high.setRate).not.toHaveBeenCalled()
+    expect(high.setHours).not.toHaveBeenCalled()
+  })
+
+  it('se o time não carrega, mostra só o Essencial', async () => {
+    renderAt('advanced', { teamFails: true })
+    expect(await screen.findByDisplayValue('Revisar integração')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Responsável' })).toBeNull()
+    expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Campos avançados' })).toBeNull()
   })
 })

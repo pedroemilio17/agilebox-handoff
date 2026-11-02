@@ -410,3 +410,37 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Campos avançados (M2.11): botão de recolher com alvo de 44px. */
+.advanced {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+.disclosure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-body);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  text-align: left;
+  cursor: pointer;
+}
+.disclosure:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.disclosureMark {
+  color: var(--color-text-muted);
+}
+/* Sem `display` aqui: o atributo `hidden` precisa continuar valendo para recolher. */
+.advancedBody {
+  margin: 0;
+}
