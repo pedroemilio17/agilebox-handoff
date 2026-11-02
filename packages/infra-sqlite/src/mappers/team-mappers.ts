@@ -1,5 +1,5 @@
-import { toUserId } from '@agilebox/core'
-import type { ModuleId, ModuleState, ExperienceLevel } from '@agilebox/core'
+import { isExperienceLevel, SUGGESTED_LEVEL, toUserId } from '@agilebox/core'
+import type { ModuleId, ModuleState } from '@agilebox/core'
 import type { TeamModule, TeamModuleEvent, TeamSettings } from '@agilebox/application'
 import type { teamModuleEvents, teamModules, teamSettings } from '../schema/index.js'
 
@@ -28,9 +28,10 @@ export function mapTeamModuleEventRow(row: TeamModuleEventRow): TeamModuleEvent 
   }
 }
 
+/** Nível fora do catálogo no banco cai no sugerido, para a tela de Ajustes continuar abrindo. */
 export function mapTeamSettingsRow(row: TeamSettingsRow): TeamSettings {
   return {
-    level: row.level as ExperienceLevel,
+    level: isExperienceLevel(row.level) ? row.level : SUGGESTED_LEVEL,
     changedBy: toUserId(row.changedBy),
     changedAt: row.changedAt,
   }

@@ -72,8 +72,11 @@ export class SetTeamLevel {
     if (!canManageTeamModules(actor)) {
       throw new PermissionDeniedError('Só o gestor altera o nível do time')
     }
-    const level = input.level
-    if (!isExperienceLevel(level)) throw new ValidationError(`Nível desconhecido: ${level}`)
+    // Entrada ausente (ou sem `level`) vira erro de validação, não TypeError.
+    const level = input?.level
+    if (typeof level !== 'string' || !isExperienceLevel(level)) {
+      throw new ValidationError(`Nível desconhecido: ${String(level)}`)
+    }
     const changedAt = await this.deps.clock.now(organizationId)
 
     return this.deps.unitOfWork.run(organizationId, async (repositories) => {

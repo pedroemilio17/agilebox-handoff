@@ -39,8 +39,7 @@ const manager: Actor = {
 type Handler = (event: unknown, input: unknown) => Promise<ApiResult<unknown>>
 
 /** Usa os casos de uso reais sobre repositórios em memória e captura os handlers registrados. */
-function handlersFor(actor: Actor) {
-  const unitOfWork = new InMemoryUnitOfWork()
+function handlersFor(actor: Actor, unitOfWork = new InMemoryUnitOfWork()) {
   const actorSession: ActorSession = { get: () => actor, set: () => undefined }
   const useCases = createUseCases({
     actorSession,
@@ -199,13 +198,17 @@ describe('handlers do nível do time (M2.9b)', () => {
     expect((result.value as { screens: string[] }).screens).toContain('tools')
   })
 
-  it('colaborador não grava o nível e o time continua no padrão', async () => {
-    const call = handlersFor(collaborator)
+  it('colaborador não grava: a tentativa é recusada e o nível que o gestor gravou continua valendo', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const asManager = handlersFor(manager, unitOfWork)
+    const asCollaborator = handlersFor(collaborator, unitOfWork)
+    await asManager('teamSettings.setLevel', { level: 'basic' })
 
-    const result = await call('teamSettings.setLevel', { level: 'advanced' })
+    const attempt = await asCollaborator('teamSettings.setLevel', { level: 'advanced' })
 
-    expect(result).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } })
-    expect(await call('teamSettings.getLevel')).toEqual({ ok: true, value: 'intermediate' })
+    expect(attempt).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } })
+    expect(await asCollaborator('teamSettings.getLevel')).toEqual({ ok: true, value: 'basic' })
+    expect(await asManager('teamSettings.getLevel')).toEqual({ ok: true, value: 'basic' })
   })
 
   it('nível fora do catálogo é recusado pelo schema, antes do caso de uso', async () => {

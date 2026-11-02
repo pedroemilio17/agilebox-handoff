@@ -105,6 +105,26 @@ describe('nível do time', () => {
     await expect(unitOfWork.repositories.teamSettings.find(organizationId)).resolves.toBeNull()
   })
 
+  it('entrada ausente vira erro de validação, não TypeError, e nada é gravado', async () => {
+    const { useCases, unitOfWork } = setup()
+    const missing = undefined as unknown as Parameters<
+      typeof useCases.teamSettings.setLevel.execute
+    >[2]
+
+    await expect(
+      useCases.teamSettings.setLevel.execute(managerCtx, manager, missing),
+    ).rejects.toThrow(ValidationError)
+    await expect(
+      useCases.teamSettings.setLevel.execute(
+        managerCtx,
+        manager,
+        null as unknown as typeof missing,
+      ),
+    ).rejects.toThrow(ValidationError)
+
+    await expect(unitOfWork.repositories.teamSettings.find(organizationId)).resolves.toBeNull()
+  })
+
   it('pedir o nível que já vale não regrava o registro (quem e quando ficam)', async () => {
     const first = setup(manager, now)
     await first.useCases.teamSettings.setLevel.execute(managerCtx, manager, { level: 'advanced' })

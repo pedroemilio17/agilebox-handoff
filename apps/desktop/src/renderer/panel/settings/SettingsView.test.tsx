@@ -173,6 +173,22 @@ describe('Ajustes: nível do time (M2.9b)', () => {
     )
   })
 
+  it('depois do refetch, a seção mostra a descrição e a opção do nível novo (o antigo some)', async () => {
+    const { getModules } = renderSettings({ role: 'manager', level: 'intermediate' })
+    const group = await screen.findByRole('group', { name: groupName })
+    expect(screen.getByText(LEVEL_LABELS.intermediate.description)).toBeTruthy()
+    expect(screen.queryByText(LEVEL_LABELS.advanced.description)).toBeNull()
+
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Avançado' }))
+
+    await waitFor(() => expect(getModules).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText(LEVEL_LABELS.advanced.description)).toBeTruthy()
+    expect(screen.queryByText(LEVEL_LABELS.intermediate.description)).toBeNull()
+    expect(
+      within(group).getByRole('button', { name: 'Avançado' }).getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
   it('escolher o nível que já vale não chama o servidor', async () => {
     const { setLevel } = renderSettings({ role: 'manager', level: 'intermediate' })
     const group = await screen.findByRole('group', { name: groupName })
