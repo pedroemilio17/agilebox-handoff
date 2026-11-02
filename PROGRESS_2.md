@@ -4,7 +4,7 @@ Plano: `docs/AgileBox 2.0 — Plano de entregas por camadas e marcos.md` (linha 
 ## M0 · Estabilizar o MVP
 Pronto quando: criar, editar, mover e reabrir persistem; nenhuma tela estática.
 
-- [ ] M0.1 Definir a semântica de "Minhas tarefas" do gestor (decisão aberta; registrar em `docs/decisoes/`) — teste: nenhum, só o ADR — BLOQUEIO do Pedro
+- [x] M0.1 Definir a semântica de "Minhas tarefas" do gestor (decisão aberta; registrar em `docs/decisoes/`) — teste: nenhum, só o ADR — decidido: opção A (ADR 0004)
 - [ ] M0.2 Caso de uso `listTasks` com escopo `mine|team` respeitando a regra de acesso — teste: `task-lists.test.ts` (colaborador em `team` só vê as suas; gestor vê todas) — sonnet
 - [ ] M0.3 Contrato Zod do escopo `mine|team` em `packages/contract/src/tasks.ts` — teste: `tasks.test.ts` — haiku
 - [ ] M0.4 Conectar o seletor "Minhas tarefas | Equipe" no painel ao escopo — teste: Testing Library, trocar o seletor refaz a listagem — haiku
@@ -16,4 +16,4 @@ Pronto quando: criar, editar, mover e reabrir persistem; nenhuma tela estática.
 - [ ] M0.10 Teste de persistência: criar, editar, mover e reabrir tarefa após reiniciar o banco — teste: `create-sqlite-adapters.test.ts` — haiku
 - [ ] M0.11 Varredura: nenhuma tela/controle estático no painel (lista de pendências) — teste: `pnpm check` verde — sonnet
 
-BLOQUEIO: M0.1 depende de decisão do Pedro (semântica de "Minhas tarefas" do gestor); M0.2 a M0.9 dependem dela.
+BLOQUEIO: (vazio)
