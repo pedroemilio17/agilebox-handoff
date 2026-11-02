@@ -16,4 +16,4 @@ Pronto quando: criar, editar, mover e reabrir persistem; nenhuma tela estática.
 - [ ] M0.10 Teste de persistência: criar, editar, mover e reabrir tarefa após reiniciar o banco — teste: `create-sqlite-adapters.test.ts` — haiku
 - [ ] M0.11 Varredura: nenhuma tela/controle estático no painel (lista de pendências) — teste: `pnpm check` verde — sonnet
 
-BLOQUEIO: (vazio)
+BLOQUEIO: M0.1 depende de decisão do Pedro (semântica de "Minhas tarefas" do gestor); M0.2 a M0.9 dependem dela.
