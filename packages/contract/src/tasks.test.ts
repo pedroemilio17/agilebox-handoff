@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  taskDtoSchema,
   archiveTaskInputSchema,
   archiveTaskOutputSchema,
   unarchiveTaskInputSchema,
@@ -35,9 +36,37 @@ const task = {
   ticketUrl: null,
   createdAt: '2026-10-31T12:00:00.000Z',
   updatedAt: '2026-10-31T12:30:00.000Z',
+  backlogRank: null,
+  onBoard: true,
 }
 
 describe('schemas de tarefas', () => {
+  it('exige backlogRank (nulo ou posição 1..n) e onBoard booleano no DTO', () => {
+    expect(taskDtoSchema.parse({ ...task, backlogRank: 3, onBoard: false })).toMatchObject({
+      backlogRank: 3,
+      onBoard: false,
+    })
+    expect(taskDtoSchema.safeParse({ ...task, backlogRank: 0 }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, backlogRank: 1.5 }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, backlogRank: undefined }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, onBoard: 'sim' }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, onBoard: undefined }).success).toBe(false)
+  })
+
+  it('aceita criação no backlog por inBacklog booleano e recusa outro tipo', () => {
+    expect(createTaskInputSchema.parse({ projectId, title: 'Nova', inBacklog: true })).toEqual({
+      projectId,
+      title: 'Nova',
+      inBacklog: true,
+    })
+    expect(createTaskInputSchema.parse({ projectId, title: 'Nova' })).not.toHaveProperty(
+      'inBacklog',
+    )
+    expect(
+      createTaskInputSchema.safeParse({ projectId, title: 'Nova', inBacklog: 'sim' }).success,
+    ).toBe(false)
+  })
+
   it('aceita filtros de quadro pessoal e de equipe', () => {
     expect(listBoardInputSchema.parse({ projectId, forUserId: userId })).toEqual({
       projectId,

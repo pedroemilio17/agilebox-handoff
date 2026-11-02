@@ -57,6 +57,16 @@ import {
   taskUpdateOutputSchema,
 } from './tasks'
 import {
+  listBacklogInputSchema,
+  listBacklogOutputSchema,
+  reorderBacklogInputSchema,
+  reorderBacklogOutputSchema,
+  sendToBacklogInputSchema,
+  sendToBacklogOutputSchema,
+  takeToBoardInputSchema,
+  takeToBoardOutputSchema,
+} from './backlog'
+import {
   createContributorInputSchema,
   createContributorOutputSchema,
   listContributorsInputSchema,
@@ -161,6 +171,13 @@ export const API_SCHEMA_REGISTRY = {
   },
   'tasks.search': { input: searchTasksInputSchema, output: searchTasksOutputSchema },
   'tasks.recordOpen': { input: recordTaskOpenInputSchema, output: recordTaskOpenOutputSchema },
+  'backlog.list': { input: listBacklogInputSchema, output: listBacklogOutputSchema },
+  'backlog.reorder': { input: reorderBacklogInputSchema, output: reorderBacklogOutputSchema },
+  'backlog.takeToBoard': { input: takeToBoardInputSchema, output: takeToBoardOutputSchema },
+  'backlog.sendToBacklog': {
+    input: sendToBacklogInputSchema,
+    output: sendToBacklogOutputSchema,
+  },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -252,6 +269,12 @@ export interface AgileBoxApi {
     listFrequent: Method<'tasks.listFrequent'>
     search: Method<'tasks.search'>
     recordOpen: Method<'tasks.recordOpen'>
+  }
+  backlog: {
+    list: Method<'backlog.list'>
+    reorder: Method<'backlog.reorder'>
+    takeToBoard: Method<'backlog.takeToBoard'>
+    sendToBacklog: Method<'backlog.sendToBacklog'>
   }
   participations: {
     add: Method<'participations.add'>

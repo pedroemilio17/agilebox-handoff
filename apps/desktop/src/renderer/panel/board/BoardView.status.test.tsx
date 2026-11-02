@@ -54,6 +54,8 @@ describe('Cabeçalho e estado vazio do quadro', () => {
           ticketUrl: null,
           createdAt: '2026-10-31T12:00:00.000Z',
           updatedAt: '2026-10-31T12:00:00.000Z',
+          backlogRank: null,
+          onBoard: true,
         },
       ],
     })

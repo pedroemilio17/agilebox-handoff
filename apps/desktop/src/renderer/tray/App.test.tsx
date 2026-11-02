@@ -43,6 +43,8 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
   ticketUrl: null,
   createdAt: '2026-10-31T12:00:00.000Z',
   updatedAt: '2026-10-31T12:00:00.000Z',
+  backlogRank: null,
+  onBoard: true,
 })
 
 const A = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC1', 'Revisão do relatório')

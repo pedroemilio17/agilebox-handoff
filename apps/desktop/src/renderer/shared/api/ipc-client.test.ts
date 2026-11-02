@@ -47,6 +47,47 @@ describe('cliente IPC', () => {
     expect(invoke).toHaveBeenCalledWith('tasks.listArchived', undefined)
   })
 
+  it('envia os métodos do backlog pelos canais backlog.*, com a posição e o id da tarefa', async () => {
+    const channels: { channel: string; input: unknown }[] = []
+    const invoke = vi.fn().mockImplementation((channel: string, input: unknown) => {
+      channels.push({ channel, input })
+      return Promise.resolve({ ok: true, value: channel === 'backlog.list' ? [] : undefined })
+    })
+    const client = createIpcClient({ invoke, onChanges: () => () => undefined })
+    const taskId = '01ARZ3NDEKTSV4RRFFQ69G5FAV'
+    const projectId = '01ARZ3NDEKTSV4RRFFQ69G5FAW'
+
+    await client.backlog.list({ projectId })
+    await client.backlog.reorder({ taskId, placement: 'top' })
+    await client.backlog.reorder({ taskId, placement: 3 })
+    await client.backlog.takeToBoard({ taskId })
+    await client.backlog.sendToBacklog({ taskId })
+
+    expect(channels).toEqual([
+      { channel: 'backlog.list', input: { projectId } },
+      { channel: 'backlog.reorder', input: { taskId, placement: 'top' } },
+      { channel: 'backlog.reorder', input: { taskId, placement: 3 } },
+      { channel: 'backlog.takeToBoard', input: { taskId } },
+      { channel: 'backlog.sendToBacklog', input: { taskId } },
+    ])
+  })
+
+  it('leva a mensagem do servidor ao reordenar sem permissão', async () => {
+    const invoke = vi.fn().mockResolvedValue({
+      ok: false,
+      error: { code: 'FORBIDDEN', message: 'Só o gestor reordena o backlog' },
+    })
+    const client = createIpcClient({ invoke, onChanges: () => () => undefined })
+
+    await expect(
+      client.backlog.reorder({ taskId: '01ARZ3NDEKTSV4RRFFQ69G5FAV', placement: 'end' }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'FORBIDDEN',
+      message: 'Só o gestor reordena o backlog',
+    } satisfies Partial<ApiError>)
+  })
+
   it('converte falhas do contrato em ApiError', async () => {
     const invoke = vi.fn().mockResolvedValue({
       ok: false,

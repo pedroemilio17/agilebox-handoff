@@ -97,9 +97,14 @@ export function registerHandlers(
   register('tasks.get', (actor, input) =>
     useCases.tasks.getDetail.execute(createTenantContext(actor), actor, input),
   )
-  register('tasks.create', (actor, input) =>
-    useCases.tasks.create.execute(createTenantContext(actor), actor, input),
-  )
+  register('tasks.create', (actor, input) => {
+    // `inBacklog` entra só quando veio, para não passar `undefined` a um campo opcional (exactOptionalPropertyTypes).
+    const { inBacklog, ...rest } = input
+    return useCases.tasks.create.execute(createTenantContext(actor), actor, {
+      ...rest,
+      ...(inBacklog === undefined ? {} : { inBacklog }),
+    })
+  })
   register('tasks.update', (actor, input) =>
     useCases.tasks.update.execute(createTenantContext(actor), actor, input),
   )
@@ -111,6 +116,20 @@ export function registerHandlers(
   )
   register('tasks.unarchive', (actor, input) =>
     useCases.tasks.unarchive.execute(createTenantContext(actor), actor, input),
+  )
+  register('backlog.list', (actor, input) =>
+    useCases.backlog.list.execute(createTenantContext(actor), actor, {
+      ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+    }),
+  )
+  register('backlog.reorder', (actor, input) =>
+    useCases.backlog.reorder.execute(createTenantContext(actor), actor, input),
+  )
+  register('backlog.takeToBoard', (actor, input) =>
+    useCases.backlog.takeToBoard.execute(createTenantContext(actor), actor, input),
+  )
+  register('backlog.sendToBacklog', (actor, input) =>
+    useCases.backlog.sendToBacklog.execute(createTenantContext(actor), actor, input),
   )
   register('tasks.listRecent', (actor) =>
     useCases.tasks.listRecent.execute(createTenantContext(actor), actor),

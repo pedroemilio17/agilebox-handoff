@@ -10,6 +10,7 @@ import {
   EXPERIENCE_LEVELS,
   MODULE_IDS,
   SIDEBAR_SCREEN_IDS as CORE_SCREEN_IDS,
+  sendToBacklog,
   toOrganizationId,
   toTaskId,
   toUserId,
@@ -274,6 +275,152 @@ describe('tasks.listArchived pelo IPC (M3.0b)', () => {
     await expect(handlersFor(manager, unitOfWork)('tasks.listArchived')).resolves.toMatchObject({
       ok: true,
       value: [{ title: 'Alheia arquivada' }, { title: 'Minha arquivada' }],
+    })
+  })
+})
+
+describe('handlers do backlog pelo IPC (M3.10a)', () => {
+  const otherOrganizationId = toOrganizationId('00000000000000000000000009')
+  const taskIdOf = (n: number) => toTaskId(String(n).padStart(26, '0'))
+
+  /** Tarefa do time; `rank` nulo deixa a tarefa no quadro. */
+  function aTeamTask(n: number, rank: number | null, org = organizationId) {
+    const task = aTask()
+      .with({ id: taskIdOf(n), organizationId: org, title: `Tarefa ${n}` })
+      .build()
+    return rank === null ? task : sendToBacklog(task, rank)
+  }
+
+  it('gestor reordena e a lista do backlog devolve a nova ordem 1..n', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const call = handlersFor(manager, unitOfWork)
+    await call('teamModules.change', { enable: ['backlog'] })
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(41, 1))
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(42, 2))
+
+    await expect(
+      call('backlog.reorder', { taskId: taskIdOf(42), placement: 'top' }),
+    ).resolves.toEqual({ ok: true, value: undefined })
+
+    const listed = await call('backlog.list', {})
+    expect(listed).toMatchObject({
+      ok: true,
+      value: [
+        { id: taskIdOf(42), backlogRank: 1, onBoard: false },
+        { id: taskIdOf(41), backlogRank: 2, onBoard: false },
+      ],
+    })
+  })
+
+  it('colaborador recebe FORBIDDEN ao reordenar e a ordem não muda', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const asManager = handlersFor(manager, unitOfWork)
+    const asCollaborator = handlersFor(collaborator, unitOfWork)
+    await asManager('teamModules.change', { enable: ['backlog'] })
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(41, 1))
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(42, 2))
+
+    await expect(
+      asCollaborator('backlog.reorder', { taskId: taskIdOf(42), placement: 'top' }),
+    ).resolves.toEqual({
+      ok: false,
+      error: { code: 'FORBIDDEN', message: 'Só o gestor reordena o backlog' },
+    })
+    await expect(asManager('backlog.list', {})).resolves.toMatchObject({
+      ok: true,
+      value: [
+        { id: taskIdOf(41), backlogRank: 1 },
+        { id: taskIdOf(42), backlogRank: 2 },
+      ],
+    })
+  })
+
+  it('com o módulo Backlog desligado, reordenar é recusado citando o módulo', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const call = handlersFor(manager, unitOfWork)
+    await call('teamModules.change', { enable: ['backlog'] })
+    const change = await call('teamModules.change', { disable: ['backlog'] })
+    if (!change.ok) throw new Error('Desligar o backlog deveria funcionar')
+    const statuses = (change.value as { statuses: { moduleId: string; state: string }[] }).statuses
+    expect(statuses).toContainEqual({ moduleId: 'backlog', state: 'disabled' })
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(41, 1))
+
+    const result = await call('backlog.reorder', { taskId: taskIdOf(41), placement: 'end' })
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'VALIDATION' } })
+    if (result.ok) return
+    expect(result.error.message).toContain('Backlog')
+  })
+
+  it('tarefa de outro time vira NotFound ao reordenar e ao levar ao quadro', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const call = handlersFor(manager, unitOfWork)
+    await call('teamModules.change', { enable: ['backlog'] })
+    await unitOfWork.repositories.tasks.save(
+      otherOrganizationId,
+      aTeamTask(77, 1, otherOrganizationId),
+    )
+
+    await expect(
+      call('backlog.reorder', { taskId: taskIdOf(77), placement: 'top' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+    await expect(call('backlog.takeToBoard', { taskId: taskIdOf(77) })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_FOUND' },
+    })
+  })
+
+  it('recusa identificador malformado e posição inválida antes do caso de uso', async () => {
+    const call = handlersFor(manager)
+
+    for (const input of [
+      { taskId: 'tarefa-1', placement: 'top' },
+      { taskId: taskIdOf(41), placement: -1 },
+      { taskId: taskIdOf(41), placement: 1.5 },
+    ]) {
+      await expect(call('backlog.reorder', input)).resolves.toEqual({
+        ok: false,
+        error: { code: 'VALIDATION', message: 'Entrada inválida' },
+      })
+    }
+    await expect(call('backlog.takeToBoard', { taskId: 'tarefa-1' })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION' },
+    })
+  })
+
+  it('leva ao quadro e devolve ao backlog pelo IPC, com onBoard e backlogRank no DTO', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const call = handlersFor(manager, unitOfWork)
+    await call('teamModules.change', { enable: ['backlog'] })
+    await unitOfWork.repositories.tasks.save(organizationId, aTeamTask(41, 1))
+
+    await expect(call('backlog.takeToBoard', { taskId: taskIdOf(41) })).resolves.toMatchObject({
+      ok: true,
+      value: { id: taskIdOf(41), onBoard: true, backlogRank: null, status: 'planning' },
+    })
+    await expect(call('backlog.sendToBacklog', { taskId: taskIdOf(41) })).resolves.toMatchObject({
+      ok: true,
+      value: { id: taskIdOf(41), onBoard: false, backlogRank: 1, status: 'planning' },
+    })
+  })
+
+  it('tasks.create com inBacklog nasce no fim do backlog, fora do quadro', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const project = aProject().build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.users.save(
+      organizationId,
+      aUser().with({ id: manager.userId, name: 'Bia Gestora' }).build(),
+    )
+    const call = handlersFor(manager, unitOfWork)
+    await call('teamModules.change', { enable: ['backlog'] })
+
+    await expect(
+      call('tasks.create', { projectId: project.id, title: 'Nova no backlog', inBacklog: true }),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { title: 'Nova no backlog', onBoard: false, backlogRank: 1, status: 'planning' },
     })
   })
 })

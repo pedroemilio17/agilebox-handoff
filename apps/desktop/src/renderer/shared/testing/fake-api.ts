@@ -31,6 +31,7 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     users: { ...api.users, ...overrides.users },
     projects: { ...api.projects, ...overrides.projects },
     tasks: { ...api.tasks, ...overrides.tasks },
+    backlog: { ...api.backlog, ...overrides.backlog },
     participations: { ...api.participations, ...overrides.participations },
     contributors: { ...api.contributors, ...overrides.contributors },
     timeline: { ...api.timeline, ...overrides.timeline },

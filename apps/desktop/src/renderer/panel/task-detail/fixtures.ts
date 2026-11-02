@@ -32,6 +32,8 @@ export function makeDetail(overrides: Partial<GetTaskDto> = {}): GetTaskDto {
     ticketUrl: null,
     createdAt: '2026-10-31T12:00:00.000Z',
     updatedAt: '2026-10-31T12:00:00.000Z',
+    backlogRank: null,
+    onBoard: true,
     participations: [makeParticipation()],
     total: 100,
     canEdit: true,

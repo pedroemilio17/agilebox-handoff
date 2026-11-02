@@ -126,6 +126,8 @@ describe('Ajustes: tarefas arquivadas (M3.0b)', () => {
     ticketUrl: null,
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-01T10:00:00.000Z',
+    backlogRank: null,
+    onBoard: true,
   }
 
   it('mostra a seção Tarefas arquivadas como região com o título', async () => {

@@ -19,6 +19,10 @@ export const taskDtoSchema = z.object({
   updatedAt: isoDateTimeSchema,
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),
+  /** Posição 1..n no backlog do time; nulo = fora do backlog (B1 A). */
+  backlogRank: z.number().int().positive().nullable(),
+  /** Visível no quadro. Sempre `backlogRank === null` (invariante do core, M3.1). */
+  onBoard: z.boolean(),
 })
 
 export const listBoardInputSchema = z.object({
@@ -51,6 +55,8 @@ export const createTaskInputSchema = z.object({
   status: taskStatusSchema.optional(),
   responsibleId: ulidSchema.optional(),
   deadline: taskDeadlineSchema.optional(),
+  /** Cria a tarefa no fim do backlog do time, fora do quadro (M3.5, Q4). */
+  inBacklog: z.boolean().optional(),
 })
 export const createTaskOutputSchema = taskDtoSchema
 export const taskUpdateChangesSchema = z

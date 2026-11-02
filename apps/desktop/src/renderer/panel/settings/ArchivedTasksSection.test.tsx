@@ -33,6 +33,8 @@ function task(id: string, title: string, project: { id: string; name: string }):
     ticketUrl: null,
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
+    backlogRank: null,
+    onBoard: true,
   }
 }
 
