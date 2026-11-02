@@ -160,4 +160,55 @@ describe('repositórios SQLite de tarefas, envolvimentos, linha do tempo e abert
     await expect(repositories.tasks.listRecent(organizationId, user.id)).resolves.toEqual([mine])
     database.$client.close()
   })
+
+  it('saveBacklogRanks é atômico no banco: falha no meio do lote desfaz as posições já gravadas (M3.9)', async () => {
+    const database = createSqliteClient(':memory:')
+    const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+    const user = aUser().with({ organizationId }).build()
+    const project = aProject().with({ organizationId, createdBy: user.id }).build()
+    await database
+      .insert(organizations)
+      .values({ id: organizationId, name: 'AgileBox', createdAt: user.createdAt })
+    const core = createSqliteCoreRepositories(database)
+    await core.users.save(organizationId, user)
+    await core.projects.save(organizationId, project)
+    const first = aTask()
+      .with({
+        id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB3'),
+        organizationId,
+        projectId: project.id,
+        createdBy: user.id,
+        responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+      })
+      .build()
+    const second = aTask()
+      .with({
+        id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
+        organizationId,
+        projectId: project.id,
+        createdBy: user.id,
+        responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB7'),
+      })
+      .build()
+    const repositories = createSqliteTaskRepositories(database)
+    await repositories.tasks.save(organizationId, { ...first, backlogRank: 1, onBoard: false })
+    await repositories.tasks.save(organizationId, { ...second, backlogRank: 2, onBoard: false })
+    // Gatilho que falha só ao gravar a segunda tarefa do lote.
+    database.$client.exec(
+      `CREATE TRIGGER falha_posicao BEFORE UPDATE OF backlog_rank ON tasks WHEN NEW.id = '${second.id}' BEGIN SELECT RAISE(ABORT, 'falha simulada'); END;`,
+    )
+
+    await expect(
+      repositories.tasks.saveBacklogRanks(organizationId, [
+        { id: first.id, backlogRank: 2 },
+        { id: second.id, backlogRank: 1 },
+      ]),
+    ).rejects.toThrow('falha simulada')
+
+    await expect(repositories.tasks.listBacklog(organizationId)).resolves.toMatchObject([
+      { id: first.id, backlogRank: 1 },
+      { id: second.id, backlogRank: 2 },
+    ])
+    database.$client.close()
+  })
 })

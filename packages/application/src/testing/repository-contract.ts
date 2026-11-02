@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   parseDateOnly,
   renameTask,
+  toAcceptanceCriterionId,
   toEventId,
   toOrganizationId,
   toParticipationId,
@@ -9,13 +10,14 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { TimelineEvent } from '@agilebox/core'
+import type { AcceptanceCriterion, OrganizationId, Task, TimelineEvent } from '@agilebox/core'
 import type {
   ContributorRepository,
   MeetingRepository,
   ParticipationRepository,
   ProjectMember,
   ProjectRepository,
+  TaskCriteriaRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamModuleEventRepository,
@@ -31,6 +33,7 @@ export interface RepositoryContractAdapters {
   readonly meetings: MeetingRepository
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
+  readonly taskCriteria: TaskCriteriaRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly timeline: TimelineRepository
@@ -45,6 +48,50 @@ const taskId = toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FAZ')
 const otherUserId = toUserId('01ARZ3NDEKTSV4RRFFQ69G5FB0')
 const otherProjectId = toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB1')
 const timestamp = '2026-01-01T00:00:00.000Z'
+
+/** ULID válido de 26 caracteres com o prefixo fixo dos testes de contrato (M3.9). */
+function ulid(suffix: string): string {
+  return `01ARZ3NDEKTSV4RRFFQ69G5F${suffix}`
+}
+
+/**
+ * Tarefa do time com posição de backlog, arquivamento e estimativa escolhidos (M3.9). A posição
+ * e o quadro seguem o invariante: fora do backlog = no quadro.
+ */
+function aPlacedTask(
+  id: string,
+  placement: {
+    backlogRank?: number | null
+    archivedAt?: string | null
+    estimatedHours?: number | null
+    organization?: OrganizationId
+    title?: string
+  } = {},
+): Task {
+  const task = aTask()
+    .with({
+      id: toTaskId(id),
+      // Participação de responsável com id próprio: o primeiro caractere muda, o resto segue o id da tarefa.
+      responsibleParticipationId: toParticipationId(`7${id.slice(1)}`),
+      organizationId: placement.organization ?? organizationId,
+      projectId,
+      createdBy: userId,
+      title: placement.title ?? 'Tarefa de backlog',
+    })
+    .build()
+  const backlogRank = placement.backlogRank ?? null
+  return {
+    ...task,
+    backlogRank,
+    onBoard: backlogRank === null,
+    archivedAt: placement.archivedAt ?? null,
+    estimatedHours: placement.estimatedHours ?? null,
+  }
+}
+
+function aCriterion(id: string, text: string, done = false): AcceptanceCriterion {
+  return { id: toAcceptanceCriterionId(id), text, done }
+}
 
 export function describeRepositoryContract(
   name: string,
@@ -684,6 +731,254 @@ export function describeRepositoryContract(
       await expect(
         repositories.participations.findById(other, participation.id),
       ).resolves.toBeNull()
+    })
+
+    it('lista o backlog do time pela posição, sem arquivadas nem tarefas do quadro, e isola por organização (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const second = aPlacedTask(ulid('K2'), { backlogRank: 2 })
+      const first = aPlacedTask(ulid('K1'), { backlogRank: 1 })
+      const onBoard = aPlacedTask(ulid('K3'))
+      const archived = aPlacedTask(ulid('K4'), { backlogRank: 3, archivedAt: timestamp })
+      for (const task of [second, first, onBoard, archived]) {
+        await repositories.tasks.save(organizationId, task)
+      }
+
+      await expect(repositories.tasks.listBacklog(organizationId)).resolves.toEqual([first, second])
+      await expect(repositories.tasks.listBacklog(otherOrganizationId)).resolves.toEqual([])
+    })
+
+    it('o upsert por id grava posição, quadro e estimativa, e não troca a organização da linha (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const otherUser = aUser()
+        .with({ id: otherUserId, organizationId: otherOrganizationId, email: 'bia@example.com' })
+        .build()
+      const otherProject = aProject()
+        .with({ id: otherProjectId, organizationId: otherOrganizationId, name: 'Projeto B' })
+        .build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.users.save(otherOrganizationId, otherUser)
+      await repositories.projects.save(otherOrganizationId, otherProject)
+      const task = aPlacedTask(ulid('K5'), { estimatedHours: 1250 })
+      await repositories.tasks.save(organizationId, task)
+      await expect(repositories.tasks.findById(organizationId, task.id)).resolves.toEqual(task)
+
+      // Estimativa zero é válida e não é o mesmo que sem estimativa.
+      const sentToBacklog = { ...task, backlogRank: 1, onBoard: false, estimatedHours: 0 }
+      await repositories.tasks.save(organizationId, sentToBacklog)
+      await expect(repositories.tasks.findById(organizationId, task.id)).resolves.toEqual(
+        sentToBacklog,
+      )
+
+      // Outra organização tenta gravar com o mesmo id: a linha de A não muda.
+      const intruder = aTask()
+        .with({
+          id: task.id,
+          organizationId: otherOrganizationId,
+          projectId: otherProjectId,
+          createdBy: otherUserId,
+          responsibleParticipationId: toParticipationId(`7${task.id.slice(1)}`),
+          title: 'Invasão',
+        })
+        .build()
+      await repositories.tasks.save(otherOrganizationId, intruder)
+      await expect(repositories.tasks.findById(organizationId, task.id)).resolves.toEqual(
+        sentToBacklog,
+      )
+      await expect(repositories.tasks.findById(otherOrganizationId, task.id)).resolves.toBeNull()
+    })
+
+    it('grava as posições do backlog em lote; uma posição inválida recusa o lote inteiro (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const first = aPlacedTask(ulid('K1'), { backlogRank: 1 })
+      const second = aPlacedTask(ulid('K2'), { backlogRank: 2 })
+      await repositories.tasks.save(organizationId, first)
+      await repositories.tasks.save(organizationId, second)
+
+      await repositories.tasks.saveBacklogRanks(organizationId, [
+        { id: second.id, backlogRank: 1 },
+        { id: first.id, backlogRank: 2 },
+      ])
+      await expect(repositories.tasks.listBacklog(organizationId)).resolves.toEqual([
+        { ...second, backlogRank: 1 },
+        { ...first, backlogRank: 2 },
+      ])
+
+      // Posição 0 é inválida: a primeira alteração do lote não pode ficar gravada.
+      await expect(
+        repositories.tasks.saveBacklogRanks(organizationId, [
+          { id: first.id, backlogRank: 1 },
+          { id: second.id, backlogRank: 0 },
+        ]),
+      ).rejects.toThrow()
+      await expect(repositories.tasks.listBacklog(organizationId)).resolves.toEqual([
+        { ...second, backlogRank: 1 },
+        { ...first, backlogRank: 2 },
+      ])
+    })
+
+    it('o lote de posições ignora tarefa de outra organização (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const otherUser = aUser()
+        .with({ id: otherUserId, organizationId: otherOrganizationId, email: 'bia@example.com' })
+        .build()
+      const otherProject = aProject()
+        .with({ id: otherProjectId, organizationId: otherOrganizationId, name: 'Projeto B' })
+        .build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.users.save(otherOrganizationId, otherUser)
+      await repositories.projects.save(otherOrganizationId, otherProject)
+      const mine = aPlacedTask(ulid('K1'))
+      const theirs = aTask()
+        .with({
+          id: toTaskId(ulid('K6')),
+          organizationId: otherOrganizationId,
+          createdBy: otherUserId,
+          responsibleParticipationId: toParticipationId(`7${ulid('K6').slice(1)}`),
+        })
+        .inProject(otherProject)
+        .build()
+      await repositories.tasks.save(organizationId, mine)
+      await repositories.tasks.save(otherOrganizationId, theirs)
+
+      await repositories.tasks.saveBacklogRanks(organizationId, [
+        { id: mine.id, backlogRank: 1 },
+        { id: theirs.id, backlogRank: 1 },
+      ])
+
+      await expect(repositories.tasks.findById(otherOrganizationId, theirs.id)).resolves.toEqual(
+        theirs,
+      )
+      await expect(repositories.tasks.listBacklog(otherOrganizationId)).resolves.toEqual([])
+      await expect(repositories.tasks.listBacklog(organizationId)).resolves.toEqual([
+        { ...mine, backlogRank: 1, onBoard: false },
+      ])
+    })
+
+    it('grava os critérios na ordem da lista, troca a lista inteira e isola por tarefa e organização (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const taskA = aPlacedTask(ulid('K1'))
+      const taskB = aPlacedTask(ulid('K2'))
+      await repositories.tasks.save(organizationId, taskA)
+      await repositories.tasks.save(organizationId, taskB)
+      const first = aCriterion(ulid('C1'), 'Tela abre')
+      const second = aCriterion(ulid('C2'), 'Erro mostrado', true)
+      const third = aCriterion(ulid('C3'), 'Texto em pt-BR')
+
+      await repositories.taskCriteria.replaceForTask(organizationId, taskA.id, [
+        first,
+        second,
+        third,
+      ])
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskA.id)).resolves.toEqual(
+        [first, second, third],
+      )
+
+      await repositories.taskCriteria.replaceForTask(organizationId, taskA.id, [third, first])
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskA.id)).resolves.toEqual(
+        [third, first],
+      )
+
+      await repositories.taskCriteria.replaceForTask(organizationId, taskA.id, [])
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskA.id)).resolves.toEqual(
+        [],
+      )
+
+      await repositories.taskCriteria.replaceForTask(organizationId, taskB.id, [second])
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskB.id)).resolves.toEqual(
+        [second],
+      )
+      await expect(
+        repositories.taskCriteria.listByTask(otherOrganizationId, taskB.id),
+      ).resolves.toEqual([])
+    })
+
+    it('troca de critérios é atômica: id repetido ou já usado por outra tarefa mantém a lista anterior (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const taskA = aPlacedTask(ulid('K1'))
+      const taskB = aPlacedTask(ulid('K2'))
+      await repositories.tasks.save(organizationId, taskA)
+      await repositories.tasks.save(organizationId, taskB)
+      const first = aCriterion(ulid('C1'), 'Primeiro')
+      const second = aCriterion(ulid('C2'), 'Segundo')
+      const third = aCriterion(ulid('C3'), 'Terceiro')
+      await repositories.taskCriteria.replaceForTask(organizationId, taskA.id, [first, second])
+
+      // Id de A reaproveitado em B: a troca de B não entra, e B continua sem critérios.
+      await expect(
+        repositories.taskCriteria.replaceForTask(organizationId, taskB.id, [third, first]),
+      ).rejects.toThrow()
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskB.id)).resolves.toEqual(
+        [],
+      )
+
+      // Id repetido na própria lista: A continua com a lista anterior.
+      await expect(
+        repositories.taskCriteria.replaceForTask(organizationId, taskA.id, [third, third]),
+      ).rejects.toThrow()
+      await expect(repositories.taskCriteria.listByTask(organizationId, taskA.id)).resolves.toEqual(
+        [first, second],
+      )
+    })
+
+    it('troca de critérios de tarefa de outra organização é ignorada (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const task = aPlacedTask(ulid('K1'))
+      await repositories.tasks.save(organizationId, task)
+
+      await repositories.taskCriteria.replaceForTask(otherOrganizationId, task.id, [
+        aCriterion(ulid('C4'), 'Invasão'),
+      ])
+
+      await expect(repositories.taskCriteria.listByTask(organizationId, task.id)).resolves.toEqual(
+        [],
+      )
+      await expect(
+        repositories.taskCriteria.listByTask(otherOrganizationId, task.id),
+      ).resolves.toEqual([])
+    })
+
+    it('arquivar a tarefa não apaga os critérios (M3.9)', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      const task = aPlacedTask(ulid('K1'))
+      await repositories.tasks.save(organizationId, task)
+      const criterion = aCriterion(ulid('C1'), 'Continua existindo')
+      await repositories.taskCriteria.replaceForTask(organizationId, task.id, [criterion])
+
+      await repositories.tasks.save(organizationId, { ...task, archivedAt: timestamp })
+
+      await expect(repositories.taskCriteria.listByTask(organizationId, task.id)).resolves.toEqual([
+        criterion,
+      ])
     })
 
     it('remove registros removíveis do contrato', async () => {

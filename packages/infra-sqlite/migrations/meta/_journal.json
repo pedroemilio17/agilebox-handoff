@@ -36,6 +36,13 @@
       "when": 1793636142836,
       "tag": "0004_team_module_events",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793658495846,
+      "tag": "0005_backlog_criterios_estimativa",
+      "breakpoints": true
     }
   ]
 }

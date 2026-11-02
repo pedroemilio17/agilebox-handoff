@@ -19,20 +19,39 @@ const taskRow = {
   createdAt: timestamp,
   updatedAt: timestamp,
   archivedAt: null,
+  backlogRank: null,
+  onBoard: true,
+  estimatedHours: null,
 }
 
 describe('mapTaskRow', () => {
-  it('usa o default de backlog enquanto a persistência do backlog não existe (M3.9)', () => {
+  it('lê posição do backlog, quadro e estimativa da linha (M3.9)', () => {
+    const task = mapTaskRow(
+      { ...taskRow, backlogRank: 2, onBoard: false, estimatedHours: 0 },
+      'Projeto AgileBox',
+      [],
+    )
+
+    expect(task.backlogRank).toBe(2)
+    expect(task.onBoard).toBe(false)
+    expect(task.estimatedHours).toBe(0)
+  })
+
+  it('lê tarefa no quadro sem posição e sem estimativa', () => {
     const task = mapTaskRow(taskRow, 'Projeto AgileBox', [])
 
     expect(task.backlogRank).toBeNull()
     expect(task.onBoard).toBe(true)
+    expect(task.estimatedHours).toBeNull()
   })
 
-  it('usa estimatedHours null enquanto a coluna estimated_hours não existe (M3.9)', () => {
-    const task = mapTaskRow(taskRow, 'Projeto AgileBox', [])
-
-    expect(task.estimatedHours).toBeNull()
+  it('recusa linha em que o quadro e o backlog não batem com o invariante', () => {
+    expect(() => mapTaskRow({ ...taskRow, backlogRank: 1, onBoard: true }, 'P', [])).toThrow(
+      'Invariante do backlog',
+    )
+    expect(() => mapTaskRow({ ...taskRow, backlogRank: null, onBoard: false }, 'P', [])).toThrow(
+      'Invariante do backlog',
+    )
   })
 
   it('mantém os campos já existentes no mapeamento', () => {

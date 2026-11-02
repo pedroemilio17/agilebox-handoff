@@ -2,6 +2,7 @@ import {
   createParticipation,
   parseDateOnly,
   parseTaskStatus,
+  toAcceptanceCriterionId,
   toContributorId,
   toEventId,
   toOrganizationId,
@@ -10,13 +11,24 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Participation, Task, TimelineEvent } from '@agilebox/core'
+import type { AcceptanceCriterion, Participation, Task, TimelineEvent } from '@agilebox/core'
 import { createTicket } from '@agilebox/core'
-import type { taskEvents, taskParticipations, tasks } from '../schema/index.js'
+import type { taskCriteria, taskEvents, taskParticipations, tasks } from '../schema/index.js'
 
 type TaskRow = typeof tasks.$inferSelect
 type ParticipationRow = typeof taskParticipations.$inferSelect
 type EventRow = typeof taskEvents.$inferSelect
+type CriterionRow = typeof taskCriteria.$inferSelect
+
+/**
+ * Invariante do backlog (M3.1): `onBoard` é verdadeiro exatamente quando a tarefa não tem posição
+ * no backlog. Vale na leitura (linha corrompida não vira tarefa silenciosa) e na escrita.
+ */
+export function assertBacklogInvariant(backlogRank: number | null, onBoard: boolean): void {
+  if (onBoard !== (backlogRank === null)) {
+    throw new Error('Invariante do backlog violado: onBoard deve ser o inverso de estar no backlog')
+  }
+}
 
 export function mapParticipationRow(row: ParticipationRow): Participation {
   const participant = row.userId
@@ -41,6 +53,7 @@ export function mapTaskRow(
   projectName: string,
   participations: readonly Participation[],
 ): Task {
+  assertBacklogInvariant(row.backlogRank, row.onBoard)
   return {
     id: toTaskId(row.id),
     organizationId: toOrganizationId(row.organizationId),
@@ -57,11 +70,18 @@ export function mapTaskRow(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     archivedAt: row.archivedAt,
-    // Persistência de backlogRank/onBoard e estimatedHours vem na M3.9; até lá toda tarefa está no quadro.
-    backlogRank: null,
-    onBoard: true,
-    estimatedHours: null,
+    backlogRank: row.backlogRank,
+    onBoard: row.onBoard,
+    estimatedHours: row.estimatedHours,
     participations,
+  }
+}
+
+export function mapCriterionRow(row: CriterionRow): AcceptanceCriterion {
+  return {
+    id: toAcceptanceCriterionId(row.id),
+    text: row.text,
+    done: row.done,
   }
 }
 

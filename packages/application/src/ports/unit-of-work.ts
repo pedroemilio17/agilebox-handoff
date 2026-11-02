@@ -3,6 +3,7 @@ import type { ContributorRepository } from './contributor-repository'
 import type { MeetingRepository } from './meeting-repository'
 import type { ParticipationRepository } from './participation-repository'
 import type { ProjectRepository } from './project-repository'
+import type { TaskCriteriaRepository } from './task-criteria-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
 import type { TeamModuleEventRepository } from './team-module-event-repository'
@@ -16,6 +17,7 @@ export interface UnitOfWorkRepositories {
   readonly meetings: MeetingRepository
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
+  readonly taskCriteria: TaskCriteriaRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamModuleEvents: TeamModuleEventRepository

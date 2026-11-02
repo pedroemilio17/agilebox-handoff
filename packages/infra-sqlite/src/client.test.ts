@@ -17,6 +17,7 @@ describe('createSqliteClient', () => {
         'projects',
         'project_members',
         'tasks',
+        'task_criteria',
         'task_participations',
         'task_events',
         'task_opens',

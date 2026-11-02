@@ -1,13 +1,15 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
-import { toTaskId } from '@agilebox/core'
+import { parseBacklogRank, toTaskId } from '@agilebox/core'
 import type {
   ParticipationRepository,
+  TaskCriteriaRepository,
   TaskOpenRepository,
   TaskRepository,
   TimelineRepository,
 } from '@agilebox/application'
 import type {
+  BacklogRankChange,
   OrganizationId,
   Participation,
   Task,
@@ -16,7 +18,13 @@ import type {
   UserId,
 } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
-import { mapParticipationRow, mapTaskRow, mapTimelineEventRow } from '../mappers/task-mappers.js'
+import {
+  assertBacklogInvariant,
+  mapParticipationRow,
+  mapTaskRow,
+  mapTimelineEventRow,
+} from '../mappers/task-mappers.js'
+import { createSqliteTaskCriteriaRepository } from './task-criteria-repository.js'
 import {
   contributors,
   projects,
@@ -32,6 +40,7 @@ type SqliteDatabase = ReturnType<typeof createSqliteClient>
 export function createSqliteTaskRepositories(database: SqliteDatabase): {
   readonly tasks: TaskRepository
   readonly participations: ParticipationRepository
+  readonly taskCriteria: TaskCriteriaRepository
   readonly timeline: TimelineRepository
   readonly taskOpens: TaskOpenRepository
 } {
@@ -147,6 +156,33 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
           a.createdAt.localeCompare(b.createdAt),
       )
     },
+    async listBacklog(organizationId) {
+      // Posição do backlog e, em empate, identificador: mesma ordem do fake.
+      const result = await findActiveTaskRows(organizationId, isNotNull(tasks.backlogRank))
+      return [...result].sort(
+        (a, b) => (a.backlogRank ?? 0) - (b.backlogRank ?? 0) || a.id.localeCompare(b.id),
+      )
+    },
+    saveBacklogRanks(organizationId, changes: readonly BacklogRankChange[]) {
+      // Dentro da promessa: posição inválida vira rejeição, como nos demais métodos assíncronos.
+      return Promise.resolve().then(() => {
+        // Valida o lote inteiro antes de gravar qualquer linha.
+        const checked = changes.map((change) => ({
+          id: change.id,
+          backlogRank: parseBacklogRank(change.backlogRank),
+        }))
+        // Uma transação: se uma linha falhar, as anteriores do lote são desfeitas.
+        database.transaction((tx) => {
+          for (const change of checked) {
+            // Posição dada = tarefa no backlog, fora do quadro (invariante de M3.1).
+            tx.update(tasks)
+              .set({ backlogRank: change.backlogRank, onBoard: false })
+              .where(and(eq(tasks.id, change.id), eq(tasks.organizationId, organizationId)))
+              .run()
+          }
+        })
+      })
+    },
     async listArchived(organizationId) {
       // Só as arquivadas: `findTaskRows` direto, sem o filtro de ativas. Mesma ordem do fake.
       const result = await findTaskRows(organizationId, isNotNull(tasks.archivedAt))
@@ -230,6 +266,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       return Number(row?.value ?? 0)
     },
     async save(organizationId, task) {
+      assertBacklogInvariant(task.backlogRank, task.onBoard)
       const [project] = await database
         .select({ id: projects.id })
         .from(projects)
@@ -268,6 +305,9 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
         archivedAt: task.archivedAt,
+        backlogRank: task.backlogRank,
+        onBoard: task.onBoard,
+        estimatedHours: task.estimatedHours,
       }
       await database
         .insert(tasks)
@@ -450,6 +490,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
   return {
     tasks: taskRepository,
     participations: participationRepository,
+    taskCriteria: createSqliteTaskCriteriaRepository(database),
     timeline: timelineRepository,
     taskOpens: taskOpenRepository,
   }

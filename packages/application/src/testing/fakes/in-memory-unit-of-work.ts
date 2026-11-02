@@ -6,6 +6,7 @@ import {
   InMemoryMeetingRepository,
   InMemoryParticipationRepository,
   InMemoryProjectRepository,
+  InMemoryTaskCriteriaRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
   InMemoryTeamModuleEventRepository,
@@ -32,6 +33,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       meetings: new InMemoryMeetingRepository(state),
       participations: new InMemoryParticipationRepository(state),
       projects: new InMemoryProjectRepository(state),
+      taskCriteria: new InMemoryTaskCriteriaRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
       tasks: new InMemoryTaskRepository(state),
       teamModuleEvents: new InMemoryTeamModuleEventRepository(state),
@@ -54,6 +56,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       participations: copyMap(this.state.participations),
       projects: copyMap(this.state.projects),
       members: copyMap(this.state.members),
+      taskCriteria: copyMap(this.state.taskCriteria),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
       teamModuleEvents: new Map(

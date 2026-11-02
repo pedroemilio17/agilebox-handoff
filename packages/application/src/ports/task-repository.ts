@@ -1,5 +1,5 @@
 import type { OrganizationId, ProjectId, TaskId, UserId } from '@agilebox/core'
-import type { Task } from '@agilebox/core'
+import type { BacklogRankChange, Task } from '@agilebox/core'
 
 export interface TaskListQuery {
   readonly projectId?: ProjectId
@@ -15,6 +15,20 @@ export interface TaskRepository {
   ): Promise<Task | null>
   listByProject(organizationId: OrganizationId, projectId: ProjectId): Promise<readonly Task[]>
   listBoard(organizationId: OrganizationId, query: TaskListQuery): Promise<readonly Task[]>
+  /**
+   * Backlog do time: tarefas com posição, da primeira à última, sem as arquivadas (M3.9). Não
+   * filtra por participante nem por quadro; isso é decidido no caso de uso.
+   */
+  listBacklog(organizationId: OrganizationId): Promise<readonly Task[]>
+  /**
+   * Grava, numa transação só, as posições alteradas do backlog (`{id, backlogRank}`): ou todas
+   * entram, ou nenhuma. Posição inválida recusa o lote inteiro. Tarefa de outra organização ou
+   * inexistente é ignorada, como em `save`.
+   */
+  saveBacklogRanks(
+    organizationId: OrganizationId,
+    changes: readonly BacklogRankChange[],
+  ): Promise<void>
   /**
    * Tarefas arquivadas da organização, das mais recentes para as mais antigas. Não filtra por
    * participante: quem vê cada uma é decidido no caso de uso (M3.0b).

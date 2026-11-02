@@ -1,5 +1,7 @@
-import { MODULE_IDS, ValidationError } from '@agilebox/core'
+import { MODULE_IDS, ValidationError, parseBacklogRank } from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
+  BacklogRankChange,
   Contributor,
   Meeting,
   ModuleId,
@@ -17,6 +19,7 @@ import type {
   ParticipationRepository,
   ProjectMember,
   ProjectRepository,
+  TaskCriteriaRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamModule,
@@ -35,6 +38,8 @@ const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as
 
 export interface InMemoryState {
   contributors: Map<OrganizationId, Map<string, Contributor>>
+  /** Critérios por tarefa (chave = id da tarefa), já na ordem da lista. */
+  taskCriteria: Map<OrganizationId, Map<string, readonly AcceptanceCriterion[]>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
@@ -51,6 +56,7 @@ export interface InMemoryState {
 export function createInMemoryState(): InMemoryState {
   return {
     contributors: new Map(),
+    taskCriteria: new Map(),
     meetings: new Map(),
     participations: new Map(),
     projects: new Map(),
@@ -288,6 +294,27 @@ export class InMemoryTaskRepository implements TaskRepository {
           a.createdAt.localeCompare(b.createdAt),
       )
   }
+  async listBacklog(org: OrganizationId) {
+    await Promise.resolve()
+    // Mesma ordem que o SQLite: posição do backlog e, em empate, identificador.
+    return [...bucket(this.state.tasks, org).values()]
+      .filter((item) => item.archivedAt === null && item.backlogRank !== null)
+      .sort((a, b) => (a.backlogRank ?? 0) - (b.backlogRank ?? 0) || a.id.localeCompare(b.id))
+  }
+  async saveBacklogRanks(org: OrganizationId, changes: readonly BacklogRankChange[]) {
+    await Promise.resolve()
+    // Valida o lote inteiro antes de mexer em qualquer tarefa: uma posição inválida não grava nada.
+    const checked = changes.map((change) => ({
+      id: change.id,
+      backlogRank: parseBacklogRank(change.backlogRank),
+    }))
+    const values = bucket(this.state.tasks, org)
+    for (const change of checked) {
+      const task = values.get(change.id)
+      // Posição dada = tarefa no backlog, fora do quadro (invariante de M3.1).
+      if (task) values.set(change.id, { ...task, backlogRank: change.backlogRank, onBoard: false })
+    }
+  }
   async listArchived(org: OrganizationId) {
     await Promise.resolve()
     // Mesma ordem que o SQLite: arquivadas mais recentes primeiro; empate pelo identificador.
@@ -345,6 +372,34 @@ export class InMemoryTaskRepository implements TaskRepository {
             (part) => part.participant.kind === 'user' && part.participant.userId === userId,
           )),
     )
+  }
+}
+
+export class InMemoryTaskCriteriaRepository implements TaskCriteriaRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return bucket(this.state.taskCriteria, org).get(taskId) ?? []
+  }
+  async replaceForTask(
+    org: OrganizationId,
+    taskId: TaskId,
+    criteria: readonly AcceptanceCriterion[],
+  ) {
+    await Promise.resolve()
+    // Tarefa de outra organização (ou inexistente) é ignorada, como no SQLite.
+    if (!bucket(this.state.tasks, org).has(taskId)) return
+    // Recusa antes de mexer: id repetido na lista, ou já usado por outra tarefa (de qualquer organização).
+    const ids = new Set(criteria.map((criterion) => criterion.id))
+    if (ids.size !== criteria.length) throw new Error('Identificador de critério repetido')
+    for (const [, byTask] of this.state.taskCriteria) {
+      for (const [ownerTaskId, list] of byTask) {
+        if (ownerTaskId !== taskId && list.some((criterion) => ids.has(criterion.id))) {
+          throw new Error('Identificador de critério já usado por outra tarefa')
+        }
+      }
+    }
+    bucket(this.state.taskCriteria, org).set(taskId, [...criteria])
   }
 }
 
