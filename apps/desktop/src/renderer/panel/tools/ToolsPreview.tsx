@@ -5,6 +5,7 @@ import type { ModuleId } from '@agilebox/core'
 import { Button, useReducedMotion } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import { TOOL_IDS } from './tool-draft'
+import { DISABLE_DESTINATIONS } from './tool-texts'
 import type { ChangePlan } from './change-plan'
 import type { ImpactState } from './use-tool-change'
 import styles from './ToolsPreview.module.css'
@@ -81,6 +82,11 @@ export function ToolsPreview({
   const reducedMotion = useReducedMotion()
   const cascadeVisible = plan.disableCascaded.filter(isVisible)
   const hiddenOut = plan.disable.filter((id) => !isVisible(id))
+  // Destino de cada módulo que sai e tem destino próprio (backlog, aceite, estimativa).
+  const destinations = plan.disable.flatMap((id) => {
+    const text = DISABLE_DESTINATIONS[id]
+    return text ? [text] : []
+  })
   const items = aggregate(impacts)
   // Aplicar só libera com a prévia pronta: sem ela, não se sabe o que sai com os itens.
   const impactBlocking = impact === 'loading' || impact === 'error'
@@ -113,6 +119,16 @@ export function ToolsPreview({
             <div className={styles.section}>
               <p className={styles.lead}>{panelCopy.previewCascade(names(plan.disableRoots))}</p>
               <Chips ids={cascadeVisible} tone="leaving" />
+            </div>
+          ) : null}
+
+          {destinations.length > 0 ? (
+            <div className={styles.section}>
+              {destinations.map((text) => (
+                <p key={text} className={styles.lead}>
+                  {text}
+                </p>
+              ))}
             </div>
           ) : null}
 

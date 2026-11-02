@@ -245,6 +245,21 @@ describe('Ferramentas: interruptores e estado', () => {
     ).toBeTruthy()
   })
 
+  it('Backlog, Aceite e Estimativa por horas têm cartão com descrição e dependência do quadro', async () => {
+    renderTools()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    expect(within(card('Backlog')).getByText('Independente')).toBeTruthy()
+    expect(
+      within(card('Estimativa por horas')).getByText('Horas estimadas por tarefa.'),
+    ).toBeTruthy()
+    expect(within(card('Estimativa por horas')).getByText('Independente')).toBeTruthy()
+    expect(
+      within(card('Aceite')).getByText('Critérios de aceite por tarefa, conferidos ao concluir.'),
+    ).toBeTruthy()
+    expect(within(card('Aceite')).getByText('Precisa de Backlog')).toBeTruthy()
+  })
+
   it('o estado aparece em texto: Ligada, Desligada e Encerrando', async () => {
     renderTools({ active: ['agenda', 'checkins'], winding: ['checkins'] })
     await screen.findByRole('switch', { name: 'Agenda' })
@@ -348,6 +363,35 @@ describe('Ferramentas: presets', () => {
     expect(isOn('Sprints')).toBe(true)
   })
 
+  it('Scrum do time diz que não tem estimativa nem critérios, e Completo diz que tem (B6)', async () => {
+    renderTools({ active: ['agenda'] })
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    expect(
+      within(preset('Scrum do time')).getByText(
+        'Sprints, check-ins e impedimentos. Sem estimativa e sem critérios de aceite.',
+      ),
+    ).toBeTruthy()
+    expect(
+      within(preset('Completo')).getByText(
+        'Tudo o que existe hoje, incluindo integrações, estimativa por horas e critérios de aceite.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('Scrum do time desliga estimativa por horas e aceite que estavam ligados (B6)', async () => {
+    renderTools({ active: ['agenda', 'backlog', 'estimates.hours', 'acceptance'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Aceite' })
+
+    await user.click(preset('Scrum do time'))
+
+    expect(pressed('Scrum do time')).toBe(true)
+    expect(isOn('Estimativa por horas')).toBe(false)
+    expect(isOn('Aceite')).toBe(false)
+    expect(isOn('Sprints')).toBe(true)
+  })
+
   it('o preset só fica marcado enquanto o rascunho bate com ele', async () => {
     renderTools({ active: ['agenda', 'backlog'] })
     const user = userEvent.setup()
@@ -429,6 +473,59 @@ describe('Ferramentas: prévia em vidro (M2.10b)', () => {
     expect(within(panel).getByText('Também sai')).toBeTruthy()
     expect(within(panel).getByText('Estimativa por pontos')).toBeTruthy()
     expect(screen.queryByRole('switch', { name: 'Estimativa por pontos' })).toBeNull()
+  })
+
+  it('desligar Backlog diz que as tarefas do backlog voltam ao quadro, sem apagar nada', async () => {
+    renderTools({ active: ['backlog'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Backlog' })
+
+    await user.click(toggle('Backlog'))
+
+    expect(
+      within(preview()).getByText('Tarefas do backlog voltam ao quadro. Nada é apagado.'),
+    ).toBeTruthy()
+  })
+
+  it('desligar Aceite diz que os critérios ficam guardados, sem apagar nada', async () => {
+    renderTools({ active: ['backlog', 'acceptance'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Aceite' })
+
+    await user.click(toggle('Aceite'))
+
+    expect(within(preview()).getByText('Critérios ficam guardados. Nada é apagado.')).toBeTruthy()
+  })
+
+  it('desligar Estimativa por horas diz que as estimativas ficam guardadas, sem apagar nada', async () => {
+    renderTools({ active: ['estimates.hours'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Estimativa por horas' })
+
+    await user.click(toggle('Estimativa por horas'))
+
+    expect(within(preview()).getByText('Estimativas ficam guardadas. Nada é apagado.')).toBeTruthy()
+  })
+
+  it('preset que tira Aceite e Estimativa mostra o destino dos dois na prévia', async () => {
+    renderTools({ active: ['agenda', 'backlog', 'estimates.hours', 'acceptance'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Aceite' })
+
+    await user.click(preset('Quadro simples'))
+
+    expect(within(preview()).getByText('Critérios ficam guardados. Nada é apagado.')).toBeTruthy()
+    expect(within(preview()).getByText('Estimativas ficam guardadas. Nada é apagado.')).toBeTruthy()
+  })
+
+  it('desligar Agenda não mostra o destino de Backlog, Aceite ou Estimativa', async () => {
+    renderTools({ active: ['agenda'] })
+    const user = userEvent.setup()
+    await screen.findByRole('switch', { name: 'Agenda' })
+
+    await user.click(toggle('Agenda'))
+
+    expect(within(preview()).queryByText(/Nada é apagado/)).toBeNull()
   })
 
   it('Aplicar fica desabilitado enquanto não há mudança', async () => {

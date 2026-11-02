@@ -14,6 +14,7 @@ import { useActor } from '../../shared/session/useActor'
 import { panelCopy } from '../copy'
 import { useTeamCapabilities } from '../hooks/use-team-capabilities'
 import { planChanges } from './change-plan'
+import { PRESET_DESCRIPTIONS } from './tool-texts'
 import { ToolCard } from './ToolCard'
 import { ToolsPreview } from './ToolsPreview'
 import {
@@ -197,7 +198,7 @@ export function ToolsView() {
                 >
                   <span className={styles.presetName}>{PRESET_LABELS[presetId].name}</span>
                   <span id={descriptionId} className={styles.presetDesc}>
-                    {PRESET_LABELS[presetId].description}
+                    {PRESET_DESCRIPTIONS[presetId]}
                   </span>
                 </button>
               )
