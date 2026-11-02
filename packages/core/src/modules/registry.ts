@@ -3,17 +3,15 @@ import type { ModuleDefinition, ModuleId } from './types'
 
 /**
  * Catálogo fixo de ferramentas (plano 2.0, seção "Camada nova: ferramentas da equipe").
- * Arestas que não aparecem no texto do plano (o diagrama é imagem) estão marcadas com "inferido":
- * conferir com o diagrama antes de liberar o M2.
+ * Arestas e níveis conferidos com o handoff do M2 (PROGRESS_2.md, "M2 · Decisões do Pedro", D1 e D3).
  */
 export const MODULE_REGISTRY: Readonly<Record<ModuleId, ModuleDefinition>> = {
   core: { id: 'core', requires: [], minLevel: 'basic', core: true },
   agenda: { id: 'agenda', requires: [], minLevel: 'basic' },
   backlog: { id: 'backlog', requires: [], minLevel: 'intermediate' },
   sprints: { id: 'sprints', requires: ['backlog'], minLevel: 'intermediate' },
-  // inferido: check-ins e impedimentos existem para acompanhar a sprint
   checkins: { id: 'checkins', requires: ['sprints'], minLevel: 'intermediate' },
-  impediments: { id: 'impediments', requires: ['sprints'], minLevel: 'intermediate' },
+  impediments: { id: 'impediments', requires: ['sprints'], minLevel: 'advanced' },
   'estimates.hours': {
     id: 'estimates.hours',
     requires: [],
@@ -27,14 +25,11 @@ export const MODULE_REGISTRY: Readonly<Record<ModuleId, ModuleDefinition>> = {
     conflicts: ['estimates.hours'],
     minLevel: 'intermediate',
   },
-  // inferido: critérios de aceitação são de itens do backlog (M3)
-  acceptance: { id: 'acceptance', requires: ['backlog'], minLevel: 'intermediate' },
+  acceptance: { id: 'acceptance', requires: ['backlog'], minLevel: 'advanced' },
   wip: { id: 'wip', requires: [], minLevel: 'advanced' },
   subtasks: { id: 'subtasks', requires: [], minLevel: 'advanced' },
-  // inferido: nível mínimo não aparece no plano; Avançado por não estar em preset básico
   integrations: { id: 'integrations', requires: [], minLevel: 'advanced' },
   flowMetrics: { id: 'flowMetrics', requires: [], minLevel: 'advanced' },
-  // inferido: retro acontece ao fim da sprint
   reviewRetro: { id: 'reviewRetro', requires: ['sprints'], minLevel: 'advanced' },
   burndown: {
     id: 'burndown',

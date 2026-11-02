@@ -54,7 +54,16 @@ describe('effectiveCapabilities', () => {
       level: 'intermediate',
       role: 'collaborator',
     })
-    expect(intermediate.screens).toEqual(SCRUM)
+    expect(intermediate.screens).toEqual(
+      SCRUM.filter((id) => id !== 'impediments' && id !== 'acceptance'),
+    )
+
+    const advancedScrum = effectiveCapabilities({
+      modules: SCRUM,
+      level: 'advanced',
+      role: 'collaborator',
+    })
+    expect(advancedScrum.screens).toEqual(SCRUM)
 
     const advanced = effectiveCapabilities({
       modules: ['core', 'wip', 'burndown'],
