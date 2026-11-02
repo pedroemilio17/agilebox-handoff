@@ -28,6 +28,9 @@ const task = {
   updatedAt: '2026-10-31T12:30:00.000Z',
   backlogRank: 2,
   onBoard: false,
+  estimatedHours: null,
+  estimatedCost: null,
+  realizedCost: null,
 }
 
 describe('posição no backlog', () => {

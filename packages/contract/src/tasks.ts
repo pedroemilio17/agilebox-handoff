@@ -1,5 +1,12 @@
 import { z } from 'zod'
-import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
+import {
+  estimatedHoursSchema,
+  isoDateTimeSchema,
+  nameSchema,
+  ulidSchema,
+  visibleRateSchema,
+} from './shared-schemas'
+import { acceptanceSummaryDtoSchema } from './acceptance'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
 export const taskDeadlineSchema = z.iso.date().nullable()
@@ -23,6 +30,14 @@ export const taskDtoSchema = z.object({
   backlogRank: z.number().int().positive().nullable(),
   /** Visível no quadro. Sempre `backlogRank === null` (invariante do core, M3.1). */
   onBoard: z.boolean(),
+  /** Estimativa em horas decimais (0,01 h); nulo = sem estimativa (M3.7). */
+  estimatedHours: estimatedHoursSchema.nullable(),
+  /** Custo estimado em R$ que o ator pode ver; nulo quando não pode (gestor vê o total, colaborador a própria parcela). */
+  estimatedCost: visibleRateSchema,
+  /** Custo realizado em R$ que o ator pode ver; mesma regra de visibilidade do estimado. */
+  realizedCost: visibleRateSchema,
+  /** Resumo n/m dos critérios de aceite (M3.6). Ausente quando a tarefa não traz o resumo. */
+  acceptance: acceptanceSummaryDtoSchema.optional(),
 })
 
 export const listBoardInputSchema = z.object({

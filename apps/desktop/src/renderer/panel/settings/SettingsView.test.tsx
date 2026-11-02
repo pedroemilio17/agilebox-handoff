@@ -128,6 +128,9 @@ describe('Ajustes: tarefas arquivadas (M3.0b)', () => {
     updatedAt: '2026-10-01T10:00:00.000Z',
     backlogRank: null,
     onBoard: true,
+    estimatedHours: null,
+    estimatedCost: null,
+    realizedCost: null,
   }
 
   it('mostra a seção Tarefas arquivadas como região com o título', async () => {

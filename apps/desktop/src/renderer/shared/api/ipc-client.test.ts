@@ -72,6 +72,37 @@ describe('cliente IPC', () => {
     ])
   })
 
+  it('envia critérios de aceite e estimativa pelos canais acceptance.* e estimates.set', async () => {
+    const channels: { channel: string; input: unknown }[] = []
+    const invoke = vi.fn().mockImplementation((channel: string, input: unknown) => {
+      channels.push({ channel, input })
+      return Promise.resolve({ ok: true, value: undefined })
+    })
+    const client = createIpcClient({ invoke, onChanges: () => () => undefined })
+    const taskId = '01ARZ3NDEKTSV4RRFFQ69G5FAV'
+    const criterionId = '01ARZ3NDEKTSV4RRFFQ69G5FAW'
+
+    await client.acceptance.list({ taskId })
+    await client.acceptance.add({ taskId, text: 'Login' })
+    await client.acceptance.edit({ taskId, criterionId, text: 'Login com e-mail' })
+    await client.acceptance.setDone({ taskId, criterionId, done: true })
+    await client.acceptance.remove({ taskId, criterionId })
+    await client.acceptance.reorder({ taskId, criterionId, toIndex: 2 })
+    await client.estimates.set({ taskId, estimatedHours: 1.5 })
+    await client.estimates.set({ taskId, estimatedHours: null })
+
+    expect(channels).toEqual([
+      { channel: 'acceptance.list', input: { taskId } },
+      { channel: 'acceptance.add', input: { taskId, text: 'Login' } },
+      { channel: 'acceptance.edit', input: { taskId, criterionId, text: 'Login com e-mail' } },
+      { channel: 'acceptance.setDone', input: { taskId, criterionId, done: true } },
+      { channel: 'acceptance.remove', input: { taskId, criterionId } },
+      { channel: 'acceptance.reorder', input: { taskId, criterionId, toIndex: 2 } },
+      { channel: 'estimates.set', input: { taskId, estimatedHours: 1.5 } },
+      { channel: 'estimates.set', input: { taskId, estimatedHours: null } },
+    ])
+  })
+
   it('leva a mensagem do servidor ao reordenar sem permissão', async () => {
     const invoke = vi.fn().mockResolvedValue({
       ok: false,

@@ -38,7 +38,41 @@ const task = {
   updatedAt: '2026-10-31T12:30:00.000Z',
   backlogRank: null,
   onBoard: true,
+  estimatedHours: null,
+  estimatedCost: null,
+  realizedCost: null,
 }
+
+describe('estimativa, custos e aceite no DTO da tarefa (M3.8b)', () => {
+  it('exige horas estimadas, custo estimado e realizado como número ou nulo, sem ausência', () => {
+    expect(
+      taskDtoSchema.parse({ ...task, estimatedHours: 2.5, estimatedCost: 225, realizedCost: 45 }),
+    ).toMatchObject({ estimatedHours: 2.5, estimatedCost: 225, realizedCost: 45 })
+    expect(taskDtoSchema.safeParse({ ...task, estimatedHours: undefined }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, estimatedCost: undefined }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, realizedCost: undefined }).success).toBe(false)
+  })
+
+  it('recusa horas estimadas negativas, acima de 1000 h ou NaN, e custo negativo', () => {
+    expect(taskDtoSchema.safeParse({ ...task, estimatedHours: -1 }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, estimatedHours: 1000.5 }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, estimatedHours: Number.NaN }).success).toBe(false)
+    expect(taskDtoSchema.safeParse({ ...task, estimatedCost: -5 }).success).toBe(false)
+    expect(
+      taskDtoSchema.safeParse({ ...task, realizedCost: Number.POSITIVE_INFINITY }).success,
+    ).toBe(false)
+  })
+
+  it('o resumo do aceite é opcional, e quando vem, feitos não passam do total', () => {
+    expect(taskDtoSchema.parse(task)).not.toHaveProperty('acceptance')
+    expect(taskDtoSchema.parse({ ...task, acceptance: { done: 1, total: 3 } })).toMatchObject({
+      acceptance: { done: 1, total: 3 },
+    })
+    expect(taskDtoSchema.safeParse({ ...task, acceptance: { done: 4, total: 3 } }).success).toBe(
+      false,
+    )
+  })
+})
 
 describe('schemas de tarefas', () => {
   it('exige backlogRank (nulo ou posição 1..n) e onBoard booleano no DTO', () => {

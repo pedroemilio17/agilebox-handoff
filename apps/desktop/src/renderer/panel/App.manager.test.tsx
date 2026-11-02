@@ -51,6 +51,9 @@ const task: TaskDto = {
   updatedAt: '2026-10-31T12:00:00.000Z',
   backlogRank: null,
   onBoard: true,
+  estimatedHours: null,
+  estimatedCost: null,
+  realizedCost: null,
 }
 
 const dashboard: DashboardDto = {

@@ -131,6 +131,32 @@ export function registerHandlers(
   register('backlog.sendToBacklog', (actor, input) =>
     useCases.backlog.sendToBacklog.execute(createTenantContext(actor), actor, input),
   )
+  register('acceptance.list', (actor, input) =>
+    useCases.acceptance.list.execute(createTenantContext(actor), actor, input),
+  )
+  register('acceptance.add', (actor, input) =>
+    useCases.acceptance.add.execute(createTenantContext(actor), actor, input),
+  )
+  register('acceptance.edit', (actor, input) =>
+    useCases.acceptance.edit.execute(createTenantContext(actor), actor, input),
+  )
+  register('acceptance.setDone', (actor, input) =>
+    useCases.acceptance.setDone.execute(createTenantContext(actor), actor, input),
+  )
+  register('acceptance.remove', (actor, input) =>
+    useCases.acceptance.remove.execute(createTenantContext(actor), actor, input),
+  )
+  register('acceptance.reorder', (actor, input) =>
+    useCases.acceptance.reorder.execute(createTenantContext(actor), actor, input),
+  )
+  register('estimates.set', (actor, input) =>
+    // O contrato recebe horas decimais (no máximo duas casas); o caso de uso recebe centésimos.
+    useCases.estimates.set.execute(createTenantContext(actor), actor, {
+      taskId: input.taskId,
+      estimatedHoursHundredths:
+        input.estimatedHours === null ? null : Math.round(input.estimatedHours * 100),
+    }),
+  )
   register('tasks.listRecent', (actor) =>
     useCases.tasks.listRecent.execute(createTenantContext(actor), actor),
   )

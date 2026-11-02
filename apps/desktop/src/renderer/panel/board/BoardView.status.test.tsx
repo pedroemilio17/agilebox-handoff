@@ -56,6 +56,9 @@ describe('Cabeçalho e estado vazio do quadro', () => {
           updatedAt: '2026-10-31T12:00:00.000Z',
           backlogRank: null,
           onBoard: true,
+          estimatedHours: null,
+          estimatedCost: null,
+          realizedCost: null,
         },
       ],
     })

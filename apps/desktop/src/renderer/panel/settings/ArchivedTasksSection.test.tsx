@@ -35,6 +35,9 @@ function task(id: string, title: string, project: { id: string; name: string }):
     updatedAt: CREATED_AT,
     backlogRank: null,
     onBoard: true,
+    estimatedHours: null,
+    estimatedCost: null,
+    realizedCost: null,
   }
 }
 

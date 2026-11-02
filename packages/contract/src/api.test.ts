@@ -10,6 +10,20 @@ describe('contratos de API e da janela', () => {
     }
   })
 
+  it('expõe os canais de critérios de aceite e de estimativa (M3.8b)', () => {
+    expect(API_CHANNELS).toEqual(
+      expect.arrayContaining([
+        'acceptance.list',
+        'acceptance.add',
+        'acceptance.edit',
+        'acceptance.setDone',
+        'acceptance.remove',
+        'acceptance.reorder',
+        'estimates.set',
+      ]),
+    )
+  })
+
   it('associa todos os controles da janela a um canal e schemas', () => {
     expect(Object.keys(SHELL_SCHEMA_REGISTRY).sort()).toEqual([...SHELL_CHANNELS].sort())
     for (const channel of SHELL_CHANNELS) {

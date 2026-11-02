@@ -113,6 +113,21 @@ import {
   setTeamLevelInputSchema,
   setTeamLevelOutputSchema,
 } from './team-settings'
+import {
+  addAcceptanceInputSchema,
+  addAcceptanceOutputSchema,
+  editAcceptanceInputSchema,
+  editAcceptanceOutputSchema,
+  listAcceptanceInputSchema,
+  listAcceptanceOutputSchema,
+  removeAcceptanceInputSchema,
+  removeAcceptanceOutputSchema,
+  reorderAcceptanceInputSchema,
+  reorderAcceptanceOutputSchema,
+  setAcceptanceDoneInputSchema,
+  setAcceptanceDoneOutputSchema,
+} from './acceptance'
+import { setEstimateInputSchema, setEstimateOutputSchema } from './estimates'
 import { API_CHANNELS, type ApiChannel } from './channels'
 
 type SchemaPair = { input: z.ZodType; output: z.ZodType }
@@ -178,6 +193,22 @@ export const API_SCHEMA_REGISTRY = {
     input: sendToBacklogInputSchema,
     output: sendToBacklogOutputSchema,
   },
+  'acceptance.list': { input: listAcceptanceInputSchema, output: listAcceptanceOutputSchema },
+  'acceptance.add': { input: addAcceptanceInputSchema, output: addAcceptanceOutputSchema },
+  'acceptance.edit': { input: editAcceptanceInputSchema, output: editAcceptanceOutputSchema },
+  'acceptance.setDone': {
+    input: setAcceptanceDoneInputSchema,
+    output: setAcceptanceDoneOutputSchema,
+  },
+  'acceptance.remove': {
+    input: removeAcceptanceInputSchema,
+    output: removeAcceptanceOutputSchema,
+  },
+  'acceptance.reorder': {
+    input: reorderAcceptanceInputSchema,
+    output: reorderAcceptanceOutputSchema,
+  },
+  'estimates.set': { input: setEstimateInputSchema, output: setEstimateOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -276,6 +307,15 @@ export interface AgileBoxApi {
     takeToBoard: Method<'backlog.takeToBoard'>
     sendToBacklog: Method<'backlog.sendToBacklog'>
   }
+  acceptance: {
+    list: Method<'acceptance.list'>
+    add: Method<'acceptance.add'>
+    edit: Method<'acceptance.edit'>
+    setDone: Method<'acceptance.setDone'>
+    remove: Method<'acceptance.remove'>
+    reorder: Method<'acceptance.reorder'>
+  }
+  estimates: { set: Method<'estimates.set'> }
   participations: {
     add: Method<'participations.add'>
     remove: Method<'participations.remove'>
