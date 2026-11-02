@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dependentsOf, previewModuleImpact } from './impact-preview'
+import { ITEM_DESTINATION, ITEM_KINDS, dependentsOf, previewModuleImpact } from './impact-preview'
 import type { ItemCounts } from './impact-preview'
 
 const AVAILABLE: ItemCounts = { tasks: 7, projects: 2, participations: 11, meetings: 3 }
@@ -28,6 +28,18 @@ describe('dependentsOf', () => {
   })
 })
 
+describe('destino por tipo', () => {
+  it('tarefas ficam no Quadro e reuniões ficam escondidas (P2 padrão B)', () => {
+    expect(ITEM_DESTINATION).toEqual({ tasks: 'board', meetings: 'hidden' })
+  })
+
+  it('todo destino definido aponta para um tipo que existe', () => {
+    for (const kind of Object.keys(ITEM_DESTINATION)) {
+      expect(ITEM_KINDS).toContain(kind)
+    }
+  })
+})
+
 describe('previewModuleImpact', () => {
   it('desligar o núcleo conta tarefas, projetos e participações, mas não reunião', () => {
     expect(previewModuleImpact('core', AVAILABLE).counts).toEqual({
@@ -53,7 +65,28 @@ describe('previewModuleImpact', () => {
   })
 
   it('não muda com a quantidade de itens zerada, e devolve o módulo pedido', () => {
-    expect(previewModuleImpact('agenda', NONE)).toEqual({ moduleId: 'agenda', counts: NONE })
+    expect(previewModuleImpact('agenda', NONE)).toEqual({
+      moduleId: 'agenda',
+      counts: NONE,
+      items: [{ kind: 'meetings', destination: 'hidden', count: 0 }],
+    })
+  })
+
+  it('desligar a agenda traz reuniões escondidas, com a contagem', () => {
+    expect(previewModuleImpact('agenda', AVAILABLE).items).toEqual([
+      { kind: 'meetings', destination: 'hidden', count: 3 },
+    ])
+  })
+
+  it('desligar o núcleo traz tarefas no Quadro; projetos e participações não passam (sem destino)', () => {
+    const { items } = previewModuleImpact('core', AVAILABLE)
+
+    expect(items).toEqual([{ kind: 'tasks', destination: 'board', count: 7 }])
+    expect(items.map((item) => item.kind)).toEqual(['tasks'])
+  })
+
+  it('módulo que não afeta tarefas nem reuniões não traz itens', () => {
+    expect(previewModuleImpact('backlog', AVAILABLE).items).toEqual([])
   })
 
   it('a prévia é só leitura: a entrada não é alterada', () => {

@@ -17,10 +17,36 @@ export const ITEM_KIND_MODULE: Readonly<Record<ItemKind, ModuleId>> = {
   meetings: 'agenda',
 }
 
+/**
+ * Destino de cada item ao desligar o módulo (handoff M2, decisão 5 e P2 padrão B).
+ * - `board`: continua no Quadro.
+ * - `hidden`: sai da tela e volta ao reativar o módulo (nada é apagado).
+ *
+ * Tipos sem destino definido não entram na prévia. Projetos e participações ainda não têm
+ * destino no handoff; impedimentos, check-ins e retros entram aqui quando existirem (M5 e M10).
+ */
+export const ITEM_DESTINATION = {
+  tasks: 'board',
+  meetings: 'hidden',
+} as const satisfies Partial<Record<ItemKind, ItemDestination>>
+
+export type ItemDestination = 'board' | 'hidden'
+
+export type DestinationKind = keyof typeof ITEM_DESTINATION
+
+export interface ItemImpact {
+  readonly kind: DestinationKind
+  readonly destination: ItemDestination
+  /** Itens desse tipo que dependem do módulo. Pode ser zero. */
+  readonly count: number
+}
+
 export interface ModuleImpact {
   readonly moduleId: ModuleId
-  /** Itens que dependem do módulo (ou de módulos que dependem dele), contados pelo tipo. */
+  /** Contagem de todos os tipos que dependem do módulo, inclusive sem destino. */
   readonly counts: ItemCounts
+  /** Só os tipos com destino, na ordem de `ITEM_KINDS`. É o que a prévia mostra. */
+  readonly items: readonly ItemImpact[]
 }
 
 /**
@@ -50,11 +76,22 @@ export function dependentsOf(moduleId: ModuleId): readonly ModuleId[] {
  */
 export function previewModuleImpact(moduleId: ModuleId, available: ItemCounts): ModuleImpact {
   const affected = dependentsOf(moduleId)
-  const counts = Object.fromEntries(
-    ITEM_KINDS.map((kind) => [
-      kind,
-      affected.includes(ITEM_KIND_MODULE[kind]) ? available[kind] : 0,
-    ]),
-  ) as Record<ItemKind, number>
-  return { moduleId, counts }
+  const isAffected = (kind: ItemKind) => affected.includes(ITEM_KIND_MODULE[kind])
+
+  const counts = {} as Record<ItemKind, number>
+  for (const kind of ITEM_KINDS) {
+    counts[kind] = isAffected(kind) ? available[kind] : 0
+  }
+
+  const items: ItemImpact[] = []
+  for (const kind of ITEM_KINDS) {
+    if (!isDestinationKind(kind) || !isAffected(kind)) continue
+    items.push({ kind, destination: ITEM_DESTINATION[kind], count: available[kind] })
+  }
+
+  return { moduleId, counts, items }
+}
+
+function isDestinationKind(kind: ItemKind): kind is DestinationKind {
+  return Object.prototype.hasOwnProperty.call(ITEM_DESTINATION, kind)
 }
