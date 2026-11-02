@@ -18,6 +18,7 @@ import {
   parseDateOnly,
   PermissionDeniedError,
   renameTask,
+  setArchivedAt,
   setDeadline,
   setDescription,
   setStatus,
@@ -188,7 +189,7 @@ abstract class ChangeTask {
   protected async change(
     actor: Actor,
     rawTaskId: string,
-    transform: (task: Task) => Task,
+    transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
@@ -196,8 +197,8 @@ abstract class ChangeTask {
     if (!task) throw new NotFoundError('Tarefa não encontrada')
     if (!canEditTask(actor, task))
       throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
-    const changed = transform(task)
     const now = await this.deps.clock.now(actor.organizationId)
+    const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
     const drafts = [...diffTask(task, updated), ...extraEvents]
     const events = await Promise.all(
@@ -270,6 +271,18 @@ export class MoveTask extends ChangeTask {
     input: { readonly taskId: string; readonly status: Task['status'] },
   ): Promise<TaskDto> {
     return this.change(actor, input.taskId, (task) => setStatus(task, input.status))
+  }
+}
+
+export class ArchiveTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
+    return this.change(actor, input.taskId, (task, now) => setArchivedAt(task, now))
+  }
+}
+
+export class UnarchiveTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
+    return this.change(actor, input.taskId, (task) => setArchivedAt(task, null))
   }
 }
 

@@ -47,6 +47,8 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
       type: 'description_edited',
       payload: { before: before.description, after: after.description },
     })
+  if (before.archivedAt !== after.archivedAt)
+    events.push({ type: after.archivedAt ? 'archived' : 'unarchived', payload: {} })
   const previousResponsible = responsible(before)
   const nextResponsible = responsible(after)
   if (previousResponsible !== nextResponsible)
@@ -104,6 +106,10 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return 'confirmou que a tarefa segue em andamento'
     case 'task_created':
       return 'criou a tarefa'
+    case 'archived':
+      return 'arquivou a tarefa'
+    case 'unarchived':
+      return 'desarquivou a tarefa'
     case 'status_changed':
       return `moveu de ${TASK_STATUS_LABELS[event.payload.before]} para ${TASK_STATUS_LABELS[event.payload.after]}`
     case 'deadline_changed':

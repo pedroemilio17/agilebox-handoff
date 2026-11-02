@@ -1,4 +1,5 @@
 import type { AppDeps } from './deps'
+import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-project'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ListProjects } from './use-cases/projects/list-projects'
 import {
@@ -13,7 +14,14 @@ import { SetDefaultRate } from './use-cases/users/set-default-rate'
 import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
-import { CreateTask, GetTaskDetail, MoveTask, UpdateTask } from './use-cases/tasks/tasks'
+import {
+  ArchiveTask,
+  CreateTask,
+  GetTaskDetail,
+  MoveTask,
+  UnarchiveTask,
+  UpdateTask,
+} from './use-cases/tasks/tasks'
 import {
   GetBoardFlow,
   ListBoard,
@@ -60,12 +68,16 @@ export function createUseCases(deps: AppDeps) {
       listMembers: new ListProjectMembers(deps),
       addMember: new AddProjectMember(deps),
       removeMember: new RemoveProjectMember(deps),
+      archiveProject: new ArchiveProject(deps),
+      unarchiveProject: new UnarchiveProject(deps),
     },
     tasks: {
       create: new CreateTask(deps),
       getDetail: new GetTaskDetail(deps),
       update: new UpdateTask(deps),
       move: new MoveTask(deps),
+      archive: new ArchiveTask(deps),
+      unarchive: new UnarchiveTask(deps),
       listBoard: new ListBoard(deps),
       getBoardFlow: new GetBoardFlow(deps),
       listTeamBoard: new ListTeamBoard(deps),

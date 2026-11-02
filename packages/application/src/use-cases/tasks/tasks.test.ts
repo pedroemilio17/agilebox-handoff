@@ -351,6 +351,53 @@ describe('casos de uso de tarefas', () => {
     ])
   })
 
+  it('arquiva e desarquiva com entrada na linha do tempo do participante', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await useCases.tasks.archive.execute(actor, { taskId: task.id })
+    expect(
+      (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.archivedAt,
+    ).toBe('2026-01-02T00:00:00.000Z')
+    await useCases.tasks.unarchive.execute(actor, { taskId: task.id })
+    expect(
+      (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.archivedAt,
+    ).toBeNull()
+    const events = await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)
+    expect(events.map((event) => event.type).sort()).toEqual(['archived', 'unarchived'])
+    expect(events.every((event) => !event.asManager && event.actorUserId === userId)).toBe(true)
+    expect(notifier.changes).toHaveLength(2)
+  })
+
+  it('marca como Gestor o arquivamento feito pelo gestor em tarefa alheia', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await useCases.tasks.archive.execute(
+      { userId: managerId, organizationId, role: 'manager' },
+      {
+        taskId: task.id,
+      },
+    )
+    expect(
+      await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
+    ).toMatchObject([{ type: 'archived', asManager: true, actorUserId: managerId }])
+  })
+
+  it('nega arquivar tarefa de que o colaborador não participa', async () => {
+    const { useCases, unitOfWork } = setup()
+    const otherUser = aUser().with({ id: otherUserId, name: 'Bia Lima' }).build()
+    const task = aTask().ownedBy(otherUser).build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await expect(useCases.tasks.archive.execute(actor, { taskId: task.id })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    expect(
+      (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.archivedAt,
+    ).toBeNull()
+    expect(await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).toEqual([])
+  })
+
   it('valida entrada de atualização', async () => {
     const { useCases } = setup()
     await expect(

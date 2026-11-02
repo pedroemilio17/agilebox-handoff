@@ -93,6 +93,9 @@ export function setStatus(task: Task, status: TaskStatus): Task {
 export function setDeadline(task: Task, deadline: DateOnly | null): Task {
   return { ...task, deadline: deadline === null ? null : parseDateOnly(deadline) }
 }
+export function setArchivedAt(task: Task, archivedAt: string | null): Task {
+  return { ...task, archivedAt }
+}
 export function setTicket(task: Task, ticket: Ticket | null): Task {
   return { ...task, ticket: ticket === null ? null : createTicket(ticket.id, ticket.url) }
 }

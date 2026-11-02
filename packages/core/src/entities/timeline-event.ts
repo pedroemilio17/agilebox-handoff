@@ -19,7 +19,7 @@ type ParticipantValueChange = Change<number> & { readonly participant: Participa
 export type TimelineEvent = EventBase &
   (
     | {
-        readonly type: 'task_created' | 'progress_confirmed'
+        readonly type: 'task_created' | 'progress_confirmed' | 'archived' | 'unarchived'
         readonly payload: Record<string, never>
       }
     | { readonly type: 'status_changed'; readonly payload: Change<TaskStatus> }

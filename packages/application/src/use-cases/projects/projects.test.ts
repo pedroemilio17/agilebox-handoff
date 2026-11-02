@@ -139,4 +139,30 @@ describe('casos de uso de projetos', () => {
       useCases.projects.listMembers.execute(manager, { projectId: project.id }),
     ).resolves.toEqual([expect.objectContaining({ id: userId, name: 'Ana Silva' })])
   })
+
+  it('arquivar oculta o projeto da lista, desarquivar devolve, e includeArchived mostra', async () => {
+    const { useCases } = setup()
+    const project = await useCases.projects.createProject.execute(actor, { name: 'Arquivável' })
+    await useCases.projects.archiveProject.execute(actor, { projectId: project.id })
+    expect(await useCases.projects.listProjects.execute(actor)).toEqual([])
+    expect(
+      await useCases.projects.listProjects.execute(actor, { includeArchived: true }),
+    ).toHaveLength(1)
+    await useCases.projects.unarchiveProject.execute(actor, { projectId: project.id })
+    expect(await useCases.projects.listProjects.execute(actor)).toEqual([
+      expect.objectContaining({ id: project.id }),
+    ])
+  })
+
+  it('nega arquivar e desarquivar a colaborador que não criou o projeto', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: otherUserId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.archiveProject.execute(actor, { projectId: project.id }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      useCases.projects.unarchiveProject.execute(actor, { projectId: project.id }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
 })

@@ -7,8 +7,13 @@ import type { ProjectRepository } from '../../ports'
 export class ListProjects {
   constructor(private readonly projects: ProjectRepository) {}
 
-  async execute(actor: Actor): Promise<readonly ProjectDto[]> {
-    const projects = await this.projects.list(actor.organizationId)
+  async execute(
+    actor: Actor,
+    options: { readonly includeArchived?: boolean } = {},
+  ): Promise<readonly ProjectDto[]> {
+    const projects = (await this.projects.list(actor.organizationId)).filter(
+      (project) => options.includeArchived || project.archivedAt === null,
+    )
     const visible = await Promise.all(
       projects.map(async (project) => {
         const members = await this.projects.listMembers(actor.organizationId, project.id)
