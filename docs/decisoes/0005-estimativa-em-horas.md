@@ -31,11 +31,40 @@ Decisão B4 (A), tomada pelo Pedro:
 - O valor/hora de exemplo do quadro (cerca de R$ 65/h, D8) não define nada aqui; é dado de demonstração.
 - A dependência entre Sprints e estimativa para capacidade (pergunta aberta para o M4) não muda com este ADR.
 
+## Revisão de 2026-11-03 · estimativa por responsável (substitui a divisão igual)
+
+**Motivo.** Decisão do Pedro (Q2): cada responsável conta com o próprio valor. A divisão em partes iguais entre todos os envolvidos escondia quanto cada pessoa realmente vai trabalhar e punha a mesma carga em quem tem valor/hora diferente. A capacidade de sprint (M4) também precisa da estimativa por pessoa.
+
+**Substitui** o item "Custo estimado (Q2)" da seção Decisão, o arredondamento por parcela e a pendência Q2. Valem sem mudança: unidade em centésimos de hora, limite de 1000 h, `null` = sem estimativa, separação do realizado, visibilidade (gestor vê tudo; colaborador, só a própria parte) e `canEditEstimate` = `canEditTask`.
+
+**Nova regra.**
+
+- Cada participação responsável guarda `estimatedHoursHundredths` (nulo ou inteiro de 0 a 100000), ao lado de `hoursHundredths` (realizado).
+- Custo estimado = Σ (horas estimadas × `rateCents` da participação), a mesma conta do realizado. Sem divisão e sem resto de centavos.
+- `Task.estimatedHours` deixa de ser campo próprio e passa a ser a soma derivada das participações com estimativa (nulo se nenhuma tiver). O limite de 1000 h vale por participação.
+- Quem não é responsável (apoio, entidade) não recebe estimativa própria. Entidades nunca recebem permissão nem aviso, e seu valor/hora continua só para custo realizado.
+- Valor/hora: padrão global da organização de R$ 45,00; o valor individual do usuário é opcional e, se existir, sobrescreve o padrão. A participação continua gravando o `rateCents` do momento em que foi criada.
+
+**Migração (preserva o total).**
+
+1. Para cada tarefa com `estimated_hours` não nulo e pelo menos um responsável: dividir em partes iguais entre os responsáveis atuais, em centésimos. A sobra (resto da divisão inteira) vai inteira para o primeiro responsável, na ordem de `added_at` e depois por id, de forma determinística. A soma das participações é exatamente o valor antigo.
+2. Tarefas com estimativa e **sem responsável** não são zeradas nem descartadas. O valor antigo fica em `tasks.estimated_hours_legacy` (coluna nova, mantida), e a migração registra quantas são. A tela do Backlog mostra a estimativa legada com aviso "sem responsável" até alguém atribuir. Antes de rodar, o Pedro é avisado da contagem (consulta de leitura abaixo).
+3. `tasks.estimated_hours` só é removida em migração posterior, depois de conferido.
+
+```sql
+-- contar o que ficaria sem responsável (somente leitura)
+SELECT COUNT(*) FROM tasks t
+WHERE t.estimated_hours IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM task_participations p WHERE p.task_id = t.id AND p.role = 'responsible');
+```
+
+**Consequências.** `rules/estimate-cost.ts` fica mais simples (some `plannedShareCents`); os testes de arredondamento por parcela são trocados por testes de soma e de preservação do total na migração. O quadro 09 e o rodapé do Backlog somam as estimativas por responsável.
+
 ## Alternativa descartada (B)
 
 **Manter a estimativa como soma das horas por participação.** Não exige coluna nova nem migração, mas mantém a mistura entre estimativa e realizado: a estimativa muda a cada lançamento de hora, e o custo "estimado" passa a ser o custo real. Descartada, porque contraria ADR-07 e os quadros 09 e 10.
 
 ## Pendências para o Pedro
 
-- **Q2. Decidida pela recomendação, pendente de confirmação.** Divisão igual entre todos os envolvidos, cada um com o próprio valor/hora. Alternativa: usar o valor/hora do responsável para toda a estimativa. Confirmar ou trocar.
+- **Q2. Substituída em 2026-11-03 (ver Revisão).** Texto original: Divisão igual entre todos os envolvidos, cada um com o próprio valor/hora. Alternativa: usar o valor/hora do responsável para toda a estimativa. Confirmar ou trocar.
 - **Teto de 1000 h** por tarefa: confirmar o valor.

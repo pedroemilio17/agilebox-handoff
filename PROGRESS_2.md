@@ -789,3 +789,36 @@ Nada abaixo bloqueia o uso; ajustar depois.
 - **Decisões M0–M2 ainda pendentes:** `CreateProject` reaproveita o projeto existente em vez de recusar; `ProjectDto` sem `archivedAt`; tarefa de projeto arquivado volta ao quadro "todos os projetos"; D10 (laço do Codex lendo o `PROGRESS_2.md`); `aria-label` em `GlassSurface` em Aparência, nível do time e atualizações.
 
 **Status M3-fix-telas (revisão das telas do M3):** feito. Foco ao "Levar ao Quadro" vai à alça da próxima linha (senão à anterior, senão ao estado vazio; para colaborador, sem alça, ao "Levar ao Quadro" da linha seguinte); o dnd-kit tem instruções e anúncios em pt-BR e honestos (ponteiro, Alt+setas, menu); chips do filtro e campos numéricos com 44 px (testados por leitura do CSS; plugin `rawCssPlugin` também no projeto `desktop-renderer`); Alt+seta ignorado durante reordenação em andamento; "Adicionar critério" sem duplo envio; editar critérios invalida o "n/m" do backlog. `pnpm check` completo verde com carga baixa (173 arquivos, 1882 testes). Atenção: rodar dois `pnpm check` ao mesmo tempo estoura o tempo de testes de interface (carga ~18 em 8 núcleos); rodar um por vez. Pendências do Pedro: conferir no Electron o foco após "Levar ao Quadro" e o visual dos chips de 44 px; desfazer da reordenação usa posição absoluta; "Total" recalculado no cliente pode divergir de "Custo realizado" até gravar; Enter em critério/estimativa tira o foco do campo; mover/remover/adicionar critério sem anúncio em texto; backlog faz uma consulta por linha.
+
+## M4 · Preparação e bloco 1 (valor/hora) — sessão Claude, 2026-11-03
+
+### Decisões do Pedro (2026-11-03)
+
+- **Q2:** estimativa por responsável; custo = Σ (horas × valor/hora de cada um). Substitui a divisão igual (ADR 0005, seção "Revisão de 2026-11-03"). Migração preserva o total; sobra de centésimos vai ao primeiro responsável; tarefas com estimativa e sem responsável guardam o valor em `tasks.estimated_hours_legacy`.
+- **Q3:** manter `canEditTask`; pertencimento à equipe entra no M4b.
+- **Q5:** aceite pendente não bloqueia concluir; selo "aceite pendente" e filtro no Backlog.
+- **Valor/hora:** R$ 45,00 padrão da organização; valor individual do usuário opcional (`null` usa o padrão). Entidades (`Contributor`) seguem com valor obrigatório.
+- **Limites** de 200 caracteres no critério e 1000 h por participação: aprovados.
+- **Sprint sem estimativa:** permitida, conta 0 h com aviso.
+- **ADR-08 revisto:** uma sprint ativa por equipe; mini-equipes; capacidade por porcentagem por equipe (soma até 100%, acima recusada; uma equipe só = 100%); M4a (equipe padrão) e M4b (gestão de equipes). **ADR-09:** Fastify + LISTEN/NOTIFY + SSE. Texto em `docs/AgileBox 2.0 — Plano de entregas por camadas e marcos.md`.
+- **Encerramento da sprint (proposta, aguarda aprovação):** por item aberto, voltar ao backlog (padrão) ou ir à próxima sprint `draft` da mesma equipe.
+
+### Andamento (agentes haiku, revisão do Claude)
+
+- [x] **M4.1 core:** `User.defaultRateCents: number | null`, `Organization.defaultRateCents` (4500), `effectiveRate`. 562 testes do core passam.
+- [x] **M4.2 infra-sqlite:** migração 0006 (`organizations.default_rate_cents`, `users.default_rate_cents` anulável), mapper, teste `migration-0006.test.ts`. `createSqliteClient` desliga `foreign_keys` em volta do `migrate` (ADR 0006). 56 testes do pacote passam.
+- [ ] **M4.3 application + contract:** o typecheck está **quebrado de propósito** em `application/src/mappers/index.ts:54`, `use-cases/participations/participations.ts:184`, `use-cases/tasks/tasks.ts:95` e `:114`. `set-default-rate` aceita `null`; caso de uso do gestor para o padrão da organização; DTO; seed sem 4500 fixo.
+- [ ] **M4.4 desktop:** campo "Valor/hora" em Ajustes, placeholder "Padrão R$ 45,00".
+- [ ] **Bloco 2 (estimativa por responsável), depois do 1:** 5 core (`Participation.estimatedHoursHundredths`, soma derivada, 1000 h por participação); 6 core (`estimate-cost.ts` vira Σ horas × taxa); 7 infra, migração 0007 com divisão e `estimated_hours_legacy` (**sonnet**); 8 application/contract/desktop.
+- [ ] **Bloco 3 (aceite pendente):** 9 core+application (regra e filtro); 10 desktop (selo e chip de 44 px). Independente do bloco 1.
+- [ ] **Bloco 4 (M4a):** 11 `Sprint` e regra de uma ativa por equipe (**sonnet**); 12 capacidade e aviso de tarefas sem estimativa; 13 migração 0008 (`teams`, `team_members`, `sprints`, `sprint_tasks`, equipe padrão a 100%); 14 casos de uso e encerramento (**sonnet**); 15 contract e telas.
+- [ ] **M4b:** `Team`/`TeamMember`, módulos por equipe, `canEditTask` por equipe, tela de equipes.
+
+Regras da orquestração: uma tarefa por vez (dois `pnpm check` simultâneos estouram o tempo dos testes de interface); agentes não fazem commit nem instalam nada; o Claude revisa cada entrega (diff no escopo, teste novo, typecheck) antes de despachar a seguinte; `pnpm check` completo só quando a M4.3 fechar.
+
+### Pendências do Pedro
+
+- Aprovar a política de encerramento da sprint acima.
+- Rodar a consulta do ADR 0005 no banco do app instalado para contar tarefas com estimativa e sem responsável, **antes** da migração 0007 (não havia `sqlite3` no ambiente do Claude).
+- Confirmar se `Contributor` (entidade) deve ter valor/hora opcional também; hoje não tem.
+- Conferir o ADR 0006 (chaves estrangeiras desligadas durante `migrate`).
