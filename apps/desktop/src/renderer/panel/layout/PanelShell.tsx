@@ -7,6 +7,7 @@ import { ProjectRow } from './ProjectRow'
 import { UndoProvider } from './UndoProvider'
 import { SettingsView } from '../settings/SettingsView'
 import { ToolsView } from '../tools/ToolsView'
+import { BacklogView } from '../backlog/BacklogView'
 import styles from './PanelShell.module.css'
 
 export type PanelView = SidebarScreenId | 'plugins' | 'settings'
@@ -180,6 +181,8 @@ export function PanelShell({
               <SettingsView />
             ) : visibleView === 'tools' ? (
               <ToolsView />
+            ) : visibleView === 'backlog' ? (
+              <BacklogView />
             ) : visibleView === 'plugins' ? (
               <EmptyState title={panelCopy.comingSoon} />
             ) : (

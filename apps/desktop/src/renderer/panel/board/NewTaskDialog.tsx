@@ -8,6 +8,8 @@ import styles from './NewTaskDialog.module.css'
 
 export interface NewTaskDialogProps {
   readonly initialStatus?: TaskStatus
+  /** Cria a tarefa no fim do backlog, fora do quadro (Backlog, M3.11). */
+  readonly inBacklog?: boolean
   readonly open: boolean
   readonly projects: readonly ProjectDto[]
   readonly selectedProjectId: string | null
@@ -18,6 +20,7 @@ export interface NewTaskDialogProps {
 export function NewTaskDialog({
   open,
   initialStatus,
+  inBacklog = false,
   projects,
   selectedProjectId,
   onClose,
@@ -50,6 +53,7 @@ export function NewTaskDialog({
         projectId,
         title: trimmedTitle,
         ...(initialStatus ? { status: initialStatus } : {}),
+        ...(inBacklog ? { inBacklog: true } : {}),
       })
       close()
       onCreated(task)

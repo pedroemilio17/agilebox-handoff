@@ -16,8 +16,8 @@ export const UNDO_FAILED_MESSAGE = 'Não foi possível desfazer. Tente de novo.'
 const FAILURE_MS = 5000
 
 export interface UndoOffer {
-  /** Texto do aviso, com o nome do item, por exemplo "Tarefa “Revisar” arquivada". */
-  readonly message: string
+  /** Texto do aviso, com o nome do item, por exemplo "Tarefa “Revisar” arquivada". Aceita trechos com destaque. */
+  readonly message: ReactNode
   /** Desfaz a ação. Se a promessa falhar, aparece o alerta de erro. */
   readonly undo: () => Promise<unknown>
 }
