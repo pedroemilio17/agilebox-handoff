@@ -50,6 +50,7 @@ export default defineConfig({
         },
       },
       {
+        plugins: [rawCssPlugin],
         test: {
           name: 'desktop-renderer',
           root: './apps/desktop',

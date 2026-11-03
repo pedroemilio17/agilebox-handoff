@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
@@ -462,5 +462,142 @@ describe('Levar ao Quadro e Nova tarefa', () => {
         inBacklog: true,
       }),
     )
+  })
+})
+
+describe('foco depois de Levar ao Quadro', () => {
+  it('pelo teclado, a alça da linha seguinte recebe o foco', async () => {
+    renderBacklog()
+    await screen.findByRole('listitem', { name: 'Avisar tarefa parada' })
+
+    const take = within(row('Avisar tarefa parada')).getByRole('button', {
+      name: backlogCopy.takeToBoardFor('Avisar tarefa parada'),
+    })
+    take.focus()
+    await userEvent.keyboard('{Enter}')
+
+    await waitFor(() =>
+      expect(screen.queryByRole('listitem', { name: 'Avisar tarefa parada' })).toBeNull(),
+    )
+    await waitFor(() => expect(document.activeElement).toBe(gripOf('Exportar horas em CSV')))
+  })
+
+  it('sem linha seguinte, a alça da linha anterior recebe o foco', async () => {
+    renderBacklog()
+    await screen.findByRole('listitem', { name: 'Exportar horas em CSV' })
+
+    const take = within(row('Exportar horas em CSV')).getByRole('button', {
+      name: backlogCopy.takeToBoardFor('Exportar horas em CSV'),
+    })
+    take.focus()
+    await userEvent.keyboard('{Enter}')
+
+    await waitFor(() =>
+      expect(screen.queryByRole('listitem', { name: 'Exportar horas em CSV' })).toBeNull(),
+    )
+    await waitFor(() => expect(document.activeElement).toBe(gripOf('Avisar tarefa parada')))
+  })
+
+  it('sem nenhuma linha restante, o foco vai ao estado vazio (tabIndex -1)', async () => {
+    renderBacklog({
+      tasks: [task(T2, 'Avisar tarefa parada', { projectId: P_B, projectName: 'Projeto B' })],
+    })
+    await screen.findByRole('listitem', { name: 'Avisar tarefa parada' })
+
+    const take = within(row('Avisar tarefa parada')).getByRole('button', {
+      name: backlogCopy.takeToBoardFor('Avisar tarefa parada'),
+    })
+    take.focus()
+    await userEvent.keyboard('{Enter}')
+
+    await waitFor(() => expect(screen.getByText(backlogCopy.emptyTitle)).toBeTruthy())
+    await waitFor(() => {
+      const active = document.activeElement
+      expect(active?.getAttribute('tabindex')).toBe('-1')
+      expect(active?.contains(screen.getByText(backlogCopy.emptyTitle))).toBe(true)
+    })
+  })
+
+  it('colaborador não tem alça: o foco vai ao botão Levar ao Quadro da linha seguinte', async () => {
+    renderBacklog({ role: 'collaborator' })
+    await screen.findByRole('listitem', { name: 'Avisar tarefa parada' })
+
+    const take = within(row('Avisar tarefa parada')).getByRole('button', {
+      name: backlogCopy.takeToBoardFor('Avisar tarefa parada'),
+    })
+    take.focus()
+    await userEvent.keyboard('{Enter}')
+
+    const next = within(row('Exportar horas em CSV')).getByRole('button', {
+      name: backlogCopy.takeToBoardFor('Exportar horas em CSV'),
+    })
+    await waitFor(() => expect(document.activeElement).toBe(next))
+  })
+})
+
+describe('acessibilidade do arrastar (dnd-kit em pt-BR)', () => {
+  it('a alça não traz texto em inglês e descreve o uso honesto (ponteiro, Alt+seta, menu)', async () => {
+    renderBacklog()
+    await screen.findByRole('listitem', { name: 'Integrar webhook' })
+
+    const grip = gripOf('Integrar webhook')
+    expect(grip.getAttribute('aria-roledescription')).toBe(backlogCopy.reorderRoleDescription)
+    const describedBy = grip.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    await waitFor(() =>
+      expect(document.getElementById(describedBy ?? '')?.textContent).toBe(
+        backlogCopy.dragInstructions,
+      ),
+    )
+    expect(backlogCopy.dragInstructions).toContain('ponteiro')
+    expect(backlogCopy.dragInstructions).toContain('Alt')
+    expect(backlogCopy.dragInstructions).toContain('menu')
+    expect(document.body.textContent).not.toMatch(/space bar|Draggable|Picked up|sortable/i)
+  })
+
+  it('ao começar a arrastar com o ponteiro, anuncia em pt-BR', async () => {
+    renderBacklog()
+    await screen.findByRole('listitem', { name: 'Integrar webhook' })
+
+    const grip = gripOf('Integrar webhook')
+    fireEvent.pointerDown(grip, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    })
+    fireEvent.pointerMove(grip, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 40,
+    })
+
+    expect(await screen.findByText(backlogCopy.dragStarted('Integrar webhook'))).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/Picked up|Draggable item/)
+  })
+})
+
+describe('movimento repetido', () => {
+  it('Alt+↓ repetido enquanto o servidor não respondeu envia um só movimento', async () => {
+    let release: () => void = () => undefined
+    const { reorder } = renderBacklog({
+      reorder: () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        }),
+    })
+    await screen.findByRole('listitem', { name: 'Integrar webhook' })
+
+    fireEvent.keyDown(gripOf('Integrar webhook'), { key: 'ArrowDown', altKey: true })
+    fireEvent.keyDown(gripOf('Integrar webhook'), { key: 'ArrowDown', altKey: true })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+
+    expect(reorder).toHaveBeenCalledTimes(1)
+    release()
   })
 })

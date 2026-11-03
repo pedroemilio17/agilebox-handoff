@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CriteriaViewDto } from '@agilebox/contract'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
+import { backlogKeys } from '../backlog/query-keys'
 import { taskDetailKeys } from './keys'
 
 export type AcceptanceAction =
@@ -53,6 +54,8 @@ export function useAcceptanceSave(taskId: string) {
       queryClient.setQueryData(taskDetailKeys.acceptance(taskId), view)
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+      // O backlog mostra o n/m de critérios de cada linha.
+      void queryClient.invalidateQueries({ queryKey: backlogKeys.all })
     },
   })
 }

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Button, EmptyState, ProjectSwatch } from '@agilebox/ui'
 import { canReorderBacklog } from '@agilebox/core'
@@ -61,19 +68,33 @@ export function BacklogView() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   const listRef = useRef<HTMLUListElement>(null)
-  // Depois de mover, o foco volta à alça da mesma tarefa, mesmo com a linha em outra posição.
-  const focusAfterMove = useRef<string | null>(null)
+  const emptyRef = useRef<HTMLDivElement>(null)
+  // Foco a aplicar quando a lista nova chega: mover e levar ao quadro mudam a lista.
+  const pendingFocus = useRef<(() => void) | null>(null)
+  // Um movimento por vez: uma segunda tecla antes da resposta do servidor é descartada.
+  const movingRef = useRef(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const visible = visibleBacklog(items, projectFilter)
   const projectList = projects.data ?? []
 
   useEffect(() => {
-    const taskId = focusAfterMove.current
-    if (!taskId) return
-    focusAfterMove.current = null
-    listRef.current?.querySelector<HTMLElement>(`[data-grip-for="${taskId}"]`)?.focus()
+    const focus = pendingFocus.current
+    if (!focus) return
+    pendingFocus.current = null
+    focus()
   }, [backlog.data])
+
+  /** Alça da linha (gestor) ou botão Levar ao Quadro (colaborador, sem alça). */
+  function focusRowControl(taskId: string) {
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-grip-for="${taskId}"], [data-take-for="${taskId}"]`)
+      ?.focus()
+  }
+
+  const titleOf = (id: UniqueIdentifier) =>
+    items.find((item) => item.id === String(id))?.title ?? String(id)
+  const positionOf = (id: UniqueIdentifier) => items.findIndex((item) => item.id === String(id)) + 1
 
   const responsibleOf = (taskId: string): string | undefined => {
     const index = items.findIndex((item) => item.id === taskId)
@@ -88,7 +109,22 @@ export function BacklogView() {
     if (!task) return
     const to = resolveInsertIndex(placement, items.length)
     if (to === from) return
+    if (movingRef.current) return
+    movingRef.current = true
+    try {
+      await runMove(taskId, placement, task, from, to)
+    } finally {
+      movingRef.current = false
+    }
+  }
 
+  async function runMove(
+    taskId: string,
+    placement: Placement,
+    task: TaskDto,
+    from: number,
+    to: number,
+  ) {
     setActionError(null)
     // Quantos outros participam: só isso decide se o aviso de escopo aparece.
     let others: number
@@ -102,14 +138,15 @@ export function BacklogView() {
       others = 0
     }
 
+    pendingFocus.current = () => focusRowControl(taskId)
     try {
       await reorder.mutateAsync({ taskId, placement })
     } catch (error) {
+      pendingFocus.current = null
       setActionError(reasonOf(error))
       return
     }
 
-    focusAfterMove.current = taskId
     setAnnouncement(movedNotice(task.title, to, items.length))
     const scope = scopeNoticeFor(others)
     offer({
@@ -130,7 +167,7 @@ export function BacklogView() {
   }
 
   function onRowKeyDown(event: KeyboardEvent<HTMLLIElement>, task: TaskDto) {
-    if (!canReorder || !event.altKey) return
+    if (!canReorder || !event.altKey || reorder.isPending) return
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
     event.preventDefault()
     const direction: MoveDirection = event.key === 'ArrowUp' ? 'up' : 'down'
@@ -156,10 +193,18 @@ export function BacklogView() {
 
   async function takeTask(task: TaskDto) {
     setActionError(null)
+    // A linha some: o foco vai à seguinte, sem ela à anterior, e sem nenhuma ao estado vazio.
+    const index = visible.findIndex((item) => item.id === task.id)
+    const neighbor = visible[index + 1] ?? visible[index - 1]
+    pendingFocus.current = () => {
+      if (neighbor) focusRowControl(neighbor.id)
+      else emptyRef.current?.focus()
+    }
     try {
       await takeToBoard.mutateAsync({ taskId: task.id })
       setAnnouncement(backlogCopy.takenToBoard(task.title))
     } catch (error) {
+      pendingFocus.current = null
       setActionError(reasonOf(error))
     }
   }
@@ -218,16 +263,36 @@ export function BacklogView() {
 
       {loading ? <p className={styles.muted}>{backlogCopy.loading}</p> : null}
 
-      {!loading && !failed && items.length === 0 ? (
-        <EmptyState title={backlogCopy.emptyTitle} description={backlogCopy.emptyDescription} />
-      ) : null}
-
-      {!loading && !failed && items.length > 0 && visible.length === 0 ? (
-        <p className={styles.muted}>{backlogCopy.emptyProject}</p>
+      {!loading && !failed && visible.length === 0 ? (
+        <div className={styles.emptyFocus} ref={emptyRef} tabIndex={-1}>
+          {items.length === 0 ? (
+            <EmptyState title={backlogCopy.emptyTitle} description={backlogCopy.emptyDescription} />
+          ) : (
+            <p className={styles.muted}>{backlogCopy.emptyProject}</p>
+          )}
+        </div>
       ) : null}
 
       <div className={styles.scroller}>
-        <DndContext onDragEnd={onDragEnd} sensors={sensors}>
+        <DndContext
+          accessibility={{
+            announcements: {
+              onDragStart: ({ active }) => backlogCopy.dragStarted(titleOf(active.id)),
+              onDragOver: ({ active, over }) =>
+                over
+                  ? backlogCopy.dragOver(titleOf(active.id), positionOf(over.id), items.length)
+                  : backlogCopy.dragNoTarget(titleOf(active.id)),
+              onDragEnd: ({ active, over }) =>
+                over
+                  ? backlogCopy.dragEnded(titleOf(active.id), positionOf(over.id), items.length)
+                  : backlogCopy.dragEndedNowhere(titleOf(active.id)),
+              onDragCancel: ({ active }) => backlogCopy.dragCancelled(titleOf(active.id)),
+            },
+            screenReaderInstructions: { draggable: backlogCopy.dragInstructions },
+          }}
+          onDragEnd={onDragEnd}
+          sensors={sensors}
+        >
           <SortableContext
             items={visible.map((item) => item.id)}
             strategy={verticalListSortingStrategy}

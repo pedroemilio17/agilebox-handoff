@@ -36,5 +36,18 @@ export const backlogCopy = {
   createdInBacklog: (title: string) => `Tarefa ${title} criada no fim do backlog`,
   undo: 'Desfazer',
   footerKeys: 'Alt + ↑ ↓ move a linha em foco',
+  reorderRoleDescription: 'item ordenável',
+  /** Instrução que o dnd-kit lê na alça. Só o que funciona: arrastar com ponteiro, Alt+setas, menu. */
+  dragInstructions:
+    'Para mudar a ordem, arraste a alça com o ponteiro. Pelo teclado, segure Alt e aperte ↑ ou ↓ com a linha em foco, ou use o menu "⋯".',
+  dragStarted: (title: string) =>
+    `Tarefa ${title} selecionada para arrastar. Mova o ponteiro para escolher a nova posição.`,
+  dragOver: (title: string, position: number, total: number) =>
+    `Tarefa ${title} sobre a posição ${position} de ${total}`,
+  dragNoTarget: (title: string) => `Tarefa ${title} fora da lista`,
+  dragEnded: (title: string, position: number, total: number) =>
+    `Tarefa ${title} solta na posição ${position} de ${total}`,
+  dragEndedNowhere: (title: string) => `Tarefa ${title} solta fora da lista. A ordem não mudou.`,
+  dragCancelled: (title: string) => `Arraste de ${title} cancelado. A ordem não mudou.`,
   footerTeam: 'A ordem vale para o time inteiro, em todos os projetos.',
 } as const

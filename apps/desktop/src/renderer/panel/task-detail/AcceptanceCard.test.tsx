@@ -2,10 +2,12 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { QueryClient } from '@tanstack/react-query'
 import { ApiError } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
+import { backlogKeys } from '../backlog/query-keys'
 import { AcceptanceCard } from './AcceptanceCard'
 import {
   CRITERION_FIRST_ID,
@@ -242,5 +244,41 @@ describe('AcceptanceCard', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
     expect(screen.queryByRole('button', { name: /Remover|Mover|Adicionar/ })).toBeNull()
     expect(screen.getByRole('checkbox', { name: 'Critério 1 feito' })).toBeDisabled()
+  })
+})
+
+describe('AcceptanceCard: envio e consultas', () => {
+  it('dois cliques em Adicionar critério enviam um só critério e o botão fica aria-disabled', async () => {
+    const { add, user } = setup()
+    const input = await screen.findByLabelText('Novo critério')
+    add.mockReturnValueOnce(new Promise(() => undefined))
+    await user.type(input, 'Revisar logs')
+    const button = screen.getByRole('button', { name: 'Adicionar critério' })
+
+    await user.click(button)
+    await user.click(button)
+
+    expect(add).toHaveBeenCalledTimes(1)
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('ao marcar um critério, invalida a consulta do backlog (n/m da lista)', async () => {
+    const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const { user } = setup()
+    await screen.findByText('1/3')
+    await user.click(screen.getByRole('checkbox', { name: 'Critério 3 feito' }))
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: backlogKeys.all }))
+    spy.mockRestore()
+  })
+
+  it('ao adicionar um critério, invalida a consulta do backlog (n/m da lista)', async () => {
+    const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const { user } = setup()
+    await user.type(await screen.findByLabelText('Novo critério'), 'Revisar logs')
+    await user.click(screen.getByRole('button', { name: 'Adicionar critério' }))
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: backlogKeys.all }))
+    spy.mockRestore()
   })
 })

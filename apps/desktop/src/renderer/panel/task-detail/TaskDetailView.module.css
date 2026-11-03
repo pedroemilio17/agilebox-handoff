@@ -220,7 +220,7 @@
 
 .numberInput {
   width: 72px;
-  min-height: 36px;
+  min-height: var(--size-touch-target);
   padding: 0 var(--space-2);
   border: var(--glass-group-border);
   border-radius: var(--radius-field);

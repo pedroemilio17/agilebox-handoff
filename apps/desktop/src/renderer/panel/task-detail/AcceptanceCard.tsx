@@ -184,6 +184,8 @@ export function AcceptanceCard({ taskId, readOnly }: AcceptanceCardProps) {
 
   function submitNew(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    // Enquanto um envio não volta, o segundo clique não manda outro critério.
+    if (save.isPending) return
     const text = newText.trim()
     const issue = textProblem(text)
     if (issue) {
@@ -272,7 +274,7 @@ export function AcceptanceCard({ taskId, readOnly }: AcceptanceCardProps) {
             value={newText}
             onChange={(event) => setNewText(event.currentTarget.value)}
           />
-          <button type="submit" className={styles.addButton}>
+          <button type="submit" aria-disabled={save.isPending} className={styles.addButton}>
             {taskDetailCopy.acceptanceAdd}
           </button>
         </form>

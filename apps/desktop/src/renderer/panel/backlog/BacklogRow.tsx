@@ -111,6 +111,7 @@ export function BacklogRow({
           {...attributes}
           {...listeners}
           aria-label={backlogCopy.reorderHandle(task.title)}
+          aria-roledescription={backlogCopy.reorderRoleDescription}
           className={styles.grip}
           data-grip-for={task.id}
           ref={setActivatorNodeRef}
@@ -149,6 +150,7 @@ export function BacklogRow({
       <button
         aria-label={backlogCopy.takeToBoardFor(task.title)}
         className={styles.takeButton}
+        data-take-for={task.id}
         disabled={taking}
         onClick={onTakeToBoard}
         type="button"
