@@ -10,7 +10,8 @@ export interface User {
   readonly email: string
   readonly initials: string
   readonly role: UserRole
-  readonly defaultRateCents: number
+  /** Valor/hora próprio em centavos; `null` usa o padrão da organização. */
+  readonly defaultRateCents: number | null
   readonly createdAt: string
 }
 
@@ -20,7 +21,7 @@ export function createUser(input: Omit<User, 'initials'>): User {
   const initials = (
     words[0]![0]! + (words.length > 1 ? words[words.length - 1]![0]! : '')
   ).toLocaleUpperCase('pt-BR')
-  validateDefaultRate(input.defaultRateCents)
+  if (input.defaultRateCents !== null) validateDefaultRate(input.defaultRateCents)
   return {
     id: input.id,
     organizationId: input.organizationId,

@@ -39,7 +39,11 @@ const project = {
 
 describe('entidades de organização', () => {
   it('cria organização com nome aparado', () =>
-    expect(createOrganization(organization)).toEqual({ ...organization, name: 'Time' }))
+    expect(createOrganization(organization)).toEqual({
+      ...organization,
+      name: 'Time',
+      defaultRateCents: 4500,
+    }))
   it('cria usuário e deriva iniciais do primeiro e último nomes', () =>
     expect(createUser(user)).toEqual({ ...user, name: 'Maria  da Silva', initials: 'MS' }))
   it('usa uma inicial para nome único', () =>
@@ -64,6 +68,8 @@ describe('entidades de organização', () => {
     expect(() => createContributor({ ...contributor, name })).toThrow(ValidationError)
     expect(() => createProject({ ...project, name })).toThrow(ValidationError)
   })
+  it('aceita usuário sem valor/hora próprio (null usa o padrão da organização)', () =>
+    expect(createUser({ ...user, defaultRateCents: null }).defaultRateCents).toBeNull())
   it('aceita valor/hora padrão zero como não definido', () => {
     expect(createUser({ ...user, defaultRateCents: 0 }).defaultRateCents).toBe(0)
     expect(createContributor({ ...contributor, defaultRateCents: 0 }).defaultRateCents).toBe(0)
