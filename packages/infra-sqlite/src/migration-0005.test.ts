@@ -25,7 +25,8 @@ function legacyMigrationsFolder(directory: string): string {
   const journal = JSON.parse(
     readFileSync(join(migrationsFolder, 'meta', '_journal.json'), 'utf8'),
   ) as { entries: JournalEntry[] }
-  const entries = journal.entries.filter((entry) => entry.tag !== newMigrationTag)
+  const newIndex = journal.entries.findIndex((entry) => entry.tag === newMigrationTag)
+  const entries = journal.entries.slice(0, newIndex)
   for (const entry of entries) {
     copyFileSync(join(migrationsFolder, `${entry.tag}.sql`), join(folder, `${entry.tag}.sql`))
   }
@@ -150,7 +151,7 @@ describe('migração 0005 (backlog, estimativa e critérios)', () => {
           'position',
         ])
         const applied = upgradedClient.prepare('SELECT hash FROM __drizzle_migrations').all()
-        expect(applied).toHaveLength(6)
+        expect(applied).toHaveLength(7)
 
         // Tarefas existentes ficam no quadro, sem posição de backlog e sem estimativa.
         const rows = upgradedClient

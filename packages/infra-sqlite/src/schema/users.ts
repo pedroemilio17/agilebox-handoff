@@ -13,7 +13,7 @@ export const users = sqliteTable(
     email: text('email').notNull(),
     initials: text('initials').notNull(),
     role: text('role', { enum: ['collaborator', 'manager'] }).notNull(),
-    defaultRateCents: integer('default_rate_cents').notNull(),
+    defaultRateCents: integer('default_rate_cents'),
     createdAt: text('created_at').notNull(),
   },
   (table) => [uniqueIndex('users_organization_email_unique').on(table.organizationId, table.email)],

@@ -15,7 +15,15 @@ export const createSqliteClient = (
   client.pragma('foreign_keys = ON')
 
   const database = drizzle(client)
-  migrate(database, { migrationsFolder })
+  // Migrações recriam tabelas referenciadas por chave estrangeira (ex.: 0006, `users`). O SQLite
+  // ignora `PRAGMA foreign_keys` dentro de transação, e o migrador do Drizzle abre a sua, então a
+  // chave é desligada aqui, por fora, e religada depois.
+  client.pragma('foreign_keys = OFF')
+  try {
+    migrate(database, { migrationsFolder })
+  } finally {
+    client.pragma('foreign_keys = ON')
+  }
 
   return database
 }

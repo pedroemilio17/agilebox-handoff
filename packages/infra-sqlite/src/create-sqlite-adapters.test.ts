@@ -42,6 +42,7 @@ describe('createSqliteAdapters', () => {
       await adapters.saveOrganization({
         id: organizationId,
         name: 'AgileBox',
+        defaultRateCents: 4500,
         createdAt: user.createdAt,
       })
       await adapters.users.save(organizationId, user)
@@ -108,6 +109,7 @@ describe('createSqliteAdapters', () => {
       await first.saveOrganization({
         id: organizationId,
         name: 'AgileBox',
+        defaultRateCents: 4500,
         createdAt: user.createdAt,
       })
       await first.users.save(organizationId, user)
