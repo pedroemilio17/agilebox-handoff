@@ -1,0 +1,33 @@
+.meter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px 6px;
+  border-radius: var(--radius-badge);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.count {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 11px;
+}
+
+.at_limit {
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+}
+
+.over {
+  background: var(--color-signal-danger-bg);
+  color: var(--color-signal-danger-text);
+}

@@ -53,6 +53,8 @@ export {
   WipMeter,
 } from './components/Indicators'
 export type { SignalBadgeProps, MetricTileProps } from './components/Indicators'
+export { WipLimitMeter } from './components/WipLimitMeter'
+export type { WipLimitMeterProps, WipLimitState } from './components/WipLimitMeter'
 export { Drawer } from './components/Drawer'
 export type { DrawerProps } from './components/Drawer'
 export { Sparkline, BarChart } from './components/Charts'

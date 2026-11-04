@@ -26,7 +26,7 @@ import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
 } from '@agilebox/core'
-import type { TaskDto } from '@agilebox/contract'
+import type { TaskDto, WipColumnDto } from '@agilebox/contract'
 import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
@@ -39,6 +39,7 @@ import {
   ProjectSwatch,
   SignalBadge,
   TaskKey,
+  WipLimitMeter,
 } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
@@ -47,6 +48,8 @@ import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
+import { isWipStatus, type WipStatus } from './wip-limit'
+import { WipLimitEditor } from './WipLimitEditor'
 import styles from './BoardView.module.css'
 
 // O destino é a coluna sob o cursor; só sem cursor (teclado) vale a sobreposição do card.
@@ -72,6 +75,11 @@ export interface BoardViewProps {
   readonly refreshing?: boolean
   readonly onOpenTask: (taskId: string) => void
   readonly onMoveTask: (taskId: string, status: TaskStatus) => void
+  /** Contagem e limite de WIP por coluna, já calculados pelo servidor. */
+  readonly wipColumns?: readonly WipColumnDto[] | undefined
+  /** Só o gestor edita o limite. */
+  readonly canEditWipLimits?: boolean
+  readonly onSetWipLimit?: (status: WipStatus, limit: number | null) => void
 }
 
 export function BoardView({
@@ -88,6 +96,9 @@ export function BoardView({
   cycleDays = null,
   flowError = false,
   initialException = null,
+  wipColumns = [],
+  canEditWipLimits = false,
+  onSetWipLimit,
 }: BoardViewProps) {
   const api = useApi()
   const [exception, setException] = useState<BoardException | null>(initialException)
@@ -245,6 +256,9 @@ export function BoardView({
               onCreateTask={onCreateTask}
               onOpenTask={onOpenTask}
               onMoveTask={onMoveTask}
+              wip={wipColumns.find((column) => column.status === status)}
+              canEditWipLimits={canEditWipLimits}
+              onSetWipLimit={onSetWipLimit}
               responsibleNames={
                 new Map(
                   (tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]),
@@ -372,6 +386,9 @@ interface KanbanColumnProps {
   readonly responsibleNames: ReadonlyMap<string, string | undefined>
   readonly onOpenTask: (taskId: string) => void
   readonly onMoveTask: (taskId: string, status: TaskStatus) => void
+  readonly wip: WipColumnDto | undefined
+  readonly canEditWipLimits: boolean
+  readonly onSetWipLimit: BoardViewProps['onSetWipLimit']
 }
 
 function KanbanColumn({
@@ -384,8 +401,13 @@ function KanbanColumn({
   onCreateTask,
   onOpenTask,
   onMoveTask,
+  wip,
+  canEditWipLimits,
+  onSetWipLimit,
 }: KanbanColumnProps) {
   const title = TASK_STATUS_LABELS[status]
+  // Só Desenvolvendo e Revisar têm limite; nas outras colunas o cabeçalho segue só com a contagem.
+  const acceptsWip = isWipStatus(status)
   const sortedTasks = [...tasks].sort((first, second) =>
     second.updatedAt.localeCompare(first.updatedAt),
   )
@@ -402,7 +424,24 @@ function KanbanColumn({
         <h2>
           <StatusChip status={status} />
         </h2>
-        <span aria-label={`${tasks.length} tarefas`}>{tasks.length}</span>
+        {acceptsWip && wip && wip.limit !== null && wip.state !== 'none' ? (
+          <WipLimitMeter
+            name={title}
+            count={wip.count}
+            limit={wip.limit}
+            state={wip.state}
+            title={canEditWipLimits ? undefined : panelCopy.wipLimitScopeHint}
+          />
+        ) : (
+          <span aria-label={`${tasks.length} tarefas`}>{tasks.length}</span>
+        )}
+        {isWipStatus(status) && canEditWipLimits && onSetWipLimit ? (
+          <WipLimitEditor
+            columnName={title}
+            limit={wip?.limit ?? null}
+            onSave={(limit) => onSetWipLimit(status, limit)}
+          />
+        ) : null}
         {onCreateTask && (
           <button
             type="button"

@@ -15,6 +15,18 @@ describe('sincronização de mudanças', () => {
     stop()
   })
 
+  it('uma mudança do tipo board (limite de WIP) invalida também o quadro e o dashboard', () => {
+    const invalidateQueries = vi.fn()
+    const subscribe = vi.fn((callback: (change: { kind: string; ids: string[] }) => void) => {
+      callback({ kind: 'board', ids: [] })
+      return vi.fn()
+    })
+    createChangeSync({ invalidateQueries }, subscribe)
+
+    // Sem filtro: invalida todas as consultas, inclusive tasks.board e dashboard.all.
+    expect(invalidateQueries).toHaveBeenCalledWith()
+  })
+
   it('devolve a função que encerra a assinatura', () => {
     const unsubscribe = vi.fn()
     const stop = createChangeSync({ invalidateQueries: vi.fn() }, () => unsubscribe)

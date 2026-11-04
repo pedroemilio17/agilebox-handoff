@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { Drawer } from '@agilebox/ui'
-import type { TaskStatus } from '@agilebox/core'
-import type { TaskDto } from '@agilebox/contract'
+import { useEffect, useRef, useState } from 'react'
+import { Drawer, Toast } from '@agilebox/ui'
+import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
+import { ApiError } from '@agilebox/contract'
+import type { SetWipLimitsInput, TaskDto, WipLimitsDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
@@ -19,6 +20,7 @@ import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
+import type { WipStatus } from './board/wip-limit'
 import { TaskDetailView } from './task-detail/TaskDetailView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import { PanelCommands } from './commands/PanelCommands'
@@ -46,6 +48,12 @@ export function App() {
   const [boardException, setBoardException] = useState<'aging' | 'overdue' | 'blocked' | null>(null)
   const [viewingUser, setViewingUser] = useState<{ id: string; name: string } | null>(null)
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    tone: 'default' | 'warning'
+  } | null>(null)
+  const noticeSeq = useRef(0)
   const actor = useActor()
   const projects = useProjects()
   const sessionUsers = useSessionUsers()
@@ -107,6 +115,51 @@ export function App() {
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
   })
+  function showNotice(message: string, tone: 'default' | 'warning' = 'default') {
+    noticeSeq.current += 1
+    setNotice({ id: noticeSeq.current, message, tone })
+  }
+  /** Mover segue permitido acima do limite: a tela só avisa quando a coluna passa a ficar acima. */
+  function moveTaskFromBoard(taskId: string, status: TaskStatus) {
+    const column = tasks.data?.wipColumns.find((item) => item.status === status)
+    moveTask.mutate(
+      { taskId, status },
+      {
+        onSuccess: () => {
+          if (
+            column &&
+            column.limit !== null &&
+            column.state !== 'over' &&
+            column.count >= column.limit
+          )
+            showNotice(
+              panelCopy.wipLimitPassed(TASK_STATUS_LABELS[status], column.count + 1, column.limit),
+              'warning',
+            )
+        },
+      },
+    )
+  }
+  const setWipLimit = useMutation({
+    mutationFn: (input: SetWipLimitsInput) => api.boardSettings.setWipLimits(input),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+      ]),
+    onError: (error) =>
+      showNotice(
+        error instanceof ApiError && error.code === 'FORBIDDEN'
+          ? panelCopy.forbidden
+          : panelCopy.wipLimitError,
+      ),
+  })
+  function setBoardWipLimit(status: WipStatus, limit: number | null) {
+    const wipLimits: WipLimitsDto = { ...(tasks.data?.wipLimits ?? {}) }
+    if (limit === null) delete wipLimits[status]
+    else wipLimits[status] = limit
+    setWipLimit.mutate({ wipLimits })
+  }
   const switchUser = useMutation({
     mutationFn: (userId: string) => api.session.switchUser({ userId }),
     onSuccess: () => {
@@ -288,8 +341,11 @@ export function App() {
                 refreshing={tasks.isFetching}
                 selectedTaskId={activeTaskId}
                 onOpenTask={openTask}
-                onMoveTask={(taskId, status) => moveTask.mutate({ taskId, status })}
+                onMoveTask={moveTaskFromBoard}
                 tasks={tasks.data?.tasks}
+                wipColumns={tasks.data?.wipColumns}
+                canEditWipLimits={isManager}
+                onSetWipLimit={setBoardWipLimit}
                 updatedAt={tasks.dataUpdatedAt || undefined}
               />
             )}
@@ -334,6 +390,7 @@ export function App() {
           </>
         ) : null}
       </PanelShell>
+      {notice ? <Toast key={notice.id} message={notice.message} tone={notice.tone} /> : null}
       {commandsOpen && (
         <PanelCommands
           projects={projects.data ?? []}

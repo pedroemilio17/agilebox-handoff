@@ -2,10 +2,17 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
-import type { DashboardDto, ProjectDto, SessionUserDto, TaskDto } from '@agilebox/contract'
+import type {
+  DashboardDto,
+  ListBoardDto,
+  ProjectDto,
+  SessionUserDto,
+  TaskDto,
+  WipColumnDto,
+} from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
-import { boardResponse, createFakeApi } from '../shared/testing/fake-api'
+import { createFakeApi } from '../shared/testing/fake-api'
 import { App } from './App'
 import { makeDetail } from './task-detail/fixtures'
 
@@ -101,6 +108,7 @@ function setup(
   currentUserId: string,
   boardTasks: TaskDto[] = [task],
   dashboardData: DashboardDto = dashboard,
+  board: Pick<ListBoardDto, 'wipLimits' | 'wipColumns'> = { wipLimits: {}, wipColumns: [] },
 ) {
   let current = currentUserId
   const api = createFakeApi()
@@ -114,7 +122,9 @@ function setup(
     return Promise.resolve({ userId, organizationId: ORG, role: role() })
   })
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse(boardTasks))
+  const listBoard = vi
+    .spyOn(api.tasks, 'listBoard')
+    .mockResolvedValue({ tasks: boardTasks, ...board })
   vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardData)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
@@ -291,5 +301,138 @@ describe('Erros de permissão', () => {
     expect(
       await screen.findByText('Você não tem permissão para fazer essa alteração.'),
     ).toBeTruthy()
+  })
+
+  it('gestor vê o botão de limite e colaborador não vê', async () => {
+    setup(MANAGER, [task], dashboard, { wipLimits: {}, wipColumns: [] })
+    expect(
+      await screen.findByRole('button', { name: 'Definir limite de Desenvolvendo' }),
+    ).toBeTruthy()
+    cleanup()
+    setup(ANA, [task], dashboard, { wipLimits: {}, wipColumns: [] })
+    await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })
+    expect(screen.queryByRole('button', { name: /Definir limite/ })).toBeNull()
+  })
+
+  it('gestor define, altera e remove o limite; os outros limites são preservados', async () => {
+    const { api, user } = setup(MANAGER, [task], dashboard, {
+      wipLimits: { in_progress: 3, review: 4 },
+      wipColumns: [
+        { status: 'in_progress', count: 1, limit: 3, state: 'ok' },
+        { status: 'review', count: 1, limit: 4, state: 'ok' },
+      ],
+    })
+    const save = vi.spyOn(api.boardSettings, 'setWipLimits').mockResolvedValue({
+      wipLimits: { in_progress: 2, review: 4 },
+      updatedAt: null,
+      updatedBy: null,
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Definir limite de Desenvolvendo' }))
+    const field = screen.getByLabelText('Limite de tarefas')
+    await user.clear(field)
+    await user.type(field, '2')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(save).toHaveBeenLastCalledWith({ wipLimits: { in_progress: 2, review: 4 } })
+
+    await user.click(screen.getByRole('button', { name: 'Definir limite de Revisar' }))
+    await user.click(screen.getByRole('button', { name: 'Remover limite' }))
+    expect(save).toHaveBeenLastCalledWith({ wipLimits: { in_progress: 3 } })
+  })
+
+  it('erro de permissão ao salvar o limite vira aviso curto', async () => {
+    const { api, user } = setup(MANAGER, [task], dashboard, { wipLimits: {}, wipColumns: [] })
+    vi.spyOn(api.boardSettings, 'setWipLimits').mockRejectedValue(
+      new ApiError('FORBIDDEN', 'Sem permissão'),
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Definir limite de Desenvolvendo' }))
+    await user.type(screen.getByLabelText('Limite de tarefas'), '2')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(
+      await screen.findByText('Você não tem permissão para fazer essa alteração.'),
+    ).toBeTruthy()
+  })
+
+  it('mover acima do limite continua permitido: o card fica na coluna e aparece o aviso', async () => {
+    const reviewTask: TaskDto = { ...task, status: 'review' }
+    const atLimit: WipColumnDto[] = [
+      { status: 'in_progress', count: 3, limit: 3, state: 'at_limit' },
+      { status: 'review', count: 1, limit: null, state: 'none' },
+    ]
+    const { api, listBoard, user } = setup(ANA, [reviewTask], dashboard, {
+      wipLimits: { in_progress: 3 },
+      wipColumns: atLimit,
+    })
+    const move = vi
+      .spyOn(api.tasks, 'move')
+      .mockResolvedValue({ ...reviewTask, status: 'in_progress' })
+    listBoard.mockResolvedValue({
+      tasks: [{ ...reviewTask, status: 'in_progress' }],
+      wipLimits: { in_progress: 3 },
+      wipColumns: [
+        { status: 'in_progress', count: 4, limit: 3, state: 'over' },
+        { status: 'review', count: 0, limit: null, state: 'none' },
+      ],
+    })
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: `Mover ${task.title} para outro estado` }),
+      'in_progress',
+    )
+
+    expect(move).toHaveBeenCalledWith({ taskId: task.id, status: 'in_progress' })
+    expect(await screen.findByText('Desenvolvendo passou do limite (4/3).')).toBeTruthy()
+    const inProgress = screen.getByRole('region', { name: 'Desenvolvendo, tarefas' })
+    expect(
+      within(inProgress).getByRole('button', { name: `${task.key} · ${task.title}` }),
+    ).toBeTruthy()
+  })
+
+  it('não mostra aviso quando a coluna continua dentro do limite', async () => {
+    const reviewTask: TaskDto = { ...task, status: 'review' }
+    const { api, listBoard, user } = setup(ANA, [reviewTask], dashboard, {
+      wipLimits: { in_progress: 3 },
+      wipColumns: [{ status: 'in_progress', count: 1, limit: 3, state: 'ok' }],
+    })
+    vi.spyOn(api.tasks, 'move').mockResolvedValue({ ...reviewTask, status: 'in_progress' })
+    listBoard.mockResolvedValue({
+      tasks: [{ ...reviewTask, status: 'in_progress' }],
+      wipLimits: { in_progress: 3 },
+      wipColumns: [{ status: 'in_progress', count: 2, limit: 3, state: 'ok' }],
+    })
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: `Mover ${task.title} para outro estado` }),
+      'in_progress',
+    )
+
+    await screen.findByRole('region', { name: 'Desenvolvendo, tarefas' })
+    expect(screen.queryByText(/passou do limite/)).toBeNull()
+  })
+
+  it('dashboard mostra a coluna acima do limite nas exceções', async () => {
+    const insights = dashboard.insights!
+    const overDashboard: DashboardDto = {
+      ...dashboard,
+      insights: {
+        ...insights,
+        overWipColumns: [{ status: 'in_progress', count: 5, limit: 3 }],
+      },
+    }
+    const { user } = setup(MANAGER, [task], overDashboard)
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+
+    expect(await screen.findByText('Desenvolvendo acima do limite: 5/3')).toBeTruthy()
+  })
+
+  it('dashboard sem coluna acima do limite não mostra a linha de exceção', async () => {
+    const { user } = setup(MANAGER, [task], dashboard)
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+
+    await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ })
+    expect(screen.queryByRole('list', { name: 'Colunas acima do limite' })).toBeNull()
+    expect(screen.queryByText(/acima do limite/)).toBeNull()
   })
 })

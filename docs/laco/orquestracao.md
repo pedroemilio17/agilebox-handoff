@@ -18,8 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B4: limite de WIP por coluna
-- [ ] B9: agenda com fim, tipo e recorrência
 - [ ] B6: definição de pronto
 - [ ] B10: retro com combinados
 - [ ] B11: exportar resumo do dashboard
@@ -36,7 +34,7 @@ Final:
 
 ## Em andamento
 
-- B4: limite de WIP por coluna (tabela `board_settings` por organização, limite por estado). Backend feito; falta UI (medidor no cabeçalho da coluna, edição do limite pelo gestor, exceção no dashboard).
+- B9: agenda com hora de fim, tipo de evento e recorrência; só o gestor cria e edita agendamentos. Decisão D6: eventos sem duração seguem valendo 1h.
 
 ## Concluído
 
@@ -45,6 +43,7 @@ Final:
 - B2: bloqueio com motivo (marca na tarefa, não sexto estado). B2 completo: backend e UI.
 - B5: subtarefas (tabela `task_checklist_items`). B5 completo: backend e UI.
 - B7: comentários e menções (tabela `task_comments`; menções sem aviso no MVP). B7 completo: backend e UI.
+- B4: limite de WIP por coluna (medidor no cabeçalho de Desenvolvendo e Revisar, edição pelo gestor, exceção no dashboard). B4 completo: backend e UI.
 
 ## Bloqueios
 

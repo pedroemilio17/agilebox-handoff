@@ -9,6 +9,7 @@ import {
   ProjectSwatch,
   MetricTile,
   WipMeter,
+  WipLimitMeter,
   ChecklistProgress,
   CommentCount,
   MentionText,
@@ -36,6 +37,7 @@ import {
   Tooltip,
   WindowControls,
 } from '@agilebox/ui'
+import { WipLimitEditor } from '../board/WipLimitEditor'
 import styles from './Gallery.module.css'
 
 const statuses: readonly TaskStatus[] = ['planning', 'todo', 'in_progress', 'review', 'done']
@@ -85,6 +87,10 @@ export function Gallery() {
             <SignalBadge variant="priority">Alta</SignalBadge>
             <SignalBadge variant="blocked">Bloqueada</SignalBadge>
             <WipMeter count={2} capacity={3} />
+            <WipLimitMeter name="Desenvolvendo" count={2} limit={3} state="ok" />
+            <WipLimitMeter name="Revisar" count={3} limit={3} state="at_limit" />
+            <WipLimitMeter name="Desenvolvendo" count={4} limit={3} state="over" />
+            <WipLimitEditor columnName="Desenvolvendo" limit={3} onSave={() => undefined} />
             <ChecklistProgress done={2} total={5} />
             <CommentCount count={3} />
             <CommentCount count={1} />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { addDays, differenceInCalendarDays, format, getISOWeek, parseISO } from 'date-fns'
+import { TASK_STATUS_LABELS } from '@agilebox/core'
 import {
   Avatar,
   BarChart,
@@ -93,6 +94,21 @@ export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: D
           </p>
         </section>
         <div className={styles.exceptions}>
+          {data.overWipColumns.length > 0 ? (
+            <ul className={styles.wipExceptions} aria-label="Colunas acima do limite">
+              {data.overWipColumns.map((column) => (
+                <li key={column.status}>
+                  <SignalBadge variant="wip">
+                    {panelCopy.wipOverLabel(
+                      TASK_STATUS_LABELS[column.status],
+                      column.count,
+                      column.limit,
+                    )}
+                  </SignalBadge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <MetricTile
             label="Bloqueadas"
             value={data.blockedCount}

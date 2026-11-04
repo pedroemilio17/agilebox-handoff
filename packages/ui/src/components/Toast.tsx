@@ -4,9 +4,11 @@ import styles from './Toast.module.css'
 export interface ToastProps {
   readonly message: string
   readonly duration?: number
+  /** Aviso de atenção (ex.: limite de WIP ultrapassado): ícone de alerta em vez de confirmação. */
+  readonly tone?: 'default' | 'warning'
 }
 
-export function Toast({ message, duration = 2600 }: ToastProps) {
+export function Toast({ message, duration = 2600, tone = 'default' }: ToastProps) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
@@ -19,8 +21,8 @@ export function Toast({ message, duration = 2600 }: ToastProps) {
 
   return (
     <div className={`${styles.toast} motion-toast-enter`} role="status" aria-live="polite">
-      <span className={styles.check} aria-hidden="true">
-        ✓
+      <span className={tone === 'warning' ? styles.warning : styles.check} aria-hidden="true">
+        {tone === 'warning' ? '!' : '✓'}
       </span>
       <span>{message}</span>
     </div>

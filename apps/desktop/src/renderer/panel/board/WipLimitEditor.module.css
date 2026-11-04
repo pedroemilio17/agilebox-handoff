@@ -1,0 +1,57 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.trigger {
+  min-height: 26px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-subtle);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  color: var(--color-text-primary);
+  background: var(--surface-raised);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  padding: var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-card);
+  background: var(--glass-popover);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  backdrop-filter: var(--glass-popover-backdrop);
+  color: var(--color-text-primary);
+  font-weight: 400;
+  text-align: left;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

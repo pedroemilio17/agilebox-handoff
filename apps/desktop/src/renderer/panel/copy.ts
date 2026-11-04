@@ -124,6 +124,15 @@ export const panelCopy = {
   taskDetailError: 'Não foi possível carregar a tarefa.',
   taskTitle: 'Título da tarefa',
   saveError: 'Não foi possível salvar a alteração.',
+  wipLimitInvalid: 'Use um número de 1 a 99.',
+  wipLimitError: 'Não foi possível salvar o limite.',
+  wipLimitScopeHint: 'Conta só as tarefas que você vê.',
+  wipLimitDefine: (name: string) => `Definir limite de ${name}`,
+  wipLimitDialog: (name: string) => `Limite de ${name}`,
+  wipLimitPassed: (name: string, count: number, limit: number) =>
+    `${name} passou do limite (${count}/${limit}).`,
+  wipOverLabel: (name: string, count: number, limit: number) =>
+    `${name} acima do limite: ${count}/${limit}`,
   taskIdCopied: 'ID copiado',
   taskIdCopyError: 'Não foi possível copiar o ID.',
   detailsCard: 'Detalhes',
