@@ -29,6 +29,7 @@ const taskId = toTaskId(id(1))
 const base = {
   id: taskId,
   organizationId: toOrganizationId(id(1)),
+  number: 118,
   projectId: toProjectId(id(1)),
   projectName: '  Projeto Ágil ',
   createdBy: creator,
@@ -69,6 +70,16 @@ describe('tarefa e envolvimento', () => {
     ])
     expect(() => createTask({ ...base, title: '  ' })).toThrow(ValidationError)
   })
+  it('guarda o número sequencial da tarefa na organização', () => {
+    expect(createTask(base).number).toBe(118)
+    expect(createTask({ ...base, number: 1 }).number).toBe(1)
+  })
+  it.each([0, -1, 1.5, NaN, Number.MAX_SAFE_INTEGER + 1])(
+    'rejeita número de tarefa inválido %s',
+    (number) => {
+      expect(() => createTask({ ...base, number })).toThrow(ValidationError)
+    },
+  )
   it('altera campos e atualiza a busca ao renomear', () => {
     const original = createTask(base)
     const renamed = renameTask(original, '  AÇÃO  ')

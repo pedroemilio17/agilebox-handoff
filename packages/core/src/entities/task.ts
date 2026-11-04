@@ -8,11 +8,12 @@ import { createTicket } from '../values/ticket'
 import type { Ticket } from '../values/ticket'
 import { createParticipation } from './participation'
 import type { Participation, Participant } from './participation'
-import { validateName } from './validation'
+import { validateName, validateTaskNumber } from './validation'
 
 export interface Task {
   readonly id: TaskId
   readonly organizationId: OrganizationId
+  readonly number: number
   readonly projectId: ProjectId
   readonly projectName: string
   readonly createdBy: UserId
@@ -30,6 +31,7 @@ export interface Task {
 export interface CreateTaskInput {
   readonly id: TaskId
   readonly organizationId: OrganizationId
+  readonly number: number
   readonly projectId: ProjectId
   readonly projectName: string
   readonly createdBy: UserId
@@ -51,6 +53,7 @@ function searchText(title: string, projectName: string): string {
 export function createTask(input: CreateTaskInput): Task {
   const title = validateName(input.title)
   const projectName = validateName(input.projectName)
+  const number = validateTaskNumber(input.number)
   const responsible = createParticipation({
     id: input.responsibleParticipationId,
     taskId: input.id,
@@ -63,6 +66,7 @@ export function createTask(input: CreateTaskInput): Task {
   return {
     id: input.id,
     organizationId: input.organizationId,
+    number,
     projectId: input.projectId,
     projectName,
     createdBy: input.createdBy,

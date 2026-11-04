@@ -23,6 +23,7 @@ const task: Task = {
     projectId: toProjectId(id(1)),
     projectName: 'AgileBox',
     organizationId: toOrganizationId(id(1)),
+    number: 1,
     createdBy: userId,
     title: 'Revisar tarefa',
     createdAt: '2026-10-25T12:00:00Z',

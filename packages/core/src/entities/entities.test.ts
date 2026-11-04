@@ -38,8 +38,17 @@ const project = {
 }
 
 describe('entidades de organização', () => {
-  it('cria organização com nome aparado', () =>
-    expect(createOrganization(organization)).toEqual({ ...organization, name: 'Time' }))
+  it('cria organização com nome aparado e prefixo de tarefa padrão AB', () =>
+    expect(createOrganization(organization)).toEqual({
+      ...organization,
+      name: 'Time',
+      taskPrefix: 'AB',
+    }))
+  it('aceita prefixo de tarefa válido e rejeita inválido', () => {
+    expect(createOrganization({ ...organization, taskPrefix: 'PROJ' }).taskPrefix).toBe('PROJ')
+    for (const taskPrefix of ['', 'A', 'ABCDEF', 'ab', 'A1', 'AB-'])
+      expect(() => createOrganization({ ...organization, taskPrefix })).toThrow(ValidationError)
+  })
   it('cria usuário e deriva iniciais do primeiro e último nomes', () =>
     expect(createUser(user)).toEqual({ ...user, name: 'Maria  da Silva', initials: 'MS' }))
   it('usa uma inicial para nome único', () =>

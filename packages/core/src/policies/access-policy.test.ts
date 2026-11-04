@@ -22,6 +22,7 @@ const project: Project = {
 const task: Task = {
   id: 'task' as TaskId,
   organizationId: org,
+  number: 1,
   projectId: project.id,
   projectName: 'P',
   createdBy: other,

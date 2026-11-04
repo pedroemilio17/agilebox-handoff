@@ -20,6 +20,7 @@ const participant = { kind: 'user' as const, userId: other }
 const task = createTask({
   id: toTaskId(id(1)),
   organizationId,
+  number: 1,
   projectId: toProjectId(id(1)),
   projectName: 'Projeto',
   createdBy: userId,

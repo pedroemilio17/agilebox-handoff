@@ -9,6 +9,7 @@ const otherId = toUserId('00000000000000000000000003')
 const task = createTask({
   id: toTaskId('00000000000000000000000004'),
   organizationId,
+  number: 1,
   projectId: toProjectId('00000000000000000000000005'),
   projectName: 'Projeto',
   createdBy: userId,
