@@ -41,6 +41,12 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
       type: 'priority_changed',
       payload: { before: before.priority, after: after.priority },
     })
+  if (before.blockedReason !== after.blockedReason) {
+    if (after.blockedReason !== null)
+      events.push({ type: 'blocked', payload: { reason: after.blockedReason } })
+    else if (before.blockedReason !== null)
+      events.push({ type: 'unblocked', payload: { reason: before.blockedReason } })
+  }
   if (before.deadline !== after.deadline)
     events.push({
       type: 'deadline_changed',
@@ -114,6 +120,10 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `moveu de ${TASK_STATUS_LABELS[event.payload.before]} para ${TASK_STATUS_LABELS[event.payload.after]}`
     case 'priority_changed':
       return `alterou a prioridade de ${TASK_PRIORITY_LABELS[event.payload.before]} para ${TASK_PRIORITY_LABELS[event.payload.after]}`
+    case 'blocked':
+      return `bloqueou a tarefa: ${event.payload.reason}`
+    case 'unblocked':
+      return 'desbloqueou a tarefa'
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`
     case 'renamed':

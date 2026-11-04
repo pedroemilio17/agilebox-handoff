@@ -8,6 +8,16 @@ export function validateName(name: string): string {
   return trimmed
 }
 
+export const BLOCK_REASON_MAX_LENGTH = 280
+
+export function validateBlockReason(reason: string): string {
+  const trimmed = reason.trim()
+  if (!trimmed) throw new ValidationError('Motivo do bloqueio obrigatório')
+  if (Array.from(trimmed).length > BLOCK_REASON_MAX_LENGTH)
+    throw new ValidationError('Motivo do bloqueio deve ter até 280 caracteres')
+  return trimmed
+}
+
 export function validateDefaultRate(rate: number): void {
   validateHundredths(rate)
 }

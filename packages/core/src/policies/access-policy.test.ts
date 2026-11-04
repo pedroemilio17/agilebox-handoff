@@ -30,6 +30,8 @@ const task: Task = {
   description: '',
   status: 'planning',
   priority: 'normal',
+  blockedReason: null,
+  blockedAt: null,
   deadline: null,
   ticket: null,
   searchText: '',

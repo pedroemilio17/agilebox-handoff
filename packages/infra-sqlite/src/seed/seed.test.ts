@@ -40,6 +40,9 @@ describe('seed de demonstração', () => {
         .map((task) => task.title)
         .sort(),
     ).toEqual(['Atualizar documentação da API', 'Revisar integração de chamados'])
+    expect(tasks.filter((task) => task.blockedReason !== null).map((task) => task.title)).toEqual([
+      'Configurar ambiente de homologação',
+    ])
     const timeline = await unitOfWork.repositories.timeline.listByTask(
       organizationId,
       tasks.find((task) => task.title === 'Atualizar documentação da API')!.id,

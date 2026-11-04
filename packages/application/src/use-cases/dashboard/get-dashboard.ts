@@ -13,7 +13,7 @@ import {
   participates,
   describeEvent,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, Task } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
@@ -45,6 +45,7 @@ export class GetDashboard {
     const current = flowMetrics(tasks, events, weeks[5]!, now)
     const aging = tasks.filter((task) => isStaleTask(task, events, today, timeZone))
     const overdue = tasks.filter((task) => isOverdueTask(task, today))
+    const isBlocked = (task: Task) => task.blockedReason !== null
     const names = new Map(users.map((user) => [user.id, user.name]))
     const taskNames = new Map(tasks.map((task) => [task.id, task.title]))
     const since = new Date(now)
@@ -60,6 +61,7 @@ export class GetDashboard {
         ...current,
         agingCount: aging.length,
         overdueCount: overdue.length,
+        blockedCount: tasks.filter(isBlocked).length,
         weeks: weeks.map((week, index) => {
           const end = new Date(`${week.endExclusive}T00:00:00`)
           const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()
@@ -92,6 +94,7 @@ export class GetDashboard {
               ).length,
               agingCount: aging.filter((task) => participates(person, task)).length,
               overdueCount: overdue.filter((task) => participates(person, task)).length,
+              blockedCount: assigned.filter(isBlocked).length,
               lastUpdatedAt: lastActorUpdate(tasks, events, user.id),
             }
           }),

@@ -90,6 +90,11 @@ describe('sinais e fluxo v2', () => {
       isStaleTask(task, [change('2026-10-27T23:00:00Z', 'in_progress')], today, window.timeZone),
     ).toBe(true)
     expect(isStaleTask({ ...task, status: 'review' }, [], today, window.timeZone)).toBe(true)
+    const blocked = { ...task, blockedReason: 'Aguardando credenciais', blockedAt: '2026-10-27' }
+    expect(staleDays(blocked, events, today, window.timeZone)).toBe(4)
+    expect(
+      isStaleTask(blocked, [change('2026-10-27T23:00:00Z', 'in_progress')], today, window.timeZone),
+    ).toBe(false)
     for (const status of ['planning', 'todo', 'done'] as const) {
       expect(staleDays({ ...task, status }, [], today, window.timeZone)).toBeNull()
     }

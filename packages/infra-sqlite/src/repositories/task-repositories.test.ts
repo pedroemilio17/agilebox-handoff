@@ -40,6 +40,34 @@ describe('repositórios SQLite de tarefas, envolvimentos, linha do tempo e abert
     database.$client.close()
   })
 
+  it('persiste o motivo e a data do bloqueio e os devolve na leitura', async () => {
+    const database = createSqliteClient(':memory:')
+    const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+    const user = aUser().with({ organizationId }).build()
+    const project = aProject().with({ organizationId, createdBy: user.id }).build()
+    await database
+      .insert(organizations)
+      .values({ id: organizationId, name: 'AgileBox', createdAt: user.createdAt })
+    const core = createSqliteCoreRepositories(database)
+    await core.users.save(organizationId, user)
+    await core.projects.save(organizationId, project)
+    const task = {
+      ...aTask().with({ organizationId, projectId: project.id, projectName: project.name }).build(),
+      status: 'in_progress' as const,
+      blockedReason: 'Aguardando credenciais',
+      blockedAt: '2026-01-02T10:00:00.000Z',
+    }
+    const repositories = createSqliteTaskRepositories(database)
+
+    await repositories.tasks.save(organizationId, task)
+
+    await expect(repositories.tasks.findById(organizationId, task.id)).resolves.toMatchObject({
+      blockedReason: 'Aguardando credenciais',
+      blockedAt: '2026-01-02T10:00:00.000Z',
+    })
+    database.$client.close()
+  })
+
   it('isola tarefas e registros filhos entre organizações', async () => {
     const database = createSqliteClient(':memory:')
     const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')

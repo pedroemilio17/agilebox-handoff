@@ -12,6 +12,7 @@ import { parseDateOnly } from '../values/date-only'
 import { createParticipation } from './participation'
 import {
   addParticipant,
+  blockTask,
   changeResponsible,
   createTask,
   removeParticipant,
@@ -21,6 +22,7 @@ import {
   setPriority,
   setStatus,
   setTicket,
+  unblockTask,
 } from './task'
 
 const id = (n: number) => `0000000000000000000000000${n}`
@@ -58,6 +60,8 @@ describe('tarefa e envolvimento', () => {
       description: '',
       status: 'planning',
       priority: 'normal',
+      blockedReason: null,
+      blockedAt: null,
       searchText: 'nova tarefa projeto agil',
       deadline: null,
       ticket: null,
@@ -71,6 +75,42 @@ describe('tarefa e envolvimento', () => {
       },
     ])
     expect(() => createTask({ ...base, title: '  ' })).toThrow(ValidationError)
+  })
+  it('bloqueia com motivo sem mudar o estado e remove o bloqueio', () => {
+    const inProgress = setStatus(createTask(base), 'in_progress')
+    const blocked = blockTask(inProgress, '  Aguardando credenciais  ', '2026-01-02T10:00:00Z')
+    expect(blocked).toMatchObject({
+      status: 'in_progress',
+      blockedReason: 'Aguardando credenciais',
+      blockedAt: '2026-01-02T10:00:00Z',
+    })
+    expect(inProgress.blockedReason).toBeNull()
+    expect(blockTask(blocked, 'Aguardando credenciais', '2026-01-03T10:00:00Z')).toBe(blocked)
+    expect(blockTask(blocked, 'Outro motivo', '2026-01-03T10:00:00Z').blockedAt).toBe(
+      '2026-01-03T10:00:00Z',
+    )
+    expect(unblockTask(blocked)).toMatchObject({ blockedReason: null, blockedAt: null })
+    expect(unblockTask(inProgress)).toBe(inProgress)
+  })
+  it('valida o motivo do bloqueio: obrigatório, sem só espaços e até 280 caracteres', () => {
+    const task = createTask(base)
+    const at = '2026-01-02T10:00:00Z'
+    expect(() => blockTask(task, '', at)).toThrow(ValidationError)
+    expect(() => blockTask(task, '   ', at)).toThrow(ValidationError)
+    expect(blockTask(task, 'x'.repeat(280), at).blockedReason).toHaveLength(280)
+    expect(() => blockTask(task, 'x'.repeat(281), at)).toThrow(ValidationError)
+  })
+  it('não bloqueia tarefa concluída e limpa o bloqueio ao concluir', () => {
+    const task = createTask(base)
+    expect(() => blockTask(setStatus(task, 'done'), 'Motivo', '2026-01-02T10:00:00Z')).toThrow(
+      ValidationError,
+    )
+    const blocked = blockTask(setStatus(task, 'review'), 'Motivo', '2026-01-02T10:00:00Z')
+    expect(setStatus(blocked, 'done')).toMatchObject({
+      status: 'done',
+      blockedReason: null,
+      blockedAt: null,
+    })
   })
   it('guarda o número sequencial da tarefa na organização', () => {
     expect(createTask(base).number).toBe(118)

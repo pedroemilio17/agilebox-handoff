@@ -10,7 +10,7 @@ import { createTicket } from '../values/ticket'
 import type { Ticket } from '../values/ticket'
 import { createParticipation } from './participation'
 import type { Participation, Participant } from './participation'
-import { validateName, validateTaskNumber } from './validation'
+import { validateBlockReason, validateName, validateTaskNumber } from './validation'
 
 export interface Task {
   readonly id: TaskId
@@ -23,6 +23,8 @@ export interface Task {
   readonly description: string
   readonly status: TaskStatus
   readonly priority: TaskPriority
+  readonly blockedReason: string | null
+  readonly blockedAt: string | null
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -77,6 +79,8 @@ export function createTask(input: CreateTaskInput): Task {
     description: '',
     status: 'planning',
     priority: 'normal',
+    blockedReason: null,
+    blockedAt: null,
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -93,8 +97,22 @@ export function renameTask(task: Task, value: string): Task {
 export function setDescription(task: Task, description: string): Task {
   return { ...task, description }
 }
+/** Concluir a tarefa limpa o bloqueio: a tarefa concluída não pode seguir bloqueada. */
 export function setStatus(task: Task, status: TaskStatus): Task {
-  return { ...task, status: parseTaskStatus(status) }
+  const next = parseTaskStatus(status)
+  if (next === 'done') return { ...task, status: next, blockedReason: null, blockedAt: null }
+  return { ...task, status: next }
+}
+/** Bloqueio é uma marca ortogonal ao estado: a tarefa continua no estado em que está. */
+export function blockTask(task: Task, reason: string, at: string): Task {
+  if (task.status === 'done') throw new ValidationError('Tarefa concluída não pode ser bloqueada')
+  const blockedReason = validateBlockReason(reason)
+  if (task.blockedReason === blockedReason) return task
+  return { ...task, blockedReason, blockedAt: at }
+}
+export function unblockTask(task: Task): Task {
+  if (task.blockedReason === null) return task
+  return { ...task, blockedReason: null, blockedAt: null }
 }
 export function setPriority(task: Task, priority: TaskPriority): Task {
   return { ...task, priority: parseTaskPriority(priority) }

@@ -71,6 +71,8 @@ describe('linha do tempo', () => {
       description: 'Texto',
       status: 'in_progress' as const,
       priority: 'high' as const,
+      blockedReason: null,
+      blockedAt: null,
       deadline: parseDateOnly('2026-02-01'),
       ticket: { id: 42 },
       participations: [
@@ -99,6 +101,19 @@ describe('linha do tempo', () => {
     })
     expect(diffTask({ ...task, ticket: { id: 42 } }, { ...task, ticket: { id: 42 } })).toEqual([])
   })
+  it('gera bloqueio e desbloqueio só quando o motivo muda', () => {
+    const blocked = { ...task, blockedReason: 'Aguardando credenciais', blockedAt: '2026-01-02' }
+    expect(diffTask(task, blocked)).toEqual([
+      { type: 'blocked', payload: { reason: 'Aguardando credenciais' } },
+    ])
+    expect(
+      diffTask(blocked, { ...blocked, blockedReason: 'Outro', blockedAt: '2026-01-03' }),
+    ).toEqual([{ type: 'blocked', payload: { reason: 'Outro' } }])
+    expect(diffTask(blocked, task)).toEqual([
+      { type: 'unblocked', payload: { reason: 'Aguardando credenciais' } },
+    ])
+    expect(diffTask(blocked, { ...blocked, blockedAt: '2026-01-05' })).toEqual([])
+  })
   it('descreve todos os tipos e protege valores de terceiros', () => {
     const events: TimelineEvent[] = [
       { ...base, type: 'task_created', payload: {} },
@@ -117,6 +132,8 @@ describe('linha do tempo', () => {
       { ...base, type: 'participant_added', payload: { participant, role: 'support' } },
       { ...base, type: 'participant_removed', payload: { participant, role: 'support' } },
       { ...base, type: 'priority_changed', payload: { before: 'normal', after: 'high' } },
+      { ...base, type: 'blocked', payload: { reason: 'Aguardando Bia' } },
+      { ...base, type: 'unblocked', payload: { reason: 'Aguardando Bia' } },
     ]
     const descriptions = events.map((event) => describeEvent(event, viewer, names))
     expect(descriptions).toEqual([
@@ -132,6 +149,8 @@ describe('linha do tempo', () => {
       'adicionou Bia como Apoio',
       'removeu Bia de Apoio',
       'alterou a prioridade de Normal para Alta',
+      'bloqueou a tarefa: Aguardando Bia',
+      'desbloqueou a tarefa',
     ])
     expect(descriptions[8]).not.toMatch(/R\$|50,00|60,00/)
     expect(describeEvent(events[8]!, { ...viewer, role: 'manager' }, names)).toContain('60,00')

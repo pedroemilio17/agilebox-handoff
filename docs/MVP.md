@@ -62,7 +62,7 @@ A stack, a arquitetura, o modelo de dados revisado e os marcos estão em **`docs
 1. **"Plano"** é outro nome para projeto.
 2. **Valor/hora**: cada entidade (envolvido) tem o seu próprio valor/hora padrão; só o gestor vê valores (detalhes em `PLANO.md` 2.3 e 2.4).
 3. **Frequentes**: tarefas abertas mais recentemente pelo usuário. Vazio: "Nenhuma tarefa aberta ainda."
-4. **Bloqueado**: não existe por enquanto.
+4. **Bloqueado**: o MVP inicial não tinha bloqueio. Bloqueado reaberto em 2026-11-04: marca ortogonal com motivo, não é estado (decisão D3 do Pedro).
 5. **Identidade**: pós-MVP, com servidor: Google, Microsoft e login manual. No MVP, troca manual de perfil.
 6. **Dados de exemplo**: usar os fictícios do protótipo.
 7. **Visão Equipe**: membro do projeto vê em somente leitura as tarefas de que não participa (tela fica para depois).

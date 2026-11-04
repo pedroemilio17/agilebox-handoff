@@ -15,6 +15,8 @@ export const API_CHANNELS = [
   'tasks.create',
   'tasks.update',
   'tasks.move',
+  'tasks.block',
+  'tasks.unblock',
   'tasks.listRecent',
   'tasks.listFrequent',
   'tasks.search',

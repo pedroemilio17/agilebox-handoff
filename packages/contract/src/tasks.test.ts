@@ -6,8 +6,10 @@ import {
   listBoardOutputSchema,
   listTeamBoardInputSchema,
   listTeamBoardOutputSchema,
+  blockTaskInputSchema,
   moveTaskInputSchema,
   recordTaskOpenInputSchema,
+  unblockTaskInputSchema,
   searchTasksInputSchema,
   taskUpdateInputSchema,
 } from './tasks'
@@ -27,6 +29,8 @@ const task = {
   description: '',
   status: 'in_progress',
   priority: 'normal',
+  blockedReason: null,
+  blockedAt: null,
   deadline: null,
   ticketId: null,
   ticketUrl: null,
@@ -122,6 +126,23 @@ describe('schemas de tarefas', () => {
     expect(taskUpdateInputSchema.safeParse({ taskId, changes: { priority: 'High' } }).success).toBe(
       false,
     )
+  })
+
+  it('aceita bloqueio com motivo limpo e rejeita motivo vazio ou longo demais', () => {
+    expect(blockTaskInputSchema.parse({ taskId, reason: '  Aguardando credenciais  ' })).toEqual({
+      taskId,
+      reason: 'Aguardando credenciais',
+    })
+    expect(blockTaskInputSchema.safeParse({ taskId, reason: '   ' }).success).toBe(false)
+    expect(blockTaskInputSchema.safeParse({ taskId, reason: 'x'.repeat(281) }).success).toBe(false)
+    expect(blockTaskInputSchema.safeParse({ taskId, reason: 'x'.repeat(280) }).success).toBe(true)
+    expect(unblockTaskInputSchema.parse({ taskId })).toEqual({ taskId })
+    expect(
+      listBoardOutputSchema.safeParse([
+        { ...task, blockedReason: 'Aguardando', blockedAt: '2026-10-31T12:40:00.000Z' },
+      ]).success,
+    ).toBe(true)
+    expect(listBoardOutputSchema.safeParse([{ ...task, blockedReason: ' ' }]).success).toBe(false)
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

@@ -100,6 +100,23 @@ describe('linha do tempo e dashboard', () => {
     })
   })
 
+  it('conta bloqueadas e não as trata como paradas no alerta do gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = {
+      ...aTask().build(),
+      status: 'in_progress' as const,
+      createdAt: '2025-12-20T12:00:00Z',
+      updatedAt: '2025-12-20T12:00:00Z',
+      blockedReason: 'Aguardando credenciais',
+      blockedAt: '2025-12-20T12:00:00Z',
+    }
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    const result = await useCases.dashboard.get.execute(manager)
+    expect(result.insights).toMatchObject({ blockedCount: 1, agingCount: 0 })
+    expect(result.insights?.team[0]).toMatchObject({ blockedCount: 1, agingCount: 0 })
+  })
+
   it('lista a linha do tempo mais recente primeiro e gera o texto para o viewer', async () => {
     const { useCases, unitOfWork } = setup()
     const task = aTask().build()

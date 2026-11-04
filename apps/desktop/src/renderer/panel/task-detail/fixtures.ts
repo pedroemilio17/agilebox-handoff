@@ -30,6 +30,8 @@ export function makeDetail(overrides: Partial<GetTaskDto> = {}): GetTaskDto {
     description: 'Descrição inicial',
     status: 'in_progress',
     priority: 'normal',
+    blockedReason: null,
+    blockedAt: null,
     deadline: '2026-11-10',
     ticketId: null,
     ticketUrl: null,

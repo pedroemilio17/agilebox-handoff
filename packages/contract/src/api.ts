@@ -38,6 +38,10 @@ import {
   listTeamBoardOutputSchema,
   moveTaskInputSchema,
   moveTaskOutputSchema,
+  blockTaskInputSchema,
+  blockTaskOutputSchema,
+  unblockTaskInputSchema,
+  unblockTaskOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -109,6 +113,8 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.create': { input: createTaskInputSchema, output: createTaskOutputSchema },
   'tasks.update': { input: taskUpdateInputSchema, output: taskUpdateOutputSchema },
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
+  'tasks.block': { input: blockTaskInputSchema, output: blockTaskOutputSchema },
+  'tasks.unblock': { input: unblockTaskInputSchema, output: unblockTaskOutputSchema },
   'tasks.listRecent': { input: listRecentTasksInputSchema, output: listRecentTasksOutputSchema },
   'tasks.listFrequent': {
     input: listFrequentTasksInputSchema,
@@ -182,6 +188,8 @@ export interface AgileBoxApi {
     create: Method<'tasks.create'>
     update: Method<'tasks.update'>
     move: Method<'tasks.move'>
+    block: Method<'tasks.block'>
+    unblock: Method<'tasks.unblock'>
     listRecent: Method<'tasks.listRecent'>
     listFrequent: Method<'tasks.listFrequent'>
     search: Method<'tasks.search'>

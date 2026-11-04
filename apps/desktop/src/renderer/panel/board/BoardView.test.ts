@@ -12,6 +12,8 @@ const task: TaskDto = {
   description: '',
   status: 'review',
   priority: 'normal',
+  blockedReason: null,
+  blockedAt: null,
   deadline: null,
   ticketId: null,
   ticketUrl: null,

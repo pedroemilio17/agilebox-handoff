@@ -25,6 +25,8 @@ export type TimelineEvent = EventBase &
       }
     | { readonly type: 'status_changed'; readonly payload: Change<TaskStatus> }
     | { readonly type: 'priority_changed'; readonly payload: Change<TaskPriority> }
+    | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
+    | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }
     | { readonly type: 'renamed' | 'description_edited'; readonly payload: Change<string> }
     | { readonly type: 'responsible_changed'; readonly payload: Change<UserId> }

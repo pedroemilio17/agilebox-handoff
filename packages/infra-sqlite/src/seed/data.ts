@@ -53,6 +53,7 @@ export const demoSeedData = {
       project: 1,
       owner: 1,
       status: 'in_progress' as const,
+      blockedReason: 'Aguardando credenciais do ambiente de homologação',
       deadline: '2026-11-10',
     },
     {

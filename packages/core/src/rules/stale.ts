@@ -26,6 +26,8 @@ export function isStaleTask(
   today: DateOnly,
   timeZone: string,
 ): boolean {
+  // Bloqueio já declara a causa da parada: não entra no alerta de parada.
+  if (task.blockedReason !== null) return false
   const days = staleDays(task, events, today, timeZone)
   return days !== null && days > 4
 }

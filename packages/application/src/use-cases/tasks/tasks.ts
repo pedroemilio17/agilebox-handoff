@@ -1,5 +1,7 @@
 import {
   addParticipant,
+  blockTask,
+  unblockTask,
   createParticipation,
   changeResponsible,
   toUserId,
@@ -197,7 +199,7 @@ abstract class ChangeTask {
   protected async change(
     actor: Actor,
     rawTaskId: string,
-    transform: (task: Task) => Task,
+    transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
@@ -205,8 +207,8 @@ abstract class ChangeTask {
     if (!task) throw new NotFoundError('Tarefa não encontrada')
     if (!canEditTask(actor, task))
       throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
-    const changed = transform(task)
     const now = await this.deps.clock.now(actor.organizationId)
+    const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
     const drafts = [...diffTask(task, updated), ...extraEvents]
     const events = await Promise.all(
@@ -272,6 +274,18 @@ export class UpdateTask extends ChangeTask {
       },
       input.changes.progressConfirmed ? [{ type: 'progress_confirmed', payload: {} }] : [],
     )
+  }
+}
+
+export class BlockTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string; readonly reason: string }) {
+    return this.change(actor, input.taskId, (task, now) => blockTask(task, input.reason, now))
+  }
+}
+
+export class UnblockTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string }) {
+    return this.change(actor, input.taskId, (task) => unblockTask(task))
   }
 }
 

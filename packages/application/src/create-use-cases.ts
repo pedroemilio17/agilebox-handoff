@@ -13,7 +13,14 @@ import { SetDefaultRate } from './use-cases/users/set-default-rate'
 import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
-import { CreateTask, GetTaskDetail, MoveTask, UpdateTask } from './use-cases/tasks/tasks'
+import {
+  BlockTask,
+  CreateTask,
+  GetTaskDetail,
+  MoveTask,
+  UnblockTask,
+  UpdateTask,
+} from './use-cases/tasks/tasks'
 import {
   GetBoardFlow,
   ListBoard,
@@ -66,6 +73,8 @@ export function createUseCases(deps: AppDeps) {
       getDetail: new GetTaskDetail(deps),
       update: new UpdateTask(deps),
       move: new MoveTask(deps),
+      block: new BlockTask(deps),
+      unblock: new UnblockTask(deps),
       listBoard: new ListBoard(deps),
       getBoardFlow: new GetBoardFlow(deps),
       listTeamBoard: new ListTeamBoard(deps),

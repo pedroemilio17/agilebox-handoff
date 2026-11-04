@@ -26,6 +26,8 @@ export const tasks = sqliteTable(
     priority: text('priority', { enum: ['normal', 'high'] })
       .notNull()
       .default('normal'),
+    blockedReason: text('blocked_reason'),
+    blockedAt: text('blocked_at'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),
@@ -39,6 +41,10 @@ export const tasks = sqliteTable(
       sql`${table.status} IN ('planning', 'todo', 'in_progress', 'review', 'done')`,
     ),
     check('tasks_priority_check', sql`${table.priority} IN ('normal', 'high')`),
+    check(
+      'tasks_blocked_reason_check',
+      sql`${table.blockedReason} IS NULL OR length(${table.blockedReason}) BETWEEN 1 AND 280`,
+    ),
     uniqueIndex('tasks_organization_number_unique').on(table.organizationId, table.number),
     index('tasks_organization_project_index').on(table.organizationId, table.projectId),
     index('tasks_organization_updated_at_index').on(table.organizationId, table.updatedAt),

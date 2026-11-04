@@ -49,4 +49,22 @@ describe('schemas da linha do tempo', () => {
     }
     expect(listTimelineOutputSchema.parse([event])).toEqual([event])
   })
+
+  it('aceita os eventos de bloqueio e desbloqueio', () => {
+    const base = {
+      id: eventId,
+      taskId,
+      at: '2026-10-31T12:30:00.000Z',
+      actorUserId,
+      asManager: true,
+    }
+    expect(
+      listTimelineOutputSchema
+        .parse([
+          { ...base, type: 'blocked', text: 'bloqueou a tarefa: Aguardando credenciais' },
+          { ...base, type: 'unblocked', text: 'desbloqueou a tarefa' },
+        ])
+        .map((event) => event.type),
+    ).toEqual(['blocked', 'unblocked'])
+  })
 })

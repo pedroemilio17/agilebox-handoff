@@ -105,6 +105,9 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
         changes: { priority: 'high' },
       })
     }
+    if ('blockedReason' in item) {
+      await useCases.tasks.block.execute(actor, { taskId: task.id, reason: item.blockedReason })
+    }
     if (item.owner === 0 && item.title === 'Atualizar documentação da API') {
       const support = await useCases.participations.add.execute(actor, {
         taskId: task.id,

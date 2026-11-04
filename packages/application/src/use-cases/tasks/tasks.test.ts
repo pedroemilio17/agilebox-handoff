@@ -407,6 +407,88 @@ describe('casos de uso de tarefas', () => {
     ])
   })
 
+  it('bloqueia com motivo como evento da linha do tempo, sem mudar o estado', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    const blocked = await useCases.tasks.block.execute(actor, {
+      taskId: task.id,
+      reason: '  Aguardando credenciais  ',
+    })
+    expect(blocked).toMatchObject({
+      status: 'planning',
+      blockedReason: 'Aguardando credenciais',
+      blockedAt: '2026-01-02T00:00:00.000Z',
+    })
+    expect(
+      await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
+    ).toMatchObject([
+      { type: 'blocked', payload: { reason: 'Aguardando credenciais' }, asManager: false },
+    ])
+  })
+
+  it('bloqueia e desbloqueia pelo gestor com marca de Gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask()
+      .ownedBy(aUser().with({ id: userId }).build())
+      .build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    await useCases.tasks.block.execute(manager, { taskId: task.id, reason: 'Motivo' })
+    const unblocked = await useCases.tasks.unblock.execute(manager, { taskId: task.id })
+    expect(unblocked).toMatchObject({ blockedReason: null, blockedAt: null })
+    const events = await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)
+    expect(events).toHaveLength(2)
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'blocked', asManager: true }),
+        expect.objectContaining({ type: 'unblocked', asManager: true }),
+      ]),
+    )
+  })
+
+  it('nega bloquear ou desbloquear por colaborador que não participa, sem gravar evento', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask()
+      .ownedBy(aUser().with({ id: otherUserId, name: 'Bia Lima' }).build())
+      .build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await expect(
+      useCases.tasks.block.execute(actor, { taskId: task.id, reason: 'Motivo' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(useCases.tasks.unblock.execute(actor, { taskId: task.id })).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    expect(await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).toEqual([])
+    expect(
+      (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.blockedReason,
+    ).toBeNull()
+  })
+
+  it('nega bloquear tarefa concluída e não grava nada', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = { ...aTask().build(), status: 'done' as const }
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await expect(
+      useCases.tasks.block.execute(actor, { taskId: task.id, reason: 'Motivo' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+    expect(await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).toEqual([])
+  })
+
+  it('concluir tarefa bloqueada limpa o bloqueio e grava também o desbloqueio', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await useCases.tasks.block.execute(actor, { taskId: task.id, reason: 'Motivo' })
+    const done = await useCases.tasks.move.execute(actor, { taskId: task.id, status: 'done' })
+    expect(done).toMatchObject({ status: 'done', blockedReason: null, blockedAt: null })
+    const types = (await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).map(
+      (event) => event.type,
+    )
+    expect(types).toEqual(expect.arrayContaining(['blocked', 'status_changed', 'unblocked']))
+    expect(types).toHaveLength(3)
+  })
+
   it('valida entrada de atualização', async () => {
     const { useCases } = setup()
     await expect(

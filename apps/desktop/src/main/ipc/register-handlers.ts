@@ -74,6 +74,8 @@ export function registerHandlers(
   register('tasks.create', (actor, input) => useCases.tasks.create.execute(actor, input))
   register('tasks.update', (actor, input) => useCases.tasks.update.execute(actor, input))
   register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
+  register('tasks.block', (actor, input) => useCases.tasks.block.execute(actor, input))
+  register('tasks.unblock', (actor, input) => useCases.tasks.unblock.execute(actor, input))
   register('tasks.listRecent', (actor) => useCases.tasks.listRecent.execute(actor))
   register('tasks.listFrequent', (actor) => useCases.tasks.listFrequent.execute(actor))
   register('tasks.search', (actor, input) => useCases.tasks.search.execute(actor, input))

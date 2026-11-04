@@ -4,6 +4,7 @@ import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
 export const taskPrioritySchema = z.enum(['normal', 'high'])
 export const taskDeadlineSchema = z.iso.date().nullable()
+export const taskBlockReasonSchema = z.string().trim().min(1).max(280)
 
 export const taskKeySchema = z.string().regex(/^[A-Z]{2,5}-[1-9]\d*$/u)
 
@@ -17,6 +18,8 @@ export const taskDtoSchema = z.object({
   description: z.string(),
   status: taskStatusSchema,
   priority: taskPrioritySchema,
+  blockedReason: taskBlockReasonSchema.nullable(),
+  blockedAt: isoDateTimeSchema.nullable(),
   deadline: taskDeadlineSchema,
   ticketId: z.number().int().positive().safe().nullable(),
   ticketUrl: z.url().nullable(),
@@ -77,6 +80,10 @@ export const taskUpdateInputSchema = z.object({
 export const taskUpdateOutputSchema = taskDtoSchema
 export const moveTaskInputSchema = z.object({ taskId: ulidSchema, status: taskStatusSchema })
 export const moveTaskOutputSchema = taskDtoSchema
+export const blockTaskInputSchema = z.object({ taskId: ulidSchema, reason: taskBlockReasonSchema })
+export const blockTaskOutputSchema = taskDtoSchema
+export const unblockTaskInputSchema = z.object({ taskId: ulidSchema })
+export const unblockTaskOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()
 export const listFrequentTasksInputSchema = z.undefined()
 export const listRecentTasksOutputSchema = listBoardOutputSchema
@@ -92,3 +99,4 @@ export type TaskDto = z.infer<typeof taskDtoSchema>
 export type GetTaskDto = z.infer<typeof getTaskOutputSchema>
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>
 export type TaskUpdateInput = z.infer<typeof taskUpdateInputSchema>
+export type BlockTaskInput = z.infer<typeof blockTaskInputSchema>

@@ -18,7 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B2: bloqueio com motivo (reabre o estado Bloqueado)
 - [ ] B5: subtarefas
 - [ ] B7: comentários e menções
 - [ ] B4: limite de WIP por coluna
@@ -39,7 +38,7 @@ Final:
 
 ## Em andamento
 
-- B2: bloqueio com motivo (reabre o estado Bloqueado, decisão D3 sim) é o próximo.
+- B2: backend feito; falta UI (card, detalhe, bandeja, filtro Bloqueadas, dashboard).
 
 ## Concluído
 
@@ -48,6 +47,7 @@ Final:
 
 ## Bloqueios
 
+- B2, pendência de ambiente: a migração `0003_flippant_infant_terrible.sql` (colunas `tasks.blocked_reason` e `tasks.blocked_at`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER`, como a 0002.
 - B3, pendência de ambiente: a migração `0002_funny_rictor.sql` (coluna `tasks.priority`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER` (sem recriar a tabela), como a 0001.
 - B1, pendência de ambiente: a migração `0001_gorgeous_bill_hollister.sql` ainda não foi aplicada num banco real (`pnpm db:migrate` sobre `.data/agilebox.db`). Vale rodar uma vez antes de subir o app.
   - Feito nesta etapa: migração `0001_gorgeous_bill_hollister.sql` escrita à mão (`ALTER` + backfill por organização em ordem de `created_at`, depois índice único em `(organization_id, number)`). Não usa recriação de tabela, para não depender de `PRAGMA foreign_keys` dentro da transação do migrador.
