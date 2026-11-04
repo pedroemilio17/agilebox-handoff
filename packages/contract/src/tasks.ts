@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { checklistItemDtoSchema, checklistProgressDtoSchema } from './checklist'
 import { taskCommentDtoSchema } from './comments'
+import { wipColumnDtoSchema, wipLimitsSchema } from './board-settings'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
@@ -43,8 +44,15 @@ export const getBoardFlowOutputSchema = z.object({
   updatedAt: isoDateTimeSchema,
 })
 export const listTeamBoardInputSchema = z.object({ projectId: ulidSchema.optional() })
-export const listBoardOutputSchema = z.array(taskDtoSchema)
-export const listTeamBoardOutputSchema = listBoardOutputSchema
+/** Lista simples de tarefas (equipe, recentes, frequentes, busca). */
+export const taskListOutputSchema = z.array(taskDtoSchema)
+/** Quadro: tarefas visíveis ao usuário, limites da organização e contagem de WIP por coluna. */
+export const listBoardOutputSchema = z.object({
+  tasks: taskListOutputSchema,
+  wipLimits: wipLimitsSchema,
+  wipColumns: z.array(wipColumnDtoSchema),
+})
+export const listTeamBoardOutputSchema = taskListOutputSchema
 export const getTaskInputSchema = z.object({ taskId: ulidSchema })
 export const getTaskOutputSchema = taskDtoSchema
   .extend({
@@ -94,16 +102,17 @@ export const unblockTaskOutputSchema = taskDtoSchema
 export const checklistChangeOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()
 export const listFrequentTasksInputSchema = z.undefined()
-export const listRecentTasksOutputSchema = listBoardOutputSchema
-export const listFrequentTasksOutputSchema = listBoardOutputSchema
+export const listRecentTasksOutputSchema = taskListOutputSchema
+export const listFrequentTasksOutputSchema = taskListOutputSchema
 export const searchTasksInputSchema = z.object({ query: nameSchema })
-export const searchTasksOutputSchema = listBoardOutputSchema
+export const searchTasksOutputSchema = taskListOutputSchema
 export const recordTaskOpenInputSchema = z.object({ taskId: ulidSchema })
 export const recordTaskOpenOutputSchema = z.void()
 
 import { participationSummaryDtoSchema } from './participations'
 
 export type TaskDto = z.infer<typeof taskDtoSchema>
+export type ListBoardDto = z.infer<typeof listBoardOutputSchema>
 export type GetTaskDto = z.infer<typeof getTaskOutputSchema>
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>
 export type TaskUpdateInput = z.infer<typeof taskUpdateInputSchema>

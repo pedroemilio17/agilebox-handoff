@@ -59,6 +59,11 @@ export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): b
 }
 export const canManageMeetings = canSeeTaskTotal
 export const canSeeDashboard = canSeeTaskTotal
+/** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */
+export function canViewBoardSettings(actor: Actor, organizationId: OrganizationId): boolean {
+  return actor.organizationId === organizationId
+}
+export const canManageBoardSettings = canSeeTaskTotal
 /** Comentar e ver comentários seguem a edição da tarefa: participante ou gestor. */
 export function canComment(actor: Actor, task: Task): boolean {
   return canEditTask(actor, task)

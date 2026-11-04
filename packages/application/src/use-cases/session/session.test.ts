@@ -31,6 +31,7 @@ function setup(initialActor: Actor = actor) {
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
     comments: unitOfWork.repositories.comments,
+    boardSettings: unitOfWork.repositories.boardSettings,
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,

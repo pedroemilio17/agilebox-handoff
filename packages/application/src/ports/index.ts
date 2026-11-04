@@ -1,3 +1,4 @@
+export * from './board-settings-repository'
 export * from './change-notifier'
 export * from './checklist-repository'
 export * from './actor-session'

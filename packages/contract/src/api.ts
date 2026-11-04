@@ -76,6 +76,12 @@ import {
 import { listTimelineInputSchema, listTimelineOutputSchema } from './timeline'
 import { getDashboardInputSchema, getDashboardOutputSchema } from './dashboard'
 import {
+  getBoardSettingsInputSchema,
+  getBoardSettingsOutputSchema,
+  setWipLimitsInputSchema,
+  setWipLimitsOutputSchema,
+} from './board-settings'
+import {
   createMeetingInputSchema,
   createMeetingOutputSchema,
   deleteMeetingInputSchema,
@@ -197,6 +203,11 @@ export const API_SCHEMA_REGISTRY = {
   },
   'timeline.list': { input: listTimelineInputSchema, output: listTimelineOutputSchema },
   'dashboard.get': { input: getDashboardInputSchema, output: getDashboardOutputSchema },
+  'boardSettings.get': { input: getBoardSettingsInputSchema, output: getBoardSettingsOutputSchema },
+  'boardSettings.setWipLimits': {
+    input: setWipLimitsInputSchema,
+    output: setWipLimitsOutputSchema,
+  },
   'meetings.list': { input: listMeetingsInputSchema, output: listMeetingsOutputSchema },
   'meetings.listUpcoming': {
     input: listUpcomingMeetingsInputSchema,
@@ -268,6 +279,10 @@ export interface AgileBoxApi {
   }
   timeline: { list: Method<'timeline.list'> }
   dashboard: { get: Method<'dashboard.get'> }
+  boardSettings: {
+    get: Method<'boardSettings.get'>
+    setWipLimits: Method<'boardSettings.setWipLimits'>
+  }
   meetings: {
     list: Method<'meetings.list'>
     listUpcoming: Method<'meetings.listUpcoming'>

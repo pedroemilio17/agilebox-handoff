@@ -125,6 +125,10 @@ export function registerHandlers(
   )
   register('timeline.list', (actor, input) => useCases.timeline.list.execute(actor, input))
   register('dashboard.get', (actor) => useCases.dashboard.get.execute(actor))
+  register('boardSettings.get', (actor) => useCases.boardSettings.get.execute(actor))
+  register('boardSettings.setWipLimits', (actor, input) =>
+    useCases.boardSettings.setWipLimits.execute(actor, input),
+  )
   register('meetings.list', (actor, input) => useCases.meetings.listMonth.execute(actor, input))
   register('meetings.listUpcoming', (actor) => useCases.meetings.listUpcoming.execute(actor))
   register('meetings.create', (actor, input) => useCases.meetings.create.execute(actor, input))

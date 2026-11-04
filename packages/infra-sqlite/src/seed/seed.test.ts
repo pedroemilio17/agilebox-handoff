@@ -27,6 +27,9 @@ describe('seed de demonstração', () => {
     await expect(
       unitOfWork.repositories.meetings.listByMonth(organizationId, '2026-11'),
     ).resolves.toHaveLength(3)
+    await expect(
+      unitOfWork.repositories.boardSettings.findByOrganization(organizationId),
+    ).resolves.toMatchObject({ wipLimits: { in_progress: 3, review: 2 } })
 
     const tasks = await unitOfWork.repositories.tasks.listBoard(organizationId, {})
     expect(tasks).toHaveLength(10)

@@ -30,6 +30,14 @@ export const dashboardInsightsSchema = z.object({
   agingCount: z.number().int().nonnegative(),
   overdueCount: z.number().int().nonnegative(),
   blockedCount: z.number().int().nonnegative(),
+  /** Colunas de WIP acima do limite, considerando todas as tarefas da organização. */
+  overWipColumns: z.array(
+    z.object({
+      status: taskStatusSchema,
+      count: z.number().int().nonnegative(),
+      limit: z.number().int().positive(),
+    }),
+  ),
   cycleDays: z.number().nonnegative().nullable(),
   leadDays: z.number().nonnegative().nullable(),
   throughput: z.number().int().nonnegative(),

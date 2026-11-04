@@ -62,10 +62,10 @@ export function HomeScreen({
     queryFn: () => (scope === 'recent' ? api.tasks.listRecent() : api.tasks.listFrequent()),
   })
   const enriched = (tasks.data ?? []).map(
-    (task) => board.data?.find((current) => current.id === task.id) ?? task,
+    (task) => board.data?.tasks.find((current) => current.id === task.id) ?? task,
   )
   const visible = filterTasks(enriched, query)
-  const personal = board.data
+  const personal = board.data?.tasks
   const activeCount = personal?.filter(
     (task) => task.status === 'in_progress' || task.status === 'review',
   ).length

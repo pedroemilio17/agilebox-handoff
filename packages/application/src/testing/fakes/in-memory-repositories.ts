@@ -1,5 +1,6 @@
 import { createOrganization, toOrganizationId } from '@agilebox/core'
 import type {
+  BoardSettings,
   ChecklistItem,
   Contributor,
   TaskComment,
@@ -14,6 +15,7 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
   TaskCommentRepository,
@@ -31,6 +33,7 @@ import type {
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
 export interface InMemoryState {
+  boardSettings: Map<OrganizationId, BoardSettings>
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   comments: Map<OrganizationId, Map<string, TaskComment>>
   contributors: Map<OrganizationId, Map<string, Contributor>>
@@ -53,6 +56,7 @@ export function createInMemoryState(): InMemoryState {
     createdAt: '2026-01-01T00:00:00.000Z',
   })
   return {
+    boardSettings: new Map(),
     checklist: new Map(),
     comments: new Map(),
     contributors: new Map(),
@@ -86,6 +90,19 @@ export class InMemoryOrganizationRepository implements OrganizationRepository {
   async save(value: Organization) {
     await Promise.resolve()
     this.state.organizations.set(value.id, value)
+  }
+}
+
+export class InMemoryBoardSettingsRepository implements BoardSettingsRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async findByOrganization(organizationId: OrganizationId) {
+    await Promise.resolve()
+    return this.state.boardSettings.get(organizationId) ?? null
+  }
+  async save(organizationId: OrganizationId, settings: BoardSettings) {
+    await Promise.resolve()
+    if (settings.organizationId === organizationId)
+      this.state.boardSettings.set(organizationId, settings)
   }
 }
 

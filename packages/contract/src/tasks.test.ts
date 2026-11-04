@@ -3,7 +3,7 @@ import {
   createTaskInputSchema,
   getTaskOutputSchema,
   listBoardInputSchema,
-  listBoardOutputSchema,
+  taskListOutputSchema,
   listTeamBoardInputSchema,
   listTeamBoardOutputSchema,
   blockTaskInputSchema,
@@ -42,10 +42,10 @@ const task = {
 
 describe('schemas de tarefas', () => {
   it('exige número e chave legível (ex.: AB-118) no DTO de tarefa', () => {
-    expect(listBoardOutputSchema.safeParse([{ ...task, key: 'ab-118' }]).success).toBe(false)
-    expect(listBoardOutputSchema.safeParse([{ ...task, key: 'AB-0' }]).success).toBe(false)
-    expect(listBoardOutputSchema.safeParse([{ ...task, number: 0 }]).success).toBe(false)
-    expect(listBoardOutputSchema.safeParse([{ ...task, number: undefined }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, key: 'ab-118' }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, key: 'AB-0' }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, number: 0 }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, number: undefined }]).success).toBe(false)
   })
 
   it('aceita filtros de quadro pessoal e de equipe', () => {
@@ -55,7 +55,7 @@ describe('schemas de tarefas', () => {
     })
     expect(listTeamBoardInputSchema.parse({ projectId })).toEqual({ projectId })
     expect(listTeamBoardInputSchema.parse({})).toEqual({})
-    expect(listBoardOutputSchema.parse([task])).toEqual([task])
+    expect(taskListOutputSchema.parse([task])).toEqual([task])
     expect(listTeamBoardOutputSchema.parse([task])).toEqual([task])
   })
 
@@ -117,7 +117,7 @@ describe('schemas de tarefas', () => {
   })
 
   it('aceita prioridade normal ou alta no DTO e na atualização', () => {
-    expect(listBoardOutputSchema.parse([{ ...task, priority: 'high' }])).toEqual([
+    expect(taskListOutputSchema.parse([{ ...task, priority: 'high' }])).toEqual([
       { ...task, priority: 'high' },
     ])
     expect(taskUpdateInputSchema.parse({ taskId, changes: { priority: 'high' } })).toEqual({
@@ -127,8 +127,8 @@ describe('schemas de tarefas', () => {
   })
 
   it('rejeita prioridade fora de normal e alta', () => {
-    expect(listBoardOutputSchema.safeParse([{ ...task, priority: 'urgent' }]).success).toBe(false)
-    expect(listBoardOutputSchema.safeParse([{ ...task, priority: undefined }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, priority: 'urgent' }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, priority: undefined }]).success).toBe(false)
     expect(taskUpdateInputSchema.safeParse({ taskId, changes: { priority: 'High' } }).success).toBe(
       false,
     )
@@ -144,11 +144,11 @@ describe('schemas de tarefas', () => {
     expect(blockTaskInputSchema.safeParse({ taskId, reason: 'x'.repeat(280) }).success).toBe(true)
     expect(unblockTaskInputSchema.parse({ taskId })).toEqual({ taskId })
     expect(
-      listBoardOutputSchema.safeParse([
+      taskListOutputSchema.safeParse([
         { ...task, blockedReason: 'Aguardando', blockedAt: '2026-10-31T12:40:00.000Z' },
       ]).success,
     ).toBe(true)
-    expect(listBoardOutputSchema.safeParse([{ ...task, blockedReason: ' ' }]).success).toBe(false)
+    expect(taskListOutputSchema.safeParse([{ ...task, blockedReason: ' ' }]).success).toBe(false)
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

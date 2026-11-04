@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MeetingDto, SessionUserDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
-import { createFakeApi } from '../../shared/testing/fake-api'
+import { boardResponse, createFakeApi } from '../../shared/testing/fake-api'
 import { AgendaView } from './AgendaView'
 
 afterEach(cleanup)
@@ -60,7 +60,7 @@ describe('Agenda: calendário', () => {
     })
     vi.spyOn(api.meetings, 'list').mockReturnValue(pending)
     vi.spyOn(api.meetings, 'listUpcoming').mockResolvedValue([])
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     render(
       <ApiProvider api={api}>
         <QueryProvider>

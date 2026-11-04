@@ -138,6 +138,20 @@ describe('política de acesso', () => {
   })
 })
 
+describe('limites de WIP', () => {
+  it('todo usuário da organização lê os limites; só o gestor os altera', () => {
+    expect(policy.canViewBoardSettings(collaborator, org)).toBe(true)
+    expect(policy.canViewBoardSettings(manager, org)).toBe(true)
+    expect(policy.canManageBoardSettings(collaborator, org)).toBe(false)
+    expect(policy.canManageBoardSettings(manager, org)).toBe(true)
+  })
+
+  it('não cruza organizações', () => {
+    expect(policy.canViewBoardSettings(manager, otherOrg)).toBe(false)
+    expect(policy.canManageBoardSettings(manager, otherOrg)).toBe(false)
+  })
+})
+
 describe('comentários', () => {
   const comment = {
     id: 'comment' as TaskComment['id'],

@@ -38,6 +38,7 @@ function setup(actor: Actor = owner) {
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
     comments: unitOfWork.repositories.comments,
+    boardSettings: unitOfWork.repositories.boardSettings,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
@@ -304,7 +305,7 @@ describe('casos de uso de subtarefas', () => {
     const [first] = await itemsOf(unitOfWork)
     await useCases.tasks.checklist.toggle.execute(owner, { taskId, itemId: first!.id, done: true })
 
-    const board = await useCases.tasks.listBoard.execute(owner, {})
+    const { tasks: board } = await useCases.tasks.listBoard.execute(owner, {})
     const progressOf = (id: TaskId) => board.find((task) => task.id === id)?.checklistProgress
     expect(progressOf(taskId)).toEqual({ done: 1, total: 2, percent: 50 })
     expect(progressOf(otherTaskId)).toEqual({ done: 0, total: 0, percent: 0 })

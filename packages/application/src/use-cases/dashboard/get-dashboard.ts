@@ -12,6 +12,7 @@ import {
   lastActorUpdate,
   participates,
   describeEvent,
+  overWipColumns,
 } from '@agilebox/core'
 import type { Actor, Task } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
@@ -25,9 +26,10 @@ export class GetDashboard {
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
-    const [tasks, users] = await Promise.all([
+    const [tasks, users, boardSettings] = await Promise.all([
       this.deps.tasks.listBoard(actor.organizationId, {}),
       this.deps.users.list(actor.organizationId),
+      this.deps.boardSettings.findByOrganization(actor.organizationId),
     ])
     const collaborators = users
       .map((user) => ({ user, ...collaboratorStats(tasks, actor.organizationId, user.id) }))
@@ -62,6 +64,8 @@ export class GetDashboard {
         agingCount: aging.length,
         overdueCount: overdue.length,
         blockedCount: tasks.filter(isBlocked).length,
+        // Todas as tarefas da organização, não só as do gestor.
+        overWipColumns: overWipColumns(tasks, boardSettings?.wipLimits ?? {}),
         weeks: weeks.map((week, index) => {
           const end = new Date(`${week.endExclusive}T00:00:00`)
           const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()

@@ -38,6 +38,8 @@ export const API_CHANNELS = [
   'contributors.setDefaultRate',
   'timeline.list',
   'dashboard.get',
+  'boardSettings.get',
+  'boardSettings.setWipLimits',
   'meetings.list',
   'meetings.listUpcoming',
   'meetings.create',

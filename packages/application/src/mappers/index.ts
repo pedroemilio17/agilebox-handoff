@@ -12,7 +12,9 @@ import {
 } from '@agilebox/core'
 import type {
   Actor,
+  BoardSettings,
   ChecklistItem,
+  WipLimits,
   Contributor,
   Meeting,
   Participation,
@@ -24,7 +26,9 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  BoardSettingsDto,
   ChecklistItemDto,
+  WipLimitsDto,
   ContributorDto,
   DashboardDto,
   GetTaskDto,
@@ -225,6 +229,22 @@ export function toTimelineEventDto(
     asManager: event.asManager,
     type: event.type,
     text: describeEvent(event, viewer, names),
+  }
+}
+
+/** Limites em formato de contrato: chave ausente = sem limite naquela coluna. */
+export function toWipLimitsDto(limits: WipLimits): WipLimitsDto {
+  return {
+    ...(limits.in_progress === undefined ? {} : { in_progress: limits.in_progress }),
+    ...(limits.review === undefined ? {} : { review: limits.review }),
+  }
+}
+
+export function toBoardSettingsDto(settings: BoardSettings | null): BoardSettingsDto {
+  return {
+    wipLimits: toWipLimitsDto(settings?.wipLimits ?? {}),
+    updatedAt: settings?.updatedAt ?? null,
+    updatedBy: settings?.updatedBy ?? null,
   }
 }
 

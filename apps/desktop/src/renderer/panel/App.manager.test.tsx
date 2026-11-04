@@ -5,7 +5,7 @@ import { ApiError } from '@agilebox/contract'
 import type { DashboardDto, ProjectDto, SessionUserDto, TaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
-import { createFakeApi } from '../shared/testing/fake-api'
+import { boardResponse, createFakeApi } from '../shared/testing/fake-api'
 import { App } from './App'
 import { makeDetail } from './task-detail/fixtures'
 
@@ -66,6 +66,7 @@ const dashboard: DashboardDto = {
     agingCount: 1,
     overdueCount: 0,
     blockedCount: 0,
+    overWipColumns: [],
     cycleDays: 3,
     leadDays: 5,
     throughput: 2,
@@ -113,7 +114,7 @@ function setup(
     return Promise.resolve({ userId, organizationId: ORG, role: role() })
   })
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardTasks)
+  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse(boardTasks))
   vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardData)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])

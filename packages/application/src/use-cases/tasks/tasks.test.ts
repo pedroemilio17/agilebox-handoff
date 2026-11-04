@@ -31,6 +31,7 @@ function setup() {
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
     comments: unitOfWork.repositories.comments,
+    boardSettings: unitOfWork.repositories.boardSettings,
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,
@@ -538,7 +539,7 @@ describe('número e chave da tarefa', () => {
       }),
     )
 
-    const board = await useCases.tasks.listBoard.execute(actor, {})
+    const { tasks: board } = await useCases.tasks.listBoard.execute(actor, {})
 
     expect(board.map((task) => [task.number, task.key])).toEqual([[1, 'OPS-1']])
   })

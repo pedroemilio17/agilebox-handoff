@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
-import { createFakeApi } from '../shared/testing/fake-api'
+import { boardResponse, createFakeApi } from '../shared/testing/fake-api'
 import { QueryProvider } from '../shared/query/QueryProvider'
 import { App } from './App'
 import { makeDetail } from './task-detail/fixtures'
@@ -49,7 +49,7 @@ const projects = [
 describe('Painel', () => {
   it('mostra o ciclo médio autorizado no rodapé de Concluído', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     const flow = vi.spyOn(api.tasks, 'getBoardFlow').mockResolvedValue({
       cycleDays: 4.2,
       weekStart: '2026-10-26',
@@ -72,7 +72,7 @@ describe('Painel', () => {
 
   it('abre a paleta por Ctrl K e pela barra, fecha por Esc e devolve foco', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     render(
       <ApiProvider api={api}>
         <QueryProvider>
@@ -93,7 +93,7 @@ describe('Painel', () => {
   })
   it('navega com G A e abre criação com N fora de campos', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     render(
       <ApiProvider api={api}>
@@ -114,7 +114,7 @@ describe('Painel', () => {
   it('mantém o quadro no painel lateral, troca de tarefa e retorna o foco ao cartão ao fechar', async () => {
     const api = createFakeApi()
     const second = { ...task, id: projects[0]!.id, title: 'Outra tarefa' }
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task, second])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([task, second]))
     vi.spyOn(api.tasks, 'get').mockImplementation(({ taskId }) =>
       Promise.resolve({ ...makeDetail(), ...(taskId === second.id ? second : task) }),
     )
@@ -155,11 +155,13 @@ describe('Painel', () => {
 
   it('filtra sinais derivados sem perder as contagens do quadro e permite limpar o filtro', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([
-      { ...task, title: 'Tarefa parada', agingDays: 5, overdue: false },
-      { ...task, id: projects[0]!.id, title: 'Tarefa vencida', agingDays: null, overdue: true },
-      { ...task, id: projects[1]!.id, title: 'Tarefa em dia', agingDays: 1, overdue: false },
-    ])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(
+      boardResponse([
+        { ...task, title: 'Tarefa parada', agingDays: 5, overdue: false },
+        { ...task, id: projects[0]!.id, title: 'Tarefa vencida', agingDays: null, overdue: true },
+        { ...task, id: projects[1]!.id, title: 'Tarefa em dia', agingDays: 1, overdue: false },
+      ]),
+    )
     render(
       <ApiProvider api={api}>
         <QueryProvider>
@@ -182,7 +184,7 @@ describe('Painel', () => {
   it('o botão da coluna cria no estado correspondente', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     const create = vi.spyOn(api.tasks, 'create').mockResolvedValue({ ...task, status: 'review' })
     render(
       <ApiProvider api={api}>
@@ -206,7 +208,7 @@ describe('Painel', () => {
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     const listBoard = vi
       .spyOn(api.tasks, 'listBoard')
-      .mockResolvedValue([{ ...task, projectId: projects[0]!.id }])
+      .mockResolvedValue(boardResponse([{ ...task, projectId: projects[0]!.id }]))
     render(
       <ApiProvider api={api}>
         <QueryProvider>
@@ -225,7 +227,7 @@ describe('Painel', () => {
 
   it('lista tarefas da API com estado e projeto', async () => {
     const api = createFakeApi()
-    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([task]))
 
     render(
       <ApiProvider api={api}>
@@ -242,7 +244,7 @@ describe('Painel', () => {
 
   it('move a tarefa para o estado escolhido pelo controle de teclado', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([task])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([task]))
     const move = vi.spyOn(api.tasks, 'move')
     const user = userEvent.setup()
 
@@ -268,7 +270,13 @@ describe('Painel', () => {
     const api = createFakeApi()
     const statuses = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
     vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(
-      statuses.map((status, index) => ({ ...task, id: `${task.id.slice(0, -1)}${index}`, status })),
+      boardResponse(
+        statuses.map((status, index) => ({
+          ...task,
+          id: `${task.id.slice(0, -1)}${index}`,
+          status,
+        })),
+      ),
     )
 
     render(
@@ -293,7 +301,7 @@ describe('Painel', () => {
   it('filtra a consulta do quadro pelo projeto escolhido', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     const user = userEvent.setup()
 
     render(
@@ -315,7 +323,7 @@ describe('Painel', () => {
 
   it('mostra o estado vazio em cada coluna sem tarefas', async () => {
     const api = createFakeApi()
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
 
     render(
       <ApiProvider api={api}>
@@ -462,7 +470,7 @@ describe('Painel', () => {
     }
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue([])
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
     const create = vi.spyOn(api.tasks, 'create').mockResolvedValue(createdTask)
     const recordOpen = vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
     const user = userEvent.setup()

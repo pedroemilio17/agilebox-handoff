@@ -168,6 +168,10 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   }
 
   actor = { userId: users[4]!.id, organizationId, role: 'manager' }
+  // Limites de WIP da demonstração: Desenvolvendo até 3 e Revisar até 2 (sinal, não bloqueio).
+  await useCases.boardSettings.setWipLimits.execute(actor, {
+    wipLimits: { in_progress: 3, review: 2 },
+  })
   for (const meeting of demoSeedData.meetings) {
     await useCases.meetings.create.execute(actor, {
       title: meeting.title,

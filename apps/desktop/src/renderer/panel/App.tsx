@@ -74,7 +74,7 @@ export function App() {
     ? Object.fromEntries(
         (projects.data ?? []).map((project) => [
           project.id,
-          allTasks.data.filter((task) => task.projectId === project.id).length,
+          allTasks.data.tasks.filter((task) => task.projectId === project.id).length,
         ]),
       )
     : undefined
@@ -289,14 +289,15 @@ export function App() {
                 selectedTaskId={activeTaskId}
                 onOpenTask={openTask}
                 onMoveTask={(taskId, status) => moveTask.mutate({ taskId, status })}
-                tasks={tasks.data}
+                tasks={tasks.data?.tasks}
                 updatedAt={tasks.dataUpdatedAt || undefined}
               />
             )}
             <Drawer
               open={activeTaskId !== null && !taskFullScreen}
               title={
-                tasks.data?.find((task) => task.id === activeTaskId)?.title ?? panelCopy.taskDetail
+                tasks.data?.tasks.find((task) => task.id === activeTaskId)?.title ??
+                panelCopy.taskDetail
               }
               onClose={closeTask}
             >

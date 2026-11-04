@@ -1,6 +1,7 @@
 export { createSqliteClient } from './client.js'
 export { seedDemo } from './seed/seed.js'
 export { createSqliteAdapters, createSqliteAdaptersForDatabase } from './create-sqlite-adapters.js'
+export { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 export { createSqliteChecklistRepository } from './repositories/checklist-repository.js'
 export { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'

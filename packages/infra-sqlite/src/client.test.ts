@@ -25,6 +25,7 @@ describe('createSqliteClient', () => {
         'meetings',
         'meeting_participants',
         'local_settings',
+        'board_settings',
       ].sort(),
     )
 

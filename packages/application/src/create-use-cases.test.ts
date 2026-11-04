@@ -34,6 +34,7 @@ describe('composição dos casos de uso', () => {
       clock: new FixedClock('2026-01-02T12:00:00.000Z'),
       checklist: unitOfWork.repositories.checklist,
       comments: unitOfWork.repositories.comments,
+      boardSettings: unitOfWork.repositories.boardSettings,
       contributors: unitOfWork.repositories.contributors,
       idGenerator: new SequentialIdGenerator(),
       meetings: unitOfWork.repositories.meetings,

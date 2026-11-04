@@ -1,5 +1,6 @@
 import type {
   ActorSession,
+  BoardSettingsRepository,
   ChangeNotifier,
   ChecklistRepository,
   Clock,
@@ -19,6 +20,7 @@ import type {
 
 export interface AppDeps {
   readonly actorSession: ActorSession
+  readonly boardSettings: BoardSettingsRepository
   readonly changeNotifier: ChangeNotifier
   readonly checklist: ChecklistRepository
   readonly clock: Clock

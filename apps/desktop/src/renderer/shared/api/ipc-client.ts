@@ -73,6 +73,10 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     },
     timeline: { list: (input) => call('timeline.list', input) },
     dashboard: { get: () => call('dashboard.get', undefined) },
+    boardSettings: {
+      get: () => call('boardSettings.get', undefined),
+      setWipLimits: (input) => call('boardSettings.setWipLimits', input),
+    },
     meetings: {
       list: (input) => call('meetings.list', input),
       listUpcoming: () => call('meetings.listUpcoming', undefined),

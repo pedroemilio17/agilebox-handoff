@@ -31,6 +31,7 @@ function setup() {
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
     comments: unitOfWork.repositories.comments,
+    boardSettings: unitOfWork.repositories.boardSettings,
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,
@@ -139,7 +140,7 @@ describe('listas de tarefas', () => {
       },
     ])
     const timeline = vi.spyOn(unitOfWork.repositories.timeline, 'listByTask')
-    const result = await useCases.tasks.listBoard.execute(actor, {})
+    const { tasks: result } = await useCases.tasks.listBoard.execute(actor, {})
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({ id: mine.id, overdue: true })
     expect(result[0]!.agingDays).toBeGreaterThan(4)
@@ -160,7 +161,7 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, mine)
     await unitOfWork.repositories.tasks.save(organizationId, others)
 
-    const result = await useCases.tasks.listBoard.execute(actor, {})
+    const { tasks: result } = await useCases.tasks.listBoard.execute(actor, {})
 
     expect(result.map(({ id }) => id)).toEqual([mine.id])
   })
@@ -185,7 +186,7 @@ describe('listas de tarefas', () => {
         { userId: managerId, organizationId, role: 'manager' },
         { projectId: project.id, forUserId: otherUserId },
       ),
-    ).resolves.toMatchObject([{ id: task.id }])
+    ).resolves.toMatchObject({ tasks: [{ id: task.id }] })
   })
 
   it('lista na Equipe tarefas dos projetos do membro sem incluir as próprias', async () => {

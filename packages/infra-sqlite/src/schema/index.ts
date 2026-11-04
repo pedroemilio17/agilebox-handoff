@@ -1,3 +1,4 @@
+export { boardSettings } from './board-settings.js'
 export { contributors } from './contributors.js'
 export { localSettings } from './local-settings.js'
 export { meetingParticipants } from './meeting-participants.js'

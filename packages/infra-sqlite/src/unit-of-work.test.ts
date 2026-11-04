@@ -5,6 +5,7 @@ import { createSqliteClient } from './client.js'
 import { organizations } from './schema/organizations.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
+import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
@@ -22,6 +23,7 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...createSqliteCoreRepositories(database),
       ...createSqliteTaskRepositories(database),
+      boardSettings: createSqliteBoardSettingsRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
     })
@@ -51,6 +53,7 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...core,
       ...createSqliteTaskRepositories(database),
+      boardSettings: createSqliteBoardSettingsRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
     })

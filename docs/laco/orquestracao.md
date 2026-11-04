@@ -36,7 +36,7 @@ Final:
 
 ## Em andamento
 
-- B4: limite de WIP por coluna (tabela `board_settings` por organização, limite por estado).
+- B4: limite de WIP por coluna (tabela `board_settings` por organização, limite por estado). Backend feito; falta UI (medidor no cabeçalho da coluna, edição do limite pelo gestor, exceção no dashboard).
 
 ## Concluído
 
@@ -48,6 +48,7 @@ Final:
 
 ## Bloqueios
 
+- B4, pendência de ambiente: as migrações `0005_task_comments.sql` (B7) e `0006_board_settings.sql` (tabela `board_settings`, B4) ainda não foram aplicadas num banco real (`pnpm db:migrate`). A `0006` foi gerada pelo `drizzle-kit generate`, e o SQL conferido só cria a tabela e o índice único.
 - B7, pendência de ambiente: a migração `0005_task_comments.sql` (tabela `task_comments`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B5, pendência de ambiente: a migração `0004_familiar_zeigeist.sql` (tabela `task_checklist_items`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela, sem recriar as existentes).
 - B2, pendência de ambiente: a migração `0003_flippant_infant_terrible.sql` (colunas `tasks.blocked_reason` e `tasks.blocked_at`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER`, como a 0002.

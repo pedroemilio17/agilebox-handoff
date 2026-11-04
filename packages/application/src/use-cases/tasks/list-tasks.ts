@@ -9,13 +9,14 @@ import {
   PermissionDeniedError,
   participates,
   parseTaskKey,
+  wipColumns,
   toProjectId,
   toTaskId,
   toUserId,
 } from '@agilebox/core'
 import type { Actor, Task } from '@agilebox/core'
-import type { TaskDto } from '@agilebox/contract'
-import { toTaskDto } from '../../mappers'
+import type { ListBoardDto, TaskDto } from '@agilebox/contract'
+import { toTaskDto, toWipLimitsDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadChecklists } from './checklist-loader'
@@ -63,7 +64,11 @@ export class GetBoardFlow {
 export class ListBoard {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: ListBoardInput): Promise<readonly TaskDto[]> {
+  /**
+   * Quadro do usuário. As tarefas e a contagem de WIP vêm do mesmo conjunto autorizado:
+   * um colaborador conta só as tarefas de que participa, não as da organização.
+   */
+  async execute(actor: Actor, input: ListBoardInput): Promise<ListBoardDto> {
     const tasks = await scopedBoard(this.deps, actor, input)
     const now = await this.deps.clock.now(actor.organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -75,7 +80,9 @@ export class ListBoard {
       tasks.map((task) => task.id),
     )
     const counts = await loadCommentCounts(this.deps, actor, tasks)
-    return Promise.all(
+    const settings = await this.deps.boardSettings.findByOrganization(actor.organizationId)
+    const wipLimits = settings?.wipLimits ?? {}
+    const boardTasks = await Promise.all(
       tasks.map(async (task) => {
         const events =
           task.status === 'in_progress' || task.status === 'review'
@@ -88,6 +95,11 @@ export class ListBoard {
         }
       }),
     )
+    return {
+      tasks: boardTasks,
+      wipLimits: toWipLimitsDto(wipLimits),
+      wipColumns: wipColumns(tasks, wipLimits),
+    }
   }
 }
 

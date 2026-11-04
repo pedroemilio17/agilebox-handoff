@@ -1,4 +1,10 @@
-import { failureResult, type AgileBoxApi, type AgileBoxBridge } from '@agilebox/contract'
+import {
+  failureResult,
+  type AgileBoxApi,
+  type AgileBoxBridge,
+  type ListBoardDto,
+  type TaskDto,
+} from '@agilebox/contract'
 import { createIpcClient } from '../api/ipc-client'
 
 const bridge: AgileBoxBridge = {
@@ -22,6 +28,11 @@ const bridge: AgileBoxBridge = {
   },
 }
 
+/** Resposta do quadro para os testes: tarefas, sem limites de WIP e sem contagem por coluna. */
+export function boardResponse(tasks: readonly TaskDto[]): ListBoardDto {
+  return { tasks: [...tasks], wipLimits: {}, wipColumns: [] }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -35,6 +46,7 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     contributors: { ...api.contributors, ...overrides.contributors },
     timeline: { ...api.timeline, ...overrides.timeline },
     dashboard: { ...api.dashboard, ...overrides.dashboard },
+    boardSettings: { ...api.boardSettings, ...overrides.boardSettings },
     meetings: { ...api.meetings, ...overrides.meetings },
   }
 }

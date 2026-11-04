@@ -14,6 +14,7 @@ import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
 import { AddTaskComment, EditTaskComment, RemoveTaskComment } from './use-cases/tasks/comments'
+import { GetBoardSettings, SetWipLimits } from './use-cases/board-settings/board-settings'
 import {
   AddChecklistItem,
   MoveChecklistItem,
@@ -114,6 +115,10 @@ export function createUseCases(deps: AppDeps) {
     },
     dashboard: {
       get: new GetDashboard(deps),
+    },
+    boardSettings: {
+      get: new GetBoardSettings(deps),
+      setWipLimits: new SetWipLimits(deps),
     },
     meetings: {
       listMonth: new ListMonthMeetings(deps),

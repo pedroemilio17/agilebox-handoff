@@ -48,6 +48,7 @@ function setup(actor: Actor = ana, unitOfWork = new InMemoryUnitOfWork()) {
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
     comments: unitOfWork.repositories.comments,
+    boardSettings: unitOfWork.repositories.boardSettings,
     clock: new FixedClock(timestamp),
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
@@ -301,7 +302,7 @@ describe('casos de uso de comentários', () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
     await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'Um' })
-    const board = await useCases.tasks.listBoard.execute(bruno, {})
+    const { tasks: board } = await useCases.tasks.listBoard.execute(bruno, {})
     expect(board.find((task) => task.id === taskId)?.commentCount).toBe(1)
     const team = await useCases.tasks.listTeamBoard.execute(outsider, {})
     expect(team.find((task) => task.id === taskId)?.commentCount).toBe(0)
