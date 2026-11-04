@@ -3,6 +3,7 @@ import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
   Kbd,
+  TaskKey,
   Eyebrow,
   SignalBadge,
   ProjectSwatch,
@@ -73,6 +74,7 @@ export function Gallery() {
           <Eyebrow>Componentes v2 · dados de demonstração</Eyebrow>
           <div className={styles.row}>
             <Kbd>Ctrl K</Kbd>
+            <TaskKey value="AB-118" />
             <ProjectSwatch index={0} name="AgileBox" />
             <SignalBadge variant="aging">Parada há 5 dias</SignalBadge>
             <SignalBadge variant="overdue">Vencida há 2 dias</SignalBadge>

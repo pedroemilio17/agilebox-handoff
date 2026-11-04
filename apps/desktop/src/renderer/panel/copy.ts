@@ -124,6 +124,8 @@ export const panelCopy = {
   taskDetailError: 'Não foi possível carregar a tarefa.',
   taskTitle: 'Título da tarefa',
   saveError: 'Não foi possível salvar a alteração.',
+  taskIdCopied: 'ID copiado',
+  taskIdCopyError: 'Não foi possível copiar o ID.',
   detailsCard: 'Detalhes',
   description: 'Descrição',
   descriptionPlaceholder: 'O que será feito',

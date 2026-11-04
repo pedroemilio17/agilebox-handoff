@@ -36,6 +36,7 @@ import {
   StatusChip,
   ProjectSwatch,
   SignalBadge,
+  TaskKey,
 } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
@@ -490,12 +491,13 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={task.title}
+      aria-label={`${task.key} · ${task.title}`}
       className={styles.cardButton}
       onClick={onOpen}
       type="button"
     >
       <span className={styles.cardTop}>
+        <TaskKey value={task.key} />
         <span className={styles.projectName} id={`${task.id}-project`}>
           {task.projectName}
         </span>

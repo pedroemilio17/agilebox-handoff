@@ -76,7 +76,7 @@ export function PanelCommands({
   for (const task of results.data ?? [])
     actions.push({
       id: task.id,
-      label: `${task.title} · ${task.projectName}`,
+      label: `${task.key} · ${task.title} · ${task.projectName}`,
       section: 'Tarefas parecidas',
       onSelect: () => {
         onClose()

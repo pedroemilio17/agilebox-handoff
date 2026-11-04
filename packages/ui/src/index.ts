@@ -31,6 +31,8 @@ export type { SegmentedControlProps, SegmentedOption } from './components/Segmen
 export { Skeleton } from './components/Skeleton'
 export type { SkeletonProps } from './components/Skeleton'
 export { StatusChip } from './components/StatusChip'
+export { TaskKey } from './components/TaskKey'
+export type { TaskKeyProps } from './components/TaskKey'
 export type { StatusChipProps } from './components/StatusChip'
 export { StatusMenu } from './components/StatusMenu'
 export type { StatusMenuProps } from './components/StatusMenu'

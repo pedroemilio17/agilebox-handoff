@@ -40,18 +40,17 @@ Final:
 
 ## Em andamento
 
-- B1: ID legível (AB-118). core, infra-sqlite e application/contract feitos; falta UI (card, detalhe, bandeja).
+- Próximo item: B3 (prioridade).
 
 ## Concluído
 
-_Nenhum item concluído ainda._
+- B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
 
 ## Bloqueios
 
-- B1, o que falta (UI): `apps/desktop` só recebeu o mínimo para o typecheck passar (fixtures com `number` e `key`). Pendente: mostrar a chave no card, no detalhe e na bandeja.
+- B1, pendência de ambiente: a migração `0001_gorgeous_bill_hollister.sql` ainda não foi aplicada num banco real (`pnpm db:migrate` sobre `.data/agilebox.db`). Vale rodar uma vez antes de subir o app.
   - Feito nesta etapa: migração `0001_gorgeous_bill_hollister.sql` escrita à mão (`ALTER` + backfill por organização em ordem de `created_at`, depois índice único em `(organization_id, number)`). Não usa recriação de tabela, para não depender de `PRAGMA foreign_keys` dentro da transação do migrador.
   - Decisão: `TaskRepository.nextNumber` (MAX+1) é chamado dentro da mesma transação do `CreateTask`. A tarefa passou a ser montada dentro de `unitOfWork.run`.
   - Decisão: `OrganizationRepository` (porta nova) fornece o `taskPrefix` para o DTO. O `key` é montado em `toTaskDto(task, taskPrefix)` com `formatTaskKey`.
   - Limite: o `drizzle-kit generate` só rodou para gerar o snapshot. Como não foi possível apagar o 0001 gerado automaticamente, o SQL foi substituído por edição. O snapshot continua coerente com o schema.
-  - Pendência de ambiente: a migração não foi aplicada num banco real (`pnpm db:migrate` sobre `.data/agilebox.db`). Vale rodar uma vez antes de subir o app.
   - Resultado: `pnpm check` verde (121 arquivos, 987 testes).

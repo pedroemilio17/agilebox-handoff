@@ -394,4 +394,22 @@ describe('Card Envolvidos', () => {
     expect(screen.queryByRole('button', { name: 'Remover Ana Souza' })).toBeNull()
     expect(screen.queryByLabelText('Pessoa ou entidade')).toBeNull()
   })
+
+  it('mostra o ID no cabeçalho e copia pelo botão com aviso', async () => {
+    const { user } = setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    expect(await screen.findByText('AB-118')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Copiar ID AB-118' }))
+    expect(writeText).toHaveBeenCalledWith('AB-118')
+    expect(await screen.findByText('ID copiado')).toBeTruthy()
+  })
+
+  it('avisa quando a área de transferência não está disponível', async () => {
+    const { user } = setup()
+    const writeText = vi.fn().mockRejectedValue(new Error('negado'))
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    await user.click(await screen.findByRole('button', { name: 'Copiar ID AB-118' }))
+    expect(await screen.findByText('Não foi possível copiar o ID.')).toBeTruthy()
+  })
 })

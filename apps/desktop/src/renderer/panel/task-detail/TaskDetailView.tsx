@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { DateOnly, TaskStatus } from '@agilebox/core'
-import { Button, IconButton, ReadOnlyBadge } from '@agilebox/ui'
+import { Button, IconButton, ReadOnlyBadge, TaskKey, Toast } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
@@ -36,6 +36,7 @@ export function TaskDetailView({
   const update = useUpdateTask(taskId)
   const move = useMoveTaskStatus(taskId)
   const task = detail.data
+  const [copyNotice, setCopyNotice] = useState<{ id: number; message: string } | null>(null)
   const title = useBlurSave(task?.title ?? '', (next) => {
     if (next.trim() !== '') update.mutate({ title: next.trim() })
   })
@@ -89,10 +90,41 @@ export function TaskDetailView({
 
   const readOnly = task!.readOnly
 
+  // O ID é texto copiado para a área de transferência (não há link nem protocolo para ele).
+  function copyTaskKey() {
+    const key = task!.key
+    const notify = (message: string) =>
+      setCopyNotice((current) => ({ id: (current?.id ?? 0) + 1, message }))
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(key))
+      .then(() => notify(panelCopy.taskIdCopied))
+      .catch(() => notify(panelCopy.taskIdCopyError))
+  }
+
   return (
     <section aria-label={panelCopy.taskDetail} className={styles.view}>
       <header className={styles.header}>
         <span className={styles.projectLabel}>{task!.projectName}</span>
+        <TaskKey value={task!.key} />
+        <IconButton
+          type="button"
+          aria-label={`Copiar ID ${task!.key}`}
+          title="Copiar ID"
+          onClick={copyTaskKey}
+        >
+          <svg
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <rect x="9" y="9" width="11" height="11" rx="2" />
+            <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+          </svg>
+        </IconButton>
         {onToggleFullScreen && (
           <IconButton
             type="button"
@@ -134,6 +166,7 @@ export function TaskDetailView({
         }}
       />
       <SaveError error={update.error ?? move.error} />
+      {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
       {(task!.agingDays ?? 0) > 4 && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
           <p>

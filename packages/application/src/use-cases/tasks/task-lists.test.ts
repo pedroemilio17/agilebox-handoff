@@ -248,6 +248,31 @@ describe('listas de tarefas', () => {
     ).resolves.toMatchObject([{ id: mine.id }])
   })
 
+  it('busca pelo ID ou pelo número, respeitando o acesso', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const mine = { ...aTask().inProject(project).build(), number: 118 }
+    const hidden = {
+      ...mine,
+      id: toTaskId('00000000000000000000000017'),
+      number: 119,
+      createdBy: otherUserId,
+      participations: [],
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(organizationId, hidden)
+
+    await expect(useCases.tasks.search.execute(actor, { query: 'ab-118' })).resolves.toMatchObject([
+      { id: mine.id, key: 'AB-118' },
+    ])
+    await expect(useCases.tasks.search.execute(actor, { query: '118' })).resolves.toMatchObject([
+      { id: mine.id },
+    ])
+    await expect(useCases.tasks.search.execute(actor, { query: 'XY-118' })).resolves.toEqual([])
+    await expect(useCases.tasks.search.execute(actor, { query: '119' })).resolves.toEqual([])
+  })
+
   it('registra abertura somente quando o ator tem acesso à tarefa', async () => {
     const { useCases, unitOfWork } = setup()
     const project = aProject().build()

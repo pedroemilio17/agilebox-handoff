@@ -19,6 +19,7 @@ describe('Galeria de componentes', () => {
     expect(screen.getByRole('group', { name: 'Opções de demonstração' })).toBeTruthy()
     expect(screen.getByLabelText('Campo desabilitado')).toBeTruthy()
     expect(screen.getByText('Alterações salvas')).toBeTruthy()
+    expect(screen.getByText('AB-118')).toBeTruthy()
     expect(screen.getByRole('tooltip')).toBeTruthy()
   })
 

@@ -202,6 +202,23 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         ),
       )
     },
+    async findByNumber(organizationId, number, userId) {
+      const participationTaskIds = await taskIdsForUser(userId)
+      const [task] = await findTaskRows(
+        organizationId,
+        and(
+          eq(tasks.number, number),
+          or(
+            eq(tasks.createdBy, userId),
+            inArray(
+              tasks.id,
+              participationTaskIds.length ? participationTaskIds.map((row) => row.taskId) : [''],
+            ),
+          ),
+        ),
+      )
+      return task ?? null
+    },
     async nextNumber(organizationId) {
       const [row] = await database
         .select({ current: sql<number>`coalesce(max(${tasks.number}), 0)` })

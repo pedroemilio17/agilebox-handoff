@@ -250,4 +250,44 @@ describe('repositórios SQLite de tarefas, envolvimentos, linha do tempo e abert
     expect(otherTask?.number).toBe(1)
     database.$client.close()
   })
+  it('encontra tarefa pelo número só para quem pode vê-la', async () => {
+    const database = createSqliteClient(':memory:')
+    const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+    await database.insert(organizations).values({
+      id: organizationId,
+      name: 'A',
+      taskPrefix: 'AB',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    })
+    const core = createSqliteCoreRepositories(database)
+    const user = aUser().with({ organizationId }).build()
+    await core.users.save(organizationId, user)
+    const project = aProject().with({ organizationId, createdBy: user.id }).build()
+    await core.projects.save(organizationId, project)
+    const repositories = createSqliteTaskRepositories(database)
+    await repositories.tasks.save(
+      organizationId,
+      aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB1'),
+          number: 118,
+          organizationId,
+          projectId: project.id,
+          createdBy: user.id,
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB2'),
+        })
+        .build(),
+    )
+
+    expect((await repositories.tasks.findByNumber(organizationId, 118, user.id))?.number).toBe(118)
+    expect(
+      await repositories.tasks.findByNumber(
+        organizationId,
+        118,
+        toUserId('01ARZ3NDEKTSV4RRFFQ69G5FAZ'),
+      ),
+    ).toBeNull()
+    expect(await repositories.tasks.findByNumber(organizationId, 7, user.id)).toBeNull()
+    database.$client.close()
+  })
 })

@@ -8,6 +8,7 @@ import {
   NotFoundError,
   PermissionDeniedError,
   participates,
+  parseTaskKey,
   toProjectId,
   toTaskId,
   toUserId,
@@ -135,14 +136,32 @@ export class ListFrequentTasks {
   }
 }
 
+/** Número da tarefa quando a busca é o ID ("AB-118", com o prefixo da organização) ou só o número ("118"). */
+function taskNumberFromQuery(query: string, prefix: string): number | null {
+  const value = query.trim().toUpperCase()
+  if (/^\d+$/u.test(value)) {
+    const number = Number(value)
+    return number > 0 ? number : null
+  }
+  const key = parseTaskKey(value)
+  return key && key.prefix === prefix ? key.number : null
+}
+
 export class SearchTasks {
   constructor(private readonly deps: AppDeps) {}
 
   async execute(actor: Actor, input: { readonly query: string }): Promise<readonly TaskDto[]> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
-    return (await this.deps.tasks.search(actor.organizationId, input.query, actor.userId)).map(
-      (task) => toTaskDto(task, prefix),
-    )
+    const number = taskNumberFromQuery(input.query, prefix)
+    const byNumber =
+      number === null
+        ? null
+        : await this.deps.tasks.findByNumber(actor.organizationId, number, actor.userId)
+    const byText = await this.deps.tasks.search(actor.organizationId, input.query, actor.userId)
+    const found = byNumber
+      ? [byNumber, ...byText.filter((task) => task.id !== byNumber.id)]
+      : byText
+    return found.map((task) => toTaskDto(task, prefix))
   }
 }
 

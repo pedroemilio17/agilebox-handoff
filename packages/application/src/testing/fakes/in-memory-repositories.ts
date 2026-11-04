@@ -272,6 +272,10 @@ export class InMemoryTaskRepository implements TaskRepository {
       .trim()
     return this.forUser(org, userId).filter((item) => item.searchText.includes(normalized))
   }
+  async findByNumber(org: OrganizationId, number: number, userId: User['id']) {
+    await Promise.resolve()
+    return this.forUser(org, userId).find((item) => item.number === number) ?? null
+  }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
     bucket(this.state.tasks, org).set(value.id, value)

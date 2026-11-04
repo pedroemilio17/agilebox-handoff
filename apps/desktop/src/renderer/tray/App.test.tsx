@@ -133,6 +133,15 @@ describe('Bandeja: tela inicial', () => {
     expect(await screen.findByText('Nenhuma tarefa encontrada.')).toBeTruthy()
   })
 
+  it('mostra o ID de cada tarefa e busca pelo número', async () => {
+    const { user } = setup([A, { ...B, number: 7, key: 'AB-7' }])
+    expect(await screen.findByText('AB-118')).toBeTruthy()
+    expect(screen.getByText('AB-7')).toBeTruthy()
+    await user.type(screen.getByLabelText('Buscar tarefa'), '7')
+    expect(screen.queryByRole('button', { name: /Revisão do relatório/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /Publicar versão/ })).toBeTruthy()
+  })
+
   it('alterna para Frequentes e mostra o vazio quando não há tarefa aberta', async () => {
     const { user, listFrequent } = setup([])
     expect(await screen.findByText('Nenhuma tarefa aberta ainda.')).toBeTruthy()

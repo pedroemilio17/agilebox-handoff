@@ -123,24 +123,28 @@ describe('Painel', () => {
       </ApiProvider>,
     )
     const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: task.title }))
+    await user.click(await screen.findByRole('button', { name: `${task.key} · ${task.title}` }))
     const dialog = await screen.findByRole('dialog', { name: task.title })
     expect(dialog.hasAttribute('aria-modal')).toBe(false)
-    expect(screen.getByRole('button', { name: task.title }).getAttribute('aria-pressed')).toBe(
-      'true',
-    )
-    await user.click(screen.getByRole('button', { name: second.title }))
+    expect(
+      screen
+        .getByRole('button', { name: `${task.key} · ${task.title}` })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    await user.click(screen.getByRole('button', { name: `${second.key} · ${second.title}` }))
     expect(await screen.findByDisplayValue(second.title)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Abrir em tela cheia' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.queryByRole('button', { name: second.title })).toBeNull()
+    expect(screen.queryByRole('button', { name: `${second.key} · ${second.title}` })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Voltar ao painel lateral' }))
     const title = await screen.findByLabelText('Título da tarefa')
     await user.click(title)
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: second.title })),
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: `${second.key} · ${second.title}` }),
+      ),
     )
   })
 
@@ -161,13 +165,13 @@ describe('Painel', () => {
     const aging = await screen.findByRole('button', { name: 'Paradas · 1' })
     expect(screen.getByText('parada 5d')).toBeTruthy()
     await userEvent.click(aging)
-    expect(screen.queryByRole('button', { name: 'Tarefa vencida' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Tarefa parada' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'AB-118 · Tarefa vencida' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'AB-118 · Tarefa parada' })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Vencidas · 1' }))
-    expect(screen.queryByRole('button', { name: 'Tarefa parada' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Tarefa vencida' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'AB-118 · Tarefa parada' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'AB-118 · Tarefa vencida' })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Vencidas · 1' }))
-    expect(screen.getByRole('button', { name: 'Tarefa em dia' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'AB-118 · Tarefa em dia' })).toBeTruthy()
   })
 
   it('o botão da coluna cria no estado correspondente', async () => {
@@ -226,7 +230,7 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    expect(await screen.findByRole('button', { name: 'Revisar integração' })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })).toBeTruthy()
     expect(screen.getByRole('region', { name: 'Revisar, tarefas' })).toBeTruthy()
     expect(listBoard).toHaveBeenCalledWith({})
   })
@@ -278,7 +282,7 @@ describe('Painel', () => {
       'Revisar, tarefas',
       'Concluído, tarefas',
     ])
-    expect(screen.getAllByRole('button', { name: 'Revisar integração' })).toHaveLength(5)
+    expect(screen.getAllByRole('button', { name: 'AB-118 · Revisar integração' })).toHaveLength(5)
   })
 
   it('filtra a consulta do quadro pelo projeto escolhido', async () => {

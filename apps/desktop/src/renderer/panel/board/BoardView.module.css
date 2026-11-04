@@ -192,8 +192,11 @@
 }
 
 .projectName {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   color: var(--color-text-subtle);
+  text-align: right;
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;

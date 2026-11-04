@@ -120,7 +120,7 @@ function setup(currentUserId: string, boardTasks: TaskDto[] = [task]) {
 describe('Perfis e permissões na tela', () => {
   it('colaborador não vê o item Dashboard; gestor vê', async () => {
     setup(ANA)
-    await screen.findByRole('button', { name: 'Revisar integração' })
+    await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })
     expect(screen.queryByRole('button', { name: 'Dashboard' })).toBeNull()
     cleanup()
     setup(MANAGER)
@@ -129,7 +129,7 @@ describe('Perfis e permissões na tela', () => {
 
   it('troca de perfil pela conta e recarrega os dados', async () => {
     const { switchUser, listBoard, user } = setup(ANA)
-    await screen.findByRole('button', { name: 'Revisar integração' })
+    await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })
     expect(screen.queryByRole('button', { name: 'Dashboard' })).toBeNull()
     const callsBefore = listBoard.mock.calls.length
 
@@ -173,7 +173,7 @@ describe('Dashboard do gestor', () => {
     await user.click(await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ }))
     const filter = await screen.findByRole('button', { name: 'Paradas · 1' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByRole('button', { name: task.title })).toBeTruthy()
+    expect(screen.getByRole('button', { name: `${task.key} · ${task.title}` })).toBeTruthy()
   })
 
   it('mostra adesão, fluxo e sinais e abre os projetos de um colaborador', async () => {
@@ -246,7 +246,7 @@ describe('Erros de permissão', () => {
     const { api, user } = setup(ANA)
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: task.id }))
     vi.spyOn(api.tasks, 'update').mockRejectedValue(new ApiError('FORBIDDEN', 'Sem permissão'))
-    await user.click(await screen.findByRole('button', { name: 'Revisar integração' }))
+    await user.click(await screen.findByRole('button', { name: 'AB-118 · Revisar integração' }))
     const description = await screen.findByLabelText('Descrição')
     await user.type(description, ' mais')
     await user.tab()

@@ -64,4 +64,29 @@ describe('comandos do painel', () => {
     expect(onOpenTask).toHaveBeenCalledWith(task.id)
     expect(onClose).toHaveBeenCalledOnce()
   })
+
+  it('busca tarefa pelo ID e mostra o ID no resultado', async () => {
+    const api = createFakeApi()
+    const task = makeDetail()
+    const search = vi.spyOn(api.tasks, 'search').mockResolvedValue([task])
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <PanelCommands
+            projects={[]}
+            people={[]}
+            selectedProjectId={null}
+            isManager={false}
+            onClose={() => undefined}
+            onOpenTask={() => undefined}
+            onNavigate={() => undefined}
+          />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    const user = userEvent.setup()
+    await user.type(screen.getByRole('combobox'), 'AB-118')
+    expect(await screen.findByRole('option', { name: /AB-118 · Revisar integração/ })).toBeTruthy()
+    expect(search).toHaveBeenCalledWith({ query: 'AB-118' })
+  })
 })

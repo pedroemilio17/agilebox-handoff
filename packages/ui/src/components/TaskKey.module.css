@@ -1,0 +1,9 @@
+.key {
+  overflow: hidden;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
