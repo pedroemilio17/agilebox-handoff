@@ -1,5 +1,6 @@
 import { createOrganization, toOrganizationId } from '@agilebox/core'
 import type {
+  ChecklistItem,
   Contributor,
   Meeting,
   Organization,
@@ -12,6 +13,7 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  ChecklistRepository,
   ContributorRepository,
   MeetingRepository,
   OrganizationRepository,
@@ -27,6 +29,7 @@ import type {
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
 export interface InMemoryState {
+  checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   contributors: Map<OrganizationId, Map<string, Contributor>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   participations: Map<OrganizationId, Map<string, Participation>>
@@ -47,6 +50,7 @@ export function createInMemoryState(): InMemoryState {
     createdAt: '2026-01-01T00:00:00.000Z',
   })
   return {
+    checklist: new Map(),
     contributors: new Map(),
     meetings: new Map(),
     participations: new Map(),
@@ -78,6 +82,33 @@ export class InMemoryOrganizationRepository implements OrganizationRepository {
   async save(value: Organization) {
     await Promise.resolve()
     this.state.organizations.set(value.id, value)
+  }
+}
+
+export class InMemoryChecklistRepository implements ChecklistRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.checklist, org).values()]
+      .filter((item) => item.taskId === taskId)
+      .sort((a, b) => a.position - b.position)
+  }
+  async listByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const ids = new Set<string>(taskIds)
+    return [...bucket(this.state.checklist, org).values()].filter((item) => ids.has(item.taskId))
+  }
+  async saveMany(org: OrganizationId, items: readonly ChecklistItem[]) {
+    await Promise.resolve()
+    const tasks = bucket(this.state.tasks, org)
+    const values = bucket(this.state.checklist, org)
+    for (const item of items) {
+      if (tasks.has(item.taskId)) values.set(item.id, item)
+    }
+  }
+  async remove(org: OrganizationId, itemId: ChecklistItem['id']) {
+    await Promise.resolve()
+    bucket(this.state.checklist, org).delete(itemId)
   }
 }
 

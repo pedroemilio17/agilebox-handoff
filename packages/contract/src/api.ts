@@ -23,6 +23,13 @@ import {
   setParticipationRateOutputSchema,
 } from './participations'
 import {
+  addChecklistItemInputSchema,
+  moveChecklistItemInputSchema,
+  removeChecklistItemInputSchema,
+  renameChecklistItemInputSchema,
+  toggleChecklistItemInputSchema,
+} from './checklist'
+import {
   createTaskInputSchema,
   createTaskOutputSchema,
   getTaskInputSchema,
@@ -42,6 +49,7 @@ import {
   blockTaskOutputSchema,
   unblockTaskInputSchema,
   unblockTaskOutputSchema,
+  checklistChangeOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -115,6 +123,26 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
   'tasks.block': { input: blockTaskInputSchema, output: blockTaskOutputSchema },
   'tasks.unblock': { input: unblockTaskInputSchema, output: unblockTaskOutputSchema },
+  'tasks.checklist.add': {
+    input: addChecklistItemInputSchema,
+    output: checklistChangeOutputSchema,
+  },
+  'tasks.checklist.toggle': {
+    input: toggleChecklistItemInputSchema,
+    output: checklistChangeOutputSchema,
+  },
+  'tasks.checklist.rename': {
+    input: renameChecklistItemInputSchema,
+    output: checklistChangeOutputSchema,
+  },
+  'tasks.checklist.remove': {
+    input: removeChecklistItemInputSchema,
+    output: checklistChangeOutputSchema,
+  },
+  'tasks.checklist.move': {
+    input: moveChecklistItemInputSchema,
+    output: checklistChangeOutputSchema,
+  },
   'tasks.listRecent': { input: listRecentTasksInputSchema, output: listRecentTasksOutputSchema },
   'tasks.listFrequent': {
     input: listFrequentTasksInputSchema,
@@ -190,6 +218,13 @@ export interface AgileBoxApi {
     move: Method<'tasks.move'>
     block: Method<'tasks.block'>
     unblock: Method<'tasks.unblock'>
+    checklist: {
+      add: Method<'tasks.checklist.add'>
+      toggle: Method<'tasks.checklist.toggle'>
+      rename: Method<'tasks.checklist.rename'>
+      remove: Method<'tasks.checklist.remove'>
+      move: Method<'tasks.checklist.move'>
+    }
     listRecent: Method<'tasks.listRecent'>
     listFrequent: Method<'tasks.listFrequent'>
     search: Method<'tasks.search'>

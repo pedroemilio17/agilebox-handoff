@@ -13,11 +13,12 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, Task } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
+import { loadChecklists } from './checklist-loader'
 
 export interface ListBoardInput {
   readonly projectId?: string
@@ -67,6 +68,11 @@ export class ListBoard {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const today = toDateOnly(new Date(now), timeZone)
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
+    const checklists = await loadChecklists(
+      this.deps,
+      actor.organizationId,
+      tasks.map((task) => task.id),
+    )
     return Promise.all(
       tasks.map(async (task) => {
         const events =
@@ -74,7 +80,7 @@ export class ListBoard {
             ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
             : []
         return {
-          ...toTaskDto(task, prefix),
+          ...toTaskDto(task, prefix, checklists.get(task.id) ?? []),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
         }
@@ -108,10 +114,30 @@ export class ListTeamBoard {
           }),
       ),
     )
-    return tasks
-      .filter((task) => eligibleProjectIds.has(task.projectId) && !participates(actor, task))
-      .map((task) => toTaskDto(task, prefix))
+    const visible = tasks.filter(
+      (task) => eligibleProjectIds.has(task.projectId) && !participates(actor, task),
+    )
+    const checklists = await loadChecklists(
+      this.deps,
+      actor.organizationId,
+      visible.map((task) => task.id),
+    )
+    return visible.map((task) => toTaskDto(task, prefix, checklists.get(task.id) ?? []))
   }
+}
+
+async function toTaskDtos(
+  deps: AppDeps,
+  actor: Actor,
+  tasks: readonly Task[],
+  prefix: string,
+): Promise<readonly TaskDto[]> {
+  const checklists = await loadChecklists(
+    deps,
+    actor.organizationId,
+    tasks.map((task) => task.id),
+  )
+  return tasks.map((task) => toTaskDto(task, prefix, checklists.get(task.id) ?? []))
 }
 
 export class ListRecentTasks {
@@ -119,9 +145,8 @@ export class ListRecentTasks {
 
   async execute(actor: Actor): Promise<readonly TaskDto[]> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
-    return (await this.deps.tasks.listRecent(actor.organizationId, actor.userId)).map((task) =>
-      toTaskDto(task, prefix),
-    )
+    const tasks = await this.deps.tasks.listRecent(actor.organizationId, actor.userId)
+    return toTaskDtos(this.deps, actor, tasks, prefix)
   }
 }
 
@@ -130,9 +155,8 @@ export class ListFrequentTasks {
 
   async execute(actor: Actor): Promise<readonly TaskDto[]> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
-    return (await this.deps.tasks.listFrequent(actor.organizationId, actor.userId)).map((task) =>
-      toTaskDto(task, prefix),
-    )
+    const tasks = await this.deps.tasks.listFrequent(actor.organizationId, actor.userId)
+    return toTaskDtos(this.deps, actor, tasks, prefix)
   }
 }
 
@@ -161,7 +185,7 @@ export class SearchTasks {
     const found = byNumber
       ? [byNumber, ...byText.filter((task) => task.id !== byNumber.id)]
       : byText
-    return found.map((task) => toTaskDto(task, prefix))
+    return toTaskDtos(this.deps, actor, found, prefix)
   }
 }
 

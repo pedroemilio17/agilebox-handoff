@@ -49,6 +49,7 @@ const task: TaskDto = {
   priority: 'normal',
   blockedReason: null,
   blockedAt: null,
+  checklistProgress: { done: 0, total: 0, percent: 0 },
   deadline: null,
   ticketId: null,
   ticketUrl: null,

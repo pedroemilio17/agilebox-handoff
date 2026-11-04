@@ -108,6 +108,22 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
     if ('blockedReason' in item) {
       await useCases.tasks.block.execute(actor, { taskId: task.id, reason: item.blockedReason })
     }
+    if ('checklist' in item) {
+      for (const entry of item.checklist) {
+        await useCases.tasks.checklist.add.execute(actor, { taskId: task.id, title: entry.title })
+      }
+      const withItems = await useCases.tasks.getDetail.execute(actor, { taskId: task.id })
+      for (const entry of item.checklist) {
+        const sub = withItems.checklist.find((candidate) => candidate.title === entry.title)
+        if (entry.done && sub) {
+          await useCases.tasks.checklist.toggle.execute(actor, {
+            taskId: task.id,
+            itemId: sub.id,
+            done: true,
+          })
+        }
+      }
+    }
     if (item.owner === 0 && item.title === 'Atualizar documentação da API') {
       const support = await useCases.participations.add.execute(actor, {
         taskId: task.id,

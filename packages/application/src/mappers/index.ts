@@ -2,6 +2,7 @@ import {
   canSeeRate,
   canSeeTaskTotal,
   canEditTask,
+  checklistProgress,
   describeEvent,
   formatTaskKey,
   isReadOnlyFor,
@@ -9,6 +10,7 @@ import {
 } from '@agilebox/core'
 import type {
   Actor,
+  ChecklistItem,
   Contributor,
   Meeting,
   Participation,
@@ -19,6 +21,7 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  ChecklistItemDto,
   ContributorDto,
   DashboardDto,
   GetTaskDto,
@@ -105,7 +108,24 @@ export function toParticipationSummaryDto(
   }
 }
 
-export function toTaskDto(task: Task, taskPrefix: string): TaskDto {
+export function toChecklistItemDto(item: ChecklistItem): ChecklistItemDto {
+  return {
+    id: item.id,
+    taskId: item.taskId,
+    title: item.title,
+    done: item.done,
+    position: item.position,
+    createdAt: item.createdAt,
+    doneAt: item.doneAt,
+  }
+}
+
+/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. */
+export function toTaskDto(
+  task: Task,
+  taskPrefix: string,
+  checklist: readonly ChecklistItem[],
+): TaskDto {
   return {
     id: task.id,
     number: task.number,
@@ -121,6 +141,7 @@ export function toTaskDto(task: Task, taskPrefix: string): TaskDto {
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,
+    checklistProgress: checklistProgress(checklist),
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
   }
@@ -132,10 +153,12 @@ export function toTaskDetailDto(
   actor: Actor,
   isMember: boolean,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
+  checklist: readonly ChecklistItem[],
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   return {
-    ...toTaskDto(task, taskPrefix),
+    ...toTaskDto(task, taskPrefix, checklist),
+    checklist: checklist.map(toChecklistItemDto),
     participations: task.participations.map((participation) =>
       toParticipationSummaryDto(participation, task.organizationId, actor, names),
     ),

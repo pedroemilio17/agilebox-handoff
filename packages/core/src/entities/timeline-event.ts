@@ -1,4 +1,4 @@
-import type { EventId, TaskId, UserId } from '../shared/ids'
+import type { ChecklistItemId, EventId, TaskId, UserId } from '../shared/ids'
 import type { DateOnly } from '../values/date-only'
 import type { ParticipationRole } from '../values/role'
 import type { TaskPriority } from '../values/task-priority'
@@ -25,6 +25,14 @@ export type TimelineEvent = EventBase &
       }
     | { readonly type: 'status_changed'; readonly payload: Change<TaskStatus> }
     | { readonly type: 'priority_changed'; readonly payload: Change<TaskPriority> }
+    | {
+        readonly type:
+          | 'checklist_item_added'
+          | 'checklist_item_done'
+          | 'checklist_item_reopened'
+          | 'checklist_item_removed'
+        readonly payload: { readonly itemId: ChecklistItemId; readonly title: string }
+      }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }

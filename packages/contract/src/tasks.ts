@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { checklistItemDtoSchema, checklistProgressDtoSchema } from './checklist'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
@@ -25,6 +26,7 @@ export const taskDtoSchema = z.object({
   ticketUrl: z.url().nullable(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
+  checklistProgress: checklistProgressDtoSchema,
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),
 })
@@ -45,6 +47,7 @@ export const getTaskInputSchema = z.object({ taskId: ulidSchema })
 export const getTaskOutputSchema = taskDtoSchema
   .extend({
     participations: z.array(z.lazy(() => participationSummaryDtoSchema)),
+    checklist: z.array(checklistItemDtoSchema),
     total: visibleRateSchema,
     canEdit: z.boolean(),
     readOnly: z.boolean(),
@@ -84,6 +87,8 @@ export const blockTaskInputSchema = z.object({ taskId: ulidSchema, reason: taskB
 export const blockTaskOutputSchema = taskDtoSchema
 export const unblockTaskInputSchema = z.object({ taskId: ulidSchema })
 export const unblockTaskOutputSchema = taskDtoSchema
+/** Toda alteração de subtarefa devolve a tarefa atualizada (com o progresso). */
+export const checklistChangeOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()
 export const listFrequentTasksInputSchema = z.undefined()
 export const listRecentTasksOutputSchema = listBoardOutputSchema

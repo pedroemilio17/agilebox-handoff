@@ -18,6 +18,17 @@ export function validateBlockReason(reason: string): string {
   return trimmed
 }
 
+export const CHECKLIST_TITLE_MAX_LENGTH = 200
+export const CHECKLIST_MAX_ITEMS = 50
+
+export function validateChecklistTitle(title: string): string {
+  const trimmed = title.trim()
+  if (!trimmed) throw new ValidationError('Título da subtarefa obrigatório')
+  if (Array.from(trimmed).length > CHECKLIST_TITLE_MAX_LENGTH)
+    throw new ValidationError('Subtarefa deve ter até 200 caracteres')
+  return trimmed
+}
+
 export function validateDefaultRate(rate: number): void {
   validateHundredths(rate)
 }

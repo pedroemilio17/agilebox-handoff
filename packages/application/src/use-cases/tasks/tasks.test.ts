@@ -29,6 +29,7 @@ function setup() {
     actorSession,
     changeNotifier: notifier,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
+    checklist: unitOfWork.repositories.checklist,
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,

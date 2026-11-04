@@ -120,6 +120,14 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `moveu de ${TASK_STATUS_LABELS[event.payload.before]} para ${TASK_STATUS_LABELS[event.payload.after]}`
     case 'priority_changed':
       return `alterou a prioridade de ${TASK_PRIORITY_LABELS[event.payload.before]} para ${TASK_PRIORITY_LABELS[event.payload.after]}`
+    case 'checklist_item_added':
+      return `adicionou a subtarefa: ${event.payload.title}`
+    case 'checklist_item_done':
+      return `concluiu a subtarefa: ${event.payload.title}`
+    case 'checklist_item_reopened':
+      return `reabriu a subtarefa: ${event.payload.title}`
+    case 'checklist_item_removed':
+      return `removeu a subtarefa: ${event.payload.title}`
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':

@@ -34,6 +34,7 @@ const task = {
   deadline: null,
   ticketId: null,
   ticketUrl: null,
+  checklistProgress: { done: 0, total: 0, percent: 0 },
   createdAt: '2026-10-31T12:00:00.000Z',
   updatedAt: '2026-10-31T12:30:00.000Z',
 }
@@ -64,6 +65,7 @@ describe('schemas de tarefas', () => {
         ...task,
         id: 'tarefa-1',
         participations: [],
+        checklist: [],
         total: null,
         canEdit: true,
         readOnly: false,
@@ -75,6 +77,7 @@ describe('schemas de tarefas', () => {
   it('aceita detalhe com permissão explícita e rejeita flags contraditórias', () => {
     const detail = {
       ...task,
+      checklist: [],
       participations: [
         {
           id: participationId,

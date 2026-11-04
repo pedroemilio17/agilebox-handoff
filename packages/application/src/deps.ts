@@ -1,6 +1,7 @@
 import type {
   ActorSession,
   ChangeNotifier,
+  ChecklistRepository,
   Clock,
   ContributorRepository,
   IdGenerator,
@@ -18,6 +19,7 @@ import type {
 export interface AppDeps {
   readonly actorSession: ActorSession
   readonly changeNotifier: ChangeNotifier
+  readonly checklist: ChecklistRepository
   readonly clock: Clock
   readonly contributors: ContributorRepository
   readonly idGenerator: IdGenerator

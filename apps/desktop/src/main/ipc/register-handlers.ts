@@ -76,6 +76,21 @@ export function registerHandlers(
   register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
   register('tasks.block', (actor, input) => useCases.tasks.block.execute(actor, input))
   register('tasks.unblock', (actor, input) => useCases.tasks.unblock.execute(actor, input))
+  register('tasks.checklist.add', (actor, input) =>
+    useCases.tasks.checklist.add.execute(actor, input),
+  )
+  register('tasks.checklist.toggle', (actor, input) =>
+    useCases.tasks.checklist.toggle.execute(actor, input),
+  )
+  register('tasks.checklist.rename', (actor, input) =>
+    useCases.tasks.checklist.rename.execute(actor, input),
+  )
+  register('tasks.checklist.remove', (actor, input) =>
+    useCases.tasks.checklist.remove.execute(actor, input),
+  )
+  register('tasks.checklist.move', (actor, input) =>
+    useCases.tasks.checklist.move.execute(actor, input),
+  )
   register('tasks.listRecent', (actor) => useCases.tasks.listRecent.execute(actor))
   register('tasks.listFrequent', (actor) => useCases.tasks.listFrequent.execute(actor))
   register('tasks.search', (actor, input) => useCases.tasks.search.execute(actor, input))

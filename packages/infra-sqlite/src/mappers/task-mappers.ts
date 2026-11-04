@@ -11,13 +11,15 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Participation, Task, TimelineEvent } from '@agilebox/core'
+import { createChecklistItem, toChecklistItemId } from '@agilebox/core'
+import type { ChecklistItem, Participation, Task, TimelineEvent } from '@agilebox/core'
 import { createTicket } from '@agilebox/core'
-import type { taskEvents, taskParticipations, tasks } from '../schema/index.js'
+import type { taskChecklistItems, taskEvents, taskParticipations, tasks } from '../schema/index.js'
 
 type TaskRow = typeof tasks.$inferSelect
 type ParticipationRow = typeof taskParticipations.$inferSelect
 type EventRow = typeof taskEvents.$inferSelect
+type ChecklistRow = typeof taskChecklistItems.$inferSelect
 
 export function mapParticipationRow(row: ParticipationRow): Participation {
   const participant = row.userId
@@ -75,4 +77,17 @@ export function mapTimelineEventRow(row: EventRow): TimelineEvent {
     type: row.type as TimelineEvent['type'],
     payload: JSON.parse(row.payload) as TimelineEvent['payload'],
   } as TimelineEvent
+}
+
+export function mapChecklistItemRow(row: ChecklistRow): ChecklistItem {
+  return createChecklistItem({
+    id: toChecklistItemId(row.id),
+    organizationId: toOrganizationId(row.organizationId),
+    taskId: toTaskId(row.taskId),
+    title: row.title,
+    done: row.done,
+    position: row.position,
+    createdAt: row.createdAt,
+    doneAt: row.doneAt ?? null,
+  })
 }

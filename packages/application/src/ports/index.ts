@@ -1,4 +1,5 @@
 export * from './change-notifier'
+export * from './checklist-repository'
 export * from './actor-session'
 export * from './clock'
 export * from './contributor-repository'

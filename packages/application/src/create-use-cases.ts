@@ -14,6 +14,13 @@ import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
 import {
+  AddChecklistItem,
+  MoveChecklistItem,
+  RemoveChecklistItem,
+  RenameChecklistItem,
+  ToggleChecklistItem,
+} from './use-cases/tasks/checklist'
+import {
   BlockTask,
   CreateTask,
   GetTaskDetail,
@@ -75,6 +82,13 @@ export function createUseCases(deps: AppDeps) {
       move: new MoveTask(deps),
       block: new BlockTask(deps),
       unblock: new UnblockTask(deps),
+      checklist: {
+        add: new AddChecklistItem(deps),
+        toggle: new ToggleChecklistItem(deps),
+        rename: new RenameChecklistItem(deps),
+        remove: new RemoveChecklistItem(deps),
+        move: new MoveChecklistItem(deps),
+      },
       listBoard: new ListBoard(deps),
       getBoardFlow: new GetBoardFlow(deps),
       listTeamBoard: new ListTeamBoard(deps),

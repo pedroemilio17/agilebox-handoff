@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toUserId } from '@agilebox/core'
+import { createChecklistItem, toChecklistItemId, toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aTask, aUser } from '../testing/builders'
 import { toTaskDetailDto, toTaskDto, toUserDto } from './index'
@@ -24,8 +24,8 @@ describe('mappers de DTO', () => {
   it('monta a chave legível com o prefixo da organização', () => {
     const task = { ...aTask().build(), number: 118 }
 
-    expect(toTaskDto(task, 'AB')).toMatchObject({ number: 118, key: 'AB-118' })
-    expect(toTaskDto(task, 'OPS')).toMatchObject({ number: 118, key: 'OPS-118' })
+    expect(toTaskDto(task, 'AB', [])).toMatchObject({ number: 118, key: 'AB-118' })
+    expect(toTaskDto(task, 'OPS', [])).toMatchObject({ number: 118, key: 'OPS-118' })
   })
 
   it('oculta valores de outras pessoas e total em R$ para colaborador', () => {
@@ -37,10 +37,17 @@ describe('mappers de DTO', () => {
         hoursHundredths: 200,
       })),
     }
-    const dto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), false, {
-      user: (id) => (id === creatorId ? 'Ana Silva' : 'Bia Souza'),
-      contributor: () => 'Cliente',
-    })
+    const dto = toTaskDetailDto(
+      withHours,
+      'AB',
+      actor(otherUserId),
+      false,
+      {
+        user: (id) => (id === creatorId ? 'Ana Silva' : 'Bia Souza'),
+        contributor: () => 'Cliente',
+      },
+      [],
+    )
 
     expect(dto.participations[0]?.rate).toBeNull()
     expect(dto.total).toBeNull()
@@ -60,14 +67,63 @@ describe('mappers de DTO', () => {
       contributor: () => 'Cliente',
     }
 
-    const managerDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId, 'manager'), false, names)
+    const managerDto = toTaskDetailDto(
+      withHours,
+      'AB',
+      actor(otherUserId, 'manager'),
+      false,
+      names,
+      [],
+    )
     expect(managerDto.participations[0]?.rate).toBe(45)
     expect(managerDto.total).toBe(90)
     expect(managerDto.canEdit).toBe(true)
     expect(managerDto.readOnly).toBe(false)
 
-    const memberDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), true, names)
+    const memberDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), true, names, [])
     expect(memberDto.canEdit).toBe(false)
     expect(memberDto.readOnly).toBe(true)
+  })
+
+  it('leva as subtarefas ao detalhe e o progresso ao card', () => {
+    const task = aTask().build()
+    const base = {
+      organizationId,
+      taskId: task.id,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }
+    const done = createChecklistItem({
+      ...base,
+      id: toChecklistItemId('00000000000000000000000021'),
+      title: 'Revisar',
+      done: true,
+      position: 0,
+      doneAt: '2026-01-02T00:00:00.000Z',
+    })
+    const open = createChecklistItem({
+      ...base,
+      id: toChecklistItemId('00000000000000000000000022'),
+      title: 'Testar',
+      done: false,
+      position: 1,
+      doneAt: null,
+    })
+
+    expect(toTaskDto(task, 'AB', [done, open]).checklistProgress).toEqual({
+      done: 1,
+      total: 2,
+      percent: 50,
+    })
+    const detail = toTaskDetailDto(
+      task,
+      'AB',
+      actor(creatorId),
+      false,
+      { user: () => 'Ana Silva', contributor: () => 'Cliente' },
+      [done, open],
+    )
+    expect(detail.checklist.map((item) => item.title)).toEqual(['Revisar', 'Testar'])
+    expect(detail.checklist[0]).toMatchObject({ done: true, doneAt: '2026-01-02T00:00:00.000Z' })
+    expect(detail.checklistProgress).toEqual({ done: 1, total: 2, percent: 50 })
   })
 })

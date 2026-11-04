@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
 import { toTaskId } from '@agilebox/core'
 import type {
+  ChecklistRepository,
   ParticipationRepository,
   TaskOpenRepository,
   TaskRepository,
@@ -16,6 +17,7 @@ import type {
   UserId,
 } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
+import { createSqliteChecklistRepository } from './checklist-repository.js'
 import { mapParticipationRow, mapTaskRow, mapTimelineEventRow } from '../mappers/task-mappers.js'
 import {
   contributors,
@@ -30,6 +32,7 @@ import {
 type SqliteDatabase = ReturnType<typeof createSqliteClient>
 
 export function createSqliteTaskRepositories(database: SqliteDatabase): {
+  readonly checklist: ChecklistRepository
   readonly tasks: TaskRepository
   readonly participations: ParticipationRepository
   readonly timeline: TimelineRepository
@@ -418,6 +421,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
   }
 
   return {
+    checklist: createSqliteChecklistRepository(database),
     tasks: taskRepository,
     participations: participationRepository,
     timeline: timelineRepository,

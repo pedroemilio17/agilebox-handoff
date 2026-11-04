@@ -18,6 +18,10 @@ export const demoSeedData = {
       priority: 'high' as const,
       deadline: '2026-11-05',
       description: 'Atualizar os endpoints e os exemplos da documentação.',
+      checklist: [
+        { title: 'Revisar endpoints de autenticação', done: true },
+        { title: 'Atualizar exemplos de requisição', done: false },
+      ],
     },
     {
       title: 'Publicar versão de teste',
@@ -40,6 +44,7 @@ export const demoSeedData = {
       status: 'review' as const,
       priority: 'high' as const,
       deadline: '2026-11-06',
+      checklist: [{ title: 'Testar envio de chamado', done: false }],
     },
     {
       title: 'Planejar próxima entrega',

@@ -43,6 +43,14 @@ describe('seed de demonstração', () => {
     expect(tasks.filter((task) => task.blockedReason !== null).map((task) => task.title)).toEqual([
       'Configurar ambiente de homologação',
     ])
+    const checklist = await unitOfWork.repositories.checklist.listByTasks(
+      organizationId,
+      tasks.map((task) => task.id),
+    )
+    expect(checklist).toHaveLength(3)
+    expect(checklist.filter((item) => item.done).map((item) => item.title)).toEqual([
+      'Revisar endpoints de autenticação',
+    ])
     const timeline = await unitOfWork.repositories.timeline.listByTask(
       organizationId,
       tasks.find((task) => task.title === 'Atualizar documentação da API')!.id,

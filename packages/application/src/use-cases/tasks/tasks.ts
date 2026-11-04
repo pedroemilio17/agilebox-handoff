@@ -129,7 +129,7 @@ export class CreateTask {
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId))
+    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [])
   }
 }
 
@@ -146,12 +146,13 @@ export class GetTaskDetail {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
     const now = await this.deps.clock.now(actor.organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
         : []
     return {
-      ...toTaskDetailDto(task, prefix, actor, isMember, names),
+      ...toTaskDetailDto(task, prefix, actor, isMember, names, checklist),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
   }
@@ -229,7 +230,8 @@ abstract class ChangeTask {
     })
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, await findTaskPrefix(this.deps, actor.organizationId))
+    const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
+    return toTaskDto(updated, await findTaskPrefix(this.deps, actor.organizationId), checklist)
   }
 }
 
