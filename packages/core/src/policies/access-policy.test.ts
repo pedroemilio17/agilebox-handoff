@@ -29,6 +29,7 @@ const task: Task = {
   title: 'T',
   description: '',
   status: 'planning',
+  priority: 'normal',
   deadline: null,
   ticket: null,
   searchText: '',

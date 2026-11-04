@@ -46,6 +46,7 @@ const task: TaskDto = {
   title: 'Revisar integração',
   description: '',
   status: 'review',
+  priority: 'normal',
   deadline: null,
   ticketId: null,
   ticketUrl: null,

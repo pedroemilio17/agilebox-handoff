@@ -2,6 +2,8 @@ import { ValidationError } from '../shared/errors'
 import type { OrganizationId, ParticipationId, ProjectId, TaskId, UserId } from '../shared/ids'
 import { parseDateOnly } from '../values/date-only'
 import type { DateOnly } from '../values/date-only'
+import { parseTaskPriority } from '../values/task-priority'
+import type { TaskPriority } from '../values/task-priority'
 import { parseTaskStatus } from '../values/task-status'
 import type { TaskStatus } from '../values/task-status'
 import { createTicket } from '../values/ticket'
@@ -20,6 +22,7 @@ export interface Task {
   readonly title: string
   readonly description: string
   readonly status: TaskStatus
+  readonly priority: TaskPriority
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -73,6 +76,7 @@ export function createTask(input: CreateTaskInput): Task {
     title,
     description: '',
     status: 'planning',
+    priority: 'normal',
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -91,6 +95,9 @@ export function setDescription(task: Task, description: string): Task {
 }
 export function setStatus(task: Task, status: TaskStatus): Task {
   return { ...task, status: parseTaskStatus(status) }
+}
+export function setPriority(task: Task, priority: TaskPriority): Task {
+  return { ...task, priority: parseTaskPriority(priority) }
 }
 export function setDeadline(task: Task, deadline: DateOnly | null): Task {
   return { ...task, deadline: deadline === null ? null : parseDateOnly(deadline) }

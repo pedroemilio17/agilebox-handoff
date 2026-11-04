@@ -1,6 +1,7 @@
 import type { EventId, TaskId, UserId } from '../shared/ids'
 import type { DateOnly } from '../values/date-only'
 import type { ParticipationRole } from '../values/role'
+import type { TaskPriority } from '../values/task-priority'
 import type { TaskStatus } from '../values/task-status'
 import type { Ticket } from '../values/ticket'
 import type { Participant } from './participation'
@@ -23,6 +24,7 @@ export type TimelineEvent = EventBase &
         readonly payload: Record<string, never>
       }
     | { readonly type: 'status_changed'; readonly payload: Change<TaskStatus> }
+    | { readonly type: 'priority_changed'; readonly payload: Change<TaskPriority> }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }
     | { readonly type: 'renamed' | 'description_edited'; readonly payload: Change<string> }
     | { readonly type: 'responsible_changed'; readonly payload: Change<UserId> }

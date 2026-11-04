@@ -6,6 +6,7 @@ import type { Actor } from '../policies/actor'
 import type { ContributorId, OrganizationId, UserId } from '../shared/ids'
 import { formatHours } from '../values/hours'
 import { formatBRL } from '../values/money'
+import { TASK_PRIORITY_LABELS } from '../values/task-priority'
 import { TASK_STATUS_LABELS } from '../values/task-status'
 import type { Ticket } from '../values/ticket'
 
@@ -35,6 +36,11 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
   const events: TimelineEventDraft[] = []
   if (before.status !== after.status)
     events.push({ type: 'status_changed', payload: { before: before.status, after: after.status } })
+  if (before.priority !== after.priority)
+    events.push({
+      type: 'priority_changed',
+      payload: { before: before.priority, after: after.priority },
+    })
   if (before.deadline !== after.deadline)
     events.push({
       type: 'deadline_changed',
@@ -106,6 +112,8 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return 'criou a tarefa'
     case 'status_changed':
       return `moveu de ${TASK_STATUS_LABELS[event.payload.before]} para ${TASK_STATUS_LABELS[event.payload.after]}`
+    case 'priority_changed':
+      return `alterou a prioridade de ${TASK_PRIORITY_LABELS[event.payload.before]} para ${TASK_PRIORITY_LABELS[event.payload.after]}`
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`
     case 'renamed':

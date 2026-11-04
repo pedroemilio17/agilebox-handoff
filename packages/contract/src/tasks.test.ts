@@ -26,6 +26,7 @@ const task = {
   title: 'Implementar quadro',
   description: '',
   status: 'in_progress',
+  priority: 'normal',
   deadline: null,
   ticketId: null,
   ticketUrl: null,
@@ -103,6 +104,24 @@ describe('schemas de tarefas', () => {
       taskId,
       status: 'review',
     })
+  })
+
+  it('aceita prioridade normal ou alta no DTO e na atualização', () => {
+    expect(listBoardOutputSchema.parse([{ ...task, priority: 'high' }])).toEqual([
+      { ...task, priority: 'high' },
+    ])
+    expect(taskUpdateInputSchema.parse({ taskId, changes: { priority: 'high' } })).toEqual({
+      taskId,
+      changes: { priority: 'high' },
+    })
+  })
+
+  it('rejeita prioridade fora de normal e alta', () => {
+    expect(listBoardOutputSchema.safeParse([{ ...task, priority: 'urgent' }]).success).toBe(false)
+    expect(listBoardOutputSchema.safeParse([{ ...task, priority: undefined }]).success).toBe(false)
+    expect(taskUpdateInputSchema.safeParse({ taskId, changes: { priority: 'High' } }).success).toBe(
+      false,
+    )
   })
 
   it('rejeita título vazio, atualização vazia e estados inválidos', () => {

@@ -15,6 +15,7 @@ export const demoSeedData = {
       project: 0,
       owner: 0,
       status: 'in_progress' as const,
+      priority: 'high' as const,
       deadline: '2026-11-05',
       description: 'Atualizar os endpoints e os exemplos da documentação.',
     },
@@ -37,6 +38,7 @@ export const demoSeedData = {
       project: 1,
       owner: 0,
       status: 'review' as const,
+      priority: 'high' as const,
       deadline: '2026-11-06',
     },
     {

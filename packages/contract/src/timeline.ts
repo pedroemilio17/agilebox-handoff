@@ -10,6 +10,7 @@ export const timelineEventTypeSchema = z.enum([
   'description_edited',
   'responsible_changed',
   'ticket_changed',
+  'priority_changed',
   'hours_changed',
   'rate_changed',
   'participant_added',

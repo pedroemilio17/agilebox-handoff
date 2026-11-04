@@ -1,6 +1,7 @@
 export * from './shared/ids'
 export * from './shared/errors'
 export * from './values/task-status'
+export * from './values/task-priority'
 export * from './values/money'
 export * from './values/hours'
 export * from './values/date-only'

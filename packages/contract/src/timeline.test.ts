@@ -36,4 +36,17 @@ describe('schemas da linha do tempo', () => {
       ]).success,
     ).toBe(false)
   })
+
+  it('aceita o evento de mudança de prioridade', () => {
+    const event = {
+      id: eventId,
+      taskId,
+      at: '2026-10-31T12:30:00.000Z',
+      actorUserId,
+      asManager: false,
+      type: 'priority_changed',
+      text: 'alterou a prioridade de Normal para Alta',
+    }
+    expect(listTimelineOutputSchema.parse([event])).toEqual([event])
+  })
 })

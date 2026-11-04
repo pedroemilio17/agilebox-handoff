@@ -1,6 +1,7 @@
 import {
   createParticipation,
   parseDateOnly,
+  parseTaskPriority,
   parseTaskStatus,
   toContributorId,
   toEventId,
@@ -51,6 +52,7 @@ export function mapTaskRow(
     title: row.title,
     description: row.description,
     status: parseTaskStatus(row.status),
+    priority: parseTaskPriority(row.priority),
     deadline: row.deadline === null ? null : parseDateOnly(row.deadline),
     ticket:
       row.ticketId === null ? null : createTicket(Number(row.ticketId), row.ticketUrl ?? undefined),

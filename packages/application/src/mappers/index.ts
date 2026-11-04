@@ -115,6 +115,7 @@ export function toTaskDto(task: Task, taskPrefix: string): TaskDto {
     title: task.title,
     description: task.description,
     status: task.status,
+    priority: task.priority,
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,

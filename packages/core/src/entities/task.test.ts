@@ -18,6 +18,7 @@ import {
   renameTask,
   setDeadline,
   setDescription,
+  setPriority,
   setStatus,
   setTicket,
 } from './task'
@@ -56,6 +57,7 @@ describe('tarefa e envolvimento', () => {
       title: 'Nova Tarefa',
       description: '',
       status: 'planning',
+      priority: 'normal',
       searchText: 'nova tarefa projeto agil',
       deadline: null,
       ticket: null,
@@ -88,6 +90,9 @@ describe('tarefa e envolvimento', () => {
     expect(() => renameTask(original, ' ')).toThrow(ValidationError)
     expect(setDescription(original, 'texto').description).toBe('texto')
     expect(setStatus(original, 'done').status).toBe('done')
+    expect(setPriority(original, 'high').priority).toBe('high')
+    expect(original.priority).toBe('normal')
+    expect(() => setPriority(original, 'urgent' as never)).toThrow(ValidationError)
     expect(() => setStatus(original, 'invalid' as never)).toThrow(ValidationError)
     expect(setDeadline(original, parseDateOnly('2026-02-01')).deadline).toBe('2026-02-01')
     expect(() => setDeadline(original, '2026-02-30' as never)).toThrow(ValidationError)

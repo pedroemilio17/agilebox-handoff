@@ -34,6 +34,12 @@ describe('seed de demonstração', () => {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     ])
     expect(tasks.map((task) => task.title)).toContain('Atualizar documentação da API')
+    expect(
+      tasks
+        .filter((task) => task.priority === 'high')
+        .map((task) => task.title)
+        .sort(),
+    ).toEqual(['Atualizar documentação da API', 'Revisar integração de chamados'])
     const timeline = await unitOfWork.repositories.timeline.listByTask(
       organizationId,
       tasks.find((task) => task.title === 'Atualizar documentação da API')!.id,

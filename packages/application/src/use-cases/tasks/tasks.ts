@@ -20,6 +20,7 @@ import {
   renameTask,
   setDeadline,
   setDescription,
+  setPriority,
   setStatus,
   setTicket,
   toEventId,
@@ -240,6 +241,8 @@ export class UpdateTask extends ChangeTask {
         if (input.changes.title !== undefined) updated = renameTask(updated, input.changes.title)
         if (input.changes.description !== undefined)
           updated = setDescription(updated, input.changes.description)
+        if (input.changes.priority !== undefined)
+          updated = setPriority(updated, input.changes.priority)
         if (input.changes.deadline !== undefined)
           updated = setDeadline(
             updated,

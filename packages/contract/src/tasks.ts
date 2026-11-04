@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
+export const taskPrioritySchema = z.enum(['normal', 'high'])
 export const taskDeadlineSchema = z.iso.date().nullable()
 
 export const taskKeySchema = z.string().regex(/^[A-Z]{2,5}-[1-9]\d*$/u)
@@ -15,6 +16,7 @@ export const taskDtoSchema = z.object({
   title: nameSchema,
   description: z.string(),
   status: taskStatusSchema,
+  priority: taskPrioritySchema,
   deadline: taskDeadlineSchema,
   ticketId: z.number().int().positive().safe().nullable(),
   ticketUrl: z.url().nullable(),
@@ -60,6 +62,7 @@ export const taskUpdateChangesSchema = z
     progressConfirmed: z.literal(true).optional(),
     title: nameSchema.optional(),
     description: z.string().optional(),
+    priority: taskPrioritySchema.optional(),
     deadline: taskDeadlineSchema.optional(),
     ticketId: z.number().int().positive().safe().nullable().optional(),
     ticketUrl: z.url().nullable().optional(),

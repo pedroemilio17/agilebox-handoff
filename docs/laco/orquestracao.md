@@ -40,7 +40,7 @@ Final:
 
 ## Em andamento
 
-- Próximo item: B3 (prioridade).
+- B3: backend feito; falta UI (card, detalhe, bandeja, filtro).
 
 ## Concluído
 
@@ -48,6 +48,7 @@ Final:
 
 ## Bloqueios
 
+- B3, pendência de ambiente: a migração `0002_funny_rictor.sql` (coluna `tasks.priority`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER` (sem recriar a tabela), como a 0001.
 - B1, pendência de ambiente: a migração `0001_gorgeous_bill_hollister.sql` ainda não foi aplicada num banco real (`pnpm db:migrate` sobre `.data/agilebox.db`). Vale rodar uma vez antes de subir o app.
   - Feito nesta etapa: migração `0001_gorgeous_bill_hollister.sql` escrita à mão (`ALTER` + backfill por organização em ordem de `created_at`, depois índice único em `(organization_id, number)`). Não usa recriação de tabela, para não depender de `PRAGMA foreign_keys` dentro da transação do migrador.
   - Decisão: `TaskRepository.nextNumber` (MAX+1) é chamado dentro da mesma transação do `CreateTask`. A tarefa passou a ser montada dentro de `unitOfWork.run`.

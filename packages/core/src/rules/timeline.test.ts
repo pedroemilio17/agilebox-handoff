@@ -70,6 +70,7 @@ describe('linha do tempo', () => {
       title: 'Novo',
       description: 'Texto',
       status: 'in_progress' as const,
+      priority: 'high' as const,
       deadline: parseDateOnly('2026-02-01'),
       ticket: { id: 42 },
       participations: [
@@ -80,6 +81,7 @@ describe('linha do tempo', () => {
     expect(diffTask(before, before)).toEqual([])
     expect(diffTask(before, after).map((event) => event.type)).toEqual([
       'status_changed',
+      'priority_changed',
       'deadline_changed',
       'renamed',
       'description_edited',
@@ -114,6 +116,7 @@ describe('linha do tempo', () => {
       { ...base, type: 'rate_changed', payload: { participant, before: 5000, after: 6000 } },
       { ...base, type: 'participant_added', payload: { participant, role: 'support' } },
       { ...base, type: 'participant_removed', payload: { participant, role: 'support' } },
+      { ...base, type: 'priority_changed', payload: { before: 'normal', after: 'high' } },
     ]
     const descriptions = events.map((event) => describeEvent(event, viewer, names))
     expect(descriptions).toEqual([
@@ -128,6 +131,7 @@ describe('linha do tempo', () => {
       'alterou o valor/hora de Bia',
       'adicionou Bia como Apoio',
       'removeu Bia de Apoio',
+      'alterou a prioridade de Normal para Alta',
     ])
     expect(descriptions[8]).not.toMatch(/R\$|50,00|60,00/)
     expect(describeEvent(events[8]!, { ...viewer, role: 'manager' }, names)).toContain('60,00')

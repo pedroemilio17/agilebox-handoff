@@ -23,6 +23,9 @@ export const tasks = sqliteTable(
     status: text('status', {
       enum: ['planning', 'todo', 'in_progress', 'review', 'done'],
     }).notNull(),
+    priority: text('priority', { enum: ['normal', 'high'] })
+      .notNull()
+      .default('normal'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),
@@ -35,6 +38,7 @@ export const tasks = sqliteTable(
       'tasks_status_check',
       sql`${table.status} IN ('planning', 'todo', 'in_progress', 'review', 'done')`,
     ),
+    check('tasks_priority_check', sql`${table.priority} IN ('normal', 'high')`),
     uniqueIndex('tasks_organization_number_unique').on(table.organizationId, table.number),
     index('tasks_organization_project_index').on(table.organizationId, table.projectId),
     index('tasks_organization_updated_at_index').on(table.organizationId, table.updatedAt),

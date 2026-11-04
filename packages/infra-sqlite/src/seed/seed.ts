@@ -99,6 +99,12 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
     if (item.status !== 'planning') {
       await useCases.tasks.move.execute(actor, { taskId: task.id, status: item.status })
     }
+    if ('priority' in item && item.priority === 'high') {
+      await useCases.tasks.update.execute(actor, {
+        taskId: task.id,
+        changes: { priority: 'high' },
+      })
+    }
     if (item.owner === 0 && item.title === 'Atualizar documentação da API') {
       const support = await useCases.participations.add.execute(actor, {
         taskId: task.id,

@@ -40,6 +40,7 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
   title,
   description: '',
   status: 'todo',
+  priority: 'normal',
   deadline: null,
   ticketId: null,
   ticketUrl: null,

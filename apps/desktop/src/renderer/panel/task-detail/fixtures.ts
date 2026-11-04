@@ -29,6 +29,7 @@ export function makeDetail(overrides: Partial<GetTaskDto> = {}): GetTaskDto {
     title: 'Revisar integração',
     description: 'Descrição inicial',
     status: 'in_progress',
+    priority: 'normal',
     deadline: '2026-11-10',
     ticketId: null,
     ticketUrl: null,

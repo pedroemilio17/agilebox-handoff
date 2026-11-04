@@ -320,6 +320,55 @@ describe('casos de uso de tarefas', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
+  it('altera a prioridade como evento da linha do tempo, marcado como Gestor quando for o gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask()
+      .ownedBy(aUser().with({ id: userId }).build())
+      .build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    const updated = await useCases.tasks.update.execute(actor, {
+      taskId: task.id,
+      changes: { priority: 'high' },
+    })
+    expect(updated.priority).toBe('high')
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    await useCases.tasks.update.execute(manager, {
+      taskId: task.id,
+      changes: { priority: 'normal' },
+    })
+    const events = await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)
+    expect(events).toHaveLength(2)
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'priority_changed',
+          asManager: false,
+          payload: { before: 'normal', after: 'high' },
+        }),
+        expect.objectContaining({
+          type: 'priority_changed',
+          asManager: true,
+          payload: { before: 'high', after: 'normal' },
+        }),
+      ]),
+    )
+    const stored = await unitOfWork.repositories.tasks.findById(organizationId, task.id)
+    expect(stored?.priority).toBe('normal')
+  })
+
+  it('nega mudar a prioridade por colaborador que não participa, sem gravar evento', async () => {
+    const { useCases, unitOfWork } = setup()
+    const otherUser = aUser().with({ id: otherUserId, name: 'Bia Lima' }).build()
+    const task = aTask().ownedBy(otherUser).build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await expect(
+      useCases.tasks.update.execute(actor, { taskId: task.id, changes: { priority: 'high' } }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(await unitOfWork.repositories.timeline.listByTask(organizationId, task.id)).toEqual([])
+    const stored = await unitOfWork.repositories.tasks.findById(organizationId, task.id)
+    expect(stored?.priority).toBe('normal')
+  })
+
   it('desfaz tarefa se a gravação de eventos falhar', async () => {
     const { useCases, unitOfWork } = setup()
     const task = aTask().build()
