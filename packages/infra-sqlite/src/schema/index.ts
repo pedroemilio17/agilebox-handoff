@@ -1,5 +1,6 @@
 export { boardSettings } from './board-settings.js'
 export { contributors } from './contributors.js'
+export { dailyEntries } from './daily-entries.js'
 export { definitionOfDoneItems } from './definition-of-done-items.js'
 export { localSettings } from './local-settings.js'
 export { meetingParticipants } from './meeting-participants.js'

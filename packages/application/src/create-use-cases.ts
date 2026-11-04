@@ -63,6 +63,12 @@ import {
   UpdateMeeting,
 } from './use-cases/meetings/meetings'
 import {
+  GetDailyForUser,
+  GetTodayDaily,
+  ListDailyForDate,
+  SaveDaily,
+} from './use-cases/daily/daily'
+import {
   AddRetroAction,
   ListRetroActions,
   RemoveRetroAction,
@@ -142,6 +148,12 @@ export function createUseCases(deps: AppDeps) {
     boardSettings: {
       get: new GetBoardSettings(deps),
       setWipLimits: new SetWipLimits(deps),
+    },
+    daily: {
+      getToday: new GetTodayDaily(deps),
+      save: new SaveDaily(deps),
+      listForDate: new ListDailyForDate(deps),
+      getForUser: new GetDailyForUser(deps),
     },
     meetings: {
       listRange: new ListMeetingOccurrences(deps),

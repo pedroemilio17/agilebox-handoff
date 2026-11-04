@@ -37,6 +37,7 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     clock: new FixedClock('2026-01-20T12:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
     retroActions: unitOfWork.repositories.retroActions,
+    dailyEntries: unitOfWork.repositories.dailyEntries,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

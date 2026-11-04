@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OrganizationId, ProjectId, TaskId, UserId, ContributorId } from '../shared/ids'
+import type { DailyEntry } from '../entities/daily-entry'
+import type { DateOnly } from '../values/date-only'
 import type { Task } from '../entities/task'
 import type { TaskComment } from '../entities/task-comment'
 import type { Project } from '../entities/project'
@@ -280,5 +282,41 @@ describe('combinados da retro', () => {
     expect(
       policy.canSeeRetroActions({ ...collaborator, organizationId: otherOrg }, retroMeeting),
     ).toBe(false)
+  })
+})
+
+describe('daily', () => {
+  const today = '2026-11-04' as DateOnly
+  const yesterday = '2026-11-03' as DateOnly
+  const entry = {
+    id: 'entry',
+    organizationId: org,
+    userId: user,
+    date: today,
+    answers: { progress: 'x', nextStep: '', blocker: '' },
+    noNews: false,
+    taskRefs: [],
+    createdAt: 't',
+    updatedAt: 't',
+  } as unknown as DailyEntry
+
+  it('só a própria pessoa escreve, e só no dia de hoje', () => {
+    expect(policy.canWriteDaily(collaborator, user, today, today)).toBe(true)
+    expect(policy.canWriteDaily(collaborator, user, yesterday, today)).toBe(false)
+    expect(policy.canWriteDaily(collaborator, other, today, today)).toBe(false)
+    expect(policy.canWriteDaily({ ...manager, userId: other }, user, today, today)).toBe(false)
+  })
+
+  it('lê a própria; gestor lê as da organização; colaborador não lê a de outro', () => {
+    expect(policy.canReadDaily(collaborator, entry)).toBe(true)
+    expect(policy.canReadDaily(manager, entry)).toBe(true)
+    expect(policy.canReadDaily({ ...collaborator, userId: other }, entry)).toBe(false)
+    expect(policy.canReadDaily({ ...manager, organizationId: otherOrg }, entry)).toBe(false)
+  })
+
+  it('visão do gestor é só do gestor da mesma organização', () => {
+    expect(policy.canSeeDailyOverview(manager, org)).toBe(true)
+    expect(policy.canSeeDailyOverview(collaborator, org)).toBe(false)
+    expect(policy.canSeeDailyOverview(manager, otherOrg)).toBe(false)
   })
 })

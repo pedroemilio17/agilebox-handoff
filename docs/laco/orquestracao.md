@@ -28,7 +28,7 @@ Final:
 
 ## Em andamento
 
-Nenhum item em andamento.
+- Daily: backend feito; faltam UI da bandeja, coluna "Daily de hoje" no dashboard e polimento do foco do menu de exportação.
 
 ## Aguardando decisão do Pedro (não implementar)
 
@@ -52,6 +52,7 @@ Nenhum item em andamento.
 
 ## Bloqueios
 
+- Daily, pendência de ambiente: a migração `0010_daily_entries.sql` (tabela `daily_entries`, índice único por organização, usuário e dia) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índices, sem recriar as existentes).
 - B10, pendência de ambiente: a migração `0009_retro_actions.sql` (tabela `retro_actions`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B6, pendência de ambiente: a migração `0008_definition_of_done.sql` (tabela `definition_of_done_items`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B9, pendência de ambiente: a migração `0007_meeting_fields.sql` (colunas `meetings.end_time`, `kind`, `recurrence` e `recurrence_until`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` e reescrita à mão com `ALTER TABLE ... ADD`, sem recriar `meetings`, porque o gerado recriava a tabela.
@@ -69,6 +70,13 @@ Nenhum item em andamento.
 
 ## Pendências do Pedro
 
+- Daily, backend: os três passos foram lidos do protótipo como (1) "O que você avançou hoje?", com o texto livre "Algo mais que não passou pelo quadro?" (campo `progress`) e as tarefas marcadas (`taskRefs`); (2) "Próximo passo" (`nextStep`); (3) "Algo te bloqueia?" (`blocker`). Confirmar a ordem e os nomes.
+- Daily, conteúdo: `taskRefs` sozinhos não contam como conteúdo. A daily exige texto em um dos três campos ou "Sem novidades" (leitura literal de "pelo menos um preenchido"). Confirmar se marcar tarefas deve bastar.
+- Daily, "Sem novidades": é um campo próprio (`noNews`). O core aceita texto junto com a marcação. Confirmar se deve bloquear.
+- Daily, datas: "hoje" é o dia do servidor, no fuso do processo (mesma regra do dashboard). Gravar só é aceito no dia de hoje; data passada vira PermissionDenied e data futura, ValidationError. Confirmar se a janela deve incluir o dia anterior até determinada hora.
+- Daily, "Pular hoje": o protótipo tem o botão, mas o backend não grava pulo. A daily segue devida até ser preenchida. Confirmar se "Pular hoje" deve registrar algo.
+- Daily, dashboard: `daily.listForDate` devolve todas as pessoas da organização, inclusive o gestor. A coluna pode filtrar só colaboradores.
+- Daily, atualização: gravar a daily não publica evento de mudança (nenhum aviso). A UI precisa recarregar a coluna "Daily de hoje" por conta própria.
 - Fase C, Equipe do gestor: `listTeamBoard` exclui para o gestor as tarefas em que ele participa, mas o PLANO 6.1 diz "todas". A tela mostra o que o servidor devolve. Confirmar se a regra deve mudar no servidor.
 - Fase C, detalhe da Equipe: abre sempre em somente leitura, também para o gestor (mesmo que `tasks.get` devolva `canEdit: true`). A edição do gestor continua pelo "Abrir projetos" do dashboard, marcada como Gestor. Confirmar.
 - Fase C, rodapé "Ciclo médio desta semana": não aparece na Equipe, porque é métrica do quadro pessoal. Confirmar.

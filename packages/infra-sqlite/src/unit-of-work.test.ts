@@ -6,6 +6,7 @@ import { organizations } from './schema/organizations.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
+import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
@@ -30,6 +31,7 @@ describe('SqliteUnitOfWork', () => {
       comments: createSqliteTaskCommentRepository(database),
       meetings,
       retroActions: createSqliteRetroActionRepository(database),
+      dailyEntries: createSqliteDailyEntryRepository(database),
     })
     const meeting = aMeeting().with({ organizationId, createdBy: user.id }).build()
 
@@ -62,6 +64,7 @@ describe('SqliteUnitOfWork', () => {
       comments: createSqliteTaskCommentRepository(database),
       meetings,
       retroActions: createSqliteRetroActionRepository(database),
+      dailyEntries: createSqliteDailyEntryRepository(database),
     })
     const meeting = aMeeting().with({ organizationId, createdBy: user.id }).build()
 

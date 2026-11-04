@@ -18,6 +18,7 @@ import type {
   DefinitionOfDoneItem,
   WipLimits,
   Contributor,
+  DailyEntry,
   Meeting,
   MeetingOccurrence,
   Participation,
@@ -32,6 +33,7 @@ import type {
 import type {
   BoardSettingsDto,
   ChecklistItemDto,
+  DailyEntryDto,
   DefinitionOfDoneItemDto,
   WipLimitsDto,
   ContributorDto,
@@ -268,6 +270,21 @@ export function toRetroActionDto(
     createdBy: action.createdBy,
     canManage: actor.role === 'manager' && actor.organizationId === action.organizationId,
     canToggle: canToggleRetroAction(actor, action),
+  }
+}
+
+/** Daily para quem tem acesso a ela (o próprio usuário ou o gestor). O nome vem do usuário dono. */
+export function toDailyEntryDto(entry: DailyEntry, userName: string): DailyEntryDto {
+  return {
+    id: entry.id,
+    userId: entry.userId,
+    userName,
+    date: entry.date,
+    answers: { ...entry.answers },
+    noNews: entry.noNews,
+    taskRefs: [...entry.taskRefs],
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
   }
 }
 

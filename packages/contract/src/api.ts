@@ -110,6 +110,16 @@ import {
   updateMeetingInputSchema,
   updateMeetingOutputSchema,
 } from './meetings'
+import {
+  getDailyForUserInputSchema,
+  getDailyForUserOutputSchema,
+  getTodayDailyInputSchema,
+  getTodayDailyOutputSchema,
+  listDailyForDateInputSchema,
+  listDailyForDateOutputSchema,
+  saveDailyInputSchema,
+  saveDailyOutputSchema,
+} from './daily'
 import { setDefaultRateInputSchema, setDefaultRateOutputSchema } from './users'
 import {
   addDefinitionOfDoneItemInputSchema,
@@ -290,6 +300,10 @@ export const API_SCHEMA_REGISTRY = {
     input: removeRetroActionInputSchema,
     output: removeRetroActionOutputSchema,
   },
+  'daily.getToday': { input: getTodayDailyInputSchema, output: getTodayDailyOutputSchema },
+  'daily.save': { input: saveDailyInputSchema, output: saveDailyOutputSchema },
+  'daily.listForDate': { input: listDailyForDateInputSchema, output: listDailyForDateOutputSchema },
+  'daily.getForUser': { input: getDailyForUserInputSchema, output: getDailyForUserOutputSchema },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
@@ -381,6 +395,12 @@ export interface AgileBoxApi {
       toggle: Method<'meetings.retroActions.toggle'>
       remove: Method<'meetings.retroActions.remove'>
     }
+  }
+  daily: {
+    getToday: Method<'daily.getToday'>
+    save: Method<'daily.save'>
+    listForDate: Method<'daily.listForDate'>
+    getForUser: Method<'daily.getForUser'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

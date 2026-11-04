@@ -124,6 +124,30 @@ describe('seed de demonstração', () => {
     expect(retroActions.filter((action) => action.done)).toHaveLength(1)
     expect(new Set(retroActions.map((action) => action.responsibleId)).size).toBe(3)
     expect(retroActions.every((action) => action.dueDate !== null)).toBe(true)
+
+    // Dailies: a de ontem é do Pedro e cita a tarefa da documentação; a de hoje é da Colaboradora 2.
+    const people = await unitOfWork.repositories.users.list(organizationId)
+    const byName = (name: string) => people.find((user) => user.name === name)?.id
+    const documentation = tasks.find((task) => task.title === 'Atualizar documentação da API')!
+    const yesterdayDailies = await unitOfWork.repositories.dailyEntries.listByDate(
+      organizationId,
+      parseDateOnly('2026-11-03'),
+    )
+    expect(yesterdayDailies).toHaveLength(1)
+    expect(yesterdayDailies[0]).toMatchObject({
+      userId: byName('Pedro'),
+      noNews: false,
+      taskRefs: [documentation.id],
+    })
+    const todayDailies = await unitOfWork.repositories.dailyEntries.listByDate(
+      organizationId,
+      parseDateOnly('2026-11-04'),
+    )
+    expect(todayDailies).toHaveLength(1)
+    expect(todayDailies[0]).toMatchObject({
+      userId: byName('Colaborador 2'),
+      answers: { blocker: 'Aguardo acesso ao ambiente de homologação.' },
+    })
   })
 
   it('define a definição de pronto da demonstração e confirma as conclusões', async () => {

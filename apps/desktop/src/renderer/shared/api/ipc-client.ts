@@ -103,6 +103,12 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
         remove: (input) => call('meetings.retroActions.remove', input),
       },
     },
+    daily: {
+      getToday: (input) => call('daily.getToday', input),
+      save: (input) => call('daily.save', input),
+      listForDate: (input) => call('daily.listForDate', input),
+      getForUser: (input) => call('daily.getForUser', input),
+    },
     onChanges: bridge.onChanges,
   }
 }

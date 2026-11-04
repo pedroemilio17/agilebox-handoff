@@ -71,6 +71,13 @@
       "when": 1793809142292,
       "tag": "0009_retro_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793829038227,
+      "tag": "0010_daily_entries",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import type {
   BoardSettings,
   ChecklistItem,
   DefinitionOfDoneItem,
+  DailyEntry,
   DefinitionOfDoneItemId,
   Contributor,
   TaskComment,
@@ -22,6 +23,7 @@ import type {
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
+  DailyEntryRepository,
   DefinitionOfDoneRepository,
   TaskCommentRepository,
   MeetingRepository,
@@ -43,6 +45,7 @@ export interface InMemoryState {
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   comments: Map<OrganizationId, Map<string, TaskComment>>
   contributors: Map<OrganizationId, Map<string, Contributor>>
+  dailyEntries: Map<OrganizationId, Map<string, DailyEntry>>
   definitionOfDone: Map<OrganizationId, Map<string, DefinitionOfDoneItem>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   retroActions: Map<OrganizationId, Map<string, RetroAction>>
@@ -68,6 +71,7 @@ export function createInMemoryState(): InMemoryState {
     checklist: new Map(),
     comments: new Map(),
     contributors: new Map(),
+    dailyEntries: new Map(),
     definitionOfDone: new Map(),
     meetings: new Map(),
     retroActions: new Map(),
@@ -251,6 +255,32 @@ export class InMemoryMeetingRepository implements MeetingRepository {
     for (const [actionId, action] of actions) {
       if (action.meetingId === id) actions.delete(actionId)
     }
+  }
+}
+
+export class InMemoryDailyEntryRepository implements DailyEntryRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async findByUserAndDate(
+    org: OrganizationId,
+    userId: DailyEntry['userId'],
+    date: DailyEntry['date'],
+  ) {
+    await Promise.resolve()
+    return (
+      [...bucket(this.state.dailyEntries, org).values()].find(
+        (item) => item.userId === userId && item.date === date,
+      ) ?? null
+    )
+  }
+  async listByDate(org: OrganizationId, date: DailyEntry['date']) {
+    await Promise.resolve()
+    return [...bucket(this.state.dailyEntries, org).values()].filter((item) => item.date === date)
+  }
+  async save(org: OrganizationId, value: DailyEntry) {
+    await Promise.resolve()
+    // Só grava daily de usuário desta organização.
+    if (bucket(this.state.users, org).has(value.userId))
+      bucket(this.state.dailyEntries, org).set(value.id, value)
   }
 }
 

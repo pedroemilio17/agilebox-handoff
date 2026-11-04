@@ -1,4 +1,12 @@
-import { createOrganization, createUser, toOrganizationId, toUserId } from '@agilebox/core'
+import {
+  createDailyEntry,
+  createOrganization,
+  createUser,
+  toDailyEntryId,
+  toOrganizationId,
+  toTaskId,
+  toUserId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { createUseCases } from '@agilebox/application'
 import type { AppDeps } from '@agilebox/application'
@@ -92,6 +100,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
     await useCases.contributors.create.execute(actor, { name })
   }
 
+  const taskIdsByTitle = new Map<string, string>()
   for (const item of demoSeedData.tasks) {
     const owner = users[item.owner]!
     actor = { userId: owner.id, organizationId, role: owner.role }
@@ -99,6 +108,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       projectId: projects[item.project]!.id,
       title: item.title,
     })
+    taskIdsByTitle.set(item.title, task.id)
     await useCases.tasks.update.execute(actor, {
       taskId: task.id,
       changes: {
@@ -210,6 +220,25 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       participants: meeting.participants.map((index) => users[index]!.id),
     })
     createdMeetings.set(meeting.title, created.id)
+  }
+
+  // Dailies da demonstração: gravadas direto no repositório (ver data.ts).
+  for (const entry of demoSeedData.dailyEntries) {
+    const taskRefs = entry.taskRefs.map((title) => toTaskId(taskIdsByTitle.get(title)!))
+    await runtime.dailyEntries.save(
+      organizationId,
+      createDailyEntry({
+        id: toDailyEntryId(seedId(nextId++)),
+        organizationId,
+        userId: users[entry.user]!.id,
+        date: entry.date,
+        answers: { progress: entry.progress, nextStep: entry.nextStep, blocker: entry.blocker },
+        noNews: entry.noNews,
+        taskRefs,
+        createdAt: entry.createdAt,
+        updatedAt: entry.createdAt,
+      }),
+    )
   }
 
   // Combinados da retro: o gestor cria e marca o primeiro como feito.

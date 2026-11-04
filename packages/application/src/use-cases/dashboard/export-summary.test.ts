@@ -24,6 +24,7 @@ function setup() {
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
     retroActions: unitOfWork.repositories.retroActions,
+    dailyEntries: unitOfWork.repositories.dailyEntries,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,

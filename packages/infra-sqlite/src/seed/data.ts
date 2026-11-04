@@ -138,6 +138,33 @@ export const demoSeedData = {
       participants: [0, 1, 2, 3, 4],
     },
   ],
+  /**
+   * Dailies de demonstração (índices de `users`; títulos de `tasks`). A de ontem é do Pedro e a de hoje
+   * da Colaboradora 2, com datas fixas coerentes com 2026-11-04. Gravadas direto no repositório, porque
+   * a daily só se preenche no próprio dia pelos casos de uso.
+   */
+  dailyEntries: [
+    {
+      user: 0,
+      date: '2026-11-03',
+      createdAt: '2026-11-03T18:00:00.000Z',
+      progress: 'Revisei os endpoints de autenticação na documentação.',
+      nextStep: 'Fechar os exemplos de requisição.',
+      blocker: '',
+      noNews: false,
+      taskRefs: ['Atualizar documentação da API'],
+    },
+    {
+      user: 1,
+      date: '2026-11-04',
+      createdAt: '2026-11-04T12:00:00.000Z',
+      progress: 'Atendi o suporte da secretaria por 1h.',
+      nextStep: 'Comentar os exemplos da documentação.',
+      blocker: 'Aguardo acesso ao ambiente de homologação.',
+      noNews: false,
+      taskRefs: ['Atualizar documentação da API'],
+    },
+  ],
   /** Combinados da retro da primeira sexta (ocorrência de 2026-11-06); o primeiro já está feito. */
   retroActions: {
     meeting: 'Retrospectiva da entrega',

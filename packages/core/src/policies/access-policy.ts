@@ -1,10 +1,12 @@
+import type { DailyEntry } from '../entities/daily-entry'
 import type { Meeting } from '../entities/meeting'
 import type { RetroAction } from '../entities/retro-action'
 import type { Participant } from '../entities/participation'
 import type { Project } from '../entities/project'
 import type { Task } from '../entities/task'
 import type { TaskComment } from '../entities/task-comment'
-import type { OrganizationId } from '../shared/ids'
+import type { OrganizationId, UserId } from '../shared/ids'
+import type { DateOnly } from '../values/date-only'
 import type { Actor } from './actor'
 
 export interface RateOwner {
@@ -110,4 +112,25 @@ export function canRemoveComment(actor: Actor, task: Task, comment: TaskComment)
 }
 export function isManagerEdit(actor: Actor): boolean {
   return actor.role === 'manager'
+}
+
+/** A daily é de quem a escreve: só a própria pessoa, e só do dia de hoje (não retroativa). */
+export function canWriteDaily(
+  actor: Actor,
+  userId: UserId,
+  date: DateOnly,
+  today: DateOnly,
+): boolean {
+  return actor.userId === userId && date === today
+}
+/** Lê a própria daily. O gestor lê as da organização, em somente leitura. Colaborador não lê a de outro. */
+export function canReadDaily(actor: Actor, entry: DailyEntry): boolean {
+  return (
+    actor.organizationId === entry.organizationId &&
+    (actor.role === 'manager' || actor.userId === entry.userId)
+  )
+}
+/** Lista do dia e leitura por pessoa: só o gestor da organização. Entidades não agem (não são Actor). */
+export function canSeeDailyOverview(actor: Actor, organizationId: OrganizationId): boolean {
+  return actor.organizationId === organizationId && actor.role === 'manager'
 }

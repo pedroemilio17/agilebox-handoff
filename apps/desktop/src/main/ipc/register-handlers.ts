@@ -176,4 +176,8 @@ export function registerHandlers(
   register('meetings.retroActions.remove', (actor, input) =>
     useCases.meetings.retroActions.remove.execute(actor, input),
   )
+  register('daily.getToday', (actor, input) => useCases.daily.getToday.execute(actor, input))
+  register('daily.save', (actor, input) => useCases.daily.save.execute(actor, input))
+  register('daily.listForDate', (actor, input) => useCases.daily.listForDate.execute(actor, input))
+  register('daily.getForUser', (actor, input) => useCases.daily.getForUser.execute(actor, input))
 }
