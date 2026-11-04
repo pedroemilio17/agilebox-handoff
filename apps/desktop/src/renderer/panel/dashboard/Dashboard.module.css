@@ -104,6 +104,12 @@
   font-family: var(--font-family-mono);
   font-size: 11px;
 }
+.periodActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .overview {
   display: grid;
   grid-template-columns: repeat(2, minmax(300px, 1fr));

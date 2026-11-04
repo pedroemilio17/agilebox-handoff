@@ -10,14 +10,19 @@ describe('registro dos handlers IPC', () => {
       handle: (channel: string) => registered.push(channel),
     }
 
-    registerHandlers(ipcMain, {} as Parameters<typeof registerHandlers>[1], {
-      get: vi.fn(() => ({
-        userId: toUserId('00000000000000000000000002'),
-        organizationId: toOrganizationId('00000000000000000000000001'),
-        role: 'collaborator' as const,
-      })),
-      set: vi.fn(),
-    })
+    registerHandlers(
+      ipcMain,
+      {} as Parameters<typeof registerHandlers>[1],
+      {
+        get: vi.fn(() => ({
+          userId: toUserId('00000000000000000000000002'),
+          organizationId: toOrganizationId('00000000000000000000000001'),
+          role: 'collaborator' as const,
+        })),
+        set: vi.fn(),
+      },
+      vi.fn(),
+    )
 
     expect(registered).toHaveLength(API_CHANNELS.length)
     expect(new Set(registered)).toEqual(new Set(API_CHANNELS))

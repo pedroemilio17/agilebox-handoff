@@ -1,9 +1,11 @@
 import console from 'node:console'
-import { app, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { writeFile } from 'node:fs/promises'
 import { UPDATE_CHANNELS } from '@agilebox/contract'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
+import { createSaveDashboardSummary } from './export/save-dashboard-summary'
 import { registerUpdateHandlers } from './updates/register-update-handlers'
 import { createSourceUpdater } from './updates/source-updater'
 import { createReleaseUpdater } from './updates/release-updater'
@@ -145,7 +147,20 @@ function startApp(): void {
         windows,
       })
       closeCompositionRoot = compositionRoot.close
-      registerHandlers(ipcMain, compositionRoot.useCases, compositionRoot.actorSession)
+      registerHandlers(
+        ipcMain,
+        compositionRoot.useCases,
+        compositionRoot.actorSession,
+        createSaveDashboardSummary({
+          exportSummary: (actor, input) =>
+            compositionRoot.useCases.dashboard.exportSummary.execute(actor, input),
+          showSaveDialog: (options) => {
+            const parent = BrowserWindow.getFocusedWindow()
+            return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options)
+          },
+          writeFile: (path, content) => writeFile(path, content, 'utf8'),
+        }),
+      )
       windows.createPanel()
       windows.createTray()
       trayIcon = createTrayIcon({

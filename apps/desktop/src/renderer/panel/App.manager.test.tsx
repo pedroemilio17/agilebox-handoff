@@ -87,6 +87,8 @@ const dashboard: DashboardDto = {
     team: [
       {
         user: { id: BRUNO, name: 'Bruno Lima', initials: 'BL', role: 'collaborator' },
+        taskCount: 3,
+        completedPercentage: 25,
         inProgress: 2,
         agingCount: 1,
         overdueCount: 0,
@@ -436,5 +438,52 @@ describe('Erros de permissão', () => {
     await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ })
     expect(screen.queryByRole('list', { name: 'Colunas acima do limite' })).toBeNull()
     expect(screen.queryByText(/acima do limite/)).toBeNull()
+  })
+})
+
+describe('Exportar resumo do dashboard', () => {
+  it('gestor exporta o resumo da semana escolhida e vê "Resumo salvo."', async () => {
+    const { api, user } = setup(MANAGER)
+    const saveSummary = vi.spyOn(api.dashboard, 'saveSummary').mockResolvedValue({ saved: true })
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Semana do dashboard' }),
+      '2026-10-19',
+    )
+    await user.click(screen.getByRole('button', { name: 'Exportar resumo do dashboard' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Planilha (.csv)' }))
+
+    expect(saveSummary).toHaveBeenCalledWith({ format: 'csv', period: '2026-10-19' })
+    expect(await screen.findByText('Resumo salvo.')).toBeTruthy()
+  })
+
+  it('cancelar o diálogo do sistema não mostra aviso', async () => {
+    const { api, user } = setup(MANAGER)
+    vi.spyOn(api.dashboard, 'saveSummary').mockResolvedValue({ saved: false })
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    await user.click(await screen.findByRole('button', { name: 'Exportar resumo do dashboard' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Markdown (.md)' }))
+
+    await waitFor(() => expect(api.dashboard.saveSummary).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Resumo salvo.')).toBeNull()
+    expect(screen.queryByText('Não foi possível exportar o resumo.')).toBeNull()
+  })
+
+  it('falha na exportação mostra um aviso curto', async () => {
+    const { api, user } = setup(MANAGER)
+    vi.spyOn(api.dashboard, 'saveSummary').mockRejectedValue(
+      new ApiError('EXPORT_FAILED', 'Não foi possível salvar o arquivo.'),
+    )
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    await user.click(await screen.findByRole('button', { name: 'Exportar resumo do dashboard' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Markdown (.md)' }))
+
+    expect(await screen.findByText('Não foi possível exportar o resumo.')).toBeTruthy()
+  })
+
+  it('colaborador não tem o dashboard, e portanto não vê o botão de exportar', async () => {
+    setup(ANA)
+    await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })
+    expect(screen.queryByRole('button', { name: 'Exportar resumo do dashboard' })).toBeNull()
   })
 })

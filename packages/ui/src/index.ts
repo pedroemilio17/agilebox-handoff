@@ -68,6 +68,8 @@ export type { CommandPaletteProps, CommandAction } from './components/CommandPal
 export { KindBadge, RepeatMark, MEETING_KIND_LABELS } from './components/MeetingMarks'
 export type { KindBadgeProps, MeetingKind, RepeatMarkProps } from './components/MeetingMarks'
 export { ActionCount } from './components/ActionCount'
+export { ExportMenu } from './components/ExportMenu'
+export type { ExportMenuOption, ExportMenuProps } from './components/ExportMenu'
 export type { ActionCountProps } from './components/ActionCount'
 export { DueDate } from './components/DueDate'
 export type { DueDateProps } from './components/DueDate'

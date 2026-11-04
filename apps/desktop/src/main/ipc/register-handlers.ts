@@ -1,6 +1,10 @@
 import type { Actor } from '@agilebox/core'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
-import type { ApiChannel } from '@agilebox/contract'
+import type {
+  ApiChannel,
+  SaveDashboardSummaryInput,
+  SaveDashboardSummaryOutput,
+} from '@agilebox/contract'
 import type { ActorSession } from '@agilebox/application'
 import type { createUseCases } from '@agilebox/application'
 import { createIpcHandler } from './handle'
@@ -19,6 +23,10 @@ export function registerHandlers(
   ipcMain: IpcMainLike,
   useCases: UseCases,
   actorSession: ActorSession,
+  saveDashboardSummary: (
+    actor: Actor,
+    input: SaveDashboardSummaryInput,
+  ) => Promise<SaveDashboardSummaryOutput>,
 ): void {
   const register = <Channel extends ApiChannel>(
     channel: Channel,
@@ -140,6 +148,10 @@ export function registerHandlers(
   )
   register('timeline.list', (actor, input) => useCases.timeline.list.execute(actor, input))
   register('dashboard.get', (actor) => useCases.dashboard.get.execute(actor))
+  register('dashboard.exportSummary', (actor, input) =>
+    useCases.dashboard.exportSummary.execute(actor, input),
+  )
+  register('dashboard.saveSummary', (actor, input) => saveDashboardSummary(actor, input))
   register('boardSettings.get', (actor) => useCases.boardSettings.get.execute(actor))
   register('boardSettings.setWipLimits', (actor, input) =>
     useCases.boardSettings.setWipLimits.execute(actor, input),

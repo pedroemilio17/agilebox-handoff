@@ -43,6 +43,8 @@ export const API_CHANNELS = [
   'contributors.setDefaultRate',
   'timeline.list',
   'dashboard.get',
+  'dashboard.exportSummary',
+  'dashboard.saveSummary',
   'boardSettings.get',
   'boardSettings.setWipLimits',
   'meetings.list',

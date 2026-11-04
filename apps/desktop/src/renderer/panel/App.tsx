@@ -307,6 +307,7 @@ export function App() {
         }
         dashboard={
           <DashboardView
+            onNotice={showNotice}
             onOpenException={(exception) => {
               setBoardException(exception)
               setViewingUser(null)

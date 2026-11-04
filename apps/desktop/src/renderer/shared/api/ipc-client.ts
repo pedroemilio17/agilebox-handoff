@@ -80,7 +80,11 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       setDefaultRate: (input) => call('contributors.setDefaultRate', input),
     },
     timeline: { list: (input) => call('timeline.list', input) },
-    dashboard: { get: () => call('dashboard.get', undefined) },
+    dashboard: {
+      get: () => call('dashboard.get', undefined),
+      exportSummary: (input) => call('dashboard.exportSummary', input),
+      saveSummary: (input) => call('dashboard.saveSummary', input),
+    },
     boardSettings: {
       get: () => call('boardSettings.get', undefined),
       setWipLimits: (input) => call('boardSettings.setWipLimits', input),

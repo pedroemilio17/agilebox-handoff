@@ -91,8 +91,11 @@ export class GetDashboard {
           .map((user) => {
             const person = { ...actor, userId: user.id }
             const assigned = tasks.filter((task) => participates(person, task))
+            const stats = collaboratorStats(tasks, actor.organizationId, user.id)
             return {
               user: { id: user.id, name: user.name, initials: user.initials, role: user.role },
+              taskCount: stats.taskCount,
+              completedPercentage: stats.completedPercentage,
               inProgress: assigned.filter(
                 (task) => task.status === 'in_progress' || task.status === 'review',
               ).length,

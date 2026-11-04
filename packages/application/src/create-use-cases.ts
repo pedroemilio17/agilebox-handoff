@@ -53,6 +53,7 @@ import {
   SetParticipationRate,
 } from './use-cases/participations/participations'
 import { GetDashboard } from './use-cases/dashboard/get-dashboard'
+import { ExportDashboardSummary } from './use-cases/dashboard/export-summary'
 import { ListTimeline } from './use-cases/timeline/list-timeline'
 import {
   CreateMeeting,
@@ -136,6 +137,7 @@ export function createUseCases(deps: AppDeps) {
     },
     dashboard: {
       get: new GetDashboard(deps),
+      exportSummary: new ExportDashboardSummary(deps),
     },
     boardSettings: {
       get: new GetBoardSettings(deps),

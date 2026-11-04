@@ -1,5 +1,10 @@
 export type DomainErrorCode =
-  'VALIDATION' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'DEFINITION_OF_DONE_NOT_CONFIRMED'
+  | 'VALIDATION'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'DEFINITION_OF_DONE_NOT_CONFIRMED'
+  | 'EXPORT_FAILED'
 
 export class DomainError extends Error {
   constructor(
@@ -44,5 +49,12 @@ export interface MissingDefinitionItem {
 export class DefinitionOfDoneNotConfirmedError extends DomainError {
   constructor(public readonly missingItems: readonly MissingDefinitionItem[]) {
     super('DEFINITION_OF_DONE_NOT_CONFIRMED', 'Confirme a definição de pronto antes de concluir')
+  }
+}
+
+/** Falha ao gravar um arquivo exportado (ex.: resumo do dashboard). A mensagem é curta e para a UI. */
+export class ExportFailedError extends DomainError {
+  constructor(message: string) {
+    super('EXPORT_FAILED', message)
   }
 }

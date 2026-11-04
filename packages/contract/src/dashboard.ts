@@ -65,6 +65,9 @@ export const dashboardInsightsSchema = z.object({
   team: z.array(
     z.object({
       user: userSummaryDtoSchema,
+      /** Tarefas de que a pessoa participa (itens do resumo exportado). */
+      taskCount: z.number().int().nonnegative(),
+      completedPercentage: z.number().int().min(0).max(100),
       inProgress: z.number().int().nonnegative(),
       agingCount: z.number().int().nonnegative(),
       overdueCount: z.number().int().nonnegative(),
@@ -85,4 +88,24 @@ export const getDashboardOutputSchema = dashboardDtoSchema
 
 export const dashboardStatusSchema = taskStatusSchema
 
+/** Formato do resumo exportado: Markdown ou planilha CSV (B11). */
+export const dashboardSummaryFormatSchema = z.enum(['md', 'csv'])
+export const exportDashboardSummaryInputSchema = z.object({
+  /** Início da semana escolhida no dashboard (segunda-feira, AAAA-MM-DD). */
+  period: z.iso.date(),
+  format: dashboardSummaryFormatSchema,
+})
+export const exportDashboardSummaryOutputSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  content: z.string(),
+})
+export const saveDashboardSummaryInputSchema = exportDashboardSummaryInputSchema
+export const saveDashboardSummaryOutputSchema = z.object({ saved: z.boolean() })
+
 export type DashboardDto = z.infer<typeof dashboardDtoSchema>
+export type DashboardSummaryFormat = z.infer<typeof dashboardSummaryFormatSchema>
+export type ExportDashboardSummaryInput = z.infer<typeof exportDashboardSummaryInputSchema>
+export type ExportDashboardSummaryOutput = z.infer<typeof exportDashboardSummaryOutputSchema>
+export type SaveDashboardSummaryInput = z.infer<typeof saveDashboardSummaryInputSchema>
+export type SaveDashboardSummaryOutput = z.infer<typeof saveDashboardSummaryOutputSchema>

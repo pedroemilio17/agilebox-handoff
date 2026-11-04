@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, differenceInCalendarDays, format, getISOWeek, parseISO } from 'date-fns'
 import { TASK_STATUS_LABELS } from '@agilebox/core'
+import { ApiError } from '@agilebox/contract'
+import type { DashboardSummaryFormat } from '@agilebox/contract'
 import {
   Avatar,
   BarChart,
   Eyebrow,
+  ExportMenu,
   MetricTile,
   SignalBadge,
   Skeleton,
@@ -21,16 +24,43 @@ export interface DashboardViewProps {
   readonly onOpenProjects: (user: CollaboratorStat['user']) => void
   readonly onOpenException?: (exception: 'aging' | 'overdue' | 'blocked') => void
   readonly onOpenTask?: (taskId: string) => void
+  /** Avisos do painel (toast): resumo salvo ou falha na exportação. */
+  readonly onNotice?: (message: string, tone?: 'default' | 'warning') => void
 }
+
+const SUMMARY_FORMATS: readonly { value: DashboardSummaryFormat; label: string }[] = [
+  { value: 'md', label: panelCopy.exportSummaryMarkdown },
+  { value: 'csv', label: panelCopy.exportSummaryCsv },
+]
 const days = (value: number | null) =>
   value === null ? '—' : `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d`
 
-export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: DashboardViewProps) {
+export function DashboardView({
+  onOpenProjects,
+  onOpenException,
+  onOpenTask,
+  onNotice,
+}: DashboardViewProps) {
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const api = useApi()
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
+  })
+  const saveSummary = useMutation({
+    mutationFn: (input: { format: DashboardSummaryFormat; period: string }) =>
+      api.dashboard.saveSummary(input),
+    // Cancelar o diálogo do sistema (saved: false) não mostra nada.
+    onSuccess: (result) => {
+      if (result.saved) onNotice?.(panelCopy.exportSummarySaved)
+    },
+    onError: (error) =>
+      onNotice?.(
+        error instanceof ApiError && error.code === 'FORBIDDEN'
+          ? panelCopy.forbidden
+          : panelCopy.exportSummaryError,
+        'warning',
+      ),
   })
   if (dashboard.isPending)
     return (
@@ -66,7 +96,19 @@ export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: D
             </option>
           ))}
         </select>
-        <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
+        <div className={styles.periodActions}>
+          <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
+          <ExportMenu
+            label={panelCopy.exportSummary}
+            ariaLabel={panelCopy.exportSummaryAria}
+            options={SUMMARY_FORMATS}
+            busy={saveSummary.isPending}
+            busyLabel={panelCopy.exportSummaryBusy}
+            onSelect={(format) =>
+              saveSummary.mutate({ format, period: period?.start ?? data.weekStart })
+            }
+          />
+        </div>
       </header>
       <div className={styles.overview}>
         <section className={styles.panel} aria-label="Quadro em dia">

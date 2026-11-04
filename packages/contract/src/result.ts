@@ -1,5 +1,10 @@
 export type ApiErrorCode =
-  'VALIDATION' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'DEFINITION_OF_DONE_NOT_CONFIRMED'
+  | 'VALIDATION'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'DEFINITION_OF_DONE_NOT_CONFIRMED'
+  | 'EXPORT_FAILED'
 
 export type ApiMissingItem = { id: string; title: string }
 

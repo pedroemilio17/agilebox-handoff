@@ -20,7 +20,6 @@ Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/RE
 
 Fase C:
 
-- [ ] Visão Equipe
 - [ ] Daily assíncrona na bandeja
 - [ ] Plug-ins (commits vinculados e aviso de atualização)
 
@@ -30,10 +29,11 @@ Final:
 
 ## Em andamento
 
-- B11: exportar resumo do dashboard (ação "Exportar resumo" do gestor que gera um arquivo .md ou .csv com os números do dashboard).
+- Visão Equipe (Fase C, próxima): seletor "Minhas tarefas | Equipe" do quadro, só leitura da equipe conforme o escopo (PLANO e HANDOFF-v2 descrevem).
 
 ## Concluído
 
+- B11: exportar resumo do dashboard em Markdown e CSV. B11 completo: core, aplicação, contrato, main (diálogo e gravação) e UI.
 - B10: combinados da retro. B10 completo: backend e UI.
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
 - B3: prioridade (normal | alta). B3 completo: backend e UI.

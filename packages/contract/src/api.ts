@@ -74,7 +74,14 @@ import {
   setContributorDefaultRateOutputSchema,
 } from './contributors'
 import { listTimelineInputSchema, listTimelineOutputSchema } from './timeline'
-import { getDashboardInputSchema, getDashboardOutputSchema } from './dashboard'
+import {
+  exportDashboardSummaryInputSchema,
+  exportDashboardSummaryOutputSchema,
+  getDashboardInputSchema,
+  getDashboardOutputSchema,
+  saveDashboardSummaryInputSchema,
+  saveDashboardSummaryOutputSchema,
+} from './dashboard'
 import {
   getBoardSettingsInputSchema,
   getBoardSettingsOutputSchema,
@@ -242,6 +249,14 @@ export const API_SCHEMA_REGISTRY = {
   },
   'timeline.list': { input: listTimelineInputSchema, output: listTimelineOutputSchema },
   'dashboard.get': { input: getDashboardInputSchema, output: getDashboardOutputSchema },
+  'dashboard.exportSummary': {
+    input: exportDashboardSummaryInputSchema,
+    output: exportDashboardSummaryOutputSchema,
+  },
+  'dashboard.saveSummary': {
+    input: saveDashboardSummaryInputSchema,
+    output: saveDashboardSummaryOutputSchema,
+  },
   'boardSettings.get': { input: getBoardSettingsInputSchema, output: getBoardSettingsOutputSchema },
   'boardSettings.setWipLimits': {
     input: setWipLimitsInputSchema,
@@ -344,7 +359,11 @@ export interface AgileBoxApi {
     setDefaultRate: Method<'contributors.setDefaultRate'>
   }
   timeline: { list: Method<'timeline.list'> }
-  dashboard: { get: Method<'dashboard.get'> }
+  dashboard: {
+    get: Method<'dashboard.get'>
+    exportSummary: Method<'dashboard.exportSummary'>
+    saveSummary: Method<'dashboard.saveSummary'>
+  }
   boardSettings: {
     get: Method<'boardSettings.get'>
     setWipLimits: Method<'boardSettings.setWipLimits'>

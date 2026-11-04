@@ -10,6 +10,7 @@ import {
   MetricTile,
   WipMeter,
   WipLimitMeter,
+  ExportMenu,
   ActionCount,
   DueDate,
   KindBadge,
@@ -97,6 +98,15 @@ export function Gallery() {
             <WipLimitMeter name="Revisar" count={3} limit={3} state="at_limit" />
             <WipLimitMeter name="Desenvolvendo" count={4} limit={3} state="over" />
             <WipLimitEditor columnName="Desenvolvendo" limit={3} onSave={() => undefined} />
+            <ExportMenu
+              label="Exportar resumo"
+              ariaLabel="Exportar resumo do dashboard"
+              options={[
+                { value: 'md', label: 'Markdown (.md)' },
+                { value: 'csv', label: 'Planilha (.csv)' },
+              ]}
+              onSelect={() => undefined}
+            />
             <KindBadge kind="meeting" />
             <KindBadge kind="review" />
             <KindBadge kind="retro" />
