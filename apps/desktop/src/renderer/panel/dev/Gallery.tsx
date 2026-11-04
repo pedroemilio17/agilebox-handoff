@@ -10,6 +10,8 @@ import {
   MetricTile,
   WipMeter,
   WipLimitMeter,
+  ActionCount,
+  DueDate,
   KindBadge,
   RepeatMark,
   ChecklistProgress,
@@ -99,6 +101,10 @@ export function Gallery() {
             <KindBadge kind="review" />
             <KindBadge kind="retro" />
             <RepeatMark />
+            <ActionCount done={2} total={3} />
+            <ActionCount done={0} total={1} />
+            <DueDate date="2026-11-12" />
+            <DueDate date="2026-11-01" overdue />
             <ChecklistProgress done={2} total={5} />
             <CommentCount count={3} />
             <CommentCount count={1} />

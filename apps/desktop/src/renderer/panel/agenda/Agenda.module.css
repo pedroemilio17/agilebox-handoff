@@ -561,3 +561,32 @@
   min-width: 260px;
   max-width: 340px;
 }
+
+.retroPanel {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.retroSwitch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.retroSwitch button {
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-control);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+}
+
+.retroSwitch button[aria-pressed='true'] {
+  background: var(--color-kind-retro-bg);
+  color: var(--color-kind-retro-text);
+}

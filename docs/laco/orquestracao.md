@@ -18,8 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B11: exportar resumo do dashboard
-
 Fase C:
 
 - [ ] Visão Equipe
@@ -32,10 +30,11 @@ Final:
 
 ## Em andamento
 
-- B10: retro com combinados (tabela `retro_actions` ligada ao agendamento do tipo Retro; só o gestor cria e edita; combinados com responsável e prazo). Backend feito; falta UI (seção Combinados no formulário/detalhe da Retro, contagem no cartão, marcar como feito).
+- B11: exportar resumo do dashboard (ação "Exportar resumo" do gestor que gera um arquivo .md ou .csv com os números do dashboard).
 
 ## Concluído
 
+- B10: combinados da retro. B10 completo: backend e UI.
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
 - B3: prioridade (normal | alta). B3 completo: backend e UI.
 - B2: bloqueio com motivo (marca na tarefa, não sexto estado). B2 completo: backend e UI.

@@ -13,6 +13,7 @@ import { WeekCalendar, agendaDays } from './WeekCalendar'
 import { Calendar } from './Calendar'
 import { MeetingForm, type MeetingDraft } from './MeetingForm'
 import { UpcomingList } from './UpcomingList'
+import { RetroActions } from './RetroActions'
 import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
 
@@ -46,6 +47,8 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
   }))
   const [selectedDate, setSelectedDate] = useState(today)
   const [form, setForm] = useState<FormState>({ mode: 'closed' })
+  /** Ocorrência de Retro aberta no painel de combinados (qualquer pessoa que vê a agenda). */
+  const [retroDetail, setRetroDetail] = useState<MeetingOccurrenceDto | null>(null)
   const canManage = actor.capabilities?.canManageMeetings ?? false
 
   const days = agendaDays(selectedDate, mode === 'day' ? 'day' : 'week')
@@ -74,6 +77,22 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
     setSelectedDate(date)
     setMonth({ year: Number(date.slice(0, 4)), monthIndex: Number(date.slice(5, 7)) - 1 })
   }
+  /** Retros de um dia, na ordem da grade. */
+  const retrosOn = (date: string) =>
+    meetings
+      .filter((meeting) => meeting.kind === 'retro' && meeting.occurrenceDate === date)
+      .sort((a, b) => a.time.localeCompare(b.time))
+  /** Abre a retro no painel de combinados; quem gerencia também abre o formulário. */
+  const openMeeting = (meeting: MeetingOccurrenceDto) => {
+    if (meeting.kind === 'retro') setRetroDetail(meeting)
+    if (canManage) setForm({ mode: 'edit', meeting })
+  }
+  // Os dados atualizados da ocorrência (contagens) vêm da lista carregada, se estiver nela.
+  const retroCurrent = retroDetail
+    ? (meetings.find((meeting) => occurrenceKey(meeting) === occurrenceKey(retroDetail)) ??
+      retroDetail)
+    : null
+  const retroSiblings = retroCurrent ? retrosOn(retroCurrent.occurrenceDate) : []
   const upcoming = useQuery({
     queryKey: [...queryKeys.meetings.all, 'upcoming'],
     queryFn: () => api.meetings.listUpcoming(),
@@ -96,7 +115,8 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
   })
   const remove = useMutation({
     mutationFn: (meetingId: string) => api.meetings.delete({ meetingId }),
-    onSuccess: async () => {
+    onSuccess: async (_result, meetingId) => {
+      if (retroDetail?.seriesId === meetingId) setRetroDetail(null)
       await refresh()
       close()
     },
@@ -161,6 +181,9 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
                 monthIndex: Number(date.slice(5, 7)) - 1,
               }
               if (month.year !== year || month.monthIndex !== monthIndex) setMonth(month)
+              // No mês, o dia escolhido abre a primeira retro dele (as outras aparecem como troca).
+              const [firstRetro] = retrosOn(date)
+              if (firstRetro) setRetroDetail(firstRetro)
             }}
             onPreviousMonth={() => setMonth(shiftMonth(year, monthIndex, -1))}
             onNextMonth={() => setMonth(shiftMonth(year, monthIndex, 1))}
@@ -177,7 +200,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
             onSelectDate={selectDate}
             onPrevious={() => selectDate(addDays(selectedDate, mode === 'day' ? -1 : -7))}
             onNext={() => selectDate(addDays(selectedDate, mode === 'day' ? 1 : 7))}
-            onEdit={(meeting) => setForm({ mode: 'edit', meeting })}
+            onEdit={openMeeting}
             onOpenTask={(id) => onOpenTask?.(id)}
           />
         )}
@@ -193,9 +216,38 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
             compact={open}
             users={users.data ?? []}
             canEdit={canManage}
-            onEdit={(meeting) => setForm({ mode: 'edit', meeting })}
+            onEdit={openMeeting}
           />
         )}
+        {retroCurrent ? (
+          <div className={styles.retroPanel}>
+            {retroSiblings.length > 1 ? (
+              <div
+                role="group"
+                aria-label={panelCopy.retroActionsOtherRetros}
+                className={styles.retroSwitch}
+              >
+                {retroSiblings.map((sibling) => (
+                  <button
+                    key={occurrenceKey(sibling)}
+                    type="button"
+                    aria-pressed={occurrenceKey(sibling) === occurrenceKey(retroCurrent)}
+                    onClick={() => setRetroDetail(sibling)}
+                  >
+                    {sibling.time} {sibling.title}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <RetroActions
+              key={occurrenceKey(retroCurrent)}
+              meeting={retroCurrent}
+              today={today}
+              users={users.data ?? []}
+              canManage={canManage}
+            />
+          </div>
+        ) : null}
         <Button
           type="button"
           variant="primary"

@@ -1,7 +1,14 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import { getISOWeek } from 'date-fns'
 import type { MeetingOccurrenceDto, TaskDto } from '@agilebox/contract'
-import { Button, KindBadge, MEETING_KIND_LABELS, RepeatMark, StatusChip } from '@agilebox/ui'
+import {
+  ActionCount,
+  Button,
+  KindBadge,
+  MEETING_KIND_LABELS,
+  RepeatMark,
+  StatusChip,
+} from '@agilebox/ui'
 import { addDays, parseDateKey } from '../../shared/lib/calendar-grid'
 import styles from './Agenda.module.css'
 import {
@@ -163,6 +170,11 @@ export function WeekCalendar({
                 ({ meeting, top, height, lane, lanes }) => {
                   const repeats = meeting.recurrence === 'weekly'
                   const range = timeRange(meeting.time, meeting.occurrenceEndTime)
+                  const isRetro = meeting.kind === 'retro'
+                  const actionsLabel =
+                    isRetro && meeting.retroActionsCount > 0
+                      ? `${meeting.retroActionsDone} de ${meeting.retroActionsCount} ${meeting.retroActionsCount === 1 ? 'combinado feito' : 'combinados feitos'}`
+                      : null
                   return (
                     <button
                       key={occurrenceKey(meeting)}
@@ -175,12 +187,14 @@ export function WeekCalendar({
                         right: 'auto',
                       }}
                       type="button"
-                      disabled={!canEdit}
+                      // Retro abre para todos (combinados); os outros tipos só para o gestor.
+                      disabled={!canEdit && !isRetro}
                       aria-label={[
                         meeting.title,
                         MEETING_KIND_LABELS[meeting.kind],
                         `${meeting.time} às ${meeting.occurrenceEndTime}`,
                         repeats ? 'repete toda semana' : null,
+                        actionsLabel,
                       ]
                         .filter(Boolean)
                         .join(', ')}
@@ -189,6 +203,12 @@ export function WeekCalendar({
                       <span className={styles.eventHead}>
                         <KindBadge kind={meeting.kind} />
                         {repeats ? <RepeatMark /> : null}
+                        {isRetro ? (
+                          <ActionCount
+                            done={meeting.retroActionsDone}
+                            total={meeting.retroActionsCount}
+                          />
+                        ) : null}
                       </span>
                       <span className={styles.eventTitle}>{meeting.title}</span>
                       <time>{range}</time>
@@ -207,7 +227,7 @@ export function WeekCalendar({
             <button
               type="button"
               key={occurrenceKey(meeting)}
-              disabled={!canEdit}
+              disabled={!canEdit && meeting.kind !== 'retro'}
               onClick={() => onEdit(meeting)}
             >
               {meeting.occurrenceDate.slice(-2)} · {meeting.time} · {meeting.title}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { MeetingOccurrenceDto } from '@agilebox/contract'
-import { Button, RepeatMark } from '@agilebox/ui'
+import { ActionCount, Button, RepeatMark } from '@agilebox/ui'
 import { addDays, buildCalendarGrid } from '../../shared/lib/calendar-grid'
 import { panelCopy } from '../copy'
 import styles from './Agenda.module.css'
@@ -120,6 +120,12 @@ export function Calendar({
                     {meeting.time} {meeting.title}
                   </span>
                   {meeting.recurrence === 'weekly' ? <RepeatMark /> : null}
+                  {meeting.kind === 'retro' ? (
+                    <ActionCount
+                      done={meeting.retroActionsDone}
+                      total={meeting.retroActionsCount}
+                    />
+                  ) : null}
                 </span>
               ))}
               {events.length > MAX_VISIBLE ? (

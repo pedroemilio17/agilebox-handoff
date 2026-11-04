@@ -1,0 +1,7 @@
+.count {
+  flex: none;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}

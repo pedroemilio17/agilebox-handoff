@@ -1,5 +1,5 @@
 import type { MeetingOccurrenceDto, SessionUserDto } from '@agilebox/contract'
-import { Avatar, KindBadge } from '@agilebox/ui'
+import { ActionCount, Avatar, KindBadge } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import styles from './Agenda.module.css'
 import { dayParts, timeRange } from './meeting-format'
@@ -39,7 +39,8 @@ export function UpcomingList({
                 <button
                   type="button"
                   className={styles.upcomingItem}
-                  disabled={!canEdit}
+                  // Retro abre para todos (combinados); os outros tipos só para o gestor.
+                  disabled={!canEdit && meeting.kind !== 'retro'}
                   onClick={() => onEdit(meeting)}
                 >
                   <span className={styles.upcomingDay}>
@@ -52,6 +53,12 @@ export function UpcomingList({
                       <time className={styles.mono}>{scheduleLabel(meeting)}</time>
                       <KindBadge kind={meeting.kind} />
                       {repeats ? <span>{panelCopy.weeklyLabel}</span> : null}
+                      {meeting.kind === 'retro' ? (
+                        <ActionCount
+                          done={meeting.retroActionsDone}
+                          total={meeting.retroActionsCount}
+                        />
+                      ) : null}
                     </span>
                     <span className={styles.meetingPeople}>
                       {meeting.participants.map((id) => {
