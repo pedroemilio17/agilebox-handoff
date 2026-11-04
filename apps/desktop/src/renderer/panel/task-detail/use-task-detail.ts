@@ -28,8 +28,20 @@ export function useMoveTaskStatus(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (status: Parameters<typeof api.tasks.move>[0]['status']) =>
-      api.tasks.move({ taskId, status }),
+    mutationFn: ({
+      status,
+      confirmedDefinitionItemIds,
+    }: {
+      readonly status: Parameters<typeof api.tasks.move>[0]['status']
+      readonly confirmedDefinitionItemIds?: readonly string[]
+    }) =>
+      api.tasks.move({
+        taskId,
+        status,
+        ...(confirmedDefinitionItemIds && confirmedDefinitionItemIds.length > 0
+          ? { confirmedDefinitionItemIds: [...confirmedDefinitionItemIds] }
+          : {}),
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })

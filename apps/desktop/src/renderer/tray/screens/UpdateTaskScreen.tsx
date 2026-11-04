@@ -13,6 +13,8 @@ import {
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { useTaskDetail } from '../../panel/task-detail/use-task-detail'
+import { useDefinitionOfDoneGate } from '../../shared/definition-of-done/use-definition-of-done-gate'
+import { isDefinitionOfDoneNotConfirmed } from '../../shared/definition-of-done/definition-of-done'
 import { trayCopy } from '../copy'
 import styles from '../Tray.module.css'
 
@@ -25,6 +27,7 @@ export function UpdateTaskScreen({ taskId, onSaved }: UpdateTaskScreenProps) {
   const api = useApi()
   const queryClient = useQueryClient()
   const detail = useTaskDetail(taskId)
+  const definitionGate = useDefinitionOfDoneGate()
   const task = detail.data
   const [description, setDescription] = useState('')
   const [deadline, setDeadline] = useState('')
@@ -47,7 +50,7 @@ export function UpdateTaskScreen({ taskId, onSaved }: UpdateTaskScreenProps) {
   }, [loadedId, task])
 
   const save = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (confirmedDefinitionItemIds: readonly string[]) => {
       if (!task) return
       const changes: Parameters<typeof api.tasks.update>[0]['changes'] = {}
       if (description !== task.description) changes.description = description
@@ -57,7 +60,14 @@ export function UpdateTaskScreen({ taskId, onSaved }: UpdateTaskScreenProps) {
         if (ticket === '') changes.ticketUrl = null
       }
       if (Object.keys(changes).length > 0) await api.tasks.update({ taskId, changes })
-      if (status !== task.status) await api.tasks.move({ taskId, status })
+      if (status !== task.status)
+        await api.tasks.move({
+          taskId,
+          status,
+          ...(confirmedDefinitionItemIds.length > 0
+            ? { confirmedDefinitionItemIds: [...confirmedDefinitionItemIds] }
+            : {}),
+        })
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
@@ -79,82 +89,100 @@ export function UpdateTaskScreen({ taskId, onSaved }: UpdateTaskScreenProps) {
     .join(', ')
 
   return (
-    <form
-      className={styles.screenBody}
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (!readOnly) save.mutate()
-      }}
-    >
-      <div className={styles.taskHead}>
-        <h2 className={styles.taskTitle}>{task.title}</h2>
-        <span className={styles.rowMeta}>{task.projectName}</span>
-        {readOnly ? <ReadOnlyBadge /> : null}
-      </div>
-      <TextArea
-        label={trayCopy.doing}
-        disabled={readOnly}
-        value={description}
-        onChange={(event) => setDescription(event.currentTarget.value)}
-      />
-      <GroupedList>
-        <FieldRow label={trayCopy.status}>
-          <div className={styles.menuAnchor}>
-            <button
-              type="button"
-              className={styles.statusButton}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              aria-label={trayCopy.status}
+    <>
+      <form
+        className={styles.screenBody}
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (readOnly) return
+          if (status === 'done' && task.status !== 'done') {
+            // Concluir na bandeja passa pela mesma conferência; cancelar devolve o estado anterior.
+            definitionGate.conclude({
+              projectId: task.projectId,
+              items: task.projectDefinitionOfDone,
+              definitionOfDoneCount: task.projectDefinitionOfDone.length,
+              complete: (confirmedDefinitionItemIds) =>
+                save.mutateAsync([...confirmedDefinitionItemIds]),
+              onCancel: () => setStatus(task.status),
+            })
+            return
+          }
+          save.mutate([])
+        }}
+      >
+        <div className={styles.taskHead}>
+          <h2 className={styles.taskTitle}>{task.title}</h2>
+          <span className={styles.rowMeta}>{task.projectName}</span>
+          {readOnly ? <ReadOnlyBadge /> : null}
+        </div>
+        <TextArea
+          label={trayCopy.doing}
+          disabled={readOnly}
+          value={description}
+          onChange={(event) => setDescription(event.currentTarget.value)}
+        />
+        <GroupedList>
+          <FieldRow label={trayCopy.status}>
+            <div className={styles.menuAnchor}>
+              <button
+                type="button"
+                className={styles.statusButton}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label={trayCopy.status}
+                disabled={readOnly}
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <StatusChip status={status} />
+              </button>
+              {menuOpen ? (
+                <div className={styles.menuPopover}>
+                  <StatusMenu
+                    value={status}
+                    onChange={setStatus}
+                    onClose={() => setMenuOpen(false)}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </FieldRow>
+          <FieldRow label={trayCopy.deadline}>
+            <input
+              type="date"
+              aria-label={trayCopy.deadline}
+              className={styles.inlineInput}
               disabled={readOnly}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              <StatusChip status={status} />
-            </button>
-            {menuOpen ? (
-              <div className={styles.menuPopover}>
-                <StatusMenu
-                  value={status}
-                  onChange={setStatus}
-                  onClose={() => setMenuOpen(false)}
-                />
-              </div>
-            ) : null}
-          </div>
-        </FieldRow>
-        <FieldRow label={trayCopy.deadline}>
-          <input
-            type="date"
-            aria-label={trayCopy.deadline}
-            className={styles.inlineInput}
-            disabled={readOnly}
-            value={deadline}
-            onChange={(event) => setDeadline(event.currentTarget.value)}
-          />
-        </FieldRow>
-        <FieldRow label={trayCopy.responsible}>
-          <span>{responsible || trayCopy.noResponsible}</span>
-        </FieldRow>
-        <FieldRow label={trayCopy.participants}>
-          <span className={styles.truncate}>{participants || trayCopy.noParticipants}</span>
-        </FieldRow>
-        <FieldRow label={trayCopy.ticket}>
-          <input
-            aria-label={trayCopy.ticket}
-            className={styles.inlineInput}
-            inputMode="numeric"
-            disabled={readOnly}
-            value={ticket}
-            onChange={(event) => setTicket(event.currentTarget.value.replace(/\D/g, ''))}
-          />
-        </FieldRow>
-      </GroupedList>
-      {save.isError ? <p role="alert">{trayCopy.saveError}</p> : null}
-      <div className={styles.footer}>
-        <Button type="submit" variant="primary" disabled={readOnly || save.isPending}>
-          {trayCopy.save}
-        </Button>
-      </div>
-    </form>
+              value={deadline}
+              onChange={(event) => setDeadline(event.currentTarget.value)}
+            />
+          </FieldRow>
+          <FieldRow label={trayCopy.responsible}>
+            <span>{responsible || trayCopy.noResponsible}</span>
+          </FieldRow>
+          <FieldRow label={trayCopy.participants}>
+            <span className={styles.truncate}>{participants || trayCopy.noParticipants}</span>
+          </FieldRow>
+          <FieldRow label={trayCopy.ticket}>
+            <input
+              aria-label={trayCopy.ticket}
+              className={styles.inlineInput}
+              inputMode="numeric"
+              disabled={readOnly}
+              value={ticket}
+              onChange={(event) => setTicket(event.currentTarget.value.replace(/\D/g, ''))}
+            />
+          </FieldRow>
+        </GroupedList>
+        {save.isError && !isDefinitionOfDoneNotConfirmed(save.error) ? (
+          <p role="alert">{trayCopy.saveError}</p>
+        ) : null}
+        <div className={styles.footer}>
+          <Button type="submit" variant="primary" disabled={readOnly || save.isPending}>
+            {trayCopy.save}
+          </Button>
+        </div>
+      </form>
+      {definitionGate.dialog}
+    </>
   )
 }

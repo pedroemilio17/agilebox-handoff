@@ -162,10 +162,11 @@ export function BoardView({
     setActiveTask(null)
     const moved = moveTaskAfterDrop(active.id, over?.id, tasks ?? [], onMoveTask)
     const dropped = active.rect.current.translated
+    const target = dropTargetStatus(over?.id, tasks ?? [])
     // O card "voa" do ponto onde foi solto até o lugar novo assim que a lista atualizar.
     pendingLanding.current =
-      moved && dropped
-        ? { id: String(active.id), left: dropped.left, top: dropped.top, tasks }
+      moved && dropped && target
+        ? { id: String(active.id), left: dropped.left, top: dropped.top, status: target, tasks }
         : null
   }
 
@@ -294,6 +295,8 @@ interface PendingLanding {
   readonly id: string
   readonly left: number
   readonly top: number
+  /** Estado para onde o card foi solto; sem ele chegar, a animação não vale (ex.: conferência cancelada). */
+  readonly status: TaskStatus
   readonly tasks: readonly TaskDto[] | undefined
 }
 
@@ -323,7 +326,8 @@ function useLayoutAnimation(
       const landing = pending.current
       if (landing?.id === id && landing.tasks !== tasks) {
         pending.current = null
-        if (!reduced && typeof element.animate === 'function') {
+        const landed = tasks?.find((task) => task.id === id)?.status === landing.status
+        if (landed && !reduced && typeof element.animate === 'function') {
           // Parte do ponto onde o card foi solto, ainda "levantado", e assenta no lugar novo.
           element.animate(
             [
@@ -358,19 +362,25 @@ function useLayoutAnimation(
   }, [rootRef, tasks, dragging, droppedId, pending])
 }
 
+/** Estado de destino de uma solta: a coluna sob o cursor, ou o estado do card que está sob ele. */
+function dropTargetStatus(
+  overId: string | number | undefined,
+  tasks: readonly TaskDto[],
+): TaskStatus | undefined {
+  if (overId === undefined) return undefined
+  const targetId = String(overId)
+  if (TASK_STATUSES.includes(targetId as TaskStatus)) return targetId as TaskStatus
+  return tasks.find((item) => item.id === targetId)?.status
+}
+
 export function moveTaskAfterDrop(
   activeId: string | number,
   overId: string | number | undefined,
   tasks: readonly TaskDto[],
   onMoveTask: (taskId: string, status: TaskStatus) => void,
 ): boolean {
-  if (overId === undefined) return false
   const task = tasks.find((item) => item.id === activeId)
-  const targetId = String(overId)
-  const targetTask = tasks.find((item) => item.id === targetId)
-  const status = TASK_STATUSES.includes(targetId as TaskStatus)
-    ? (targetId as TaskStatus)
-    : targetTask?.status
+  const status = dropTargetStatus(overId, tasks)
   if (!task || !status || task.status === status) return false
   onMoveTask(task.id, status)
   return true

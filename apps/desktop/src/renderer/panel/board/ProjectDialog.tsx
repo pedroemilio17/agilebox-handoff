@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Modal } from '@agilebox/ui'
 import type { ProjectDto } from '@agilebox/contract'
 import { useCreateProject } from '../hooks/use-create-project'
+import { DefinitionOfDoneEditor } from './DefinitionOfDoneEditor'
 import { panelCopy } from '../copy'
 import styles from './ProjectDialog.module.css'
 
@@ -13,6 +14,8 @@ export interface ProjectDialogProps {
   readonly onClose: () => void
   readonly canManageMembers?: (project: ProjectDto) => boolean
   readonly onManageMembers?: (project: ProjectDto) => void
+  /** Quem edita a definição de pronto (mesma regra do botão Membros). */
+  readonly canEditDefinition?: (project: ProjectDto) => boolean
 }
 
 function projectNameKey(name: string): string {
@@ -32,6 +35,7 @@ export function ProjectDialog({
   onClose,
   canManageMembers,
   onManageMembers,
+  canEditDefinition,
 }: ProjectDialogProps) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
@@ -42,6 +46,7 @@ export function ProjectDialog({
     onManageMembers !== undefined &&
     canManageMembers?.(selectedProject)
   const existing = projects.find((project) => projectNameKey(project.name) === projectNameKey(name))
+  const definitionVisible = selectedProject !== undefined
 
   function close() {
     setCreating(false)
@@ -118,6 +123,13 @@ export function ProjectDialog({
           >
             {panelCopy.members}
           </Button>
+        ) : null}
+        {definitionVisible ? (
+          <DefinitionOfDoneEditor
+            key={selectedProject.id}
+            projectId={selectedProject.id}
+            canEdit={canEditDefinition?.(selectedProject) ?? false}
+          />
         ) : null}
         {creating ? (
           <div className={styles.createRow}>

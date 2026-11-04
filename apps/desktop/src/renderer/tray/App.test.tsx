@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ProjectDto, TaskDto, AgileBoxApi } from '@agilebox/contract'
@@ -366,5 +366,63 @@ describe('Bandeja: contador de comentários', () => {
     expect(await screen.findByRole('img', { name: '3 comentários' })).toBeTruthy()
     expect(screen.queryByRole('img', { name: '0 comentários' })).toBeNull()
     expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+})
+
+describe('Bandeja: conferência da definição de pronto ao concluir', () => {
+  const ITEM_TESTS = '01J8Y4G2XK8Z1S6M3Q9W0A5DF1'
+  const ITEM_REVIEW = '01J8Y4G2XK8Z1S6M3Q9W0A5DF2'
+  const definition = [
+    { id: ITEM_TESTS, projectId: A.projectId, title: 'Testes passando', position: 0 },
+    { id: ITEM_REVIEW, projectId: A.projectId, title: 'Revisado por par', position: 1 },
+  ]
+
+  async function openToDone(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
+    await user.click(await screen.findByRole('button', { name: 'Status' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Concluído' }))
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+  }
+
+  it('concluir pela atualização rápida abre a conferência e só salva com todos marcados', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(
+      makeDetail({ id: A.id, title: A.title, status: 'todo', projectDefinitionOfDone: definition }),
+    )
+    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
+
+    await openToDone(user)
+    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    expect(move).not.toHaveBeenCalled()
+    const confirm = within(dialog).getByRole<HTMLButtonElement>('button', { name: 'Concluir' })
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
+    expect(confirm.disabled).toBe(true)
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
+    await user.click(confirm)
+
+    await waitFor(() =>
+      expect(move).toHaveBeenCalledWith({
+        taskId: A.id,
+        status: 'done',
+        confirmedDefinitionItemIds: [ITEM_TESTS, ITEM_REVIEW],
+      }),
+    )
+  })
+
+  it('cancelar a conferência mantém o estado anterior e não salva', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(
+      makeDetail({ id: A.id, title: A.title, status: 'todo', projectDefinitionOfDone: definition }),
+    )
+    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
+
+    await openToDone(user)
+    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(move).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Status' }).textContent).toContain('A fazer')
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })

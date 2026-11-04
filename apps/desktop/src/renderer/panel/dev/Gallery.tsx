@@ -13,6 +13,7 @@ import {
   KindBadge,
   RepeatMark,
   ChecklistProgress,
+  ChecklistConfirm,
   CommentCount,
   MentionText,
   ProgressBar,
@@ -58,6 +59,7 @@ export function Gallery() {
   const [display, setDisplay] = useState<(typeof displayOptions)[number]['value']>('compact')
   const [status, setStatus] = useState<TaskStatus>('todo')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [confirmedIds, setConfirmedIds] = useState<ReadonlySet<string>>(() => new Set(['tests']))
   const [modalOpen, setModalOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -222,6 +224,22 @@ export function Gallery() {
 
         <section className={styles.section} aria-labelledby="gallery-menus">
           <h2 id="gallery-menus">Diálogos e menus</h2>
+          <ChecklistConfirm
+            label="Itens da definição de pronto (exemplo)"
+            items={[
+              { id: 'tests', title: 'Testes passando' },
+              { id: 'review', title: 'Revisado por par' },
+            ]}
+            checkedIds={confirmedIds}
+            onToggle={(id, checked) =>
+              setConfirmedIds((current) => {
+                const next = new Set(current)
+                if (checked) next.add(id)
+                else next.delete(id)
+                return next
+              })
+            }
+          />
           <div className={styles.row}>
             <StatusMenu value={status} onChange={setStatus} />
             <Button variant="primary" onClick={() => setModalOpen(true)}>

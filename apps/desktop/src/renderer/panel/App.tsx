@@ -24,6 +24,7 @@ import type { WipStatus } from './board/wip-limit'
 import { TaskDetailView } from './task-detail/TaskDetailView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import { PanelCommands } from './commands/PanelCommands'
+import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
   const [commandsOpen, setCommandsOpen] = useState(false)
@@ -86,6 +87,7 @@ export function App() {
         ]),
       )
     : undefined
+  const definitionGate = useDefinitionOfDoneGate()
   const moveTask = useMutation({
     mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
     // O card muda de coluna na hora; se o servidor recusar, a lista volta ao que era.
@@ -121,6 +123,25 @@ export function App() {
   }
   /** Mover segue permitido acima do limite: a tela só avisa quando a coluna passa a ficar acima. */
   function moveTaskFromBoard(taskId: string, status: TaskStatus) {
+    const task = tasks.data?.tasks.find((item) => item.id === taskId)
+    if (status === 'done' && task && task.status !== 'done') {
+      // Concluir passa pela conferência da definição de pronto (drag, seletor e detalhe).
+      definitionGate.conclude({
+        projectId: task.projectId,
+        definitionOfDoneCount:
+          projects.data?.find((project) => project.id === task.projectId)?.definitionOfDoneCount ??
+          0,
+        complete: (confirmedDefinitionItemIds) =>
+          moveTask.mutateAsync({
+            taskId,
+            status,
+            ...(confirmedDefinitionItemIds.length > 0
+              ? { confirmedDefinitionItemIds: [...confirmedDefinitionItemIds] }
+              : {}),
+          }),
+      })
+      return
+    }
     const column = tasks.data?.wipColumns.find((item) => item.status === status)
     moveTask.mutate(
       { taskId, status },
@@ -185,6 +206,9 @@ export function App() {
     if (card) requestAnimationFrame(() => card.focus())
   }
   const isManager = actor.capabilities?.canSeeDashboard ?? false
+  // Membros e definição de pronto: gestor e criador do projeto.
+  const canManageProject = (project: ProjectDto) =>
+    isManager || project.createdBy === actor.actor?.userId
   useEffect(() => {
     let goTo = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -372,7 +396,8 @@ export function App() {
               selectedProjectId={selectedProjectId}
               onSelect={setSelectedProjectId}
               onClose={() => setProjectDialogOpen(false)}
-              canManageMembers={(project) => isManager || project.createdBy === actor.actor?.userId}
+              canManageMembers={canManageProject}
+              canEditDefinition={canManageProject}
               onManageMembers={setMembersProject}
             />
             <ProjectMembersDialog
@@ -391,6 +416,7 @@ export function App() {
         ) : null}
       </PanelShell>
       {notice ? <Toast key={notice.id} message={notice.message} tone={notice.tone} /> : null}
+      {definitionGate.dialog}
       {commandsOpen && (
         <PanelCommands
           projects={projects.data ?? []}

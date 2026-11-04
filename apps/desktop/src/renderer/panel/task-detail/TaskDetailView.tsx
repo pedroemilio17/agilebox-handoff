@@ -18,6 +18,8 @@ import { BlockControl } from './BlockControl'
 import { ChecklistCard } from './ChecklistCard'
 import { CommentsCard } from './CommentsCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
+import { useDefinitionOfDoneGate } from '../../shared/definition-of-done/use-definition-of-done-gate'
+import { isDefinitionOfDoneNotConfirmed } from '../../shared/definition-of-done/definition-of-done'
 import styles from './TaskDetailView.module.css'
 
 export interface TaskDetailViewProps {
@@ -39,6 +41,7 @@ export function TaskDetailView({
   const detail = useTaskDetail(taskId)
   const update = useUpdateTask(taskId)
   const move = useMoveTaskStatus(taskId)
+  const definitionGate = useDefinitionOfDoneGate()
   const task = detail.data
   const [copyNotice, setCopyNotice] = useState<{ id: number; message: string } | null>(null)
   const title = useBlurSave(task?.title ?? '', (next) => {
@@ -169,7 +172,9 @@ export function TaskDetailView({
           title.onBlur()
         }}
       />
-      <SaveError error={update.error ?? move.error} />
+      <SaveError
+        error={update.error ?? (isDefinitionOfDoneNotConfirmed(move.error) ? null : move.error)}
+      />
       {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
       <BlockControl task={task!} readOnly={readOnly} />
       {isAgingTask(task!) && (
@@ -191,7 +196,20 @@ export function TaskDetailView({
         <StatusProperty
           task={task!}
           readOnly={readOnly}
-          onMove={(status: TaskStatus) => move.mutate(status)}
+          onMove={(status: TaskStatus) => {
+            if (status === 'done' && task!.status !== 'done') {
+              // Concluir pelo detalhe passa pela conferência da definição de pronto do projeto.
+              definitionGate.conclude({
+                projectId: task!.projectId,
+                items: task!.projectDefinitionOfDone,
+                definitionOfDoneCount: task!.projectDefinitionOfDone.length,
+                complete: (confirmedDefinitionItemIds) =>
+                  move.mutateAsync({ status, confirmedDefinitionItemIds }),
+              })
+              return
+            }
+            move.mutate({ status })
+          }}
         />
         <PropertyRow label={panelCopy.responsible}>
           {task!.participations.find((person) => person.role === 'responsible')?.participantName ??
@@ -224,6 +242,7 @@ export function TaskDetailView({
       <ChecklistCard task={task!} readOnly={readOnly} />
       <CommentsCard task={task!} />
       <TimelineCard taskId={taskId} />
+      {definitionGate.dialog}
     </section>
   )
 }
