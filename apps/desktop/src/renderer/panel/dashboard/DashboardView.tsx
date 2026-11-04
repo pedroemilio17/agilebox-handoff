@@ -18,7 +18,7 @@ import styles from './Dashboard.module.css'
 
 export interface DashboardViewProps {
   readonly onOpenProjects: (user: CollaboratorStat['user']) => void
-  readonly onOpenException?: (exception: 'aging' | 'overdue') => void
+  readonly onOpenException?: (exception: 'aging' | 'overdue' | 'blocked') => void
   readonly onOpenTask?: (taskId: string) => void
 }
 const days = (value: number | null) =>
@@ -93,6 +93,13 @@ export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: D
           </p>
         </section>
         <div className={styles.exceptions}>
+          <MetricTile
+            label="Bloqueadas"
+            value={data.blockedCount}
+            caption="com motivo registrado"
+            signal="danger"
+            onClick={() => onOpenException?.('blocked')}
+          />
           <MetricTile
             label="Paradas"
             value={data.agingCount}
@@ -199,7 +206,15 @@ export function DashboardView({ onOpenProjects, onOpenException, onOpenTask }: D
                       {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
                     </SignalBadge>
                   )}
-                  {person.agingCount === 0 && person.overdueCount === 0 && '—'}
+                  {person.blockedCount > 0 && (
+                    <SignalBadge variant="blocked">
+                      {person.blockedCount} {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
+                    </SignalBadge>
+                  )}
+                  {person.agingCount === 0 &&
+                    person.overdueCount === 0 &&
+                    person.blockedCount === 0 &&
+                    '—'}
                 </span>
                 <span
                   className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}

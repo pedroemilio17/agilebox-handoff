@@ -18,7 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B5: subtarefas
 - [ ] B7: comentários e menções
 - [ ] B4: limite de WIP por coluna
 - [ ] B9: agenda com fim, tipo e recorrência
@@ -38,12 +37,13 @@ Final:
 
 ## Em andamento
 
-- B2: backend feito; falta UI (card, detalhe, bandeja, filtro Bloqueadas, dashboard).
+- B5: subtarefas (tabela `task_checklist_items`) é o próximo.
 
 ## Concluído
 
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
 - B3: prioridade (normal | alta). B3 completo: backend e UI.
+- B2: bloqueio com motivo (marca na tarefa, não sexto estado). B2 completo: backend e UI.
 
 ## Bloqueios
 

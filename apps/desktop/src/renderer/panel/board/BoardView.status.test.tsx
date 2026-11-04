@@ -167,3 +167,65 @@ describe('Prioridade no quadro', () => {
     expect(screen.getByRole('button', { name: 'AB-119 · Normal' })).toBeTruthy()
   })
 })
+
+describe('Bloqueio no quadro', () => {
+  const BLOCKED_AT = '2026-11-01T12:00:00.000Z'
+
+  it('mostra o sinal Bloqueada com o motivo no título e no nome acessível', () => {
+    renderBoard({
+      tasks: [
+        makeTask({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC1',
+          blockedReason: 'Aguardando acesso ao GLPI',
+          blockedAt: BLOCKED_AT,
+        }),
+        makeTask({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC2', key: 'AB-119', title: 'Livre' }),
+      ],
+    })
+
+    expect(screen.getByText('Bloqueada')).toBeTruthy()
+    const card = screen.getByRole('button', { name: 'AB-118 · Revisar integração, bloqueada' })
+    expect(card.getAttribute('title')).toBe('Bloqueada: Aguardando acesso ao GLPI')
+    expect(screen.getByRole('button', { name: 'AB-119 · Livre' })).toBeTruthy()
+  })
+
+  it('filtra as bloqueadas pelo chip e não conta bloqueadas como paradas', async () => {
+    const user = userEvent.setup()
+    renderBoard({
+      tasks: [
+        makeTask({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC1',
+          title: 'Bloqueada parada',
+          status: 'in_progress',
+          agingDays: 6,
+          blockedReason: 'Aguardando GLPI',
+          blockedAt: BLOCKED_AT,
+        }),
+        makeTask({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC2',
+          key: 'AB-119',
+          title: 'Parada livre',
+          status: 'in_progress',
+          agingDays: 5,
+        }),
+      ],
+    })
+
+    expect(screen.getByRole('button', { name: 'Paradas · 1' })).toBeTruthy()
+    expect(screen.queryByText('parada 6d')).toBeNull()
+    expect(screen.getByText('parada 5d')).toBeTruthy()
+
+    const blocked = screen.getByRole('button', { name: 'Bloqueadas · 1' })
+    await user.click(blocked)
+    expect(blocked.getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText(/^1 tarefa ·/)).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'AB-118 · Bloqueada parada, bloqueada' }),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'AB-119 · Parada livre' })).toBeNull()
+
+    await user.click(blocked)
+    expect(blocked.getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: 'AB-119 · Parada livre' })).toBeTruthy()
+  })
+})

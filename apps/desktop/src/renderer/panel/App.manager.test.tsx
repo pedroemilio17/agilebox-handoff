@@ -94,7 +94,11 @@ const dashboard: DashboardDto = {
   ],
 }
 
-function setup(currentUserId: string, boardTasks: TaskDto[] = [task]) {
+function setup(
+  currentUserId: string,
+  boardTasks: TaskDto[] = [task],
+  dashboardData: DashboardDto = dashboard,
+) {
   let current = currentUserId
   const api = createFakeApi()
   const role = () => (current === MANAGER ? ('manager' as const) : ('collaborator' as const))
@@ -108,7 +112,7 @@ function setup(currentUserId: string, boardTasks: TaskDto[] = [task]) {
   })
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
   const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardTasks)
-  vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboard)
+  vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardData)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])
@@ -170,6 +174,32 @@ describe('Dashboard do gestor', () => {
         .getByRole('img', { name: /Quadro em dia nas últimas seis semanas/ })
         .getAttribute('aria-label'),
     ).toContain('50')
+  })
+
+  it('mostra as bloqueadas no dashboard e abre o quadro com o filtro', async () => {
+    const insights = dashboard.insights!
+    const blockedDashboard: DashboardDto = {
+      ...dashboard,
+      insights: {
+        ...insights,
+        blockedCount: 1,
+        team: insights.team.map((person) => ({ ...person, blockedCount: 1 })),
+      },
+    }
+    const { user } = setup(
+      MANAGER,
+      [{ ...task, blockedReason: 'Aguardando GLPI', blockedAt: '2026-11-01T12:00:00.000Z' }],
+      blockedDashboard,
+    )
+    await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
+    const row = await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    expect(within(row).getByText('1 bloqueada')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /Bloqueadas.*com motivo registrado/ }))
+    const filter = await screen.findByRole('button', { name: 'Bloqueadas · 1' })
+    expect(filter.getAttribute('aria-pressed')).toBe('true')
+    expect(
+      screen.getByRole('button', { name: `${task.key} · ${task.title}, bloqueada` }),
+    ).toBeTruthy()
   })
 
   it('abre o quadro com o filtro da métrica selecionada', async () => {

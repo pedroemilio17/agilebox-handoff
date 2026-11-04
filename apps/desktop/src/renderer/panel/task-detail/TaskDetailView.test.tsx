@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDateOnly } from '@agilebox/core'
@@ -10,12 +10,17 @@ import { TaskDetailView } from './TaskDetailView'
 
 afterEach(cleanup)
 
-function setup(overrides: { detail?: ReturnType<typeof makeDetail> } = {}) {
+function setup(
+  overrides: {
+    detail?: ReturnType<typeof makeDetail>
+    timeline?: ReturnType<typeof makeEvent>[]
+  } = {},
+) {
   const api = createFakeApi()
   const detail = overrides.detail ?? makeDetail()
   vi.spyOn(api.tasks, 'get').mockResolvedValue(detail)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
-  vi.spyOn(api.timeline, 'list').mockResolvedValue([])
+  vi.spyOn(api.timeline, 'list').mockResolvedValue(overrides.timeline ?? [])
   vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])
   const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(detail)
@@ -454,5 +459,103 @@ describe('Prioridade no detalhe', () => {
     )
     expect(await screen.findByText('alterou a prioridade de Normal para Alta')).toBeTruthy()
     expect(screen.getByText('Gestor')).toBeTruthy()
+  })
+})
+
+describe('Bloqueio no detalhe', () => {
+  const REASON = 'Aguardando credenciais do ambiente'
+
+  it('valida o motivo vazio e não chama a API', async () => {
+    const { api, user } = setup()
+    const block = vi.spyOn(api.tasks, 'block')
+    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByText('Informe o motivo do bloqueio.')).toBeTruthy()
+    expect(block).not.toHaveBeenCalled()
+  })
+
+  it('mostra o contador e recusa motivo com 281 caracteres', async () => {
+    const { api, user } = setup()
+    const block = vi.spyOn(api.tasks, 'block')
+    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
+    fireEvent.change(screen.getByLabelText('Motivo do bloqueio'), {
+      target: { value: 'a'.repeat(281) },
+    })
+    expect(screen.getByText('281/280')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(screen.getByText('O motivo deve ter até 280 caracteres.')).toBeTruthy()
+    expect(block).not.toHaveBeenCalled()
+  })
+
+  it('bloqueia com o motivo pela API e fecha o formulário', async () => {
+    const { api, user } = setup()
+    const blocked = makeDetail({ blockedReason: REASON, blockedAt: '2026-11-01T12:00:00Z' })
+    const block = vi.spyOn(api.tasks, 'block').mockResolvedValue(blocked)
+    // Depois de gravar, a busca do detalhe volta com a tarefa já bloqueada.
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(blocked)
+    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
+    await user.type(screen.getByLabelText('Motivo do bloqueio'), REASON)
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(block).toHaveBeenCalledWith({ taskId: TASK_ID, reason: REASON })
+    expect(await screen.findByText(REASON)).toBeTruthy()
+    expect(screen.queryByLabelText('Motivo do bloqueio')).toBeNull()
+  })
+
+  it('mostra a faixa com o motivo e desbloqueia pela API', async () => {
+    const { api, user } = setup({
+      detail: makeDetail({ blockedReason: REASON, blockedAt: '2026-11-01T12:00:00Z' }),
+    })
+    const unblock = vi.spyOn(api.tasks, 'unblock').mockResolvedValue(makeDetail())
+    expect(await screen.findByRole('region', { name: 'Bloqueio' })).toBeTruthy()
+    expect(screen.getByText(REASON)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Desbloquear' }))
+    expect(unblock).toHaveBeenCalledWith({ taskId: TASK_ID })
+  })
+
+  it('desabilita bloquear e desbloquear para somente leitura', async () => {
+    setup({ detail: makeDetail({ canEdit: false, readOnly: true }) })
+    expect((await screen.findByRole('button', { name: 'Bloquear' })).hasAttribute('disabled')).toBe(
+      true,
+    )
+  })
+
+  it('desabilita desbloquear para somente leitura', async () => {
+    setup({
+      detail: makeDetail({
+        canEdit: false,
+        readOnly: true,
+        blockedReason: REASON,
+        blockedAt: '2026-11-01T12:00:00Z',
+      }),
+    })
+    expect(
+      (await screen.findByRole('button', { name: 'Desbloquear' })).hasAttribute('disabled'),
+    ).toBe(true)
+  })
+
+  it('tarefa concluída não oferece bloquear', async () => {
+    setup({ detail: makeDetail({ status: 'done' }) })
+    expect(await screen.findByDisplayValue('Revisar integração')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+  })
+
+  it('mostra os eventos de bloqueio na linha do tempo com a frase do servidor', async () => {
+    setup({
+      timeline: [
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E08',
+          type: 'blocked',
+          text: 'bloqueou a tarefa: Aguardando credenciais',
+        }),
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E09',
+          type: 'unblocked',
+          text: 'desbloqueou a tarefa',
+        }),
+      ],
+    })
+    expect(await screen.findByText('bloqueou a tarefa: Aguardando credenciais')).toBeTruthy()
+    expect(screen.getByText('desbloqueou a tarefa')).toBeTruthy()
   })
 })

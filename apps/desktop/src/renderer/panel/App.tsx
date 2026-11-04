@@ -43,7 +43,7 @@ export function App() {
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus | undefined>()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [taskFullScreen, setTaskFullScreen] = useState(false)
-  const [boardException, setBoardException] = useState<'aging' | 'overdue' | null>(null)
+  const [boardException, setBoardException] = useState<'aging' | 'overdue' | 'blocked' | null>(null)
   const [viewingUser, setViewingUser] = useState<{ id: string; name: string } | null>(null)
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
   const actor = useActor()

@@ -35,3 +35,27 @@ export function useMoveTaskStatus(taskId: string) {
     },
   })
 }
+
+export function useBlockTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (reason: string) => api.tasks.block({ taskId, reason }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+    },
+  })
+}
+
+export function useUnblockTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.tasks.unblock({ taskId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+    },
+  })
+}

@@ -43,6 +43,7 @@ import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
 import styles from './BoardView.module.css'
 
@@ -155,17 +156,20 @@ export function BoardView({
         : null
   }
 
-  const agingCount = (tasks ?? []).filter((task) => (task.agingDays ?? 0) > 4).length
+  const agingCount = (tasks ?? []).filter(isAgingTask).length
   const overdueCount = (tasks ?? []).filter((task) => task.overdue).length
   const highPriorityCount = (tasks ?? []).filter((task) => task.priority === 'high').length
+  const blockedCount = (tasks ?? []).filter(isBlockedTask).length
   const visibleTasks = (tasks ?? []).filter((task) =>
     exception === 'aging'
-      ? (task.agingDays ?? 0) > 4
+      ? isAgingTask(task)
       : exception === 'overdue'
         ? task.overdue
         : exception === 'high'
           ? task.priority === 'high'
-          : true,
+          : exception === 'blocked'
+            ? isBlockedTask(task)
+            : true,
   )
   const noTasks = (tasks ?? []).length === 0
   return (
@@ -191,6 +195,13 @@ export function BoardView({
           onClick={() => setException(exception === 'high' ? null : 'high')}
         >
           Prioridade alta · {highPriorityCount}
+        </button>
+        <button
+          type="button"
+          aria-pressed={exception === 'blocked'}
+          onClick={() => setException(exception === 'blocked' ? null : 'blocked')}
+        >
+          Bloqueadas · {blockedCount}
         </button>
         <span>
           {formatTaskCount(visibleTasks.length)} ·{' '}
@@ -487,7 +498,7 @@ function SortableTaskCard({
   )
 }
 
-type BoardException = 'aging' | 'overdue' | 'high'
+type BoardException = 'aging' | 'overdue' | 'high' | 'blocked'
 
 interface TaskCardProps {
   readonly selected?: boolean
@@ -498,14 +509,16 @@ interface TaskCardProps {
 
 function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardProps) {
   const deadline = describeDeadline(task)
+  const blocked = isBlockedTask(task)
 
   return (
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}`}
+      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}`}
       className={styles.cardButton}
       onClick={onOpen}
+      title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
       type="button"
     >
       <span className={styles.cardTop}>
@@ -536,9 +549,8 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
         ) : (
           <span />
         )}
-        {(task.agingDays ?? 0) > 4 && (
-          <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
-        )}
+        {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
+        {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}
         {responsibleName ? (
           <Avatar aria-label={`Responsável: ${responsibleName}`} name={responsibleName} />
         ) : null}

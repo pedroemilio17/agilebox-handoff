@@ -33,6 +33,20 @@ export function SignalBadge({ variant, children }: SignalBadgeProps) {
           <path d="M3 8.5 8 3.5l5 5" />
           <path d="M3 12.5 8 7.5l5 5" />
         </svg>
+      ) : variant === 'blocked' ? (
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
+          <circle cx="8" cy="8" r="6.2" />
+          <path d="M3.6 3.6l8.8 8.8" />
+        </svg>
       ) : (
         <svg
           aria-hidden="true"

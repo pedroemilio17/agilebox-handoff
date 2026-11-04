@@ -152,6 +152,12 @@ describe('Bandeja: tela inicial', () => {
     expect(screen.getByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
   })
 
+  it('mostra o sinal Bloqueada só nas tarefas bloqueadas', async () => {
+    setup([{ ...A, blockedReason: 'Aguardando GLPI', blockedAt: '2026-11-01T12:00:00.000Z' }, B])
+    expect(await screen.findByText('Bloqueada')).toBeTruthy()
+    expect(screen.getAllByText('Bloqueada')).toHaveLength(1)
+  })
+
   it('alterna para Frequentes e mostra o vazio quando não há tarefa aberta', async () => {
     const { user, listFrequent } = setup([])
     expect(await screen.findByText('Nenhuma tarefa aberta ainda.')).toBeTruthy()

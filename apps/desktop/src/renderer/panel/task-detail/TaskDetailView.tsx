@@ -5,6 +5,7 @@ import { Button, IconButton, ReadOnlyBadge, TaskKey, Toast } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { isAgingTask } from '../../shared/lib/task-signals'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
 import { PriorityProperty, StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
@@ -13,6 +14,7 @@ import { ParticipantsCard } from './ParticipantsCard'
 import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { useBlurSave } from './use-blur-save'
+import { BlockControl } from './BlockControl'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import styles from './TaskDetailView.module.css'
 
@@ -167,7 +169,8 @@ export function TaskDetailView({
       />
       <SaveError error={update.error ?? move.error} />
       {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
-      {(task!.agingDays ?? 0) > 4 && (
+      <BlockControl task={task!} readOnly={readOnly} />
+      {isAgingTask(task!) && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
           <p>
             Parada há {task!.agingDays} dias em {TASK_STATUS_LABELS[task!.status]}. Algo está

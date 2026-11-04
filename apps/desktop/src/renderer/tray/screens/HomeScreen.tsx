@@ -4,6 +4,7 @@ import { Button, SegmentedControl, Eyebrow, Kbd, Skeleton } from '@agilebox/ui'
 import { parseQuickAdd } from '@agilebox/core'
 import { useActor } from '../../shared/session/useActor'
 import { todayDateOnly } from '../../shared/lib/today'
+import { isAgingTask } from '../../shared/lib/task-signals'
 import { useProjects } from '../../panel/hooks/use-projects'
 import { useSessionUsers } from '../../panel/hooks/use-session-users'
 import { useCreateTask } from '../../panel/hooks/use-create-task'
@@ -68,7 +69,7 @@ export function HomeScreen({
   const activeCount = personal?.filter(
     (task) => task.status === 'in_progress' || task.status === 'review',
   ).length
-  const agingCount = personal?.filter((task) => (task.agingDays ?? 0) > 4).length
+  const agingCount = personal?.filter(isAgingTask).length
   const searching = query.trim() !== ''
 
   useEffect(() => {
