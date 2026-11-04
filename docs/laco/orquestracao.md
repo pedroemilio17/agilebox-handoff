@@ -20,15 +20,20 @@ Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/RE
 
 Fase C:
 
-- [ ] Plug-ins (commits vinculados e aviso de atualização)
+- Plug-ins (commits vinculados e aviso de atualização): **Aguardando decisão do Pedro (não implementar)**. Ver `docs/laco/relatorio-final.md`, seção (e).
 
 Final:
 
-- [ ] Relatório final em `docs/laco/relatorio-final.md`
+- [x] Relatório final em `docs/laco/relatorio-final.md`
 
 ## Em andamento
 
-- Daily assíncrona na bandeja (Fase C, próxima): cartão "Vamos registrar o que foi feito hoje?" e daily em 3 passos. Aguarda a decisão do Pedro antes de codar (ver Pendências do Pedro).
+Nenhum item em andamento.
+
+## Aguardando decisão do Pedro (não implementar)
+
+- Daily assíncrona na bandeja (Fase C): cartão "Vamos registrar o que foi feito hoje?" e daily em 3 passos. Aguarda a decisão do Pedro antes de codar (ver Pendências do Pedro).
+- Plug-ins (aviso de commit, commits vinculados e demais webhooks): depende de decisão de segurança antes de abrir porta de rede. Ver `docs/laco/relatorio-final.md`, seção (e).
 
 ## Concluído
 
