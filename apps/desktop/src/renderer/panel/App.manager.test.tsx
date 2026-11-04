@@ -130,6 +130,7 @@ function setup(
     .spyOn(api.tasks, 'listBoard')
     .mockResolvedValue({ tasks: boardTasks, ...board })
   vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardData)
+  vi.spyOn(api.daily, 'listForDate').mockResolvedValue([])
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
   vi.spyOn(api.contributors, 'list').mockResolvedValue([])
@@ -209,7 +210,8 @@ describe('Dashboard do gestor', () => {
       blockedDashboard,
     )
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const row = await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
+      .parentElement as HTMLElement
     expect(within(row).getByText('1 bloqueada')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: /Bloqueadas.*com motivo registrado/ }))
     const filter = await screen.findByRole('button', { name: 'Bloqueadas · 1' })
@@ -235,6 +237,7 @@ describe('Dashboard do gestor', () => {
     expect(screen.getByText('75')).toBeTruthy()
     expect(screen.getByRole('img', { name: /Concluídas por semana/ })).toBeTruthy()
     const row = screen.getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+      .parentElement as HTMLElement
     expect(within(row).getByText('2')).toBeTruthy()
     expect(within(row).getByText('1 parada')).toBeTruthy()
 

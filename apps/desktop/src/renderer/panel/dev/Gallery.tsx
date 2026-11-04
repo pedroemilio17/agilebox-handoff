@@ -17,6 +17,7 @@ import {
   RepeatMark,
   ChecklistProgress,
   ChecklistConfirm,
+  DailyStatusBadge,
   StepIndicator,
   CommentCount,
   MentionText,
@@ -239,6 +240,10 @@ export function Gallery() {
             />
             <Toast message="Alterações salvas" duration={60_000} />
             <StepIndicator current={2} total={3} />
+          </div>
+          <div className={styles.row}>
+            <DailyStatusBadge done />
+            <DailyStatusBadge done={false} />
           </div>
         </section>
 

@@ -214,10 +214,10 @@
 .teamHeader,
 .teamRow {
   display: grid;
-  grid-template-columns: 2fr 1.3fr 1.6fr 1.2fr;
+  grid-template-columns: 2fr 1.3fr 1.6fr 1.4fr 1.2fr;
   align-items: center;
   gap: 12px;
-  min-width: 720px;
+  min-width: 860px;
   padding: 12px 0;
 }
 .teamHeader {
@@ -225,16 +225,48 @@
   font-size: 12px;
 }
 .teamRow {
-  width: 100%;
-  border: 0;
+  position: relative;
   border-top: 1px solid var(--color-hairline);
-  background: transparent;
   color: var(--color-text-primary);
-  text-align: left;
-  cursor: pointer;
 }
 .teamRow:hover {
   background: var(--surface-raised);
+}
+/* Link da linha inteira (abre os projetos da pessoa). As células ficam "transparentes" ao clique; só o botão Ver responde. */
+.teamRowLink {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.teamRow > span {
+  position: relative;
+  pointer-events: none;
+}
+.teamRow > .dailyCell {
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+.inlineButton {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.muted {
+  color: var(--color-text-subtle);
+  font-size: 12px;
 }
 .figure {
   font: 12px var(--font-family-mono);

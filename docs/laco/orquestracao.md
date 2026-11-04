@@ -28,15 +28,15 @@ Final:
 
 ## Em andamento
 
-- daily — backend e UI da bandeja feitos; falta a coluna 'Daily de hoje' no dashboard do gestor e o polimento do foco do menu de exportação
+- Nenhum item em andamento.
 
 ## Aguardando decisão do Pedro (não implementar)
 
-- Daily assíncrona na bandeja (Fase C): cartão "Vamos registrar o que foi feito hoje?" e daily em 3 passos. Aguarda a decisão do Pedro antes de codar (ver Pendências do Pedro).
 - Plug-ins (aviso de commit, commits vinculados e demais webhooks): depende de decisão de segurança antes de abrir porta de rede. Ver `docs/laco/relatorio-final.md`, seção (e).
 
 ## Concluído
 
+- Daily completa: backend, bandeja e dashboard. Coluna "Daily de hoje" no dashboard do gestor (Feita ou Pendente com texto e ícone, contador "Daily de hoje · N de M", "Ver" abre a daily da pessoa em somente leitura).
 - Fase C · Equipe completa: seletor "Minhas | Equipe" do quadro funciona; a Equipe mostra as tarefas dos projetos de que a pessoa é membro, somente leitura (cards sem arrastar, sem "+", sem editor de limite; detalhe sempre em leitura). Filtros, medidor de WIP e faixa "Visão da equipe" valem sobre a Equipe. A API `listTeamBoard` passou a devolver `agingDays` e `overdue`, como o quadro. Escopo só em memória; galeria e testes atualizados.
 - B11 (correção): CSV do resumo neutraliza injeção de fórmula. Nomes que começam com `=`, `+`, `-`, `@`, TAB ou CR ganham apóstrofo antes do escape.
 - B11: exportar resumo do dashboard em Markdown e CSV. B11 completo: core, aplicação, contrato, main (diálogo e gravação) e UI.

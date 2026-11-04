@@ -1,0 +1,13 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.done {
+  color: var(--color-accent-text);
+}
+.pending {
+  color: var(--color-text-muted);
+}

@@ -7,6 +7,7 @@ import type { DashboardSummaryFormat } from '@agilebox/contract'
 import {
   Avatar,
   BarChart,
+  DailyStatusBadge,
   Eyebrow,
   ExportMenu,
   MetricTile,
@@ -16,7 +17,10 @@ import {
 } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
+import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
+import { DailyDialog } from './DailyDialog'
+import { useNoticeOnError } from './use-notice-on-error'
 import type { CollaboratorStat } from './types'
 import styles from './Dashboard.module.css'
 
@@ -42,11 +46,19 @@ export function DashboardView({
   onNotice,
 }: DashboardViewProps) {
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
+  const [dailyOf, setDailyOf] = useState<{ userId: string; name: string } | null>(null)
   const api = useApi()
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
   })
+  // Daily de hoje por pessoa. Data local, enviada pelo renderer; recarrega ao abrir o dashboard.
+  const today = todayDateOnly()
+  const dailyStatus = useQuery({
+    queryKey: queryKeys.daily.forDate(today),
+    queryFn: () => api.daily.listForDate({ date: today }),
+  })
+  useNoticeOnError(dailyStatus.isError, panelCopy.dailyListError, onNotice)
   const saveSummary = useMutation({
     mutationFn: (input: { format: DashboardSummaryFormat; period: string }) =>
       api.dashboard.saveSummary(input),
@@ -80,6 +92,8 @@ export function DashboardView({
   const index = period ? data.weeks.indexOf(period) : data.weeks.length - 1
   const previous = data.weeks[index - 1]?.upToDatePercentage
   const delta = adherence !== null && previous != null ? Math.round(adherence - previous) : null
+  const dailyDone = new Map((dailyStatus.data ?? []).map((item) => [item.userId, item.done]))
+  const teamDone = data.team.filter((person) => dailyDone.get(person.user.id) === true).length
   return (
     <div className={styles.view}>
       <header className={styles.period}>
@@ -235,57 +249,111 @@ export function DashboardView({
             <span>Pessoa</span>
             <span>Em andamento</span>
             <span>Sinais</span>
+            {dailyStatus.data ? (
+              <span role="group" aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}>
+                {panelCopy.dailyCount(teamDone, data.team.length)}
+              </span>
+            ) : (
+              <span>{panelCopy.dailyColumn}</span>
+            )}
             <span>Última atualização</span>
           </div>
           {data.team.length === 0 ? (
             <p className={styles.caption}>Nenhuma tarefa ainda.</p>
           ) : (
-            data.team.map((person) => (
-              <button
-                className={styles.teamRow}
-                key={person.user.id}
-                type="button"
-                aria-label={panelCopy.openProjectsOf(person.user.name)}
-                onClick={() => onOpenProjects(person.user)}
-              >
-                <span className={styles.person}>
-                  <Avatar name={person.user.name} />
-                  {person.user.name}
-                </span>
-                <span className={styles.figure}>{person.inProgress}</span>
-                <span className={styles.signals}>
-                  {person.agingCount > 0 && (
-                    <SignalBadge variant="aging">
-                      {person.agingCount} {person.agingCount === 1 ? 'parada' : 'paradas'}
-                    </SignalBadge>
-                  )}
-                  {person.overdueCount > 0 && (
-                    <SignalBadge variant="overdue">
-                      {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
-                    </SignalBadge>
-                  )}
-                  {person.blockedCount > 0 && (
-                    <SignalBadge variant="blocked">
-                      {person.blockedCount} {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
-                    </SignalBadge>
-                  )}
-                  {person.agingCount === 0 &&
-                    person.overdueCount === 0 &&
-                    person.blockedCount === 0 &&
-                    '—'}
-                </span>
-                <span
-                  className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
-                >
-                  {person.lastUpdatedAt
-                    ? format(parseISO(person.lastUpdatedAt), 'dd/MM HH:mm')
-                    : '—'}
-                </span>
-              </button>
-            ))
+            data.team.map((person) => {
+              const name = person.user.name
+              const done = dailyDone.get(person.user.id)
+              return (
+                <div className={styles.teamRow} key={person.user.id}>
+                  <button
+                    type="button"
+                    className={styles.teamRowLink}
+                    aria-label={panelCopy.openProjectsOf(name)}
+                    onClick={() => onOpenProjects(person.user)}
+                  />
+                  <span className={styles.person}>
+                    <Avatar name={name} />
+                    {name}
+                  </span>
+                  <span className={styles.figure}>{person.inProgress}</span>
+                  <span className={styles.signals}>
+                    {person.agingCount > 0 && (
+                      <SignalBadge variant="aging">
+                        {person.agingCount} {person.agingCount === 1 ? 'parada' : 'paradas'}
+                      </SignalBadge>
+                    )}
+                    {person.overdueCount > 0 && (
+                      <SignalBadge variant="overdue">
+                        {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
+                      </SignalBadge>
+                    )}
+                    {person.blockedCount > 0 && (
+                      <SignalBadge variant="blocked">
+                        {person.blockedCount}{' '}
+                        {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
+                      </SignalBadge>
+                    )}
+                    {person.agingCount === 0 &&
+                      person.overdueCount === 0 &&
+                      person.blockedCount === 0 &&
+                      '—'}
+                  </span>
+                  <span className={styles.dailyCell}>
+                    {dailyStatus.isPending ? (
+                      <span className={styles.muted}>{panelCopy.dailyLoading}</span>
+                    ) : done === undefined ? (
+                      <span className={styles.muted}>—</span>
+                    ) : (
+                      <>
+                        <DailyStatusBadge done={done} />
+                        {done && (
+                          <button
+                            type="button"
+                            className={styles.inlineButton}
+                            aria-label={panelCopy.dailyViewOf(name)}
+                            onClick={() => setDailyOf({ userId: person.user.id, name })}
+                          >
+                            {panelCopy.dailyView}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </span>
+                  <span
+                    className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
+                  >
+                    {person.lastUpdatedAt
+                      ? format(parseISO(person.lastUpdatedAt), 'dd/MM HH:mm')
+                      : '—'}
+                  </span>
+                </div>
+              )
+            })
           )}
         </div>
+        {dailyStatus.isError ? (
+          <p className={styles.caption}>
+            {panelCopy.dailyListError}{' '}
+            <button
+              type="button"
+              className={styles.inlineButton}
+              onClick={() => void dailyStatus.refetch()}
+            >
+              {panelCopy.dailyRetry}
+            </button>
+          </p>
+        ) : null}
       </section>
+      {dailyOf ? (
+        <DailyDialog
+          userId={dailyOf.userId}
+          userName={dailyOf.name}
+          date={today}
+          onClose={() => setDailyOf(null)}
+          onNotice={onNotice}
+        />
+      ) : null}
     </div>
   )
 }

@@ -23,6 +23,8 @@ export const queryKeys = {
   daily: {
     all: ['agilebox', 'daily'] as const,
     today: (date: string) => ['agilebox', 'daily', 'today', date] as const,
+    forDate: (date: string) => ['agilebox', 'daily', 'forDate', date] as const,
+    entry: (userId: string, date: string) => ['agilebox', 'daily', 'entry', userId, date] as const,
   },
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
