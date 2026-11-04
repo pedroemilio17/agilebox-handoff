@@ -1,16 +1,18 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
-import type { MeetingDto } from '@agilebox/contract'
-import { Button } from '@agilebox/ui'
+import type { MeetingOccurrenceDto } from '@agilebox/contract'
+import { Button, RepeatMark } from '@agilebox/ui'
 import { addDays, buildCalendarGrid } from '../../shared/lib/calendar-grid'
 import { panelCopy } from '../copy'
 import styles from './Agenda.module.css'
+import { eventClass } from './meeting-format'
+import { occurrenceKey } from './meeting-layout'
 
 export interface CalendarProps {
   readonly year: number
   readonly monthIndex: number
   readonly today: string
   readonly selectedDate: string
-  readonly meetings: readonly MeetingDto[]
+  readonly meetings: readonly MeetingOccurrenceDto[]
   readonly onSelectDate: (date: string) => void
   readonly onPreviousMonth: () => void
   readonly onNextMonth: () => void
@@ -48,9 +50,9 @@ export function Calendar({
     if (!grid?.contains(document.activeElement)) return
     grid.querySelector<HTMLButtonElement>(`[data-date="${selectedDate}"]`)?.focus()
   }, [selectedDate])
-  const byDate = new Map<string, MeetingDto[]>()
+  const byDate = new Map<string, MeetingOccurrenceDto[]>()
   for (const meeting of [...meetings].sort((a, b) => a.time.localeCompare(b.time))) {
-    byDate.set(meeting.date, [...(byDate.get(meeting.date) ?? []), meeting])
+    byDate.set(meeting.occurrenceDate, [...(byDate.get(meeting.occurrenceDate) ?? []), meeting])
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, date: string) {
@@ -110,8 +112,14 @@ export function Calendar({
             >
               <span className={styles.dayNumber}>{cell.day}</span>
               {events.slice(0, MAX_VISIBLE).map((meeting) => (
-                <span key={meeting.id} className={styles.event}>
-                  {meeting.time} {meeting.title}
+                <span
+                  key={occurrenceKey(meeting)}
+                  className={`${styles.event} ${styles[eventClass(meeting.kind)]}`}
+                >
+                  <span className={styles.eventText}>
+                    {meeting.time} {meeting.title}
+                  </span>
+                  {meeting.recurrence === 'weekly' ? <RepeatMark /> : null}
                 </span>
               ))}
               {events.length > MAX_VISIBLE ? (

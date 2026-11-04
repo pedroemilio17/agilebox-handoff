@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
-import type { MeetingDto } from '@agilebox/contract'
+import type { MeetingOccurrenceDto } from '@agilebox/contract'
 import { Button, SegmentedControl, Skeleton } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { monthKey, shiftMonth, addDays } from '../../shared/lib/calendar-grid'
@@ -13,12 +13,13 @@ import { WeekCalendar, agendaDays } from './WeekCalendar'
 import { Calendar } from './Calendar'
 import { MeetingForm, type MeetingDraft } from './MeetingForm'
 import { UpcomingList } from './UpcomingList'
+import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
 
 type FormState =
   | { readonly mode: 'closed' }
   | { readonly mode: 'create' }
-  | { readonly mode: 'edit'; readonly meeting: MeetingDto }
+  | { readonly mode: 'edit'; readonly meeting: MeetingOccurrenceDto }
 
 /** Primeiro e último dia de um mês 'YYYY-MM', para a consulta por intervalo. */
 function monthRange(month: string): { rangeStart: string; rangeEnd: string } {
@@ -60,7 +61,9 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
   })
   const meetings = [
     ...new Map(
-      meetingQueries.flatMap((query) => query.data ?? []).map((meeting) => [meeting.id, meeting]),
+      meetingQueries
+        .flatMap((query) => query.data ?? [])
+        .map((meeting) => [occurrenceKey(meeting), meeting]),
     ).values(),
   ]
   const tasks = useQuery({
@@ -82,7 +85,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
     mutationFn: (draft: MeetingDraft) =>
       form.mode === 'edit'
         ? api.meetings.update({
-            meetingId: form.meeting.id,
+            meetingId: form.meeting.seriesId,
             changes: { ...draft, participants: [...draft.participants] },
           })
         : api.meetings.create({ ...draft, participants: [...draft.participants] }),
@@ -206,14 +209,14 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
           <div className={styles.formInner}>
             {open ? (
               <MeetingForm
-                resetKey={editing?.id ?? 'new'}
+                resetKey={editing ? occurrenceKey(editing) : 'new'}
                 meeting={editing}
                 date={selectedDate}
                 users={users.data ?? []}
                 saving={save.isPending || remove.isPending}
                 error={save.isError || remove.isError}
                 onSave={(draft) => save.mutate(draft)}
-                onDelete={() => editing && remove.mutate(editing.id)}
+                onDelete={() => editing && remove.mutate(editing.seriesId)}
                 onCancel={close}
               />
             ) : null}

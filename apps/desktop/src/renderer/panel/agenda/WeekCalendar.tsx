@@ -1,10 +1,18 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import { getISOWeek } from 'date-fns'
-import type { MeetingDto, TaskDto } from '@agilebox/contract'
-import { Button, StatusChip } from '@agilebox/ui'
+import type { MeetingOccurrenceDto, TaskDto } from '@agilebox/contract'
+import { Button, KindBadge, MEETING_KIND_LABELS, RepeatMark, StatusChip } from '@agilebox/ui'
 import { addDays, parseDateKey } from '../../shared/lib/calendar-grid'
 import styles from './Agenda.module.css'
-import { meetingMinutes, positionMeetings } from './meeting-layout'
+import {
+  GRID_END,
+  GRID_START,
+  HOUR_PX,
+  isOutsideGrid,
+  occurrenceKey,
+  positionMeetings,
+} from './meeting-layout'
+import { eventClass, timeRange } from './meeting-format'
 
 export function agendaDays(date: string, mode: 'day' | 'week'): string[] {
   const offset = (parseDateKey(date).getUTCDay() + 6) % 7
@@ -23,14 +31,14 @@ export interface WeekCalendarProps {
   readonly days: readonly string[]
   readonly today: string
   readonly selectedDate: string
-  readonly meetings: readonly MeetingDto[]
+  readonly meetings: readonly MeetingOccurrenceDto[]
   readonly tasks: readonly TaskDto[]
   readonly showDeadlines: boolean
   readonly canEdit: boolean
   readonly onSelectDate: (date: string) => void
   readonly onPrevious: () => void
   readonly onNext: () => void
-  readonly onEdit: (meeting: MeetingDto) => void
+  readonly onEdit: (meeting: MeetingOccurrenceDto) => void
   readonly onOpenTask: (id: string) => void
 }
 export function WeekCalendar({
@@ -57,6 +65,11 @@ export function WeekCalendar({
   }, [selectedDate])
   const start = days[0]!
   const end = days.at(-1)!
+  const outsideGrid = meetings
+    .filter((meeting) => days.includes(meeting.occurrenceDate) && isOutsideGrid(meeting))
+    .sort(
+      (a, b) => a.occurrenceDate.localeCompare(b.occurrenceDate) || a.time.localeCompare(b.time),
+    )
   const period = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -135,9 +148,9 @@ export function WeekCalendar({
             </>
           )}
           <div className={styles.hours}>
-            {Array.from({ length: 11 }, (_, index) => (
-              <span key={index} style={{ top: index * 52 }}>
-                {String(index + 8).padStart(2, '0')}:00
+            {Array.from({ length: (GRID_END - GRID_START) / 60 + 1 }, (_, index) => (
+              <span key={index} style={{ top: index * HOUR_PX }}>
+                {String(index + GRID_START / 60).padStart(2, '0')}:00
               </span>
             ))}
           </div>
@@ -146,56 +159,60 @@ export function WeekCalendar({
               key={date}
               className={`${styles.hourColumn} ${[0, 6].includes(parseDateKey(date).getUTCDay()) ? styles.weekend : ''}`}
             >
-              {positionMeetings(meetings.filter((meeting) => meeting.date === date)).map(
-                ({ meeting, top, height, lane, lanes }) => (
-                  <button
-                    key={meeting.id}
-                    className={styles.weekEvent}
-                    style={{
-                      top,
-                      height,
-                      left: `calc(${(lane / lanes) * 100}% + 4px)`,
-                      width: `calc(${100 / lanes}% - 8px)`,
-                      right: 'auto',
-                    }}
-                    type="button"
-                    disabled={!canEdit}
-                    aria-label={`${meeting.title}, ${meeting.time}, duração de 1 hora`}
-                    onClick={() => onEdit(meeting)}
-                  >
-                    <time>{meeting.time}</time>
-                    <span>{meeting.title}</span>
-                  </button>
-                ),
+              {positionMeetings(meetings.filter((meeting) => meeting.occurrenceDate === date)).map(
+                ({ meeting, top, height, lane, lanes }) => {
+                  const repeats = meeting.recurrence === 'weekly'
+                  const range = timeRange(meeting.time, meeting.occurrenceEndTime)
+                  return (
+                    <button
+                      key={occurrenceKey(meeting)}
+                      className={`${styles.weekEvent} ${styles[eventClass(meeting.kind)]}`}
+                      style={{
+                        top,
+                        height,
+                        left: `calc(${(lane / lanes) * 100}% + 4px)`,
+                        width: `calc(${100 / lanes}% - 8px)`,
+                        right: 'auto',
+                      }}
+                      type="button"
+                      disabled={!canEdit}
+                      aria-label={[
+                        meeting.title,
+                        MEETING_KIND_LABELS[meeting.kind],
+                        `${meeting.time} às ${meeting.occurrenceEndTime}`,
+                        repeats ? 'repete toda semana' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
+                      onClick={() => onEdit(meeting)}
+                    >
+                      <span className={styles.eventHead}>
+                        <KindBadge kind={meeting.kind} />
+                        {repeats ? <RepeatMark /> : null}
+                      </span>
+                      <span className={styles.eventTitle}>{meeting.title}</span>
+                      <time>{range}</time>
+                    </button>
+                  )
+                },
               )}
             </div>
           ))}
         </div>
       </div>
-      {meetings.some(
-        (meeting) =>
-          days.includes(meeting.date) &&
-          (meetingMinutes(meeting.time) < 480 || meetingMinutes(meeting.time) + 60 > 1080),
-      ) && (
+      {outsideGrid.length > 0 && (
         <section className={styles.outsideHours} aria-label="Agendamentos fora da grade de 08–18">
           <h3>Fora da grade de 08–18</h3>
-          {meetings
-            .filter(
-              (meeting) =>
-                days.includes(meeting.date) &&
-                (meetingMinutes(meeting.time) < 480 || meetingMinutes(meeting.time) + 60 > 1080),
-            )
-            .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-            .map((meeting) => (
-              <button
-                type="button"
-                key={meeting.id}
-                disabled={!canEdit}
-                onClick={() => onEdit(meeting)}
-              >
-                {meeting.date.slice(-2)} · {meeting.time} · {meeting.title}
-              </button>
-            ))}
+          {outsideGrid.map((meeting) => (
+            <button
+              type="button"
+              key={occurrenceKey(meeting)}
+              disabled={!canEdit}
+              onClick={() => onEdit(meeting)}
+            >
+              {meeting.occurrenceDate.slice(-2)} · {meeting.time} · {meeting.title}
+            </button>
+          ))}
         </section>
       )}
     </section>

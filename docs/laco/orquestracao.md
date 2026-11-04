@@ -18,7 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B6: definição de pronto
 - [ ] B10: retro com combinados
 - [ ] B11: exportar resumo do dashboard
 
@@ -34,7 +33,7 @@ Final:
 
 ## Em andamento
 
-- B9: agenda com hora de fim, tipo de evento e recorrência; só o gestor cria e edita agendamentos. Decisão D6: eventos sem duração seguem valendo 1h. Backend feito; falta UI (formulário com tipo/fim/repetir, eventos com duração e cor por tipo na grade, recorrência nos Próximos).
+- B6: definição de pronto (itens por projeto em `definition_of_done_items`, com conferência ao concluir a tarefa).
 
 ## Concluído
 
@@ -44,6 +43,7 @@ Final:
 - B5: subtarefas (tabela `task_checklist_items`). B5 completo: backend e UI.
 - B7: comentários e menções (tabela `task_comments`; menções sem aviso no MVP). B7 completo: backend e UI.
 - B4: limite de WIP por coluna (medidor no cabeçalho de Desenvolvendo e Revisar, edição pelo gestor, exceção no dashboard). B4 completo: backend e UI.
+- B9: agenda com hora de fim, tipo (reunião, revisão, retro) e repetição semanal; só o gestor cria e edita agendamentos. Decisão D6: sem fim, o evento vale 1h. B9 completo: backend e UI.
 
 ## Bloqueios
 

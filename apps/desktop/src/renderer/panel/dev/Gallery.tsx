@@ -10,6 +10,8 @@ import {
   MetricTile,
   WipMeter,
   WipLimitMeter,
+  KindBadge,
+  RepeatMark,
   ChecklistProgress,
   CommentCount,
   MentionText,
@@ -91,6 +93,10 @@ export function Gallery() {
             <WipLimitMeter name="Revisar" count={3} limit={3} state="at_limit" />
             <WipLimitMeter name="Desenvolvendo" count={4} limit={3} state="over" />
             <WipLimitEditor columnName="Desenvolvendo" limit={3} onSave={() => undefined} />
+            <KindBadge kind="meeting" />
+            <KindBadge kind="review" />
+            <KindBadge kind="retro" />
+            <RepeatMark />
             <ChecklistProgress done={2} total={5} />
             <CommentCount count={3} />
             <CommentCount count={1} />

@@ -1,0 +1,33 @@
+.badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 1px 6px;
+  border-radius: var(--radius-badge);
+  font-size: var(--font-size-chip);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.meeting {
+  background: var(--color-kind-meeting-bg);
+  color: var(--color-kind-meeting-text);
+}
+
+.review {
+  background: var(--color-kind-review-bg);
+  color: var(--color-kind-review-text);
+}
+
+.retro {
+  background: var(--color-kind-retro-bg);
+  color: var(--color-kind-retro-text);
+}
+
+.repeat {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1;
+}

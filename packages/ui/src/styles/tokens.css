@@ -103,6 +103,14 @@
   --color-manager-bg: rgba(157, 140, 255, 0.16);
   --color-manager-dot: #9d8cff;
 
+  /* Tipos de agendamento: fundo translúcido + texto claro, sempre com rótulo e ícone (NOVO) */
+  --color-kind-meeting-bg: rgba(157, 140, 255, 0.18);
+  --color-kind-meeting-text: #d6cfff;
+  --color-kind-review-bg: rgba(79, 208, 196, 0.16);
+  --color-kind-review-text: #a8eee7;
+  --color-kind-retro-bg: rgba(200, 240, 60, 0.14);
+  --color-kind-retro-text: #e2f5a8;
+
   /* Cores de projeto (quadradinho de 8–10 px) (NOVO) */
   --color-project-1: #9d8cff;
   --color-project-2: #6cb4ff;
