@@ -413,3 +413,46 @@ describe('Card Envolvidos', () => {
     expect(await screen.findByText('Não foi possível copiar o ID.')).toBeTruthy()
   })
 })
+
+describe('Prioridade no detalhe', () => {
+  it('mostra a prioridade atual e salva a troca na hora pela API', async () => {
+    const { update, user } = setup()
+    const select = await screen.findByLabelText<HTMLSelectElement>('Nível de prioridade')
+    expect(select.value).toBe('normal')
+    await user.selectOptions(select, 'Alta')
+    expect(update).toHaveBeenCalledWith({ taskId: TASK_ID, changes: { priority: 'high' } })
+  })
+
+  it('desabilita a prioridade para quem não pode editar', async () => {
+    setup({ detail: makeDetail({ canEdit: false, readOnly: true, priority: 'high' }) })
+    expect(await screen.findByText('Somente leitura')).toBeTruthy()
+    expect(screen.getByLabelText<HTMLSelectElement>('Nível de prioridade').disabled).toBe(true)
+  })
+
+  it('mostra o evento de prioridade na linha do tempo com a frase do servidor', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ priority: 'high' }))
+    vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+    vi.spyOn(api.contributors, 'list').mockResolvedValue([])
+    vi.spyOn(api.session, 'listUsers').mockResolvedValue([
+      { id: USER_ID, name: 'Ana Souza', initials: 'AS', role: 'manager', defaultRate: null },
+    ])
+    vi.spyOn(api.timeline, 'list').mockResolvedValue([
+      makeEvent({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5E07',
+        type: 'priority_changed',
+        text: 'alterou a prioridade de Normal para Alta',
+        asManager: true,
+      }),
+    ])
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <TaskDetailView taskId={TASK_ID} onBack={() => undefined} />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+    expect(await screen.findByText('alterou a prioridade de Normal para Alta')).toBeTruthy()
+    expect(screen.getByText('Gestor')).toBeTruthy()
+  })
+})

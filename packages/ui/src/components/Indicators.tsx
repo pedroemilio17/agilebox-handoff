@@ -10,7 +10,7 @@ export function Eyebrow(props: HTMLAttributes<HTMLParagraphElement>) {
 }
 
 export interface SignalBadgeProps {
-  readonly variant: 'blocked' | 'aging' | 'overdue' | 'wip'
+  readonly variant: 'blocked' | 'aging' | 'overdue' | 'wip' | 'priority'
   readonly children: ReactNode
 }
 
@@ -18,18 +18,35 @@ export function SignalBadge({ variant, children }: SignalBadgeProps) {
   const danger = variant === 'blocked' || variant === 'overdue'
   return (
     <span className={`${styles.signal} ${danger ? styles.danger : styles.warning}`}>
-      <svg
-        aria-hidden="true"
-        width="12"
-        height="12"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M8 2 15 14H1L8 2Z" strokeLinejoin="round" />
-        <path d="M8 6v4m0 1.5v1" />
-      </svg>
+      {variant === 'priority' ? (
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 8.5 8 3.5l5 5" />
+          <path d="M3 12.5 8 7.5l5 5" />
+        </svg>
+      ) : (
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M8 2 15 14H1L8 2Z" strokeLinejoin="round" />
+          <path d="M8 6v4m0 1.5v1" />
+        </svg>
+      )}
       {children}
     </span>
   )

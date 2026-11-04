@@ -18,7 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B3: prioridade
 - [ ] B2: bloqueio com motivo (reabre o estado Bloqueado)
 - [ ] B5: subtarefas
 - [ ] B7: comentários e menções
@@ -40,11 +39,12 @@ Final:
 
 ## Em andamento
 
-- B3: backend feito; falta UI (card, detalhe, bandeja, filtro).
+- B2: bloqueio com motivo (reabre o estado Bloqueado, decisão D3 sim) é o próximo.
 
 ## Concluído
 
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
+- B3: prioridade (normal | alta). B3 completo: backend e UI.
 
 ## Bloqueios
 

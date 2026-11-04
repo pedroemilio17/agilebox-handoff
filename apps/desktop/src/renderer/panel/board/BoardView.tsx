@@ -55,7 +55,7 @@ const detectCollisions: CollisionDetection = (args) => {
 export interface BoardViewProps {
   readonly cycleDays?: number | null
   readonly flowError?: boolean
-  readonly initialException?: 'aging' | 'overdue' | null
+  readonly initialException?: BoardException | null
   readonly selectedTaskId?: string | null
   readonly tasks: readonly TaskDto[] | undefined
   readonly loading: boolean
@@ -87,7 +87,7 @@ export function BoardView({
   initialException = null,
 }: BoardViewProps) {
   const api = useApi()
-  const [exception, setException] = useState<'aging' | 'overdue' | null>(initialException)
+  const [exception, setException] = useState<BoardException | null>(initialException)
   // Relógio do indicador "atualizado há N min": recalcula a cada 30 s, sem refazer a busca.
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -157,12 +157,15 @@ export function BoardView({
 
   const agingCount = (tasks ?? []).filter((task) => (task.agingDays ?? 0) > 4).length
   const overdueCount = (tasks ?? []).filter((task) => task.overdue).length
+  const highPriorityCount = (tasks ?? []).filter((task) => task.priority === 'high').length
   const visibleTasks = (tasks ?? []).filter((task) =>
     exception === 'aging'
       ? (task.agingDays ?? 0) > 4
       : exception === 'overdue'
         ? task.overdue
-        : true,
+        : exception === 'high'
+          ? task.priority === 'high'
+          : true,
   )
   const noTasks = (tasks ?? []).length === 0
   return (
@@ -181,6 +184,13 @@ export function BoardView({
           onClick={() => setException(exception === 'overdue' ? null : 'overdue')}
         >
           Vencidas · {overdueCount}
+        </button>
+        <button
+          type="button"
+          aria-pressed={exception === 'high'}
+          onClick={() => setException(exception === 'high' ? null : 'high')}
+        >
+          Prioridade alta · {highPriorityCount}
         </button>
         <span>
           {formatTaskCount(visibleTasks.length)} ·{' '}
@@ -477,6 +487,8 @@ function SortableTaskCard({
   )
 }
 
+type BoardException = 'aging' | 'overdue' | 'high'
+
 interface TaskCardProps {
   readonly selected?: boolean
   readonly task: TaskDto
@@ -491,13 +503,14 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={`${task.key} · ${task.title}`}
+      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}`}
       className={styles.cardButton}
       onClick={onOpen}
       type="button"
     >
       <span className={styles.cardTop}>
         <TaskKey value={task.key} />
+        {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
         <span className={styles.projectName} id={`${task.id}-project`}>
           {task.projectName}
         </span>

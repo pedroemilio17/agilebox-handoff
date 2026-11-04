@@ -7,7 +7,7 @@ import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
-import { StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
+import { PriorityProperty, StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
 import { PropertyRow } from './PropertyRow'
 import { ParticipantsCard } from './ParticipantsCard'
 import { SaveError } from './SaveError'
@@ -197,6 +197,11 @@ export function TaskDetailView({
           task={task!}
           readOnly={readOnly}
           today={today}
+          onUpdate={(changes) => update.mutate(changes)}
+        />
+        <PriorityProperty
+          task={task!}
+          readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
         <TicketProperty

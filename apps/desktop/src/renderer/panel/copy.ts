@@ -137,6 +137,8 @@ export const panelCopy = {
   ticketUrl: 'Link do chamado',
   deadlineCard: 'Prazo',
   deadline: 'Data de entrega',
+  priority: 'Prioridade',
+  priorityLevel: 'Nível de prioridade',
   participantsCard: 'Envolvidos',
   costCard: 'Custo',
   timelineCard: 'Atividade',

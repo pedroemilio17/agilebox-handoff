@@ -21,11 +21,14 @@ export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
       >
         <span className={styles.rowTop}>
           <span className={styles.rowTitle}>{task.title}</span>
-          {(task.agingDays ?? 0) > 4 ? (
-            <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
-          ) : (
-            <StatusChip status={task.status} />
-          )}
+          <span className={styles.rowSignals}>
+            {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
+            {(task.agingDays ?? 0) > 4 ? (
+              <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
+            ) : (
+              <StatusChip status={task.status} />
+            )}
+          </span>
         </span>
         <span className={styles.rowMeta}>
           <TaskKey value={task.key} /> · {task.projectName} ·{' '}

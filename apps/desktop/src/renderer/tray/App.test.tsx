@@ -143,6 +143,13 @@ describe('Bandeja: tela inicial', () => {
     expect(screen.getByRole('button', { name: /Publicar versão/ })).toBeTruthy()
   })
 
+  it('mostra o sinal Alta só nas tarefas de prioridade alta', async () => {
+    setup([{ ...A, priority: 'high' }, B])
+    expect(await screen.findByText('Alta')).toBeTruthy()
+    expect(screen.getAllByText('Alta')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
+  })
+
   it('alterna para Frequentes e mostra o vazio quando não há tarefa aberta', async () => {
     const { user, listFrequent } = setup([])
     expect(await screen.findByText('Nenhuma tarefa aberta ainda.')).toBeTruthy()

@@ -78,6 +78,7 @@ export function Gallery() {
             <ProjectSwatch index={0} name="AgileBox" />
             <SignalBadge variant="aging">Parada há 5 dias</SignalBadge>
             <SignalBadge variant="overdue">Vencida há 2 dias</SignalBadge>
+            <SignalBadge variant="priority">Alta</SignalBadge>
             <WipMeter count={2} capacity={3} />
             <MetricTile
               label="Paradas"

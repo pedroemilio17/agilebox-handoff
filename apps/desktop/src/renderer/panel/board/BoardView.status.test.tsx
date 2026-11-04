@@ -106,3 +106,58 @@ describe('Cabeçalho e estado vazio do quadro', () => {
     expect(screen.getByRole('button', { name: 'AB-118 · Revisar integração' })).toBeTruthy()
   })
 })
+
+function makeTask(overrides: Partial<TaskDto>): TaskDto {
+  return {
+    id: '01J8Y4G2XK8Z1S6M3Q9W0A5BCD',
+    number: 118,
+    key: 'AB-118',
+    projectId: '01J8Y4G2XK8Z1S6M3Q9W0ABCDE',
+    projectName: 'Projeto Aurora',
+    title: 'Revisar integração',
+    description: '',
+    status: 'todo',
+    priority: 'normal',
+    deadline: null,
+    ticketId: null,
+    ticketUrl: null,
+    createdAt: '2026-10-31T12:00:00.000Z',
+    updatedAt: '2026-10-31T12:00:00.000Z',
+    ...overrides,
+  }
+}
+
+describe('Prioridade no quadro', () => {
+  it('mostra o sinal Alta só no card de prioridade alta, com o nome acessível', () => {
+    renderBoard({
+      tasks: [
+        makeTask({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC1', priority: 'high', title: 'Urgente' }),
+        makeTask({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC2', key: 'AB-119', title: 'Normal' }),
+      ],
+    })
+
+    expect(screen.getByText('Alta')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'AB-118 · Urgente · Prioridade alta' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'AB-119 · Normal' })).toBeTruthy()
+  })
+
+  it('filtra só as tarefas de prioridade alta pelo chip, como os outros filtros', async () => {
+    const user = userEvent.setup()
+    renderBoard({
+      tasks: [
+        makeTask({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC1', priority: 'high', title: 'Urgente' }),
+        makeTask({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5BC2', key: 'AB-119', title: 'Normal' }),
+      ],
+    })
+
+    const chip = screen.getByRole('button', { name: 'Prioridade alta · 1' })
+    expect(chip.getAttribute('aria-pressed')).toBe('false')
+    await user.click(chip)
+    expect(chip.getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText(/^1 tarefa ·/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'AB-119 · Normal' })).toBeNull()
+    await user.click(chip)
+    expect(chip.getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: 'AB-119 · Normal' })).toBeTruthy()
+  })
+})

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { GetTaskDto, TaskUpdateInput } from '@agilebox/contract'
-import type { TaskStatus } from '@agilebox/core'
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@agilebox/core'
+import type { TaskPriority, TaskStatus } from '@agilebox/core'
 import { StatusChip, StatusMenu, TextArea } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import { PropertyRow } from './PropertyRow'
@@ -54,6 +55,29 @@ export function StatusProperty({
             />
           </div>
         ) : null}
+      </div>
+    </PropertyRow>
+  )
+}
+
+export function PriorityProperty({ task, readOnly, onUpdate }: PropertyProps) {
+  return (
+    <PropertyRow label={panelCopy.priority}>
+      <div className={styles.propertyContent}>
+        <select
+          aria-label={panelCopy.priorityLevel}
+          className={styles.propertyInput}
+          disabled={readOnly}
+          value={task.priority}
+          // Escolha de lista salva na hora (não ao sair do campo, como o texto).
+          onChange={(event) => onUpdate({ priority: event.currentTarget.value as TaskPriority })}
+        >
+          {TASK_PRIORITIES.map((priority) => (
+            <option key={priority} value={priority}>
+              {TASK_PRIORITY_LABELS[priority]}
+            </option>
+          ))}
+        </select>
       </div>
     </PropertyRow>
   )
