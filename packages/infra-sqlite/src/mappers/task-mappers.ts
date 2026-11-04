@@ -11,15 +11,27 @@ import {
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import { createChecklistItem, toChecklistItemId } from '@agilebox/core'
-import type { ChecklistItem, Participation, Task, TimelineEvent } from '@agilebox/core'
+import {
+  createChecklistItem,
+  createTaskComment,
+  toChecklistItemId,
+  toTaskCommentId,
+} from '@agilebox/core'
+import type { ChecklistItem, Participation, Task, TaskComment, TimelineEvent } from '@agilebox/core'
 import { createTicket } from '@agilebox/core'
-import type { taskChecklistItems, taskEvents, taskParticipations, tasks } from '../schema/index.js'
+import type {
+  taskChecklistItems,
+  taskComments,
+  taskEvents,
+  taskParticipations,
+  tasks,
+} from '../schema/index.js'
 
 type TaskRow = typeof tasks.$inferSelect
 type ParticipationRow = typeof taskParticipations.$inferSelect
 type EventRow = typeof taskEvents.$inferSelect
 type ChecklistRow = typeof taskChecklistItems.$inferSelect
+type CommentRow = typeof taskComments.$inferSelect
 
 export function mapParticipationRow(row: ParticipationRow): Participation {
   const participant = row.userId
@@ -89,5 +101,20 @@ export function mapChecklistItemRow(row: ChecklistRow): ChecklistItem {
     position: row.position,
     createdAt: row.createdAt,
     doneAt: row.doneAt ?? null,
+  })
+}
+
+export function mapTaskCommentRow(row: CommentRow): TaskComment {
+  const mentions = JSON.parse(row.mentions) as string[]
+  return createTaskComment({
+    id: toTaskCommentId(row.id),
+    organizationId: toOrganizationId(row.organizationId),
+    taskId: toTaskId(row.taskId),
+    authorId: toUserId(row.authorId),
+    body: row.body,
+    mentions: mentions.map(toUserId),
+    createdAt: row.createdAt,
+    editedAt: row.editedAt ?? null,
+    asManager: row.asManager,
   })
 }

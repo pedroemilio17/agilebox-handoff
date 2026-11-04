@@ -12,6 +12,7 @@ export type ParticipationId = Id<'Participation'>
 export type EventId = Id<'Event'>
 export type MeetingId = Id<'Meeting'>
 export type ChecklistItemId = Id<'ChecklistItem'>
+export type TaskCommentId = Id<'TaskComment'>
 
 function toId<Kind extends string>(value: string): Id<Kind> {
   if (!/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(value) || value.length !== 26) {
@@ -29,3 +30,4 @@ export const toParticipationId = (value: string): ParticipationId => toId(value)
 export const toEventId = (value: string): EventId => toId(value)
 export const toMeetingId = (value: string): MeetingId => toId(value)
 export const toChecklistItemId = (value: string): ChecklistItemId => toId(value)
+export const toTaskCommentId = (value: string): TaskCommentId => toId(value)

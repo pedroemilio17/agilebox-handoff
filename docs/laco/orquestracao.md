@@ -37,7 +37,7 @@ Final:
 
 ## Em andamento
 
-- B7: comentários e menções (tabela `task_comments`; menções sem aviso no MVP).
+- B7: comentários e menções. Backend feito; falta UI (seção Comentários no detalhe, contador no card). Tabela `task_comments`; menções sem aviso no MVP.
 
 ## Concluído
 
@@ -48,6 +48,7 @@ Final:
 
 ## Bloqueios
 
+- B7, pendência de ambiente: a migração `0005_task_comments.sql` (tabela `task_comments`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B5, pendência de ambiente: a migração `0004_familiar_zeigeist.sql` (tabela `task_checklist_items`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela, sem recriar as existentes).
 - B2, pendência de ambiente: a migração `0003_flippant_infant_terrible.sql` (colunas `tasks.blocked_reason` e `tasks.blocked_at`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER`, como a 0002.
 - B3, pendência de ambiente: a migração `0002_funny_rictor.sql` (coluna `tasks.priority`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Escrita à mão com `ALTER` (sem recriar a tabela), como a 0001.

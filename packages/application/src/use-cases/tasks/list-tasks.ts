@@ -19,6 +19,7 @@ import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadChecklists } from './checklist-loader'
+import { loadCommentCounts } from './comment-loader'
 
 export interface ListBoardInput {
   readonly projectId?: string
@@ -73,6 +74,7 @@ export class ListBoard {
       actor.organizationId,
       tasks.map((task) => task.id),
     )
+    const counts = await loadCommentCounts(this.deps, actor, tasks)
     return Promise.all(
       tasks.map(async (task) => {
         const events =
@@ -80,7 +82,7 @@ export class ListBoard {
             ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
             : []
         return {
-          ...toTaskDto(task, prefix, checklists.get(task.id) ?? []),
+          ...toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
         }
@@ -122,7 +124,10 @@ export class ListTeamBoard {
       actor.organizationId,
       visible.map((task) => task.id),
     )
-    return visible.map((task) => toTaskDto(task, prefix, checklists.get(task.id) ?? []))
+    const counts = await loadCommentCounts(this.deps, actor, visible)
+    return visible.map((task) =>
+      toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+    )
   }
 }
 
@@ -137,7 +142,10 @@ async function toTaskDtos(
     actor.organizationId,
     tasks.map((task) => task.id),
   )
-  return tasks.map((task) => toTaskDto(task, prefix, checklists.get(task.id) ?? []))
+  const counts = await loadCommentCounts(deps, actor, tasks)
+  return tasks.map((task) =>
+    toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+  )
 }
 
 export class ListRecentTasks {

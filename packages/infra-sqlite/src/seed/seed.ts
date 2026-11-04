@@ -144,6 +144,17 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
           hours: '6',
         })
       }
+      // Dois comentários: um do responsável e uma resposta com menção ao responsável.
+      actor = { userId: users[0]!.id, organizationId, role: 'collaborator' }
+      await useCases.tasks.comments.add.execute(actor, {
+        taskId: task.id,
+        body: 'Começando pelos endpoints de autenticação.',
+      })
+      actor = { userId: users[1]!.id, organizationId, role: 'collaborator' }
+      await useCases.tasks.comments.add.execute(actor, {
+        taskId: task.id,
+        body: '@Pedro revisa os exemplos de requisição quando puder.',
+      })
       actor = { userId: users[4]!.id, organizationId, role: 'manager' }
       await useCases.tasks.update.execute(actor, {
         taskId: task.id,

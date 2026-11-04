@@ -43,6 +43,8 @@ import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agi
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
+import { loadCommentCounts } from './comment-loader'
+import { loadCommentDtos } from './comments'
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
@@ -129,7 +131,7 @@ export class CreateTask {
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [])
+    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0)
   }
 }
 
@@ -147,12 +149,13 @@ export class GetTaskDetail {
     const now = await this.deps.clock.now(actor.organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
+    const comments = await loadCommentDtos(this.deps, actor, task)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
         : []
     return {
-      ...toTaskDetailDto(task, prefix, actor, isMember, names, checklist),
+      ...toTaskDetailDto(task, prefix, actor, isMember, names, checklist, comments),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
   }
@@ -231,7 +234,13 @@ abstract class ChangeTask {
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
-    return toTaskDto(updated, await findTaskPrefix(this.deps, actor.organizationId), checklist)
+    const counts = await loadCommentCounts(this.deps, actor, [updated])
+    return toTaskDto(
+      updated,
+      await findTaskPrefix(this.deps, actor.organizationId),
+      checklist,
+      counts.get(task.id) ?? 0,
+    )
   }
 }
 

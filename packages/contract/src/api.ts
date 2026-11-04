@@ -23,6 +23,14 @@ import {
   setParticipationRateOutputSchema,
 } from './participations'
 import {
+  addTaskCommentInputSchema,
+  addTaskCommentOutputSchema,
+  editTaskCommentInputSchema,
+  editTaskCommentOutputSchema,
+  removeTaskCommentInputSchema,
+  removeTaskCommentOutputSchema,
+} from './comments'
+import {
   addChecklistItemInputSchema,
   moveChecklistItemInputSchema,
   removeChecklistItemInputSchema,
@@ -143,6 +151,18 @@ export const API_SCHEMA_REGISTRY = {
     input: moveChecklistItemInputSchema,
     output: checklistChangeOutputSchema,
   },
+  'tasks.comments.add': {
+    input: addTaskCommentInputSchema,
+    output: addTaskCommentOutputSchema,
+  },
+  'tasks.comments.edit': {
+    input: editTaskCommentInputSchema,
+    output: editTaskCommentOutputSchema,
+  },
+  'tasks.comments.remove': {
+    input: removeTaskCommentInputSchema,
+    output: removeTaskCommentOutputSchema,
+  },
   'tasks.listRecent': { input: listRecentTasksInputSchema, output: listRecentTasksOutputSchema },
   'tasks.listFrequent': {
     input: listFrequentTasksInputSchema,
@@ -224,6 +244,11 @@ export interface AgileBoxApi {
       rename: Method<'tasks.checklist.rename'>
       remove: Method<'tasks.checklist.remove'>
       move: Method<'tasks.checklist.move'>
+    }
+    comments: {
+      add: Method<'tasks.comments.add'>
+      edit: Method<'tasks.comments.edit'>
+      remove: Method<'tasks.comments.remove'>
     }
     listRecent: Method<'tasks.listRecent'>
     listFrequent: Method<'tasks.listFrequent'>

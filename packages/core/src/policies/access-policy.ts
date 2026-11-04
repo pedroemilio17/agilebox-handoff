@@ -1,6 +1,7 @@
 import type { Participant } from '../entities/participation'
 import type { Project } from '../entities/project'
 import type { Task } from '../entities/task'
+import type { TaskComment } from '../entities/task-comment'
 import type { OrganizationId } from '../shared/ids'
 import type { Actor } from './actor'
 
@@ -58,6 +59,29 @@ export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): b
 }
 export const canManageMeetings = canSeeTaskTotal
 export const canSeeDashboard = canSeeTaskTotal
+/** Comentar e ver comentários seguem a edição da tarefa: participante ou gestor. */
+export function canComment(actor: Actor, task: Task): boolean {
+  return canEditTask(actor, task)
+}
+export const canSeeComments = canComment
+/** Só o autor edita o próprio comentário, e só enquanto ainda pode editar a tarefa. */
+export function canEditComment(actor: Actor, task: Task, comment: TaskComment): boolean {
+  return (
+    canEditTask(actor, task) &&
+    comment.organizationId === actor.organizationId &&
+    comment.taskId === task.id &&
+    comment.authorId === actor.userId
+  )
+}
+/** O autor remove o próprio comentário; o gestor remove qualquer um da organização. */
+export function canRemoveComment(actor: Actor, task: Task, comment: TaskComment): boolean {
+  return (
+    canEditTask(actor, task) &&
+    comment.organizationId === actor.organizationId &&
+    comment.taskId === task.id &&
+    (comment.authorId === actor.userId || actor.role === 'manager')
+  )
+}
 export function isManagerEdit(actor: Actor): boolean {
   return actor.role === 'manager'
 }

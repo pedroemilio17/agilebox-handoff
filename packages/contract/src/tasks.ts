@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { checklistItemDtoSchema, checklistProgressDtoSchema } from './checklist'
+import { taskCommentDtoSchema } from './comments'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
@@ -27,6 +28,7 @@ export const taskDtoSchema = z.object({
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
   checklistProgress: checklistProgressDtoSchema,
+  commentCount: z.number().int().nonnegative().safe(),
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),
 })
@@ -48,6 +50,7 @@ export const getTaskOutputSchema = taskDtoSchema
   .extend({
     participations: z.array(z.lazy(() => participationSummaryDtoSchema)),
     checklist: z.array(checklistItemDtoSchema),
+    comments: z.array(taskCommentDtoSchema),
     total: visibleRateSchema,
     canEdit: z.boolean(),
     readOnly: z.boolean(),

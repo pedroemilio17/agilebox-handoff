@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { OrganizationId, ProjectId, TaskId, UserId, ContributorId } from '../shared/ids'
 import type { Task } from '../entities/task'
+import type { TaskComment } from '../entities/task-comment'
 import type { Project } from '../entities/project'
 import type { Actor } from './actor'
 import * as policy from './access-policy'
@@ -134,5 +135,62 @@ describe('política de acesso', () => {
       expect(policy.canSeeRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
       expect(policy.canEditRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
     }
+  })
+})
+
+describe('comentários', () => {
+  const comment = {
+    id: 'comment' as TaskComment['id'],
+    organizationId: org,
+    taskId: task.id,
+    authorId: user,
+    body: 'oi',
+    mentions: [],
+    createdAt: '',
+    editedAt: null,
+    asManager: false,
+  } satisfies TaskComment
+  const participantTask: Task = {
+    ...task,
+    participations: [
+      {
+        id: 'p' as Task['participations'][number]['id'],
+        taskId: task.id,
+        participant: { kind: 'user', userId: user },
+        role: 'responsible',
+        hoursHundredths: 0,
+        rateCents: 0,
+        addedAt: '',
+      },
+    ],
+  }
+
+  it('comentar e ver comentários exigem poder editar a tarefa', () => {
+    expect(policy.canComment(collaborator, participantTask)).toBe(true)
+    expect(policy.canComment(collaborator, task)).toBe(false)
+    expect(policy.canSeeComments(manager, task)).toBe(true)
+    expect(policy.canComment(collaborator, { ...participantTask, organizationId: otherOrg })).toBe(
+      false,
+    )
+  })
+
+  it('só o autor edita o próprio comentário', () => {
+    expect(policy.canEditComment(collaborator, participantTask, comment)).toBe(true)
+    expect(
+      policy.canEditComment({ ...collaborator, userId: other }, participantTask, comment),
+    ).toBe(false)
+    expect(policy.canEditComment({ ...manager, userId: other }, participantTask, comment)).toBe(
+      false,
+    )
+  })
+
+  it('o autor remove o próprio e o gestor remove qualquer um da organização', () => {
+    expect(policy.canRemoveComment(collaborator, participantTask, comment)).toBe(true)
+    const someoneElses = { ...comment, authorId: other }
+    expect(policy.canRemoveComment(collaborator, participantTask, someoneElses)).toBe(false)
+    expect(policy.canRemoveComment(manager, participantTask, someoneElses)).toBe(true)
+    expect(
+      policy.canRemoveComment(manager, participantTask, { ...comment, organizationId: otherOrg }),
+    ).toBe(false)
   })
 })

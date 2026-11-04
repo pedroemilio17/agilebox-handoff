@@ -56,6 +56,18 @@ describe('seed de demonstração', () => {
       tasks.find((task) => task.title === 'Atualizar documentação da API')!.id,
     )
     expect(timeline.length).toBeGreaterThan(4)
+    const detailTask = tasks.find((task) => task.title === 'Atualizar documentação da API')!
+    const comments = await unitOfWork.repositories.comments.listByTask(
+      organizationId,
+      detailTask.id,
+    )
+    expect(comments).toHaveLength(2)
+    const pedro = (await unitOfWork.repositories.users.list(organizationId)).find(
+      (user) => user.name === 'Pedro',
+    )
+    expect(comments[1]?.mentions).toEqual([pedro?.id])
+    expect(comments.some((comment) => comment.mentions.length > 0)).toBe(true)
+    expect(timeline.filter((event) => event.type === 'comment_added')).toHaveLength(2)
     expect(timeline.some((event) => event.asManager)).toBe(true)
   })
 })

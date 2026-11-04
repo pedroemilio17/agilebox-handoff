@@ -1,4 +1,6 @@
 import {
+  canEditComment,
+  canRemoveComment,
   canSeeRate,
   canSeeTaskTotal,
   canEditTask,
@@ -16,6 +18,7 @@ import type {
   Participation,
   Project,
   Task,
+  TaskComment,
   TimelineEvent,
   TimelineNames,
   User,
@@ -28,6 +31,7 @@ import type {
   MeetingDto,
   ParticipationSummaryDto,
   ProjectDto,
+  TaskCommentDto,
   SessionUserDto,
   TaskDto,
   TimelineEventDto,
@@ -120,11 +124,12 @@ export function toChecklistItemDto(item: ChecklistItem): ChecklistItemDto {
   }
 }
 
-/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. */
+/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. */
 export function toTaskDto(
   task: Task,
   taskPrefix: string,
   checklist: readonly ChecklistItem[],
+  commentCount: number,
 ): TaskDto {
   return {
     id: task.id,
@@ -142,6 +147,7 @@ export function toTaskDto(
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,
     checklistProgress: checklistProgress(checklist),
+    commentCount,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
   }
@@ -154,11 +160,13 @@ export function toTaskDetailDto(
   isMember: boolean,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
   checklist: readonly ChecklistItem[],
+  comments: readonly TaskCommentDto[],
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   return {
-    ...toTaskDto(task, taskPrefix, checklist),
+    ...toTaskDto(task, taskPrefix, checklist, comments.length),
     checklist: checklist.map(toChecklistItemDto),
+    comments: [...comments],
     participations: task.participations.map((participation) =>
       toParticipationSummaryDto(participation, task.organizationId, actor, names),
     ),
@@ -167,6 +175,27 @@ export function toTaskDetailDto(
       : null,
     canEdit,
     readOnly: isReadOnlyFor(actor, task, isMember),
+  }
+}
+
+export function toTaskCommentDto(
+  comment: TaskComment,
+  task: Task,
+  actor: Actor,
+  names: Pick<TimelineNames, 'user'>,
+): TaskCommentDto {
+  return {
+    id: comment.id,
+    taskId: comment.taskId,
+    authorId: comment.authorId,
+    authorName: names.user(comment.authorId),
+    body: comment.body,
+    asManager: comment.asManager,
+    mentions: comment.mentions.map((id) => ({ id, name: names.user(id) })),
+    createdAt: comment.createdAt,
+    editedAt: comment.editedAt,
+    canEdit: canEditComment(actor, task, comment),
+    canRemove: canRemoveComment(actor, task, comment),
   }
 }
 

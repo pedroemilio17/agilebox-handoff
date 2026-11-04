@@ -1,5 +1,6 @@
 import type { OrganizationId } from '@agilebox/core'
 import type { ChecklistRepository } from './checklist-repository'
+import type { TaskCommentRepository } from './task-comment-repository'
 import type { ContributorRepository } from './contributor-repository'
 import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
@@ -12,6 +13,7 @@ import type { UserRepository } from './user-repository'
 
 export interface UnitOfWorkRepositories {
   readonly checklist: ChecklistRepository
+  readonly comments: TaskCommentRepository
   readonly contributors: ContributorRepository
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository

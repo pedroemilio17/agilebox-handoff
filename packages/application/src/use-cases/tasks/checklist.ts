@@ -26,6 +26,7 @@ import type { TaskDto } from '@agilebox/contract'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
+import { loadCommentCounts } from './comment-loader'
 
 export interface AddChecklistItemInput {
   readonly taskId: string
@@ -84,8 +85,10 @@ abstract class ChangeChecklist {
 
   protected async persist(actor: Actor, task: Task, step: ChecklistStep): Promise<TaskDto> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
+    const counts = await loadCommentCounts(this.deps, actor, [task])
+    const commentCount = counts.get(task.id) ?? 0
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, step.items)
+      return toTaskDto(task, prefix, step.items, commentCount)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -109,7 +112,7 @@ abstract class ChangeChecklist {
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, prefix, step.items)
+    return toTaskDto(updated, prefix, step.items, commentCount)
   }
 }
 

@@ -2,6 +2,7 @@ import { createOrganization, toOrganizationId } from '@agilebox/core'
 import type {
   ChecklistItem,
   Contributor,
+  TaskComment,
   Meeting,
   Organization,
   OrganizationId,
@@ -15,6 +16,7 @@ import type {
 import type {
   ChecklistRepository,
   ContributorRepository,
+  TaskCommentRepository,
   MeetingRepository,
   OrganizationRepository,
   ParticipationRepository,
@@ -30,6 +32,7 @@ const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as
 
 export interface InMemoryState {
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
+  comments: Map<OrganizationId, Map<string, TaskComment>>
   contributors: Map<OrganizationId, Map<string, Contributor>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   participations: Map<OrganizationId, Map<string, Participation>>
@@ -51,6 +54,7 @@ export function createInMemoryState(): InMemoryState {
   })
   return {
     checklist: new Map(),
+    comments: new Map(),
     contributors: new Map(),
     meetings: new Map(),
     participations: new Map(),
@@ -109,6 +113,37 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
   async remove(org: OrganizationId, itemId: ChecklistItem['id']) {
     await Promise.resolve()
     bucket(this.state.checklist, org).delete(itemId)
+  }
+}
+
+export class InMemoryTaskCommentRepository implements TaskCommentRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.comments, org).values()]
+      .filter((item) => item.taskId === taskId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+  }
+  async countByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const counts = new Map<TaskId, number>()
+    for (const item of bucket(this.state.comments, org).values()) {
+      if (taskIds.includes(item.taskId)) counts.set(item.taskId, (counts.get(item.taskId) ?? 0) + 1)
+    }
+    return [...counts].map(([taskId, count]) => ({ taskId, count }))
+  }
+  async findById(org: OrganizationId, commentId: TaskComment['id']) {
+    await Promise.resolve()
+    return bucket(this.state.comments, org).get(commentId) ?? null
+  }
+  async save(org: OrganizationId, comment: TaskComment) {
+    await Promise.resolve()
+    if (bucket(this.state.tasks, org).has(comment.taskId))
+      bucket(this.state.comments, org).set(comment.id, comment)
+  }
+  async remove(org: OrganizationId, commentId: TaskComment['id']) {
+    await Promise.resolve()
+    bucket(this.state.comments, org).delete(commentId)
   }
 }
 

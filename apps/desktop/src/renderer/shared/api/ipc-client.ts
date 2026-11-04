@@ -50,6 +50,11 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
         remove: (input) => call('tasks.checklist.remove', input),
         move: (input) => call('tasks.checklist.move', input),
       },
+      comments: {
+        add: (input) => call('tasks.comments.add', input),
+        edit: (input) => call('tasks.comments.edit', input),
+        remove: (input) => call('tasks.comments.remove', input),
+      },
       listRecent: () => call('tasks.listRecent', undefined),
       listFrequent: () => call('tasks.listFrequent', undefined),
       search: (input) => call('tasks.search', input),

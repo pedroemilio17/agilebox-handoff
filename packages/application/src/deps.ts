@@ -3,6 +3,7 @@ import type {
   ChangeNotifier,
   ChecklistRepository,
   Clock,
+  TaskCommentRepository,
   ContributorRepository,
   IdGenerator,
   MeetingRepository,
@@ -21,6 +22,7 @@ export interface AppDeps {
   readonly changeNotifier: ChangeNotifier
   readonly checklist: ChecklistRepository
   readonly clock: Clock
+  readonly comments: TaskCommentRepository
   readonly contributors: ContributorRepository
   readonly idGenerator: IdGenerator
   readonly meetings: MeetingRepository

@@ -4,6 +4,7 @@ import {
   createInMemoryState,
   InMemoryChecklistRepository,
   InMemoryContributorRepository,
+  InMemoryTaskCommentRepository,
   InMemoryMeetingRepository,
   InMemoryOrganizationRepository,
   InMemoryParticipationRepository,
@@ -28,6 +29,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     this.state = state
     this.repositories = {
       checklist: new InMemoryChecklistRepository(state),
+      comments: new InMemoryTaskCommentRepository(state),
       contributors: new InMemoryContributorRepository(state),
       meetings: new InMemoryMeetingRepository(state),
       organizations: new InMemoryOrganizationRepository(state),
@@ -48,6 +50,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     this.active = true
     const snapshot = {
       checklist: copyMap(this.state.checklist),
+      comments: copyMap(this.state.comments),
       contributors: copyMap(this.state.contributors),
       meetings: copyMap(this.state.meetings),
       participations: copyMap(this.state.participations),

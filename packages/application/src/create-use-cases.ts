@@ -13,6 +13,7 @@ import { SetDefaultRate } from './use-cases/users/set-default-rate'
 import { ListContributors } from './use-cases/contributors/list-contributors'
 import { SetContributorDefaultRate } from './use-cases/contributors/set-default-rate'
 import { CreateContributor } from './use-cases/contributors/create-contributor'
+import { AddTaskComment, EditTaskComment, RemoveTaskComment } from './use-cases/tasks/comments'
 import {
   AddChecklistItem,
   MoveChecklistItem,
@@ -88,6 +89,11 @@ export function createUseCases(deps: AppDeps) {
         rename: new RenameChecklistItem(deps),
         remove: new RemoveChecklistItem(deps),
         move: new MoveChecklistItem(deps),
+      },
+      comments: {
+        add: new AddTaskComment(deps),
+        edit: new EditTaskComment(deps),
+        remove: new RemoveTaskComment(deps),
       },
       listBoard: new ListBoard(deps),
       getBoardFlow: new GetBoardFlow(deps),

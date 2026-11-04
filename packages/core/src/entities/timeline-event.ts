@@ -1,4 +1,4 @@
-import type { ChecklistItemId, EventId, TaskId, UserId } from '../shared/ids'
+import type { ChecklistItemId, EventId, TaskCommentId, TaskId, UserId } from '../shared/ids'
 import type { DateOnly } from '../values/date-only'
 import type { ParticipationRole } from '../values/role'
 import type { TaskPriority } from '../values/task-priority'
@@ -33,6 +33,11 @@ export type TimelineEvent = EventBase &
           | 'checklist_item_removed'
         readonly payload: { readonly itemId: ChecklistItemId; readonly title: string }
       }
+    | {
+        readonly type: 'comment_added'
+        readonly payload: { readonly commentId: TaskCommentId; readonly excerpt: string }
+      }
+    | { readonly type: 'comment_removed'; readonly payload: { readonly commentId: TaskCommentId } }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }

@@ -2,6 +2,7 @@ import { createSqliteClient } from './client.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
 import { organizations } from './schema/index.js'
 import { toOrganizationId } from '@agilebox/core'
@@ -17,6 +18,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     ...createSqliteCoreRepositories(database),
     ...createSqliteTaskRepositories(database),
     meetings: createSqliteMeetingRepository(database),
+    comments: createSqliteTaskCommentRepository(database),
   }
   return {
     ...repositories,

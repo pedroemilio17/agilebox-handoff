@@ -1,4 +1,5 @@
 import { isDateOnly, parseDateOnly, type DateOnly } from '../values/date-only'
+import { foldReference, matchReference } from './reference-match'
 
 export interface QuickAddPerson {
   readonly id: string
@@ -30,8 +31,7 @@ export interface QuickAddResult {
   readonly status: 'todo'
   readonly tokens: readonly QuickAddToken[]
 }
-const fold = (value: string) =>
-  value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR')
+const fold = foldReference
 
 function normalizedInput(input: string) {
   let text = ''
@@ -74,47 +74,15 @@ export function parseQuickAdd(input: string, context: QuickAddContext): QuickAdd
     if (!occupied(start, end) && !tokens.some((token) => token.kind === kind))
       tokens.push({ kind, start, end, text: input.slice(start, end), value, label })
   }
-  // Longest exact full name wins; a short prefix is accepted only when it identifies one entry.
   for (const match of text.matchAll(/(^|\s)([@#])/gu)) {
     const index = match.index + match[1]!.length
     const kind = match[2] === '@' ? 'person' : 'project'
     const source = text.slice(index + 1)
-    const entries: readonly (QuickAddProject & { readonly initials?: string })[] =
-      kind === 'person' ? context.people : context.projects
-    const exact = entries
-      .flatMap((entry) => {
-        const aliases = [entry.name, ...(entry.initials ? [entry.initials] : [])]
-        return aliases
-          .map(fold)
-          .filter(
-            (alias) =>
-              source.startsWith(alias) &&
-              (!source[alias.length] || /[\s.,;!?]/u.test(source[alias.length]!)),
-          )
-          .map((alias) => ({ entry, length: alias.length }))
-      })
-      .sort((a, b) => b.length - a.length)
-    const longest = exact[0]
-    if (
-      longest &&
-      !exact.some(
-        (candidate) =>
-          candidate.entry.id !== longest.entry.id && candidate.length === longest.length,
-      )
-    ) {
-      add(kind, index, longest.length + 1, longest.entry.id, longest.entry.name)
-      continue
-    }
-    if (exact.length) continue
-    const prefix = /^[^\s@#.,;!?]+/u.exec(source)?.[0]
-    if (!prefix) continue
-    const candidates = entries.filter(
-      (entry) =>
-        fold(entry.name).startsWith(prefix) ||
-        (entry.initials !== undefined && fold(entry.initials).startsWith(prefix)),
-    )
-    if (candidates.length === 1)
-      add(kind, index, prefix.length + 1, candidates[0]!.id, candidates[0]!.name)
+    const found =
+      kind === 'person'
+        ? matchReference(source, context.people)
+        : matchReference(source, context.projects)
+    if (found) add(kind, index, found.length + 1, found.entry.id, found.entry.name)
   }
   const weekdays = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado']
   const year = Number(context.today.slice(0, 4))
