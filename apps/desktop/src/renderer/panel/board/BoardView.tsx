@@ -80,6 +80,10 @@ export interface BoardViewProps {
   /** Só o gestor edita o limite. */
   readonly canEditWipLimits?: boolean
   readonly onSetWipLimit?: (status: WipStatus, limit: number | null) => void
+  /** Visão Equipe: cards só de leitura, sem arrastar, sem "+" nas colunas e sem editar o limite. */
+  readonly readOnlyScope?: boolean
+  /** Tenta carregar de novo quando a visão Equipe falha. */
+  readonly onRetry?: () => void
 }
 
 export function BoardView({
@@ -99,6 +103,8 @@ export function BoardView({
   wipColumns = [],
   canEditWipLimits = false,
   onSetWipLimit,
+  readOnlyScope = false,
+  onRetry,
 }: BoardViewProps) {
   const api = useApi()
   const [exception, setException] = useState<BoardException | null>(initialException)
@@ -147,7 +153,16 @@ export function BoardView({
   }
 
   if (error)
-    return (
+    return readOnlyScope ? (
+      <div className={styles.error} role="alert">
+        <p>{panelCopy.teamError}</p>
+        {onRetry ? (
+          <Button type="button" onClick={onRetry}>
+            {panelCopy.retry}
+          </Button>
+        ) : null}
+      </div>
+    ) : (
       <p className={styles.error} role="alert">
         {panelCopy.boardError}
       </p>
@@ -185,6 +200,28 @@ export function BoardView({
             ? isBlockedTask(task)
             : true,
   )
+  const columns = () =>
+    TASK_STATUSES.map((status) => (
+      <KanbanColumn
+        key={status}
+        cycleDays={cycleDays}
+        flowError={flowError}
+        selectedTaskId={selectedTaskId}
+        onCreateTask={readOnlyScope ? undefined : onCreateTask}
+        onOpenTask={onOpenTask}
+        onMoveTask={onMoveTask}
+        wip={wipColumns.find((column) => column.status === status)}
+        canEditWipLimits={canEditWipLimits && !readOnlyScope}
+        onSetWipLimit={onSetWipLimit}
+        readOnlyScope={readOnlyScope}
+        responsibleNames={
+          new Map((tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]))
+        }
+        status={status}
+        tasks={visibleTasks.filter((task) => task.status === status)}
+      />
+    ))
+
   const noTasks = (tasks ?? []).length === 0
   return (
     <>
@@ -229,10 +266,14 @@ export function BoardView({
       {noTasks && (
         <EmptyState
           className={styles.emptyBoard}
-          title="Nenhuma tarefa ainda"
-          description="Crie a primeira tarefa para começar a acompanhar o trabalho do time."
+          title={readOnlyScope ? panelCopy.teamEmpty : 'Nenhuma tarefa ainda'}
+          {...(readOnlyScope
+            ? {}
+            : {
+                description: 'Crie a primeira tarefa para começar a acompanhar o trabalho do time.',
+              })}
           action={
-            onNewTask ? (
+            !readOnlyScope && onNewTask ? (
               <Button variant="primary" shortcut="N" onClick={onNewTask}>
                 Nova tarefa
               </Button>
@@ -240,49 +281,35 @@ export function BoardView({
           }
         />
       )}
-      <DndContext
-        collisionDetection={detectCollisions}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setActiveTask(null)}
-        sensors={sensors}
-      >
+      {readOnlyScope ? (
         <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
-          {TASK_STATUSES.map((status) => (
-            <KanbanColumn
-              key={status}
-              cycleDays={cycleDays}
-              flowError={flowError}
-              selectedTaskId={selectedTaskId}
-              onCreateTask={onCreateTask}
-              onOpenTask={onOpenTask}
-              onMoveTask={onMoveTask}
-              wip={wipColumns.find((column) => column.status === status)}
-              canEditWipLimits={canEditWipLimits}
-              onSetWipLimit={onSetWipLimit}
-              responsibleNames={
-                new Map(
-                  (tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]),
-                )
-              }
-              status={status}
-              tasks={visibleTasks.filter((task) => task.status === status)}
-            />
-          ))}
+          {columns()}
         </div>
-        {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
-        <DragOverlay dropAnimation={null}>
-          {activeTask ? (
-            <div className={styles.overlay} style={{ width: activeTask.width }}>
-              <TaskCard
-                onOpen={() => undefined}
-                responsibleName={undefined}
-                task={activeTask.task}
-              />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      ) : (
+        <DndContext
+          collisionDetection={detectCollisions}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveTask(null)}
+          sensors={sensors}
+        >
+          <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
+            {columns()}
+          </div>
+          {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
+          <DragOverlay dropAnimation={null}>
+            {activeTask ? (
+              <div className={styles.overlay} style={{ width: activeTask.width }}>
+                <TaskCard
+                  onOpen={() => undefined}
+                  responsibleName={undefined}
+                  task={activeTask.task}
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </>
   )
 }
@@ -399,6 +426,7 @@ interface KanbanColumnProps {
   readonly wip: WipColumnDto | undefined
   readonly canEditWipLimits: boolean
   readonly onSetWipLimit: BoardViewProps['onSetWipLimit']
+  readonly readOnlyScope: boolean
 }
 
 function KanbanColumn({
@@ -414,6 +442,7 @@ function KanbanColumn({
   wip,
   canEditWipLimits,
   onSetWipLimit,
+  readOnlyScope,
 }: KanbanColumnProps) {
   const title = TASK_STATUS_LABELS[status]
   // Só Desenvolvendo e Revisar têm limite; nas outras colunas o cabeçalho segue só com a contagem.
@@ -445,14 +474,14 @@ function KanbanColumn({
         ) : (
           <span aria-label={`${tasks.length} tarefas`}>{tasks.length}</span>
         )}
-        {isWipStatus(status) && canEditWipLimits && onSetWipLimit ? (
+        {isWipStatus(status) && canEditWipLimits && onSetWipLimit && !readOnlyScope ? (
           <WipLimitEditor
             columnName={title}
             limit={wip?.limit ?? null}
             onSave={(limit) => onSetWipLimit(status, limit)}
           />
         ) : null}
-        {onCreateTask && (
+        {onCreateTask && !readOnlyScope && (
           <button
             type="button"
             className={styles.addTask}
@@ -463,28 +492,48 @@ function KanbanColumn({
           </button>
         )}
       </header>
-      <SortableContext
-        items={sortedTasks.map((task) => task.id)}
-        strategy={verticalListSortingStrategy}
-      >
+      {readOnlyScope ? (
         <ul className={styles.cards}>
           {sortedTasks.length === 0 ? (
             <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
           ) : (
             sortedTasks.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
+              <li className={styles.card} data-task-id={task.id} key={task.id}>
                 <TaskCard
+                  readOnly
                   selected={selectedTaskId === task.id}
                   onOpen={() => onOpenTask(task.id)}
                   responsibleName={responsibleNames.get(task.id)}
                   task={task}
                 />
-              </SortableTaskCard>
+              </li>
             ))
           )}
         </ul>
-      </SortableContext>
-      {status === 'done' && (
+      ) : (
+        <SortableContext
+          items={sortedTasks.map((task) => task.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className={styles.cards}>
+            {sortedTasks.length === 0 ? (
+              <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
+            ) : (
+              sortedTasks.map((task) => (
+                <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
+                  <TaskCard
+                    selected={selectedTaskId === task.id}
+                    onOpen={() => onOpenTask(task.id)}
+                    responsibleName={responsibleNames.get(task.id)}
+                    task={task}
+                  />
+                </SortableTaskCard>
+              ))
+            )}
+          </ul>
+        </SortableContext>
+      )}
+      {status === 'done' && !readOnlyScope && (
         <p className={styles.cycle} {...(flowError ? { role: 'alert' } : {})}>
           {flowError
             ? 'Não foi possível calcular o ciclo.'
@@ -553,24 +602,40 @@ type BoardException = 'aging' | 'overdue' | 'high' | 'blocked'
 
 interface TaskCardProps {
   readonly selected?: boolean
+  /** Visão Equipe: sem comentários no cartão e nome acessível com o estado e o responsável. */
+  readonly readOnly?: boolean
   readonly task: TaskDto
   readonly responsibleName: string | undefined
   readonly onOpen: () => void
 }
 
-function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardProps) {
+function TaskCard({
+  task,
+  responsibleName,
+  onOpen,
+  selected = false,
+  readOnly = false,
+}: TaskCardProps) {
   const deadline = describeDeadline(task)
   const blocked = isBlockedTask(task)
   const { done, total } = task.checklistProgress
   const checklistLabel = total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
   const commentLabel =
-    task.commentCount > 0 ? `, ${panelCopy.commentCountLabel(task.commentCount)}` : ''
+    !readOnly && task.commentCount > 0 ? `, ${panelCopy.commentCountLabel(task.commentCount)}` : ''
+  const ariaLabel = readOnly
+    ? panelCopy.teamCardLabel(
+        task.key,
+        `${task.title}${task.priority === 'high' ? ', prioridade alta' : ''}${blocked ? ', bloqueada' : ''}`,
+        TASK_STATUS_LABELS[task.status],
+        responsibleName ?? panelCopy.noResponsible.toLowerCase(),
+      )
+    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}${commentLabel}`
 
   return (
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}${commentLabel}`}
+      aria-label={ariaLabel}
       className={styles.cardButton}
       onClick={onOpen}
       title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
@@ -605,7 +670,7 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
           <span />
         )}
         <ChecklistProgress done={done} total={total} />
-        <CommentCount count={task.commentCount} />
+        {readOnly ? null : <CommentCount count={task.commentCount} />}
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}
         {responsibleName ? (

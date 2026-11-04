@@ -224,6 +224,29 @@ describe('listas de tarefas', () => {
     expect(result.map(({ id }) => id)).toEqual([team.id])
   })
 
+  it('traz na Equipe os sinais de parada e de prazo, como o quadro', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const team = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000014'),
+      status: 'review' as const,
+      createdBy: otherUserId,
+      participations: [],
+      createdAt: '2025-12-01T12:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+      deadline: parseDateOnly('2025-12-30'),
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await addProjectMember(unitOfWork, project.id, userId)
+    await unitOfWork.repositories.tasks.save(organizationId, team)
+
+    const [result] = await useCases.tasks.listTeamBoard.execute(actor, {})
+
+    expect(result).toMatchObject({ id: team.id, overdue: true })
+    expect(result!.agingDays).toBeGreaterThan(4)
+  })
+
   it('recentes, frequentes e busca retornam somente tarefas de que o ator participa', async () => {
     const { useCases, unitOfWork } = setup()
     const project = aProject().build()

@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from 'react'
-import { EmptyState, WindowControls, ProjectSwatch, Eyebrow, Kbd } from '@agilebox/ui'
+import {
+  EmptyState,
+  WindowControls,
+  ProjectSwatch,
+  Eyebrow,
+  Kbd,
+  SegmentedControl,
+} from '@agilebox/ui'
 import type { SessionUserDto } from '@agilebox/contract'
+import type { TaskScope } from '../board/task-scope'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
@@ -32,6 +40,9 @@ export interface PanelShellProps {
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
   readonly children?: ReactNode
+  /** Escopo do quadro: "Minhas tarefas" ou "Equipe". Só aparece com o quadro aberto. */
+  readonly taskScope?: TaskScope
+  readonly onTaskScopeChange?: (scope: TaskScope) => void
 }
 
 const viewTitles: Record<PanelView, string> = {
@@ -62,6 +73,8 @@ export function PanelShell({
   dashboard,
   agenda,
   children,
+  taskScope = 'mine',
+  onTaskScopeChange,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
   const visibleView = view === 'dashboard' && !isManager ? 'projects' : view
@@ -98,6 +111,8 @@ export function PanelShell({
           onToggleExpand={onToggleExpand}
           onClose={onClose}
           onNewTask={onNewTask}
+          taskScope={taskScope}
+          onTaskScopeChange={onTaskScopeChange}
         />
         <div className={styles.content} key={visibleView}>
           {visibleView === 'projects' ? (
@@ -268,6 +283,8 @@ interface TitleBarProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
+  readonly taskScope: TaskScope
+  readonly onTaskScopeChange: ((scope: TaskScope) => void) | undefined
 }
 
 function TitleBar({
@@ -279,21 +296,25 @@ function TitleBar({
   onToggleExpand,
   onClose,
   onNewTask,
+  taskScope,
+  onTaskScopeChange,
 }: TitleBarProps) {
   return (
     <header className={styles.titleBar}>
       <div className={styles.titleGroup}>
         <h1>{title}</h1>
         {board && projectSelector}
-        {board && (
-          <div className={styles.segmented} aria-label={panelCopy.taskScope}>
-            <button type="button" aria-pressed="true">
-              Minhas
-            </button>
-            <button type="button" aria-pressed="false" title={panelCopy.readOnly}>
-              {panelCopy.team}
-            </button>
-          </div>
+        {board && onTaskScopeChange && (
+          <SegmentedControl<TaskScope>
+            aria-label={panelCopy.taskScope}
+            className={styles.segmented ?? ''}
+            onChange={onTaskScopeChange}
+            options={[
+              { value: 'mine', label: 'Minhas' },
+              { value: 'team', label: panelCopy.team },
+            ]}
+            value={taskScope}
+          />
         )}
       </div>
       <div className={styles.titleActions}>

@@ -137,8 +137,22 @@ export class ListTeamBoard {
       visible.map((task) => task.id),
     )
     const counts = await loadCommentCounts(this.deps, actor, visible)
-    return visible.map((task) =>
-      toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+    // Sinais de parada e de prazo calculados como no quadro, para os filtros da visão Equipe.
+    const now = await this.deps.clock.now(actor.organizationId)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const today = toDateOnly(new Date(now), timeZone)
+    return Promise.all(
+      visible.map(async (task) => {
+        const events =
+          task.status === 'in_progress' || task.status === 'review'
+            ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
+            : []
+        return {
+          ...toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+          agingDays: staleDays(task, events, today, timeZone),
+          overdue: isOverdueTask(task, today),
+        }
+      }),
     )
   }
 }

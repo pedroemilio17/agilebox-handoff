@@ -226,39 +226,7 @@
 }
 
 .segmented {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  box-sizing: border-box;
   min-width: 144px;
-  height: var(--size-touch-target);
-  padding: 3px;
-  border: 1px solid var(--color-control-segment-border);
-  border-radius: var(--radius-field);
-  background: var(--color-field-bg);
-}
-
-.segmented button {
-  flex: 1;
-  height: 36px;
-  border: 0;
-  border-radius: var(--radius-chip);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-body-small);
-}
-
-.segmented button[aria-pressed='true'] {
-  background: var(--color-control-segment-selected);
-  color: var(--color-text-primary);
-}
-
-.segmented span {
-  padding-right: var(--space-2);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-label);
-  white-space: nowrap;
 }
 
 .newTask {

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { Drawer, Toast } from '@agilebox/ui'
+import { Drawer, ScopeBanner, Toast } from '@agilebox/ui'
 import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
 import type { SetWipLimitsInput, TaskDto, WipLimitsDto } from '@agilebox/contract'
@@ -21,6 +21,9 @@ import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
 import type { WipStatus } from './board/wip-limit'
+import type { TaskScope } from './board/task-scope'
+import { teamWipColumns } from './board/team-board'
+import { ScopeAnnouncement } from './board/ScopeAnnouncement'
 import { TaskDetailView } from './task-detail/TaskDetailView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import { PanelCommands } from './commands/PanelCommands'
@@ -48,6 +51,9 @@ export function App() {
   const [taskFullScreen, setTaskFullScreen] = useState(false)
   const [boardException, setBoardException] = useState<'aging' | 'overdue' | 'blocked' | null>(null)
   const [viewingUser, setViewingUser] = useState<{ id: string; name: string } | null>(null)
+  // Escopo do quadro só em memória da sessão: a Equipe é somente leitura e não grava nada.
+  const [taskScope, setTaskScope] = useState<TaskScope>('mine')
+  const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
   const [notice, setNotice] = useState<{
     id: number
@@ -66,6 +72,27 @@ export function App() {
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
       }),
   })
+  const teamTasks = useQuery({
+    queryKey: queryKeys.tasks.team(selectedProjectId ?? undefined),
+    queryFn: () =>
+      api.tasks.listTeamBoard(selectedProjectId ? { projectId: selectedProjectId } : {}),
+    enabled: view === 'projects' && taskScope === 'team',
+  })
+  const teamView = taskScope === 'team'
+  const boardTasks = teamView ? teamTasks.data : tasks.data?.tasks
+  const boardWipColumns = teamView
+    ? teamWipColumns(teamTasks.data ?? [], tasks.data?.wipLimits)
+    : tasks.data?.wipColumns
+  function changeTaskScope(scope: TaskScope) {
+    if (scope === taskScope) return
+    setTaskScope(scope)
+    // O detalhe aberto pertencia à outra visão: fecha para não misturar edição e leitura.
+    setActiveTaskId(null)
+    setTaskFullScreen(false)
+    setScopeAnnouncement(
+      scope === 'team' ? panelCopy.teamViewAnnouncement : panelCopy.myTasksAnnouncement,
+    )
+  }
   const boardFlow = useQuery({
     queryKey: [...queryKeys.tasks.all, 'flow', selectedProjectId, viewingUser?.id],
     enabled: view === 'projects',
@@ -189,6 +216,7 @@ export function App() {
       setSelectedProjectId(null)
       setActiveTaskId(null)
       setViewingUser(null)
+      setTaskScope('mine')
       setMembersProject(null)
       return queryClient.invalidateQueries()
     },
@@ -282,6 +310,8 @@ export function App() {
         }
         view={view}
         onViewChange={setView}
+        taskScope={taskScope}
+        onTaskScopeChange={changeTaskScope}
         isManager={isManager}
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
@@ -346,39 +376,47 @@ export function App() {
                 onBack={closeTask}
                 onToggleFullScreen={() => setTaskFullScreen(false)}
                 fullScreen
+                readOnlyScope={teamView}
               />
             ) : (
-              <BoardView
-                key={boardException ?? 'all'}
-                initialException={boardException}
-                cycleDays={boardFlow.data?.cycleDays ?? null}
-                flowError={boardFlow.isError}
-                error={tasks.isError}
-                loading={tasks.isPending}
-                onCreateTask={(status) => {
-                  setNewTaskStatus(status)
-                  setNewTaskDialogOpen(true)
-                }}
-                onNewTask={() => {
-                  setNewTaskStatus(undefined)
-                  setNewTaskDialogOpen(true)
-                }}
-                refreshing={tasks.isFetching}
-                selectedTaskId={activeTaskId}
-                onOpenTask={openTask}
-                onMoveTask={moveTaskFromBoard}
-                tasks={tasks.data?.tasks}
-                wipColumns={tasks.data?.wipColumns}
-                canEditWipLimits={isManager}
-                onSetWipLimit={setBoardWipLimit}
-                updatedAt={tasks.dataUpdatedAt || undefined}
-              />
+              <>
+                <ScopeAnnouncement message={scopeAnnouncement} />
+                {teamView ? <ScopeBanner>{panelCopy.teamViewBanner}</ScopeBanner> : null}
+                <BoardView
+                  key={boardException ?? 'all'}
+                  initialException={boardException}
+                  cycleDays={boardFlow.data?.cycleDays ?? null}
+                  flowError={boardFlow.isError}
+                  error={teamView ? teamTasks.isError : tasks.isError}
+                  loading={teamView ? teamTasks.isPending : tasks.isPending}
+                  onCreateTask={(status) => {
+                    setNewTaskStatus(status)
+                    setNewTaskDialogOpen(true)
+                  }}
+                  onNewTask={() => {
+                    setNewTaskStatus(undefined)
+                    setNewTaskDialogOpen(true)
+                  }}
+                  refreshing={teamView ? teamTasks.isFetching : tasks.isFetching}
+                  selectedTaskId={activeTaskId}
+                  onOpenTask={openTask}
+                  onMoveTask={moveTaskFromBoard}
+                  tasks={boardTasks}
+                  wipColumns={boardWipColumns}
+                  canEditWipLimits={isManager}
+                  onSetWipLimit={setBoardWipLimit}
+                  readOnlyScope={teamView}
+                  onRetry={() => void teamTasks.refetch()}
+                  updatedAt={
+                    (teamView ? teamTasks.dataUpdatedAt : tasks.dataUpdatedAt) || undefined
+                  }
+                />
+              </>
             )}
             <Drawer
               open={activeTaskId !== null && !taskFullScreen}
               title={
-                tasks.data?.tasks.find((task) => task.id === activeTaskId)?.title ??
-                panelCopy.taskDetail
+                boardTasks?.find((task) => task.id === activeTaskId)?.title ?? panelCopy.taskDetail
               }
               onClose={closeTask}
             >
@@ -388,6 +426,7 @@ export function App() {
                   taskId={activeTaskId}
                   onBack={closeTask}
                   onToggleFullScreen={() => setTaskFullScreen(true)}
+                  readOnlyScope={teamView}
                 />
               )}
             </Drawer>

@@ -23,6 +23,8 @@ import { isDefinitionOfDoneNotConfirmed } from '../../shared/definition-of-done/
 import styles from './TaskDetailView.module.css'
 
 export interface TaskDetailViewProps {
+  /** Visão Equipe: o detalhe abre só para leitura, mesmo que o servidor permita editar. */
+  readonly readOnlyScope?: boolean
   readonly fullScreen?: boolean
   readonly onToggleFullScreen?: () => void
   readonly taskId: string
@@ -33,6 +35,7 @@ export interface TaskDetailViewProps {
 export function TaskDetailView({
   taskId,
   onBack,
+  readOnlyScope = false,
   fullScreen = false,
   onToggleFullScreen,
   today = todayDateOnly(),
@@ -95,7 +98,7 @@ export function TaskDetailView({
     )
   }
 
-  const readOnly = task!.readOnly
+  const readOnly = task!.readOnly || readOnlyScope
 
   // O ID é texto copiado para a área de transferência (não há link nem protocolo para ele).
   function copyTaskKey() {
@@ -240,7 +243,7 @@ export function TaskDetailView({
         onUpdate={(changes) => update.mutate(changes)}
       />
       <ChecklistCard task={task!} readOnly={readOnly} />
-      <CommentsCard task={task!} />
+      <CommentsCard task={task!} readOnlyScope={readOnlyScope} />
       <TimelineCard taskId={taskId} />
       {definitionGate.dialog}
     </section>

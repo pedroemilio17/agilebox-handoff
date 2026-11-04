@@ -1,0 +1,8 @@
+/* Anúncio de troca de visão para leitores de tela: presente na árvore, invisível na tela. */
+.liveRegion {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

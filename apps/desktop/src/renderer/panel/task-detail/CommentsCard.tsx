@@ -42,11 +42,12 @@ function countOf(value: string): number {
 
 export interface CommentsCardProps {
   readonly task: GetTaskDto
+  readonly readOnlyScope?: boolean
 }
 
-export function CommentsCard({ task }: CommentsCardProps) {
+export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps) {
   const taskId = task.id
-  const readOnly = task.readOnly
+  const readOnly = task.readOnly || readOnlyScope
   const add = useAddComment(taskId)
   const [draft, setDraft] = useState('')
   const [caret, setCaret] = useState(0)

@@ -33,6 +33,7 @@ import {
   Modal,
   NumberField,
   ReadOnlyBadge,
+  ScopeBanner,
   SegmentedControl,
   Skeleton,
   StatusChip,
@@ -174,6 +175,7 @@ export function Gallery() {
               <ReadOnlyBadge />
             </FieldRow>
           </GroupedList>
+          <ScopeBanner>Visão da equipe</ScopeBanner>
         </section>
 
         <section className={styles.section} aria-labelledby="gallery-controls">

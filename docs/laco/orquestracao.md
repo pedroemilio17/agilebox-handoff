@@ -20,7 +20,6 @@ Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/RE
 
 Fase C:
 
-- [ ] Daily assíncrona na bandeja
 - [ ] Plug-ins (commits vinculados e aviso de atualização)
 
 Final:
@@ -29,10 +28,12 @@ Final:
 
 ## Em andamento
 
-- Visão Equipe (Fase C, próxima): seletor "Minhas tarefas | Equipe" do quadro, só leitura da equipe conforme o escopo (PLANO e HANDOFF-v2 descrevem).
+- Daily assíncrona na bandeja (Fase C, próxima): cartão "Vamos registrar o que foi feito hoje?" e daily em 3 passos. Aguarda a decisão do Pedro antes de codar (ver Pendências do Pedro).
 
 ## Concluído
 
+- Fase C · Equipe completa: seletor "Minhas | Equipe" do quadro funciona; a Equipe mostra as tarefas dos projetos de que a pessoa é membro, somente leitura (cards sem arrastar, sem "+", sem editor de limite; detalhe sempre em leitura). Filtros, medidor de WIP e faixa "Visão da equipe" valem sobre a Equipe. A API `listTeamBoard` passou a devolver `agingDays` e `overdue`, como o quadro. Escopo só em memória; galeria e testes atualizados.
+- B11 (correção): CSV do resumo neutraliza injeção de fórmula. Nomes que começam com `=`, `+`, `-`, `@`, TAB ou CR ganham apóstrofo antes do escape.
 - B11: exportar resumo do dashboard em Markdown e CSV. B11 completo: core, aplicação, contrato, main (diálogo e gravação) e UI.
 - B10: combinados da retro. B10 completo: backend e UI.
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
@@ -63,5 +64,10 @@ Final:
 
 ## Pendências do Pedro
 
+- Fase C, Equipe do gestor: `listTeamBoard` exclui para o gestor as tarefas em que ele participa, mas o PLANO 6.1 diz "todas". A tela mostra o que o servidor devolve. Confirmar se a regra deve mudar no servidor.
+- Fase C, detalhe da Equipe: abre sempre em somente leitura, também para o gestor (mesmo que `tasks.get` devolva `canEdit: true`). A edição do gestor continua pelo "Abrir projetos" do dashboard, marcada como Gestor. Confirmar.
+- Fase C, rodapé "Ciclo médio desta semana": não aparece na Equipe, porque é métrica do quadro pessoal. Confirmar.
+- Fase C, linha do tempo na Equipe: aparece se `timeline.list` devolver eventos para quem não participa. Não foi alterado no servidor. Confirmar se a Equipe deve mostrá-la.
+- Daily assíncrona (fase C): o HANDOFF-v2 (4.7) diz "não implementar sem decisão do Pedro", e o CLAUDE.md lista o aviso diário como fora do MVP. Falta decidir se entra agora e onde aparece (só bandeja, ou também aviso no painel).
 - B7, decisão de produto: comentários contam como "mudança/edição" nas regras "mudanças desde ontem" e "última edição por pessoa" do dashboard (`core/rules/recent-changes.ts`). Mantido como está por ser coerente com "toda edição gera entrada na linha do tempo". Se não for o desejado, ajustar essas duas regras para ignorar `comment_added` e `comment_removed`.
 - B7, dado não exposto: o criador da tarefa não aparece no detalhe (`GetTaskDto` traz só participações). As sugestões de `@` usam responsável e apoio (participantes-usuários). Se o criador precisar ser mencionável, o DTO do detalhe precisa de `createdBy`.
