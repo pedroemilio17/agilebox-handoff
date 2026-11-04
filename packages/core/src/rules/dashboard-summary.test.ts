@@ -173,6 +173,39 @@ describe('renderDashboardSummaryCsv', () => {
     expect(csv).toContain('"Silva, ""Zé""\nJúnior",3,33,0,1,0,')
   })
 
+  it('neutraliza nomes que o Excel leria como fórmula, com apóstrofo antes do escape', () => {
+    const csv = renderDashboardSummaryCsv(
+      insights({
+        team: [
+          { ...insights().team[0]!, user: { name: '=HYPERLINK("http://x","clique")' } },
+          { ...insights().team[0]!, user: { name: '+1' } },
+          { ...insights().team[0]!, user: { name: '-2+3' } },
+          { ...insights().team[0]!, user: { name: '@SUM(A1)' } },
+          { ...insights().team[0]!, user: { name: '\tTAB' } },
+          { ...insights().team[0]!, user: { name: '\rCR' } },
+          { ...insights().team[0]!, user: { name: '=A1,"x"' } },
+          { ...insights().team[0]!, user: { name: 'Ana Maria' } },
+        ],
+      }),
+      { timeZone: 'UTC' },
+    )
+    expect(csv).toContain('"\'=HYPERLINK(""http://x"",""clique"")",3,33,0,1,0,')
+    expect(csv).toContain("\n'+1,3,33,0,1,0,")
+    expect(csv).toContain("\n'-2+3,3,33,0,1,0,")
+    expect(csv).toContain("\n'@SUM(A1),3,33,0,1,0,")
+    expect(csv).toContain("\n'\tTAB,3,33,0,1,0,")
+    expect(csv).toContain('"\'\rCR",3,33,0,1,0,')
+    expect(csv).toContain('"\'=A1,""x""",3,33,0,1,0,')
+    expect(csv).toContain('\nAna Maria,3,33,0,1,0,')
+  })
+
+  it('não altera números gerados pelo sistema nem o travessão de vazio', () => {
+    const csv = renderDashboardSummaryCsv(insights(), { timeZone: 'UTC' })
+    expect(csv).toContain('Ana Souza,4,50,2,0,0,—')
+    expect(csv).not.toContain("'4")
+    expect(csv).not.toContain("'—")
+  })
+
   it('preserva acentuação e devolve só o cabeçalho quando não há equipe', () => {
     const csv = renderDashboardSummaryCsv(insights({ team: [] }), { timeZone: 'UTC' })
     expect(csv).toBe('Nome,Itens,Concluído %,Paradas,Vencidas,Bloqueadas,Última atualização\r\n')

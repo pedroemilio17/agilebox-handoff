@@ -162,9 +162,9 @@ export function renderDashboardSummaryCsv(
   insights: DashboardSummaryInsights,
   options: { readonly timeZone: string; readonly bom?: boolean },
 ): string {
-  const rows = sortedTeam(insights.team).map((person) =>
-    [
-      person.user.name,
+  const rows = sortedTeam(insights.team).map((person) => [
+    csvTextCell(person.user.name),
+    ...[
       String(person.taskCount),
       String(person.completedPercentage),
       String(person.agingCount),
@@ -172,7 +172,7 @@ export function renderDashboardSummaryCsv(
       String(person.blockedCount),
       formatOptionalDateTime(person.lastUpdatedAt, options.timeZone),
     ].map(csvCell),
-  )
+  ])
   const body = [CSV_HEADER.map(csvCell), ...rows].map((row) => row.join(',')).join('\r\n')
   return `${options.bom ? '﻿' : ''}${body}\r\n`
 }
@@ -181,6 +181,18 @@ export function renderDashboardSummaryCsv(
 export function csvCell(value: string): string {
   const text = value.trim() === '' ? DASHBOARD_SUMMARY_EMPTY : value
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+/** Campo de TEXTO livre no CSV: neutraliza injeção de fórmula (OWASP) antes do escape de CSV. */
+export function csvTextCell(value: string): string {
+  return csvCell(neutralizeFormula(value))
+}
+
+const FORMULA_TRIGGERS = ['=', '+', '-', '@', '\t', '\r']
+
+/** Prefixa com apóstrofo um texto que o Excel/Planilhas leriam como fórmula. Vazio e números ficam intactos. */
+function neutralizeFormula(value: string): string {
+  return value !== '' && FORMULA_TRIGGERS.includes(value.charAt(0)) ? `'${value}` : value
 }
 
 function cell(value: string): string {
