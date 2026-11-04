@@ -202,6 +202,13 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         ),
       )
     },
+    async nextNumber(organizationId) {
+      const [row] = await database
+        .select({ current: sql<number>`coalesce(max(${tasks.number}), 0)` })
+        .from(tasks)
+        .where(eq(tasks.organizationId, organizationId))
+      return Number(row?.current ?? 0) + 1
+    },
     async save(organizationId, task) {
       const [project] = await database
         .select({ id: projects.id })
@@ -222,6 +229,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       const value = {
         id: task.id,
         organizationId,
+        number: task.number,
         projectId: task.projectId,
         createdBy: task.createdBy,
         title: task.title,

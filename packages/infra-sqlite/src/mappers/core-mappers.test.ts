@@ -12,11 +12,13 @@ describe('mappers de registros principais', () => {
       mapOrganizationRow({
         id: toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV'),
         name: 'AgileBox',
+        taskPrefix: 'XY',
         createdAt: user.createdAt,
       }),
     ).toEqual({
       id: toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV'),
       name: 'AgileBox',
+      taskPrefix: 'XY',
       createdAt: user.createdAt,
     })
     expect(mapUserRow({ ...user })).toEqual(user)

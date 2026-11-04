@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createUser, toOrganizationId, toTaskId, toUserId } from '@agilebox/core'
+import {
+  createOrganization,
+  createUser,
+  toOrganizationId,
+  toTaskId,
+  toUserId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -26,6 +32,7 @@ function setup() {
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,
+    organizations: unitOfWork.repositories.organizations,
     participations: unitOfWork.repositories.participations,
     projects: unitOfWork.repositories.projects,
     taskOpens: unitOfWork.repositories.taskOpens,
@@ -356,5 +363,50 @@ describe('casos de uso de tarefas', () => {
     await expect(
       useCases.tasks.update.execute(actor, { taskId: 'inválido', changes: { title: 'x' } }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+})
+
+describe('número e chave da tarefa', () => {
+  it('numera em sequência dentro da organização e devolve a chave com o prefixo', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    const managerActor = { ...actor, role: 'manager' as const }
+
+    const first = await useCases.tasks.create.execute(managerActor, {
+      projectId: project.id,
+      title: 'Primeira',
+    })
+    const second = await useCases.tasks.create.execute(managerActor, {
+      projectId: project.id,
+      title: 'Segunda',
+    })
+
+    expect([first.number, first.key, second.number, second.key]).toEqual([1, 'AB-1', 2, 'AB-2'])
+    await expect(unitOfWork.repositories.tasks.nextNumber(organizationId)).resolves.toBe(3)
+  })
+
+  it('usa o prefixo atual da organização nas chaves das tarefas existentes', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await unitOfWork.repositories.users.save(organizationId, aUser().build())
+    await useCases.tasks.create.execute(
+      { ...actor, role: 'manager' },
+      { projectId: project.id, title: 'Tarefa antiga' },
+    )
+    await unitOfWork.repositories.organizations.save(
+      createOrganization({
+        id: organizationId,
+        name: 'Organização de teste',
+        taskPrefix: 'OPS',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    )
+
+    const board = await useCases.tasks.listBoard.execute(actor, {})
+
+    expect(board.map((task) => [task.number, task.key])).toEqual([[1, 'OPS-1']])
   })
 })

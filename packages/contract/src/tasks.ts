@@ -4,8 +4,12 @@ import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
 export const taskDeadlineSchema = z.iso.date().nullable()
 
+export const taskKeySchema = z.string().regex(/^[A-Z]{2,5}-[1-9]\d*$/u)
+
 export const taskDtoSchema = z.object({
   id: ulidSchema,
+  number: z.number().int().positive().safe(),
+  key: taskKeySchema,
   projectId: ulidSchema,
   projectName: nameSchema,
   title: nameSchema,

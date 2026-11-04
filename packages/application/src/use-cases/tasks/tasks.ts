@@ -39,6 +39,7 @@ import type {
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { findTaskPrefix } from './task-prefix'
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
@@ -59,67 +60,73 @@ export class CreateTask {
     const user = await this.deps.users.findById(actor.organizationId, actor.userId)
     if (!user) throw new NotFoundError('Usuário não encontrado')
     const now = await this.deps.clock.now(actor.organizationId)
-    const initialTask = createTask({
-      id: toTaskId(await this.deps.idGenerator.generate(actor.organizationId)),
-      organizationId: actor.organizationId,
-      projectId,
-      projectName: project.name,
-      createdBy: actor.userId,
-      title: input.title,
-      createdAt: now,
-      responsibleParticipationId: toParticipationId(
-        await this.deps.idGenerator.generate(actor.organizationId),
-      ),
-      responsibleRateCents: user.defaultRateCents,
-    })
-    let task = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
-    if (input.deadline !== undefined)
-      task = setDeadline(task, input.deadline === null ? null : parseDateOnly(input.deadline))
-    if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
-      const responsibleId = toUserId(input.responsibleId)
-      const responsible = await this.deps.users.findById(actor.organizationId, responsibleId)
-      if (!responsible) throw new NotFoundError('Responsável não encontrado')
-      task = addParticipant(
-        task,
-        createParticipation({
-          id: toParticipationId(await this.deps.idGenerator.generate(actor.organizationId)),
-          taskId: task.id,
-          participant: { kind: 'user', userId: responsibleId },
-          role: 'support',
-          hoursHundredths: 0,
-          rateCents: responsible.defaultRateCents,
-          addedAt: now,
-        }),
+    const task = await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
+      const number = await repositories.tasks.nextNumber(actor.organizationId)
+      const initialTask = createTask({
+        id: toTaskId(await this.deps.idGenerator.generate(actor.organizationId)),
+        organizationId: actor.organizationId,
+        number,
+        projectId,
+        projectName: project.name,
+        createdBy: actor.userId,
+        title: input.title,
+        createdAt: now,
+        responsibleParticipationId: toParticipationId(
+          await this.deps.idGenerator.generate(actor.organizationId),
+        ),
+        responsibleRateCents: user.defaultRateCents,
+      })
+      let created = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
+      if (input.deadline !== undefined)
+        created = setDeadline(
+          created,
+          input.deadline === null ? null : parseDateOnly(input.deadline),
+        )
+      if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
+        const responsibleId = toUserId(input.responsibleId)
+        const responsible = await this.deps.users.findById(actor.organizationId, responsibleId)
+        if (!responsible) throw new NotFoundError('Responsável não encontrado')
+        created = addParticipant(
+          created,
+          createParticipation({
+            id: toParticipationId(await this.deps.idGenerator.generate(actor.organizationId)),
+            taskId: created.id,
+            participant: { kind: 'user', userId: responsibleId },
+            role: 'support',
+            hoursHundredths: 0,
+            rateCents: responsible.defaultRateCents,
+            addedAt: now,
+          }),
+        )
+        created = changeResponsible(created, responsibleId)
+      }
+      const event = createTimelineEvent({
+        id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+        taskId: created.id,
+        at: now,
+        actorUserId: actor.userId,
+        asManager: isManagerEdit(actor),
+        type: 'task_created',
+        payload: {},
+      })
+      const initialEvents = await Promise.all(
+        diffTask(initialTask, created).map(async (draft) =>
+          createTimelineEvent({
+            ...draft,
+            id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+            taskId: created.id,
+            at: now,
+            actorUserId: actor.userId,
+            asManager: isManagerEdit(actor),
+          }),
+        ),
       )
-      task = changeResponsible(task, responsibleId)
-    }
-    const event = createTimelineEvent({
-      id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
-      taskId: task.id,
-      at: now,
-      actorUserId: actor.userId,
-      asManager: isManagerEdit(actor),
-      type: 'task_created',
-      payload: {},
-    })
-    const initialEvents = await Promise.all(
-      diffTask(initialTask, task).map(async (draft) =>
-        createTimelineEvent({
-          ...draft,
-          id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
-          taskId: task.id,
-          at: now,
-          actorUserId: actor.userId,
-          asManager: isManagerEdit(actor),
-        }),
-      ),
-    )
-    await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
-      await repositories.tasks.save(actor.organizationId, task)
+      await repositories.tasks.save(actor.organizationId, created)
       await repositories.timeline.saveMany(actor.organizationId, [event, ...initialEvents])
+      return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task)
+    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId))
   }
 }
 
@@ -133,6 +140,7 @@ export class GetTaskDetail {
     if (!canViewTask(actor, task, isMember))
       throw new PermissionDeniedError('Sem acesso a esta tarefa')
     const names = await this.getNames(task)
+    const prefix = await findTaskPrefix(this.deps, actor.organizationId)
     const now = await this.deps.clock.now(actor.organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const events =
@@ -140,7 +148,7 @@ export class GetTaskDetail {
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
         : []
     return {
-      ...toTaskDetailDto(task, actor, isMember, names),
+      ...toTaskDetailDto(task, prefix, actor, isMember, names),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
   }
@@ -218,7 +226,7 @@ abstract class ChangeTask {
     })
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated)
+    return toTaskDto(updated, await findTaskPrefix(this.deps, actor.organizationId))
   }
 }
 

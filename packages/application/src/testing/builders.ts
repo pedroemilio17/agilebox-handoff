@@ -96,6 +96,7 @@ export function aTask() {
     projectName,
     createdBy,
     title: 'Tarefa de exemplo',
+    number: 1,
     createdAt: timestamp,
     responsibleParticipationId: toParticipationId('00000000000000000000000006'),
     responsibleRateCents: 4500,

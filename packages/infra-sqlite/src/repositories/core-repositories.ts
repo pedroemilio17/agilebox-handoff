@@ -2,21 +2,48 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { OrganizationId, ProjectId, UserId } from '@agilebox/core'
 import type {
   ContributorRepository,
+  OrganizationRepository,
   ProjectMember,
   ProjectRepository,
   UserRepository,
 } from '@agilebox/application'
 import { createSqliteClient } from '../client.js'
-import { mapContributorRow, mapProjectRow, mapUserRow } from '../mappers/core-mappers.js'
-import { contributors, projectMembers, projects, users } from '../schema/index.js'
+import {
+  mapContributorRow,
+  mapOrganizationRow,
+  mapProjectRow,
+  mapUserRow,
+} from '../mappers/core-mappers.js'
+import { contributors, organizations, projectMembers, projects, users } from '../schema/index.js'
 
 type SqliteDatabase = ReturnType<typeof createSqliteClient>
 
 export function createSqliteCoreRepositories(database: SqliteDatabase): {
   readonly users: UserRepository
   readonly contributors: ContributorRepository
+  readonly organizations: OrganizationRepository
   readonly projects: ProjectRepository
 } {
+  const organizationRepository: OrganizationRepository = {
+    async findById(organizationId) {
+      const [row] = await database
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1)
+      return row ? mapOrganizationRow(row) : null
+    },
+    async save(organization) {
+      await database
+        .insert(organizations)
+        .values(organization)
+        .onConflictDoUpdate({
+          target: organizations.id,
+          set: { name: organization.name, taskPrefix: organization.taskPrefix },
+        })
+    },
+  }
+
   const userRepository: UserRepository = {
     async findById(organizationId, userId) {
       const [row] = await database
@@ -148,5 +175,10 @@ export function createSqliteCoreRepositories(database: SqliteDatabase): {
     },
   }
 
-  return { users: userRepository, contributors: contributorRepository, projects: projectRepository }
+  return {
+    users: userRepository,
+    contributors: contributorRepository,
+    organizations: organizationRepository,
+    projects: projectRepository,
+  }
 }

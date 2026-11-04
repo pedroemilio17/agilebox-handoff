@@ -20,6 +20,7 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
   return createOrganization({
     id: toOrganizationId(row.id),
     name: row.name,
+    taskPrefix: row.taskPrefix,
     createdAt: row.createdAt,
   })
 }

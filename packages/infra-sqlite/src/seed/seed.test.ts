@@ -30,6 +30,9 @@ describe('seed de demonstração', () => {
 
     const tasks = await unitOfWork.repositories.tasks.listBoard(organizationId, {})
     expect(tasks).toHaveLength(10)
+    expect(tasks.map((task) => task.number).sort((a, b) => a - b)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    ])
     expect(tasks.map((task) => task.title)).toContain('Atualizar documentação da API')
     const timeline = await unitOfWork.repositories.timeline.listByTask(
       organizationId,

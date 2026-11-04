@@ -5,6 +5,7 @@ import type {
   ContributorRepository,
   IdGenerator,
   MeetingRepository,
+  OrganizationRepository,
   ParticipationRepository,
   ProjectRepository,
   TaskOpenRepository,
@@ -21,6 +22,7 @@ export interface AppDeps {
   readonly contributors: ContributorRepository
   readonly idGenerator: IdGenerator
   readonly meetings: MeetingRepository
+  readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
   readonly taskOpens: TaskOpenRepository

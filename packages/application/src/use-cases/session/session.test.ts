@@ -32,6 +32,7 @@ function setup(initialActor: Actor = actor) {
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,
+    organizations: unitOfWork.repositories.organizations,
     participations: unitOfWork.repositories.participations,
     projects: unitOfWork.repositories.projects,
     taskOpens: unitOfWork.repositories.taskOpens,

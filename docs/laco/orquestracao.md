@@ -1,12 +1,14 @@
 # Orquestração
 
 > **Decisões recomendadas já adotadas**
+>
 > - **D3:** sim, reabrir o estado Bloqueado (B2).
 > - **D5:** manter SVG próprio (sem biblioteca de ícones).
 > - **D6:** eventos sem duração valem 1h até o B9.
 > - **D7:** atalhos de uma letra são aceitos.
 >
 > **Regras**
+>
 > - `pnpm check` precisa estar verde ao fim de cada item.
 > - Sem `pnpm install` (o Pedro roda instalação).
 > - Commit e push autorizados pelo Pedro na branch `codex/m1-m4`. Sem `--force`.
@@ -38,7 +40,7 @@ Final:
 
 ## Em andamento
 
-- B1: ID legível (AB-118). core feito; faltam infra-sqlite, application/contract e UI.
+- B1: ID legível (AB-118). core, infra-sqlite e application/contract feitos; falta UI (card, detalhe, bandeja).
 
 ## Concluído
 
@@ -46,9 +48,10 @@ _Nenhum item concluído ainda._
 
 ## Bloqueios
 
-- B1 (fora do core, para as próximas camadas): `Task` ganhou `number` e `Organization` ganhou `taskPrefix`. Quebrados até ajuste:
-  - `packages/application/src/testing/builders.ts` (linha 120) e `packages/application/src/use-cases/tasks/tasks.ts` (linha 62): `createTask` sem `number`. Precisa gerar a sequência por organização.
-  - `packages/infra-sqlite/src/mappers/task-mappers.ts` (linha 44): falta `number` no mapeamento; coluna e migração de `number` e `task_prefix` ainda não existem.
-  - Testes de `application` e `infra-sqlite` (53 falhas no `vitest` da raiz): fábricas e seeds sem `number`/`taskPrefix`, e o contrato de repositórios.
-  - `apps/desktop`: 2 erros de tipo que vêm da cadeia acima (não investigado separadamente).
-  - Core: `pnpm test`, `pnpm lint` e `pnpm typecheck` do pacote passam (367 testes).
+- B1, o que falta (UI): `apps/desktop` só recebeu o mínimo para o typecheck passar (fixtures com `number` e `key`). Pendente: mostrar a chave no card, no detalhe e na bandeja.
+  - Feito nesta etapa: migração `0001_gorgeous_bill_hollister.sql` escrita à mão (`ALTER` + backfill por organização em ordem de `created_at`, depois índice único em `(organization_id, number)`). Não usa recriação de tabela, para não depender de `PRAGMA foreign_keys` dentro da transação do migrador.
+  - Decisão: `TaskRepository.nextNumber` (MAX+1) é chamado dentro da mesma transação do `CreateTask`. A tarefa passou a ser montada dentro de `unitOfWork.run`.
+  - Decisão: `OrganizationRepository` (porta nova) fornece o `taskPrefix` para o DTO. O `key` é montado em `toTaskDto(task, taskPrefix)` com `formatTaskKey`.
+  - Limite: o `drizzle-kit generate` só rodou para gerar o snapshot. Como não foi possível apagar o 0001 gerado automaticamente, o SQL foi substituído por edição. O snapshot continua coerente com o schema.
+  - Pendência de ambiente: a migração não foi aplicada num banco real (`pnpm db:migrate` sobre `.data/agilebox.db`). Vale rodar uma vez antes de subir o app.
+  - Resultado: `pnpm check` verde (121 arquivos, 987 testes).

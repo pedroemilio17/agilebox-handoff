@@ -18,5 +18,7 @@ export interface TaskRepository {
   listRecent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   listFrequent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   search(organizationId: OrganizationId, query: string, userId: UserId): Promise<readonly Task[]>
+  /** Próximo número da sequência da organização (MAX + 1). Chamar dentro da mesma transação do save. */
+  nextNumber(organizationId: OrganizationId): Promise<number>
   save(organizationId: OrganizationId, task: Task): Promise<void>
 }

@@ -53,6 +53,7 @@ export function describeRepositoryContract(
       const participationTask = aTask()
         .with({
           id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB8'),
+          number: 2,
           responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB9'),
           organizationId,
         })
@@ -123,6 +124,7 @@ export function describeRepositoryContract(
         aTask()
           .with({
             id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB2'),
+            number: 2,
             responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB7'),
             organizationId,
             createdBy: userId,

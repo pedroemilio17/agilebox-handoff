@@ -3,6 +3,7 @@ import {
   canSeeTaskTotal,
   canEditTask,
   describeEvent,
+  formatTaskKey,
   isReadOnlyFor,
   total as calculateTaskTotal,
 } from '@agilebox/core'
@@ -104,9 +105,11 @@ export function toParticipationSummaryDto(
   }
 }
 
-export function toTaskDto(task: Task): TaskDto {
+export function toTaskDto(task: Task, taskPrefix: string): TaskDto {
   return {
     id: task.id,
+    number: task.number,
+    key: formatTaskKey(taskPrefix, task.number),
     projectId: task.projectId,
     projectName: task.projectName,
     title: task.title,
@@ -122,13 +125,14 @@ export function toTaskDto(task: Task): TaskDto {
 
 export function toTaskDetailDto(
   task: Task,
+  taskPrefix: string,
   actor: Actor,
   isMember: boolean,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   return {
-    ...toTaskDto(task),
+    ...toTaskDto(task, taskPrefix),
     participations: task.participations.map((participation) =>
       toParticipationSummaryDto(participation, task.organizationId, actor, names),
     ),

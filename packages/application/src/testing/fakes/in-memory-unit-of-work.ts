@@ -4,6 +4,7 @@ import {
   createInMemoryState,
   InMemoryContributorRepository,
   InMemoryMeetingRepository,
+  InMemoryOrganizationRepository,
   InMemoryParticipationRepository,
   InMemoryProjectRepository,
   InMemoryTaskOpenRepository,
@@ -27,6 +28,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     this.repositories = {
       contributors: new InMemoryContributorRepository(state),
       meetings: new InMemoryMeetingRepository(state),
+      organizations: new InMemoryOrganizationRepository(state),
       participations: new InMemoryParticipationRepository(state),
       projects: new InMemoryProjectRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
@@ -48,6 +50,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       participations: copyMap(this.state.participations),
       projects: copyMap(this.state.projects),
       members: copyMap(this.state.members),
+      organizations: new Map(this.state.organizations),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
       timeline: copyMap(this.state.timeline),

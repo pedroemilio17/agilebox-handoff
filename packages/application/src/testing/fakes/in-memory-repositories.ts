@@ -1,6 +1,8 @@
+import { createOrganization, toOrganizationId } from '@agilebox/core'
 import type {
   Contributor,
   Meeting,
+  Organization,
   OrganizationId,
   Participation,
   Project,
@@ -12,6 +14,7 @@ import type {
 import type {
   ContributorRepository,
   MeetingRepository,
+  OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
   ProjectRepository,
@@ -29,6 +32,7 @@ export interface InMemoryState {
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
+  organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
   timeline: Map<OrganizationId, Map<string, TimelineEvent>>
@@ -36,12 +40,19 @@ export interface InMemoryState {
 }
 
 export function createInMemoryState(): InMemoryState {
+  // Organização padrão dos testes (mesmo id dos builders), com o prefixo padrão AB.
+  const defaultOrganization = createOrganization({
+    id: toOrganizationId('00000000000000000000000001'),
+    name: 'Organização de teste',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  })
   return {
     contributors: new Map(),
     meetings: new Map(),
     participations: new Map(),
     projects: new Map(),
     members: new Map(),
+    organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
     tasks: new Map(),
     timeline: new Map(),
@@ -56,6 +67,18 @@ function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: Or
     root.set(organizationId, values)
   }
   return values
+}
+
+export class InMemoryOrganizationRepository implements OrganizationRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async findById(id: OrganizationId) {
+    await Promise.resolve()
+    return this.state.organizations.get(id) ?? null
+  }
+  async save(value: Organization) {
+    await Promise.resolve()
+    this.state.organizations.set(value.id, value)
+  }
 }
 
 export class InMemoryContributorRepository implements ContributorRepository {
@@ -178,6 +201,11 @@ export class InMemoryTaskRepository implements TaskRepository {
   async findById(org: OrganizationId, id: TaskId) {
     await Promise.resolve()
     return bucket(this.state.tasks, org).get(id) ?? null
+  }
+  async nextNumber(org: OrganizationId) {
+    await Promise.resolve()
+    const numbers = [...bucket(this.state.tasks, org).values()].map((task) => task.number)
+    return Math.max(0, ...numbers) + 1
   }
   async findByProjectNameKey(org: OrganizationId, projectId: Task['projectId'], nameKey: string) {
     await Promise.resolve()

@@ -19,6 +19,8 @@ const participationId = '01ARZ3NDEKTSV4RRFFQ69G5FAY'
 
 const task = {
   id: taskId,
+  number: 118,
+  key: 'AB-118',
   projectId,
   projectName: 'Projeto Ágil',
   title: 'Implementar quadro',
@@ -32,6 +34,13 @@ const task = {
 }
 
 describe('schemas de tarefas', () => {
+  it('exige número e chave legível (ex.: AB-118) no DTO de tarefa', () => {
+    expect(listBoardOutputSchema.safeParse([{ ...task, key: 'ab-118' }]).success).toBe(false)
+    expect(listBoardOutputSchema.safeParse([{ ...task, key: 'AB-0' }]).success).toBe(false)
+    expect(listBoardOutputSchema.safeParse([{ ...task, number: 0 }]).success).toBe(false)
+    expect(listBoardOutputSchema.safeParse([{ ...task, number: undefined }]).success).toBe(false)
+  })
+
   it('aceita filtros de quadro pessoal e de equipe', () => {
     expect(listBoardInputSchema.parse({ projectId, forUserId: userId })).toEqual({
       projectId,

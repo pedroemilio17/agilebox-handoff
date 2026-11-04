@@ -22,6 +22,8 @@ export function makeParticipation(
 export function makeDetail(overrides: Partial<GetTaskDto> = {}): GetTaskDto {
   return {
     id: TASK_ID,
+    number: 118,
+    key: 'AB-118',
     projectId: '01J8Y4G2XK8Z1S6M3Q9W0ABCDE',
     projectName: 'Projeto Aurora',
     title: 'Revisar integração',

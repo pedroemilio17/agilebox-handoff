@@ -44,6 +44,7 @@ export function mapTaskRow(
   return {
     id: toTaskId(row.id),
     organizationId: toOrganizationId(row.organizationId),
+    number: row.number,
     projectId: toProjectId(row.projectId),
     projectName,
     createdBy: toUserId(row.createdBy),

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { toEventId, toOrganizationId, toParticipationId, toTaskId, toUserId } from '@agilebox/core'
+import {
+  toEventId,
+  toOrganizationId,
+  toParticipationId,
+  toProjectId,
+  toTaskId,
+  toUserId,
+} from '@agilebox/core'
 import { aProject, aTask, aUser } from '@agilebox/application/testing'
 import { createSqliteClient } from '../client.js'
 import { organizations } from '../schema/organizations.js'
@@ -147,6 +154,7 @@ describe('repositórios SQLite de tarefas, envolvimentos, linha do tempo e abert
     const theirs = aTask()
       .with({
         id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB3'),
+        number: 2,
         organizationId,
         projectId: project.id,
         createdBy: otherUser.id,
@@ -158,6 +166,88 @@ describe('repositórios SQLite de tarefas, envolvimentos, linha do tempo e abert
     await repositories.tasks.save(organizationId, theirs)
 
     await expect(repositories.tasks.listRecent(organizationId, user.id)).resolves.toEqual([mine])
+    database.$client.close()
+  })
+
+  it('numera tarefas por organização de forma independente', async () => {
+    const database = createSqliteClient(':memory:')
+    const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+    const otherOrganizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAW')
+    await database.insert(organizations).values([
+      { id: organizationId, name: 'A', taskPrefix: 'AB', createdAt: '2026-01-01T00:00:00.000Z' },
+      {
+        id: otherOrganizationId,
+        name: 'B',
+        taskPrefix: 'OPS',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    ])
+    const core = createSqliteCoreRepositories(database)
+    const user = aUser().with({ organizationId }).build()
+    const otherUser = aUser()
+      .with({ id: toUserId('01ARZ3NDEKTSV4RRFFQ69G5FAX'), organizationId: otherOrganizationId })
+      .build()
+    await core.users.save(organizationId, user)
+    await core.users.save(otherOrganizationId, otherUser)
+    const project = aProject().with({ organizationId, createdBy: user.id }).build()
+    const otherProject = aProject()
+      .with({
+        id: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FAY'),
+        organizationId: otherOrganizationId,
+        createdBy: otherUser.id,
+        name: 'Outro',
+      })
+      .build()
+    await core.projects.save(organizationId, project)
+    await core.projects.save(otherOrganizationId, otherProject)
+    const repositories = createSqliteTaskRepositories(database)
+
+    expect(await repositories.tasks.nextNumber(organizationId)).toBe(1)
+    await repositories.tasks.save(
+      organizationId,
+      aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB1'),
+          number: 1,
+          organizationId,
+          projectId: project.id,
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB2'),
+        })
+        .build(),
+    )
+    await repositories.tasks.save(
+      organizationId,
+      aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB3'),
+          number: 2,
+          organizationId,
+          projectId: project.id,
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB4'),
+        })
+        .build(),
+    )
+
+    expect(await repositories.tasks.nextNumber(organizationId)).toBe(3)
+    expect(await repositories.tasks.nextNumber(otherOrganizationId)).toBe(1)
+    await repositories.tasks.save(
+      otherOrganizationId,
+      aTask()
+        .with({
+          id: toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+          number: 1,
+          organizationId: otherOrganizationId,
+          projectId: otherProject.id,
+          createdBy: otherUser.id,
+          responsibleParticipationId: toParticipationId('01ARZ3NDEKTSV4RRFFQ69G5FB6'),
+        })
+        .build(),
+    )
+    const otherTask = await repositories.tasks.findById(
+      otherOrganizationId,
+      toTaskId('01ARZ3NDEKTSV4RRFFQ69G5FB5'),
+    )
+    expect(otherTask?.number).toBe(1)
     database.$client.close()
   })
 })
