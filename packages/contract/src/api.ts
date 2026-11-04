@@ -84,8 +84,18 @@ import {
 import {
   createMeetingInputSchema,
   createMeetingOutputSchema,
+  addRetroActionInputSchema,
+  addRetroActionOutputSchema,
   deleteMeetingInputSchema,
   deleteMeetingOutputSchema,
+  listRetroActionsInputSchema,
+  listRetroActionsOutputSchema,
+  removeRetroActionInputSchema,
+  removeRetroActionOutputSchema,
+  toggleRetroActionInputSchema,
+  toggleRetroActionOutputSchema,
+  updateRetroActionInputSchema,
+  updateRetroActionOutputSchema,
   listMeetingsInputSchema,
   listMeetingsOutputSchema,
   listUpcomingMeetingsInputSchema,
@@ -245,6 +255,26 @@ export const API_SCHEMA_REGISTRY = {
   'meetings.create': { input: createMeetingInputSchema, output: createMeetingOutputSchema },
   'meetings.update': { input: updateMeetingInputSchema, output: updateMeetingOutputSchema },
   'meetings.delete': { input: deleteMeetingInputSchema, output: deleteMeetingOutputSchema },
+  'meetings.retroActions.list': {
+    input: listRetroActionsInputSchema,
+    output: listRetroActionsOutputSchema,
+  },
+  'meetings.retroActions.add': {
+    input: addRetroActionInputSchema,
+    output: addRetroActionOutputSchema,
+  },
+  'meetings.retroActions.update': {
+    input: updateRetroActionInputSchema,
+    output: updateRetroActionOutputSchema,
+  },
+  'meetings.retroActions.toggle': {
+    input: toggleRetroActionInputSchema,
+    output: toggleRetroActionOutputSchema,
+  },
+  'meetings.retroActions.remove': {
+    input: removeRetroActionInputSchema,
+    output: removeRetroActionOutputSchema,
+  },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
@@ -325,6 +355,13 @@ export interface AgileBoxApi {
     create: Method<'meetings.create'>
     update: Method<'meetings.update'>
     delete: Method<'meetings.delete'>
+    retroActions: {
+      list: Method<'meetings.retroActions.list'>
+      add: Method<'meetings.retroActions.add'>
+      update: Method<'meetings.retroActions.update'>
+      toggle: Method<'meetings.retroActions.toggle'>
+      remove: Method<'meetings.retroActions.remove'>
+    }
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

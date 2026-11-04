@@ -24,6 +24,8 @@ const meeting = (
   occurrenceDate,
   occurrenceIndex: 0,
   occurrenceEndTime,
+  retroActionsCount: 0,
+  retroActionsDone: 0,
 })
 
 describe('posição de agendamentos', () => {

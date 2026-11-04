@@ -61,6 +61,13 @@ import {
   ListUpcomingMeetings,
   UpdateMeeting,
 } from './use-cases/meetings/meetings'
+import {
+  AddRetroAction,
+  ListRetroActions,
+  RemoveRetroAction,
+  ToggleRetroAction,
+  UpdateRetroAction,
+} from './use-cases/meetings/retro-actions'
 
 export function createUseCases(deps: AppDeps) {
   return {
@@ -140,6 +147,13 @@ export function createUseCases(deps: AppDeps) {
       create: new CreateMeeting(deps),
       update: new UpdateMeeting(deps),
       delete: new DeleteMeeting(deps),
+      retroActions: {
+        list: new ListRetroActions(deps),
+        add: new AddRetroAction(deps),
+        update: new UpdateRetroAction(deps),
+        toggle: new ToggleRetroAction(deps),
+        remove: new RemoveRetroAction(deps),
+      },
     },
   }
 }

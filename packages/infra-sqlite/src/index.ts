@@ -7,5 +7,6 @@ export { createSqliteDefinitionOfDoneRepository } from './repositories/definitio
 export { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
+export { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
 export { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 export { createSqliteUnitOfWork, SqliteUnitOfWork } from './unit-of-work.js'

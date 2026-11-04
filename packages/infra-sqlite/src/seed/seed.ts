@@ -197,8 +197,9 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   await useCases.boardSettings.setWipLimits.execute(actor, {
     wipLimits: { in_progress: 3, review: 2 },
   })
+  const createdMeetings = new Map<string, string>()
   for (const meeting of demoSeedData.meetings) {
-    await useCases.meetings.create.execute(actor, {
+    const created = await useCases.meetings.create.execute(actor, {
       title: meeting.title,
       date: meeting.date,
       time: meeting.time,
@@ -208,5 +209,27 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       recurrenceUntil: meeting.recurrenceUntil,
       participants: meeting.participants.map((index) => users[index]!.id),
     })
+    createdMeetings.set(meeting.title, created.id)
+  }
+
+  // Combinados da retro: o gestor cria e marca o primeiro como feito.
+  const retro = demoSeedData.retroActions
+  const retroMeetingId = createdMeetings.get(retro.meeting)
+  if (retroMeetingId) {
+    for (const item of retro.items) {
+      const created = await useCases.meetings.retroActions.add.execute(actor, {
+        meetingId: retroMeetingId,
+        occurrenceDate: retro.occurrenceDate,
+        title: item.title,
+        responsibleId: users[item.responsible]!.id,
+        dueDate: item.dueDate,
+      })
+      if (item.done) {
+        await useCases.meetings.retroActions.toggle.execute(actor, {
+          actionId: created.id,
+          done: true,
+        })
+      }
+    }
   }
 }

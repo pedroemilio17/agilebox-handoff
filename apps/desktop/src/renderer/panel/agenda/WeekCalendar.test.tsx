@@ -24,6 +24,8 @@ const occurrence = (
   occurrenceDate: '2026-11-02',
   occurrenceIndex: 0,
   occurrenceEndTime: addHour(overrides.time),
+  retroActionsCount: 0,
+  retroActionsDone: 0,
   ...overrides,
 })
 

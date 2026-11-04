@@ -39,6 +39,16 @@ export function validateDefinitionOfDoneTitle(title: string): string {
   return trimmed
 }
 
+export const RETRO_ACTION_TITLE_MAX_LENGTH = 200
+
+export function validateRetroActionTitle(title: string): string {
+  const trimmed = title.trim()
+  if (!trimmed) throw new ValidationError('Título do combinado obrigatório')
+  if (Array.from(trimmed).length > RETRO_ACTION_TITLE_MAX_LENGTH)
+    throw new ValidationError('Combinado deve ter até 200 caracteres')
+  return trimmed
+}
+
 export function validateDefaultRate(rate: number): void {
   validateHundredths(rate)
 }

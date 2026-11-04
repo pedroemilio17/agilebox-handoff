@@ -39,6 +39,7 @@ function setup(actor: Actor = owner) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: new RecordingNotifier(),
     checklist: unitOfWork.repositories.checklist,
+    retroActions: unitOfWork.repositories.retroActions,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

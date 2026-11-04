@@ -149,4 +149,19 @@ export function registerHandlers(
   register('meetings.create', (actor, input) => useCases.meetings.create.execute(actor, input))
   register('meetings.update', (actor, input) => useCases.meetings.update.execute(actor, input))
   register('meetings.delete', (actor, input) => useCases.meetings.delete.execute(actor, input))
+  register('meetings.retroActions.list', (actor, input) =>
+    useCases.meetings.retroActions.list.execute(actor, input),
+  )
+  register('meetings.retroActions.add', (actor, input) =>
+    useCases.meetings.retroActions.add.execute(actor, input),
+  )
+  register('meetings.retroActions.update', (actor, input) =>
+    useCases.meetings.retroActions.update.execute(actor, input),
+  )
+  register('meetings.retroActions.toggle', (actor, input) =>
+    useCases.meetings.retroActions.toggle.execute(actor, input),
+  )
+  register('meetings.retroActions.remove', (actor, input) =>
+    useCases.meetings.retroActions.remove.execute(actor, input),
+  )
 }

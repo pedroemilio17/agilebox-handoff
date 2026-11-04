@@ -12,6 +12,7 @@ import type {
   OrganizationRepository,
   ParticipationRepository,
   ProjectRepository,
+  RetroActionRepository,
   TaskOpenRepository,
   TaskRepository,
   TimelineRepository,
@@ -33,6 +34,7 @@ export interface AppDeps {
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
+  readonly retroActions: RetroActionRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly timeline: TimelineRepository

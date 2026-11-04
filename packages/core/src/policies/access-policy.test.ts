@@ -245,3 +245,40 @@ describe('agendamentos', () => {
     expect(policy.canManageMeetings(manager, otherOrg)).toBe(false)
   })
 })
+
+describe('combinados da retro', () => {
+  const retroMeeting = {
+    id: 'meeting',
+    organizationId: org,
+    kind: 'retro',
+  } as unknown as Parameters<typeof policy.canManageRetroActions>[1]
+  const action = {
+    id: 'action',
+    organizationId: org,
+    responsibleId: user,
+  } as unknown as Parameters<typeof policy.canToggleRetroAction>[1]
+
+  it('só o gestor cria, edita, renomeia e remove combinados', () => {
+    expect(policy.canManageRetroActions(manager, retroMeeting)).toBe(true)
+    expect(policy.canManageRetroActions(collaborator, retroMeeting)).toBe(false)
+    expect(
+      policy.canManageRetroActions({ ...manager, organizationId: otherOrg }, retroMeeting),
+    ).toBe(false)
+  })
+
+  it('marcar como feito: o gestor e o responsável, nunca outro colaborador', () => {
+    expect(policy.canToggleRetroAction(manager, action)).toBe(true)
+    expect(policy.canToggleRetroAction(collaborator, action)).toBe(true)
+    expect(policy.canToggleRetroAction({ ...collaborator, userId: other }, action)).toBe(false)
+    expect(policy.canToggleRetroAction({ ...collaborator, organizationId: otherOrg }, action)).toBe(
+      false,
+    )
+  })
+
+  it('quem vê o agendamento vê os combinados dele', () => {
+    expect(policy.canSeeRetroActions({ ...collaborator, userId: other }, retroMeeting)).toBe(true)
+    expect(
+      policy.canSeeRetroActions({ ...collaborator, organizationId: otherOrg }, retroMeeting),
+    ).toBe(false)
+  })
+})

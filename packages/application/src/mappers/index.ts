@@ -4,6 +4,7 @@ import {
   canSeeRate,
   canSeeTaskTotal,
   canEditTask,
+  canToggleRetroAction,
   checklistProgress,
   describeEvent,
   formatTaskKey,
@@ -21,6 +22,7 @@ import type {
   MeetingOccurrence,
   Participation,
   Project,
+  RetroAction,
   Task,
   TaskComment,
   TimelineEvent,
@@ -39,6 +41,7 @@ import type {
   MeetingOccurrenceDto,
   ParticipationSummaryDto,
   ProjectDto,
+  RetroActionDto,
   TaskCommentDto,
   SessionUserDto,
   TaskDto,
@@ -231,13 +234,40 @@ export function toMeetingDto(meeting: Meeting): MeetingDto {
   }
 }
 
-export function toMeetingOccurrenceDto(occurrence: MeetingOccurrence): MeetingOccurrenceDto {
+export function toMeetingOccurrenceDto(
+  occurrence: MeetingOccurrence,
+  retroActions: { readonly total: number; readonly done: number } = { total: 0, done: 0 },
+): MeetingOccurrenceDto {
   return {
     ...toMeetingDto(occurrence.meeting),
     seriesId: occurrence.seriesId,
     occurrenceDate: occurrence.date,
     occurrenceIndex: occurrence.index,
     occurrenceEndTime: occurrence.endTime,
+    retroActionsCount: retroActions.total,
+    retroActionsDone: retroActions.done,
+  }
+}
+
+export function toRetroActionDto(
+  action: RetroAction,
+  actor: Actor,
+  responsibleName: string | null,
+): RetroActionDto {
+  return {
+    id: action.id,
+    meetingId: action.meetingId,
+    occurrenceDate: action.occurrenceDate,
+    title: action.title,
+    responsibleId: action.responsibleId,
+    responsibleName,
+    dueDate: action.dueDate,
+    done: action.done,
+    doneAt: action.doneAt,
+    createdAt: action.createdAt,
+    createdBy: action.createdBy,
+    canManage: actor.role === 'manager' && actor.organizationId === action.organizationId,
+    canToggle: canToggleRetroAction(actor, action),
   }
 }
 

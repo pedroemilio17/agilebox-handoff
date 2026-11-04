@@ -32,7 +32,7 @@ Final:
 
 ## Em andamento
 
-- B10: retro com combinados (tabela `retro_actions` ligada ao agendamento do tipo Retro; só o gestor cria e edita; combinados com responsável e prazo).
+- B10: retro com combinados (tabela `retro_actions` ligada ao agendamento do tipo Retro; só o gestor cria e edita; combinados com responsável e prazo). Backend feito; falta UI (seção Combinados no formulário/detalhe da Retro, contagem no cartão, marcar como feito).
 
 ## Concluído
 
@@ -47,6 +47,7 @@ Final:
 
 ## Bloqueios
 
+- B10, pendência de ambiente: a migração `0009_retro_actions.sql` (tabela `retro_actions`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B6, pendência de ambiente: a migração `0008_definition_of_done.sql` (tabela `definition_of_done_items`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B9, pendência de ambiente: a migração `0007_meeting_fields.sql` (colunas `meetings.end_time`, `kind`, `recurrence` e `recurrence_until`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` e reescrita à mão com `ALTER TABLE ... ADD`, sem recriar `meetings`, porque o gerado recriava a tabela.
 - B4, pendência de ambiente: as migrações `0005_task_comments.sql` (B7) e `0006_board_settings.sql` (tabela `board_settings`, B4) ainda não foram aplicadas num banco real (`pnpm db:migrate`). A `0006` foi gerada pelo `drizzle-kit generate`, e o SQL conferido só cria a tabela e o índice único.

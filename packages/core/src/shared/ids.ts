@@ -15,6 +15,7 @@ export type ChecklistItemId = Id<'ChecklistItem'>
 export type TaskCommentId = Id<'TaskComment'>
 export type BoardSettingsId = Id<'BoardSettings'>
 export type DefinitionOfDoneItemId = Id<'DefinitionOfDoneItem'>
+export type RetroActionId = Id<'RetroAction'>
 
 function toId<Kind extends string>(value: string): Id<Kind> {
   if (!/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(value) || value.length !== 26) {
@@ -35,3 +36,4 @@ export const toChecklistItemId = (value: string): ChecklistItemId => toId(value)
 export const toTaskCommentId = (value: string): TaskCommentId => toId(value)
 export const toBoardSettingsId = (value: string): BoardSettingsId => toId(value)
 export const toDefinitionOfDoneItemId = (value: string): DefinitionOfDoneItemId => toId(value)
+export const toRetroActionId = (value: string): RetroActionId => toId(value)

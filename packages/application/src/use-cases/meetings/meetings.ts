@@ -1,11 +1,13 @@
 import {
   addDays,
   canSeeMeeting,
+  countRetroActions,
   createMeeting,
   expandMeetingOccurrences,
   NotFoundError,
   parseDateOnly,
   PermissionDeniedError,
+  retroOccurrenceKey,
   toMeetingId,
   toUserId,
 } from '@agilebox/core'
@@ -40,7 +42,11 @@ function optionalDate(value: string | null | undefined): DateOnly | null {
   return value ? parseDateOnly(value) : null
 }
 
-/** Ocorrências do intervalo, só dos agendamentos que o ator pode ver. */
+/**
+ * Ocorrências do intervalo, só dos agendamentos que o ator pode ver, com as contagens
+ * de combinados. Combinados de datas que deixaram de ser ocorrências não entram nas
+ * contagens, porque só existem contagens para as ocorrências expandidas.
+ */
 async function occurrencesInRange(
   deps: AppDeps,
   actor: Actor,
@@ -49,7 +55,24 @@ async function occurrencesInRange(
 ): Promise<readonly MeetingOccurrenceDto[]> {
   const candidates = await deps.meetings.listOverlapping(actor.organizationId, rangeStart, rangeEnd)
   const visible = candidates.filter((meeting) => canSeeMeeting(actor, meeting))
-  return expandMeetingOccurrences(visible, rangeStart, rangeEnd).map(toMeetingOccurrenceDto)
+  const occurrences = expandMeetingOccurrences(visible, rangeStart, rangeEnd)
+  const retroIds = visible
+    .filter((meeting) => meeting.kind === 'retro')
+    .map((meeting) => meeting.id)
+  const actions =
+    retroIds.length > 0
+      ? await deps.retroActions.listByMeetings(actor.organizationId, retroIds)
+      : []
+  const counts = new Map(
+    countRetroActions(actions).map((count) => [
+      retroOccurrenceKey(count.meetingId, count.occurrenceDate),
+      count,
+    ]),
+  )
+  return occurrences.map((occurrence) => {
+    const count = counts.get(retroOccurrenceKey(occurrence.seriesId, occurrence.date))
+    return toMeetingOccurrenceDto(occurrence, { total: count?.total ?? 0, done: count?.done ?? 0 })
+  })
 }
 
 export class ListMeetingOccurrences {

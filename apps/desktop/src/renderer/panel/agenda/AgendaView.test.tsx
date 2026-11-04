@@ -45,6 +45,8 @@ const meeting = (
   occurrenceDate: date,
   occurrenceIndex: 0,
   occurrenceEndTime: addHour(time),
+  retroActionsCount: 0,
+  retroActionsDone: 0,
 })
 
 const M1 = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M01', 'Planejamento da sprint', '2026-11-10')

@@ -91,6 +91,13 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       create: (input) => call('meetings.create', input),
       update: (input) => call('meetings.update', input),
       delete: (input) => call('meetings.delete', input),
+      retroActions: {
+        list: (input) => call('meetings.retroActions.list', input),
+        add: (input) => call('meetings.retroActions.add', input),
+        update: (input) => call('meetings.retroActions.update', input),
+        toggle: (input) => call('meetings.retroActions.toggle', input),
+        remove: (input) => call('meetings.retroActions.remove', input),
+      },
     },
     onChanges: bridge.onChanges,
   }

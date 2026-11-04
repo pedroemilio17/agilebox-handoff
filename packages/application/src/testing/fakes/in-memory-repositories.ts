@@ -8,6 +8,7 @@ import type {
   TaskComment,
   Meeting,
   Organization,
+  RetroAction,
   OrganizationId,
   Participation,
   Project,
@@ -28,6 +29,7 @@ import type {
   ParticipationRepository,
   ProjectMember,
   ProjectRepository,
+  RetroActionRepository,
   TaskOpenRepository,
   TaskRepository,
   TimelineRepository,
@@ -43,6 +45,7 @@ export interface InMemoryState {
   contributors: Map<OrganizationId, Map<string, Contributor>>
   definitionOfDone: Map<OrganizationId, Map<string, DefinitionOfDoneItem>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
+  retroActions: Map<OrganizationId, Map<string, RetroAction>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
@@ -67,6 +70,7 @@ export function createInMemoryState(): InMemoryState {
     contributors: new Map(),
     definitionOfDone: new Map(),
     meetings: new Map(),
+    retroActions: new Map(),
     participations: new Map(),
     projects: new Map(),
     members: new Map(),
@@ -242,6 +246,46 @@ export class InMemoryMeetingRepository implements MeetingRepository {
   async remove(org: OrganizationId, id: Meeting['id']) {
     await Promise.resolve()
     bucket(this.state.meetings, org).delete(id)
+    // Como a chave estrangeira com ON DELETE CASCADE do SQLite: os combinados saem junto.
+    const actions = bucket(this.state.retroActions, org)
+    for (const [actionId, action] of actions) {
+      if (action.meetingId === id) actions.delete(actionId)
+    }
+  }
+}
+
+export class InMemoryRetroActionRepository implements RetroActionRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async findById(org: OrganizationId, id: RetroAction['id']) {
+    await Promise.resolve()
+    return bucket(this.state.retroActions, org).get(id) ?? null
+  }
+  async listByOccurrence(
+    org: OrganizationId,
+    meetingId: Meeting['id'],
+    occurrenceDate: RetroAction['occurrenceDate'],
+  ) {
+    await Promise.resolve()
+    return [...bucket(this.state.retroActions, org).values()]
+      .filter((item) => item.meetingId === meetingId && item.occurrenceDate === occurrenceDate)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+  }
+  async listByMeetings(org: OrganizationId, meetingIds: readonly Meeting['id'][]) {
+    await Promise.resolve()
+    const ids = new Set<string>(meetingIds)
+    return [...bucket(this.state.retroActions, org).values()].filter((item) =>
+      ids.has(item.meetingId),
+    )
+  }
+  async save(org: OrganizationId, value: RetroAction) {
+    await Promise.resolve()
+    // Só grava combinado de agendamento desta organização.
+    if (bucket(this.state.meetings, org).has(value.meetingId))
+      bucket(this.state.retroActions, org).set(value.id, value)
+  }
+  async remove(org: OrganizationId, id: RetroAction['id']) {
+    await Promise.resolve()
+    bucket(this.state.retroActions, org).delete(id)
   }
 }
 

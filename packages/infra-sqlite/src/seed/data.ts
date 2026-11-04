@@ -127,5 +127,40 @@ export const demoSeedData = {
       recurrenceUntil: null,
       participants: [0, 1],
     },
+    {
+      title: 'Retrospectiva da entrega',
+      date: '2026-11-06',
+      time: '16:00',
+      endTime: '17:00',
+      kind: 'retro',
+      recurrence: 'weekly',
+      recurrenceUntil: null,
+      participants: [0, 1, 2, 3, 4],
+    },
   ],
+  /** Combinados da retro da primeira sexta (ocorrência de 2026-11-06); o primeiro já está feito. */
+  retroActions: {
+    meeting: 'Retrospectiva da entrega',
+    occurrenceDate: '2026-11-06',
+    items: [
+      {
+        title: 'Confirmar critérios de aceite antes da revisão',
+        responsible: 0,
+        dueDate: '2026-11-13',
+        done: true,
+      },
+      {
+        title: 'Atualizar o painel de métricas do time',
+        responsible: 1,
+        dueDate: '2026-11-20',
+        done: false,
+      },
+      {
+        title: 'Combinar o limite de WIP com o time',
+        responsible: 2,
+        dueDate: '2026-11-13',
+        done: false,
+      },
+    ],
+  },
 } as const

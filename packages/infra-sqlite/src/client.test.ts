@@ -23,6 +23,7 @@ describe('createSqliteClient', () => {
         'task_events',
         'task_opens',
         'definition_of_done_items',
+        'retro_actions',
         'meetings',
         'meeting_participants',
         'local_settings',

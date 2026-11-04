@@ -8,6 +8,7 @@ import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
 import type { ParticipationRepository } from './participation-repository'
 import type { ProjectRepository } from './project-repository'
+import type { RetroActionRepository } from './retro-action-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
 import type { TimelineRepository } from './timeline-repository'
@@ -23,6 +24,7 @@ export interface UnitOfWorkRepositories {
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
+  readonly retroActions: RetroActionRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly timeline: TimelineRepository

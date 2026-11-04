@@ -32,6 +32,7 @@ describe('seed de demonstração', () => {
     expect(novemberMeetings.map((meeting) => meeting.title)).toEqual([
       'Alinhamento semanal',
       'Revisão de entrega',
+      'Retrospectiva da entrega',
       'Planejamento da próxima entrega',
     ])
     const occurrences = expandMeetingOccurrences(
@@ -39,14 +40,19 @@ describe('seed de demonstração', () => {
       parseDateOnly('2026-11-01'),
       parseDateOnly('2026-11-30'),
     )
-    // Alinhamento semanal cai nas segundas 02, 09, 16, 23 e 30; os outros são avulsos.
+    // Alinhamento semanal cai nas segundas 02, 09, 16, 23 e 30; a Retro nas sextas 06, 13, 20 e 27.
+    // Os outros são avulsos.
     expect(occurrences.map((occurrence) => occurrence.date)).toEqual([
       '2026-11-02',
       '2026-11-06',
+      '2026-11-06',
       '2026-11-09',
       '2026-11-09',
+      '2026-11-13',
       '2026-11-16',
+      '2026-11-20',
       '2026-11-23',
+      '2026-11-27',
       '2026-11-30',
     ])
     expect(novemberMeetings[0]).toMatchObject({
@@ -56,7 +62,12 @@ describe('seed de demonstração', () => {
       recurrenceUntil: null,
     })
     expect(novemberMeetings[1]).toMatchObject({ endTime: '15:30', kind: 'review' })
-    expect(novemberMeetings[2]).toMatchObject({ endTime: null, recurrence: 'none' })
+    expect(novemberMeetings[2]).toMatchObject({
+      kind: 'retro',
+      recurrence: 'weekly',
+      time: '16:00',
+    })
+    expect(novemberMeetings[3]).toMatchObject({ endTime: null, recurrence: 'none' })
     await expect(
       unitOfWork.repositories.boardSettings.findByOrganization(organizationId),
     ).resolves.toMatchObject({ wipLimits: { in_progress: 3, review: 2 } })
@@ -102,6 +113,17 @@ describe('seed de demonstração', () => {
     expect(comments.some((comment) => comment.mentions.length > 0)).toBe(true)
     expect(timeline.filter((event) => event.type === 'comment_added')).toHaveLength(2)
     expect(timeline.some((event) => event.asManager)).toBe(true)
+
+    const retroMeeting = novemberMeetings.find((meeting) => meeting.kind === 'retro')!
+    const retroActions = await unitOfWork.repositories.retroActions.listByOccurrence(
+      organizationId,
+      retroMeeting.id,
+      parseDateOnly('2026-11-06'),
+    )
+    expect(retroActions).toHaveLength(3)
+    expect(retroActions.filter((action) => action.done)).toHaveLength(1)
+    expect(new Set(retroActions.map((action) => action.responsibleId)).size).toBe(3)
+    expect(retroActions.every((action) => action.dueDate !== null)).toBe(true)
   })
 
   it('define a definição de pronto da demonstração e confirma as conclusões', async () => {

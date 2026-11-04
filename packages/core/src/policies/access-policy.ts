@@ -1,4 +1,5 @@
 import type { Meeting } from '../entities/meeting'
+import type { RetroAction } from '../entities/retro-action'
 import type { Participant } from '../entities/participation'
 import type { Project } from '../entities/project'
 import type { Task } from '../entities/task'
@@ -65,6 +66,19 @@ export const canManageMeetings = canSeeTaskTotal
 export function canSeeMeeting(actor: Actor, meeting: Meeting): boolean {
   return actor.organizationId === meeting.organizationId
 }
+/** Só o gestor cria, edita, renomeia e remove combinados (PLANO 6.1 e B10). */
+export function canManageRetroActions(actor: Actor, meeting: Meeting): boolean {
+  return canManageMeetings(actor, meeting.organizationId)
+}
+/** Marcar como feito: o gestor ou o responsável pelo combinado (sempre um usuário). */
+export function canToggleRetroAction(actor: Actor, action: RetroAction): boolean {
+  return (
+    actor.organizationId === action.organizationId &&
+    (actor.role === 'manager' || action.responsibleId === actor.userId)
+  )
+}
+/** Combinados seguem a agenda: quem vê o agendamento vê os combinados dele. */
+export const canSeeRetroActions = canSeeMeeting
 export const canSeeDashboard = canSeeTaskTotal
 /** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */
 export function canViewBoardSettings(actor: Actor, organizationId: OrganizationId): boolean {

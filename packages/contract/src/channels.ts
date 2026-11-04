@@ -50,6 +50,11 @@ export const API_CHANNELS = [
   'meetings.create',
   'meetings.update',
   'meetings.delete',
+  'meetings.retroActions.list',
+  'meetings.retroActions.add',
+  'meetings.retroActions.update',
+  'meetings.retroActions.toggle',
+  'meetings.retroActions.remove',
 ] as const
 
 export type ApiChannel = (typeof API_CHANNELS)[number]

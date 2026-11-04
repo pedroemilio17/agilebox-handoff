@@ -47,6 +47,7 @@ function setup(actor: Actor = ana, unitOfWork = new InMemoryUnitOfWork()) {
     actorSession,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    retroActions: unitOfWork.repositories.retroActions,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,
