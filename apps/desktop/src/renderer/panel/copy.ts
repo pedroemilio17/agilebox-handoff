@@ -34,7 +34,7 @@ export const panelCopy = {
   dashboardError: 'Não foi possível carregar o dashboard.',
   exportSummary: 'Exportar resumo',
   exportSummaryAria: 'Exportar resumo do dashboard',
-  exportSummaryBusy: 'Exportando…',
+  exportSummaryBusy: 'Salvando resumo…',
   exportSummaryMarkdown: 'Markdown (.md)',
   exportSummaryCsv: 'Planilha (.csv)',
   exportSummarySaved: 'Resumo salvo.',

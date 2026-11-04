@@ -78,10 +78,62 @@ describe('ExportMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  it('enquanto ocupado, desabilita o botão e mostra o texto de carregamento', () => {
+  it('enquanto ocupado, usa aria-disabled (não disabled) e mostra o texto de carregamento', () => {
     setup(true)
     const busy = screen.getByRole('button', { name: 'Exportar resumo do dashboard' })
-    expect(busy.hasAttribute('disabled')).toBe(true)
+    expect(busy.hasAttribute('disabled')).toBe(false)
+    expect(busy.getAttribute('aria-disabled')).toBe('true')
     expect(busy.textContent).toBe('Exportando…')
+  })
+
+  it('mantém o foco no botão ao escolher um formato e durante o estado ocupado', async () => {
+    const onSelect = vi.fn()
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <ExportMenu
+        label="Exportar resumo"
+        ariaLabel="Exportar resumo do dashboard"
+        options={options}
+        busyLabel="Salvando resumo…"
+        onSelect={onSelect}
+      />,
+    )
+    const trigger = screen.getByRole('button', { name: 'Exportar resumo do dashboard' })
+    await user.click(trigger)
+    await user.click(screen.getByRole('menuitem', { name: 'Planilha (.csv)' }))
+    rerender(
+      <ExportMenu
+        label="Exportar resumo"
+        ariaLabel="Exportar resumo do dashboard"
+        options={options}
+        busy
+        busyLabel="Salvando resumo…"
+        onSelect={onSelect}
+      />,
+    )
+    expect(document.activeElement).toBe(trigger)
+    expect(trigger.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('clique durante o estado ocupado não abre o menu nem dispara nova exportação', async () => {
+    const { user, onSelect } = setup(true)
+    const busy = screen.getByRole('button', { name: 'Exportar resumo do dashboard' })
+    await user.click(busy)
+    await user.keyboard('{Enter}')
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(busy.getAttribute('aria-expanded')).toBe('false')
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('anuncia o estado ocupado numa região aria-live polite', () => {
+    setup(true)
+    const region = screen.getByRole('status')
+    expect(region.getAttribute('aria-live')).toBe('polite')
+    expect(region.textContent).toBe('Exportando…')
+  })
+
+  it('sem ocupação, a região de anúncio fica vazia (o resultado vai pelo toast)', () => {
+    setup(false)
+    expect(screen.getByRole('status').textContent).toBe('')
   })
 })

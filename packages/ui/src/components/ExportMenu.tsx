@@ -13,7 +13,7 @@ export interface ExportMenuProps<Value extends string> {
   /** Nome acessível do botão (aria-label). */
   readonly ariaLabel: string
   readonly options: readonly ExportMenuOption<Value>[]
-  /** Enquanto true, o botão fica desabilitado e mostra `busyLabel`. */
+  /** Enquanto true, o botão fica com aria-disabled (segue focável), não abre o menu e mostra `busyLabel`. */
   readonly busy?: boolean
   readonly busyLabel?: string
   readonly onSelect: (value: Value) => void
@@ -86,11 +86,17 @@ export function ExportMenu<Value extends string>({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        disabled={busy}
-        onClick={() => setOpen((value) => !value)}
+        aria-disabled={busy || undefined}
+        onClick={() => {
+          if (!busy) setOpen((value) => !value)
+        }}
       >
         {busy && busyLabel ? busyLabel : label}
       </button>
+      {/* Anúncio do estado ocupado. O resultado (sucesso ou erro) é anunciado pelo toast do painel, sem repetir aqui. */}
+      <span role="status" aria-live="polite" className={styles.srOnly}>
+        {busy && busyLabel ? busyLabel : ''}
+      </span>
       {open ? (
         <div
           id={menuId}

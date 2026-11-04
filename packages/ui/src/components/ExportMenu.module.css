@@ -13,9 +13,17 @@
   font-size: 11px;
   cursor: pointer;
 }
-.trigger:disabled {
+.trigger[aria-disabled='true'] {
   opacity: 0.6;
   cursor: progress;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .menu {
   position: absolute;

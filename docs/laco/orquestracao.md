@@ -36,6 +36,7 @@ Final:
 
 ## Concluído
 
+- B11 (correção): foco do menu "Exportar resumo" fica no botão durante a gravação (aria-disabled, sem disabled); clique durante a gravação não abre o menu nem exporta de novo. Anúncio "Salvando resumo…" por região aria-live; o resultado segue pelo toast.
 - Daily completa: backend, bandeja e dashboard. Coluna "Daily de hoje" no dashboard do gestor (Feita ou Pendente com texto e ícone, contador "Daily de hoje · N de M", "Ver" abre a daily da pessoa em somente leitura).
 - Fase C · Equipe completa: seletor "Minhas | Equipe" do quadro funciona; a Equipe mostra as tarefas dos projetos de que a pessoa é membro, somente leitura (cards sem arrastar, sem "+", sem editor de limite; detalhe sempre em leitura). Filtros, medidor de WIP e faixa "Visão da equipe" valem sobre a Equipe. A API `listTeamBoard` passou a devolver `agingDays` e `overdue`, como o quadro. Escopo só em memória; galeria e testes atualizados.
 - B11 (correção): CSV do resumo neutraliza injeção de fórmula. Nomes que começam com `=`, `+`, `-`, `@`, TAB ou CR ganham apóstrofo antes do escape.
