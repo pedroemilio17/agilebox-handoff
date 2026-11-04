@@ -2,10 +2,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDateOnly } from '@agilebox/core'
+import type { GetTaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
-import { makeDetail, makeEvent, makeParticipation, TASK_ID, USER_ID } from './fixtures'
+import {
+  makeChecklistItem,
+  makeDetail,
+  makeEvent,
+  makeParticipation,
+  TASK_ID,
+  USER_ID,
+} from './fixtures'
 import { TaskDetailView } from './TaskDetailView'
 
 afterEach(cleanup)
@@ -557,5 +565,258 @@ describe('Bloqueio no detalhe', () => {
     })
     expect(await screen.findByText('bloqueou a tarefa: Aguardando credenciais')).toBeTruthy()
     expect(screen.getByText('desbloqueou a tarefa')).toBeTruthy()
+  })
+})
+
+describe('Subtarefas no detalhe', () => {
+  const ITEMS = [
+    makeChecklistItem({
+      id: '01J8Y4G2XK8Z1S6M3Q9W0A5K01',
+      title: 'Mapear campos',
+      done: true,
+      position: 0,
+    }),
+    makeChecklistItem({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5K02', title: 'Criar endpoint', position: 1 }),
+    makeChecklistItem({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5K03', title: 'Tratar timeout', position: 2 }),
+  ]
+  const WITH_ITEMS = () =>
+    makeDetail({
+      checklist: ITEMS,
+      checklistProgress: { done: 1, total: 3, percent: 33 },
+    })
+
+  it('mostra cabeçalho com contagem, barra de progresso e os itens', async () => {
+    setup({ detail: WITH_ITEMS() })
+    const section = await screen.findByRole('region', { name: 'Subtarefas' })
+    expect(section.textContent).toContain('1/3')
+    expect(
+      screen
+        .getByRole('progressbar', { name: 'Progresso das subtarefas' })
+        .getAttribute('aria-valuetext'),
+    ).toBe('1 de 3')
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', { name: 'Concluir subtarefa Mapear campos' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {
+        name: 'Concluir subtarefa Mapear campos',
+      }).checked,
+    ).toBe(true)
+  })
+
+  it('mostra o estado vazio sem barra de progresso', async () => {
+    setup()
+    expect(await screen.findByText('Nenhuma subtarefa ainda.')).toBeTruthy()
+    expect(screen.queryByRole('progressbar', { name: 'Progresso das subtarefas' })).toBeNull()
+  })
+
+  it('adiciona pelo Enter, limpa o campo e mantém o foco nele', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const add = vi.spyOn(api.tasks.checklist, 'add').mockResolvedValue(WITH_ITEMS())
+    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    await user.click(field)
+    await user.type(field, '  Testar em homologação  {Enter}')
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith({ taskId: TASK_ID, title: 'Testar em homologação' }),
+    )
+    await waitFor(() => expect(field.value).toBe(''))
+    expect(document.activeElement).toBe(field)
+  })
+
+  it('não adiciona título vazio nem com 201 caracteres', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const add = vi.spyOn(api.tasks.checklist, 'add')
+    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    await user.type(field, '   {Enter}')
+    expect(screen.getByText('Informe o título da subtarefa.')).toBeTruthy()
+    fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
+    await user.type(field, '{Enter}')
+    expect(screen.getByText('A subtarefa deve ter até 200 caracteres.')).toBeTruthy()
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('marca e desmarca com atualização otimista, sem esperar o servidor', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    let resolve: (value: GetTaskDto) => void = () => undefined
+    const toggle = vi
+      .spyOn(api.tasks.checklist, 'toggle')
+      .mockImplementation(() => new Promise<GetTaskDto>((done) => (resolve = done)))
+    await user.click(
+      await screen.findByRole('checkbox', { name: 'Concluir subtarefa Criar endpoint' }),
+    )
+    expect(toggle).toHaveBeenCalledWith({
+      taskId: TASK_ID,
+      itemId: '01J8Y4G2XK8Z1S6M3Q9W0A5K02',
+      done: true,
+    })
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', { name: 'Concluir subtarefa Criar endpoint' }),
+    ).toHaveProperty('checked', true)
+    expect(screen.getByRole('region', { name: 'Subtarefas' }).textContent).toContain('2/3')
+    resolve(WITH_ITEMS())
+  })
+
+  it('volta a marcação e avisa com toast quando o servidor recusa', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    vi.spyOn(api.tasks.checklist, 'toggle').mockRejectedValue(new Error('x'))
+    await user.click(
+      await screen.findByRole('checkbox', { name: 'Concluir subtarefa Criar endpoint' }),
+    )
+    expect(await screen.findByText('Não foi possível salvar a subtarefa.')).toBeTruthy()
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLInputElement>('checkbox', {
+          name: 'Concluir subtarefa Criar endpoint',
+        }).checked,
+      ).toBe(false),
+    )
+  })
+
+  it('renomeia ao clicar no título e salva com Enter', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const rename = vi.spyOn(api.tasks.checklist, 'rename').mockResolvedValue(WITH_ITEMS())
+    await user.click(
+      await screen.findByRole('button', { name: 'Renomear subtarefa Criar endpoint' }),
+    )
+    const input = screen.getByRole('textbox', { name: 'Título da subtarefa' })
+    await user.clear(input)
+    await user.type(input, 'Criar endpoint do webhook{Enter}')
+    expect(rename).toHaveBeenCalledWith({
+      taskId: TASK_ID,
+      itemId: '01J8Y4G2XK8Z1S6M3Q9W0A5K02',
+      title: 'Criar endpoint do webhook',
+    })
+    expect(screen.queryByRole('textbox', { name: 'Título da subtarefa' })).toBeNull()
+  })
+
+  it('Esc cancela a renomeação sem chamar a API', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const rename = vi.spyOn(api.tasks.checklist, 'rename')
+    await user.click(
+      await screen.findByRole('button', { name: 'Renomear subtarefa Criar endpoint' }),
+    )
+    await user.type(screen.getByRole('textbox', { name: 'Título da subtarefa' }), ' extra{Escape}')
+    expect(screen.queryByRole('textbox', { name: 'Título da subtarefa' })).toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Renomear subtarefa Criar endpoint' }),
+    ).toBeTruthy()
+    expect(rename).not.toHaveBeenCalled()
+  })
+
+  it('recusa renomear para vazio ou com 201 caracteres', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const rename = vi.spyOn(api.tasks.checklist, 'rename')
+    await user.click(
+      await screen.findByRole('button', { name: 'Renomear subtarefa Criar endpoint' }),
+    )
+    const input = screen.getByRole('textbox', { name: 'Título da subtarefa' })
+    await user.clear(input)
+    await user.type(input, '{Enter}')
+    expect(screen.getByText('Informe o título da subtarefa.')).toBeTruthy()
+    fireEvent.change(input, { target: { value: 'b'.repeat(201) } })
+    await user.type(input, '{Enter}')
+    expect(screen.getByText('A subtarefa deve ter até 200 caracteres.')).toBeTruthy()
+    expect(rename).not.toHaveBeenCalled()
+  })
+
+  it('remove pelo botão com o título no nome acessível', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const remove = vi.spyOn(api.tasks.checklist, 'remove').mockResolvedValue(WITH_ITEMS())
+    await user.click(
+      await screen.findByRole('button', { name: 'Remover subtarefa Tratar timeout' }),
+    )
+    expect(remove).toHaveBeenCalledWith({ taskId: TASK_ID, itemId: '01J8Y4G2XK8Z1S6M3Q9W0A5K03' })
+  })
+
+  it('move para baixo e desabilita mover para cima no primeiro item', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const move = vi.spyOn(api.tasks.checklist, 'move').mockResolvedValue(WITH_ITEMS())
+    expect(
+      (await screen.findByRole('button', { name: 'Mover Mapear campos para cima' })).hasAttribute(
+        'disabled',
+      ),
+    ).toBe(true)
+    await user.click(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Mover Criar endpoint para baixo' }),
+    )
+    expect(move).toHaveBeenCalledWith({
+      taskId: TASK_ID,
+      itemId: '01J8Y4G2XK8Z1S6M3Q9W0A5K02',
+      position: 2,
+    })
+  })
+
+  it('somente leitura desabilita marcar, editar, mover, remover e adicionar', async () => {
+    setup({ detail: { ...WITH_ITEMS(), canEdit: false, readOnly: true } })
+    expect(
+      await screen.findByText('Somente leitura: você não pode alterar estas subtarefas.'),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {
+        name: 'Concluir subtarefa Criar endpoint',
+      }).disabled,
+    ).toBe(true)
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Renomear subtarefa Criar endpoint',
+      }).disabled,
+    ).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Remover subtarefa Criar endpoint' })).toBeNull()
+    expect(screen.getByLabelText<HTMLInputElement>('Adicionar subtarefa').disabled).toBe(true)
+  })
+
+  it('tarefa concluída não mostra campo de adicionar', async () => {
+    setup({ detail: { ...WITH_ITEMS(), status: 'done' } })
+    expect(await screen.findByText('Tarefas concluídas não aceitam novas subtarefas.')).toBeTruthy()
+    expect(screen.queryByLabelText('Adicionar subtarefa')).toBeNull()
+  })
+
+  it('ao atingir 50 itens mostra o limite no lugar do campo', async () => {
+    const fifty = Array.from({ length: 50 }, (_, index) =>
+      makeChecklistItem({
+        id: `01J8Y4G2XK8Z1S6M3Q9W0B${String(index).padStart(3, '0')}`,
+        title: `Item ${index + 1}`,
+        position: index,
+      }),
+    )
+    setup({
+      detail: makeDetail({
+        checklist: fifty,
+        checklistProgress: { done: 0, total: 50, percent: 0 },
+      }),
+    })
+    expect(await screen.findByText('Limite de 50 subtarefas.')).toBeTruthy()
+    expect(screen.queryByLabelText('Adicionar subtarefa')).toBeNull()
+  })
+
+  it('mostra os quatro eventos de subtarefa na linha do tempo com a frase do servidor', async () => {
+    setup({
+      timeline: [
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E21',
+          type: 'checklist_item_added',
+          text: 'adicionou a subtarefa: Mapear campos',
+        }),
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E22',
+          type: 'checklist_item_done',
+          text: 'concluiu a subtarefa: Mapear campos',
+        }),
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E23',
+          type: 'checklist_item_reopened',
+          text: 'reabriu a subtarefa: Mapear campos',
+        }),
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E24',
+          type: 'checklist_item_removed',
+          text: 'removeu a subtarefa: Mapear campos',
+        }),
+      ],
+    })
+    expect(await screen.findByText('adicionou a subtarefa: Mapear campos')).toBeTruthy()
+    expect(screen.getByText('concluiu a subtarefa: Mapear campos')).toBeTruthy()
+    expect(screen.getByText('reabriu a subtarefa: Mapear campos')).toBeTruthy()
+    expect(screen.getByText('removeu a subtarefa: Mapear campos')).toBeTruthy()
   })
 })

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { TaskUpdateInput } from '@agilebox/contract'
+import type { GetTaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
+import { applyChecklistToggle } from './checklist-optimistic'
 
 export function useTaskDetail(taskId: string) {
   const api = useApi()
@@ -57,5 +58,70 @@ export function useUnblockTask(taskId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
     },
+  })
+}
+
+function refreshAfterChecklist(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+}
+
+export function useAddChecklistItem(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (title: string) => api.tasks.checklist.add({ taskId, title }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+/** Atualização otimista: a marcação aparece na hora e volta se o servidor recusar. */
+export function useToggleChecklistItem(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  const key = queryKeys.tasks.detail(taskId)
+  return useMutation({
+    mutationFn: ({ itemId, done }: { readonly itemId: string; readonly done: boolean }) =>
+      api.tasks.checklist.toggle({ taskId, itemId, done }),
+    onMutate: async ({ itemId, done }) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<GetTaskDto>(key)
+      if (previous)
+        queryClient.setQueryData<GetTaskDto>(key, applyChecklistToggle(previous, itemId, done))
+      return { previous }
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useRenameChecklistItem(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, title }: { readonly itemId: string; readonly title: string }) =>
+      api.tasks.checklist.rename({ taskId, itemId, title }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useRemoveChecklistItem(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (itemId: string) => api.tasks.checklist.remove({ taskId, itemId }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useMoveChecklistItem(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, position }: { readonly itemId: string; readonly position: number }) =>
+      api.tasks.checklist.move({ taskId, itemId, position }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
   })
 }

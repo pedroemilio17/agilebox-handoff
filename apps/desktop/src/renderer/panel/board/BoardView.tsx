@@ -31,6 +31,7 @@ import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
   Button,
+  ChecklistProgress,
   EmptyState,
   Skeleton,
   StatusChip,
@@ -510,12 +511,14 @@ interface TaskCardProps {
 function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardProps) {
   const deadline = describeDeadline(task)
   const blocked = isBlockedTask(task)
+  const { done, total } = task.checklistProgress
+  const checklistLabel = total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
 
   return (
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}`}
+      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}`}
       className={styles.cardButton}
       onClick={onOpen}
       title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
@@ -549,6 +552,7 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
         ) : (
           <span />
         )}
+        <ChecklistProgress done={done} total={total} />
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}
         {responsibleName ? (

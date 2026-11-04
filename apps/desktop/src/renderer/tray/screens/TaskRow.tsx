@@ -1,5 +1,5 @@
 import type { TaskDto } from '@agilebox/contract'
-import { StatusChip, SignalBadge, TaskKey } from '@agilebox/ui'
+import { ChecklistProgress, StatusChip, SignalBadge, TaskKey } from '@agilebox/ui'
 import { formatRelativeDate } from '../../shared/lib/format-date'
 import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
 import styles from '../Tray.module.css'
@@ -24,6 +24,10 @@ export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
           <span className={styles.rowTitle}>{task.title}</span>
           <span className={styles.rowSignals}>
             {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
+            <ChecklistProgress
+              done={task.checklistProgress.done}
+              total={task.checklistProgress.total}
+            />
             {isBlockedTask(task) ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
             {isAgingTask(task) ? (
               <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>

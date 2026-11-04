@@ -9,6 +9,8 @@ import {
   ProjectSwatch,
   MetricTile,
   WipMeter,
+  ChecklistProgress,
+  ProgressBar,
   Sparkline,
   BarChart,
   Drawer,
@@ -81,6 +83,10 @@ export function Gallery() {
             <SignalBadge variant="priority">Alta</SignalBadge>
             <SignalBadge variant="blocked">Bloqueada</SignalBadge>
             <WipMeter count={2} capacity={3} />
+            <ChecklistProgress done={2} total={5} />
+            <span style={{ width: 160 }}>
+              <ProgressBar done={2} total={5} label="Progresso das subtarefas" />
+            </span>
             <MetricTile
               label="Paradas"
               value={0}

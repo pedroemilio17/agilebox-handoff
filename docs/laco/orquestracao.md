@@ -37,13 +37,14 @@ Final:
 
 ## Em andamento
 
-- B5: subtarefas (tabela `task_checklist_items`). Backend feito; falta UI (card com progresso 2/5, lista no detalhe, bandeja).
+- B7: comentários e menções (tabela `task_comments`; menções sem aviso no MVP).
 
 ## Concluído
 
 - B1: ID legível (AB-118). B1 completo: core, persistência, aplicação, UI.
 - B3: prioridade (normal | alta). B3 completo: backend e UI.
 - B2: bloqueio com motivo (marca na tarefa, não sexto estado). B2 completo: backend e UI.
+- B5: subtarefas (tabela `task_checklist_items`). B5 completo: backend e UI.
 
 ## Bloqueios
 

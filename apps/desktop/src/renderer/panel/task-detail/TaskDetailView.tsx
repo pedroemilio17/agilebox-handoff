@@ -15,6 +15,7 @@ import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { useBlurSave } from './use-blur-save'
 import { BlockControl } from './BlockControl'
+import { ChecklistCard } from './ChecklistCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import styles from './TaskDetailView.module.css'
 
@@ -219,6 +220,7 @@ export function TaskDetailView({
         readOnly={readOnly}
         onUpdate={(changes) => update.mutate(changes)}
       />
+      <ChecklistCard task={task!} readOnly={readOnly} />
       <TimelineCard taskId={taskId} />
     </section>
   )

@@ -232,3 +232,28 @@ describe('Bloqueio no quadro', () => {
     expect(screen.getByRole('button', { name: 'AB-119 · Parada livre' })).toBeTruthy()
   })
 })
+
+describe('Progresso das subtarefas no card', () => {
+  it('mostra 2/5 com barra e inclui o progresso no nome acessível', () => {
+    renderBoard({
+      tasks: [
+        makeTask({
+          title: 'Revisar integração',
+          checklistProgress: { done: 2, total: 5, percent: 40 },
+        }),
+      ],
+    })
+    expect(screen.getByText('2/5')).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: /Revisar integração, 2 de 5 subtarefas concluídas/,
+      }),
+    ).toBeTruthy()
+  })
+
+  it('não mostra indicador nem nome extra sem subtarefas', () => {
+    renderBoard({ tasks: [makeTask({ title: 'Sem lista' })] })
+    expect(screen.queryByText(/\d+\/\d+/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'AB-118 · Sem lista' })).toBeTruthy()
+  })
+})

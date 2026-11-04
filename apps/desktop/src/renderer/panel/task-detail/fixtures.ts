@@ -1,4 +1,9 @@
-import type { GetTaskDto, ParticipationSummaryDto, TimelineEventDto } from '@agilebox/contract'
+import type {
+  ChecklistItemDto,
+  GetTaskDto,
+  ParticipationSummaryDto,
+  TimelineEventDto,
+} from '@agilebox/contract'
 
 export const TASK_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5BCD'
 export const USER_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
@@ -56,6 +61,19 @@ export function makeEvent(overrides: Partial<TimelineEventDto> = {}): TimelineEv
     asManager: false,
     type: 'status_changed',
     text: 'Status: A fazer → Desenvolvendo',
+    ...overrides,
+  }
+}
+
+export function makeChecklistItem(
+  overrides: Partial<ChecklistItemDto> & Pick<ChecklistItemDto, 'id' | 'title'>,
+): ChecklistItemDto {
+  return {
+    taskId: TASK_ID,
+    done: false,
+    position: 0,
+    createdAt: '2026-10-31T12:00:00.000Z',
+    doneAt: null,
     ...overrides,
   }
 }

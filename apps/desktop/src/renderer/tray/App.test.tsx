@@ -330,3 +330,12 @@ describe('Bandeja: janela', () => {
     await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 260 }))
   })
 })
+
+describe('Bandeja: progresso das subtarefas', () => {
+  it('mostra 2/5 na linha da tarefa sem editar nada', async () => {
+    setup([{ ...A, checklistProgress: { done: 2, total: 5, percent: 40 } }, B])
+    expect(await screen.findByText('2/5')).toBeTruthy()
+    expect(screen.queryByText('0/0')).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+})
