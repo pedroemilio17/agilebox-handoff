@@ -18,7 +18,6 @@
 
 Fase B (detalhes na seção 2 de `design/design_two/agilebox-redesign-v2/docs/REDESIGN-v2-ESCOPO.md`):
 
-- [ ] B7: comentários e menções
 - [ ] B4: limite de WIP por coluna
 - [ ] B9: agenda com fim, tipo e recorrência
 - [ ] B6: definição de pronto
@@ -37,7 +36,7 @@ Final:
 
 ## Em andamento
 
-- B7: comentários e menções. Backend feito; falta UI (seção Comentários no detalhe, contador no card). Tabela `task_comments`; menções sem aviso no MVP.
+- B4: limite de WIP por coluna (tabela `board_settings` por organização, limite por estado).
 
 ## Concluído
 
@@ -45,6 +44,7 @@ Final:
 - B3: prioridade (normal | alta). B3 completo: backend e UI.
 - B2: bloqueio com motivo (marca na tarefa, não sexto estado). B2 completo: backend e UI.
 - B5: subtarefas (tabela `task_checklist_items`). B5 completo: backend e UI.
+- B7: comentários e menções (tabela `task_comments`; menções sem aviso no MVP). B7 completo: backend e UI.
 
 ## Bloqueios
 
@@ -58,3 +58,8 @@ Final:
   - Decisão: `OrganizationRepository` (porta nova) fornece o `taskPrefix` para o DTO. O `key` é montado em `toTaskDto(task, taskPrefix)` com `formatTaskKey`.
   - Limite: o `drizzle-kit generate` só rodou para gerar o snapshot. Como não foi possível apagar o 0001 gerado automaticamente, o SQL foi substituído por edição. O snapshot continua coerente com o schema.
   - Resultado: `pnpm check` verde (121 arquivos, 987 testes).
+
+## Pendências do Pedro
+
+- B7, decisão de produto: comentários contam como "mudança/edição" nas regras "mudanças desde ontem" e "última edição por pessoa" do dashboard (`core/rules/recent-changes.ts`). Mantido como está por ser coerente com "toda edição gera entrada na linha do tempo". Se não for o desejado, ajustar essas duas regras para ignorar `comment_added` e `comment_removed`.
+- B7, dado não exposto: o criador da tarefa não aparece no detalhe (`GetTaskDto` traz só participações). As sugestões de `@` usam responsável e apoio (participantes-usuários). Se o criador precisar ser mencionável, o DTO do detalhe precisa de `createdBy`.

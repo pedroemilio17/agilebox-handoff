@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDateOnly } from '@agilebox/core'
@@ -7,10 +7,13 @@ import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import {
+  CONTRIBUTOR_ID,
   makeChecklistItem,
+  makeComment,
   makeDetail,
   makeEvent,
   makeParticipation,
+  OTHER_USER_ID,
   TASK_ID,
   USER_ID,
 } from './fixtures'
@@ -818,5 +821,217 @@ describe('Subtarefas no detalhe', () => {
     expect(screen.getByText('concluiu a subtarefa: Mapear campos')).toBeTruthy()
     expect(screen.getByText('reabriu a subtarefa: Mapear campos')).toBeTruthy()
     expect(screen.getByText('removeu a subtarefa: Mapear campos')).toBeTruthy()
+  })
+})
+
+describe('Comentários no detalhe', () => {
+  const ANA = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
+  const COMMENT_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5M01'
+  const ALL_COMMENTS = [
+    makeComment({
+      id: COMMENT_ID,
+      authorName: 'Ana Souza',
+      body: 'Oi @Ana Souza, o acesso saiu',
+      mentions: [{ id: ANA, name: 'Ana Souza' }],
+    }),
+    makeComment({
+      id: '01J8Y4G2XK8Z1S6M3Q9W0A5M02',
+      authorName: 'Pedro Gestor',
+      asManager: true,
+      body: 'Ajustei o prazo',
+      editedAt: '2026-10-31T13:00:00.000Z',
+      canEdit: false,
+      canRemove: false,
+    }),
+  ]
+  const WITH_COMMENTS = () => makeDetail({ comments: ALL_COMMENTS, commentCount: 2 })
+
+  it('lista em ordem com selo Gestor, menção destacada e (editado)', async () => {
+    setup({ detail: WITH_COMMENTS() })
+    const section = await screen.findByRole('region', { name: 'Comentários' })
+    expect(section.textContent).toContain('2')
+    const mark = screen.getByRole('mark', { name: '@Ana Souza' })
+    expect(mark.textContent).toBe('@Ana Souza')
+    expect(mark.getAttribute('title')).toBe('Ana Souza')
+    expect(screen.getByText('Gestor')).toBeTruthy()
+    expect(screen.getByText('(editado)')).toBeTruthy()
+  })
+
+  it('mostra o estado vazio sem comentários', async () => {
+    setup()
+    expect(await screen.findByText('Nenhum comentário ainda.')).toBeTruthy()
+  })
+
+  it('oculta editar e remover quando não há permissão', async () => {
+    setup({ detail: WITH_COMMENTS() })
+    await screen.findByRole('region', { name: 'Comentários' })
+    expect(screen.queryByRole('button', { name: 'Editar comentário de Pedro Gestor' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remover comentário de Pedro Gestor' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Editar comentário de Ana Souza' })).toBeTruthy()
+  })
+
+  it('no somente leitura, esconde o campo e mostra a dica', async () => {
+    setup({
+      detail: makeDetail({ comments: ALL_COMMENTS, canEdit: false, readOnly: true }),
+    })
+    expect(
+      await screen.findByText('Somente leitura: você não pode comentar nesta tarefa.'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('textbox', { name: 'Escrever comentário' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Editar comentário de Ana Souza' })).toBeNull()
+  })
+
+  it('adiciona o comentário, sem espaços das pontas, e limpa o campo', async () => {
+    const { api, user } = setup()
+    const add = vi.spyOn(api.tasks.comments, 'add').mockResolvedValue(ALL_COMMENTS[0]!)
+    const field = await screen.findByLabelText<HTMLTextAreaElement>('Escrever comentário')
+    const button = screen.getByRole<HTMLButtonElement>('button', { name: 'Comentar' })
+    expect(button.disabled).toBe(true)
+    await user.type(field, '  Já testei  ')
+    expect(button.disabled).toBe(false)
+    await user.click(button)
+    await waitFor(() => expect(add).toHaveBeenCalledWith({ taskId: TASK_ID, body: 'Já testei' }))
+    await waitFor(() => expect(field.value).toBe(''))
+  })
+
+  it('envia com Ctrl+Enter', async () => {
+    const { api, user } = setup()
+    const add = vi.spyOn(api.tasks.comments, 'add').mockResolvedValue(ALL_COMMENTS[0]!)
+    const field = await screen.findByLabelText('Escrever comentário')
+    await user.type(field, 'Segue{Control>}{Enter}{/Control}')
+    await waitFor(() => expect(add).toHaveBeenCalledWith({ taskId: TASK_ID, body: 'Segue' }))
+  })
+
+  it('não envia só espaços nem acima de 2000 caracteres', async () => {
+    const { api, user } = setup()
+    const add = vi.spyOn(api.tasks.comments, 'add')
+    const field = await screen.findByLabelText<HTMLTextAreaElement>('Escrever comentário')
+    await user.type(field, '   ')
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Comentar' }).disabled).toBe(true)
+    fireEvent.change(field, { target: { value: 'a'.repeat(2001) } })
+    expect(screen.getByText('2001/2000')).toBeTruthy()
+    expect(screen.getByText('O comentário deve ter até 2000 caracteres.')).toBeTruthy()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Comentar' }).disabled).toBe(true)
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('sugere só participantes-usuários ao digitar @ e insere o nome completo', async () => {
+    const participants = [
+      makeParticipation(),
+      makeParticipation({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P02',
+        participant: { kind: 'user', userId: OTHER_USER_ID },
+        participantName: 'Bruno Lima',
+        role: 'support',
+      }),
+      makeParticipation({
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P03',
+        participant: { kind: 'contributor', contributorId: CONTRIBUTOR_ID },
+        participantName: 'Carlos Entidade',
+        role: 'support',
+      }),
+    ]
+    const { user } = setup({ detail: makeDetail({ participations: participants }) })
+    const field = await screen.findByLabelText<HTMLTextAreaElement>('Escrever comentário')
+    await user.type(field, 'oi @')
+    const list = screen.getByRole('listbox', { name: 'Pessoas para mencionar' })
+    const options = within(list).getAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual(['Ana Souza', 'Bruno Lima'])
+    await user.keyboard('{ArrowDown}{Enter}')
+    expect(field.value).toBe('oi @Bruno Lima ')
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('fecha as sugestões com Esc sem perder o texto', async () => {
+    const { user } = setup()
+    const field = await screen.findByLabelText<HTMLTextAreaElement>('Escrever comentário')
+    await user.type(field, '@An')
+    expect(screen.getByRole('option', { name: 'Ana Souza' })).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(field.value).toBe('@An')
+  })
+
+  it('edita no lugar e salva pela API', async () => {
+    const { api, user } = setup({ detail: WITH_COMMENTS() })
+    const edit = vi.spyOn(api.tasks.comments, 'edit').mockResolvedValue(ALL_COMMENTS[0]!)
+    await user.click(await screen.findByRole('button', { name: 'Editar comentário de Ana Souza' }))
+    const field = screen.getByLabelText<HTMLTextAreaElement>('Editar comentário')
+    expect(field.value).toBe('Oi @Ana Souza, o acesso saiu')
+    await user.clear(field)
+    await user.type(field, 'Acesso voltou')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(edit).toHaveBeenCalledWith({
+      taskId: TASK_ID,
+      commentId: COMMENT_ID,
+      body: 'Acesso voltou',
+    })
+  })
+
+  it('Esc cancela a edição sem chamar a API', async () => {
+    const { api, user } = setup({ detail: WITH_COMMENTS() })
+    const edit = vi.spyOn(api.tasks.comments, 'edit')
+    await user.click(await screen.findByRole('button', { name: 'Editar comentário de Ana Souza' }))
+    const field = screen.getByLabelText('Editar comentário')
+    await user.type(field, ' extra{Escape}')
+    expect(screen.queryByLabelText('Editar comentário')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Comentários' }).textContent).toContain(
+      'o acesso saiu',
+    )
+    expect(edit).not.toHaveBeenCalled()
+  })
+
+  it('valida a edição entre 1 e 2000 caracteres', async () => {
+    const { api, user } = setup({ detail: WITH_COMMENTS() })
+    const edit = vi.spyOn(api.tasks.comments, 'edit')
+    await user.click(await screen.findByRole('button', { name: 'Editar comentário de Ana Souza' }))
+    const field = screen.getByLabelText('Editar comentário')
+    await user.clear(field)
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(screen.getByText('Escreva um comentário antes de enviar.')).toBeTruthy()
+    expect(edit).not.toHaveBeenCalled()
+  })
+
+  it('remove só depois da confirmação', async () => {
+    const { api, user } = setup({ detail: WITH_COMMENTS() })
+    const remove = vi.spyOn(api.tasks.comments, 'remove').mockResolvedValue(undefined)
+    await user.click(await screen.findByRole('button', { name: 'Remover comentário de Ana Souza' }))
+    expect(remove).not.toHaveBeenCalled()
+    const confirm = screen.getByRole('group', { name: 'Remover este comentário?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('group', { name: 'Remover este comentário?' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Remover comentário de Ana Souza' }))
+    await user.click(
+      within(screen.getByRole('group', { name: 'Remover este comentário?' })).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
+    expect(remove).toHaveBeenCalledWith({ taskId: TASK_ID, commentId: COMMENT_ID })
+  })
+
+  it('mostra aviso quando o servidor recusa a remoção', async () => {
+    const { api, user } = setup({ detail: WITH_COMMENTS() })
+    vi.spyOn(api.tasks.comments, 'remove').mockRejectedValue(new Error('falha'))
+    await user.click(await screen.findByRole('button', { name: 'Remover comentário de Ana Souza' }))
+    await user.click(
+      within(screen.getByRole('group', { name: 'Remover este comentário?' })).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
+    expect(await screen.findByText('Não foi possível remover o comentário.')).toBeTruthy()
+  })
+
+  it('mostra os eventos de comentário na linha do tempo com a frase do servidor', async () => {
+    setup({
+      detail: WITH_COMMENTS(),
+      timeline: [
+        makeEvent({
+          id: '01J8Y4G2XK8Z1S6M3Q9W0A5E02',
+          type: 'comment_added',
+          text: 'comentou: "Oi @Ana Souza, o acesso saiu"',
+        }),
+      ],
+    })
+    expect(await screen.findByText('comentou: "Oi @Ana Souza, o acesso saiu"')).toBeTruthy()
   })
 })

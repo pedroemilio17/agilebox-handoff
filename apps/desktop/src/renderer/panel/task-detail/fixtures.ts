@@ -2,6 +2,7 @@ import type {
   ChecklistItemDto,
   GetTaskDto,
   ParticipationSummaryDto,
+  TaskCommentDto,
   TimelineEventDto,
 } from '@agilebox/contract'
 
@@ -76,6 +77,23 @@ export function makeChecklistItem(
     position: 0,
     createdAt: '2026-10-31T12:00:00.000Z',
     doneAt: null,
+    ...overrides,
+  }
+}
+
+export function makeComment(
+  overrides: Partial<TaskCommentDto> & Pick<TaskCommentDto, 'id' | 'body'>,
+): TaskCommentDto {
+  return {
+    taskId: TASK_ID,
+    authorId: USER_ID,
+    authorName: 'Ana Souza',
+    asManager: false,
+    mentions: [],
+    createdAt: '2026-10-31T12:00:00.000Z',
+    editedAt: null,
+    canEdit: true,
+    canRemove: true,
     ...overrides,
   }
 }

@@ -32,6 +32,7 @@ import {
   Avatar,
   Button,
   ChecklistProgress,
+  CommentCount,
   EmptyState,
   Skeleton,
   StatusChip,
@@ -513,12 +514,14 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
   const blocked = isBlockedTask(task)
   const { done, total } = task.checklistProgress
   const checklistLabel = total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
+  const commentLabel =
+    task.commentCount > 0 ? `, ${panelCopy.commentCountLabel(task.commentCount)}` : ''
 
   return (
     <button
       aria-describedby={`${task.id}-project ${task.id}-meta`}
       aria-pressed={selected}
-      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}`}
+      aria-label={`${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}${commentLabel}`}
       className={styles.cardButton}
       onClick={onOpen}
       title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
@@ -553,6 +556,7 @@ function TaskCard({ task, responsibleName, onOpen, selected = false }: TaskCardP
           <span />
         )}
         <ChecklistProgress done={done} total={total} />
+        <CommentCount count={task.commentCount} />
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}
         {responsibleName ? (

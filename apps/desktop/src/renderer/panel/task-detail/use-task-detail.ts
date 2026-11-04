@@ -61,6 +61,7 @@ export function useUnblockTask(taskId: string) {
   })
 }
 
+/** Atualiza a tarefa e a linha do tempo depois de subtarefas e comentários. */
 function refreshAfterChecklist(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
@@ -122,6 +123,34 @@ export function useMoveChecklistItem(taskId: string) {
   return useMutation({
     mutationFn: ({ itemId, position }: { readonly itemId: string; readonly position: number }) =>
       api.tasks.checklist.move({ taskId, itemId, position }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useAddComment(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: string) => api.tasks.comments.add({ taskId, body }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useEditComment(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ commentId, body }: { readonly commentId: string; readonly body: string }) =>
+      api.tasks.comments.edit({ taskId, commentId, body }),
+    onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+export function useRemoveComment(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (commentId: string) => api.tasks.comments.remove({ taskId, commentId }),
     onSettled: () => refreshAfterChecklist(queryClient, taskId),
   })
 }

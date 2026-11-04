@@ -260,3 +260,21 @@ describe('Progresso das subtarefas no card', () => {
     expect(screen.getByRole('button', { name: 'AB-118 · Sem lista' })).toBeTruthy()
   })
 })
+
+describe('Contador de comentários no card', () => {
+  it('mostra o balão com a contagem e inclui no nome acessível', () => {
+    renderBoard({
+      tasks: [makeTask({ title: 'Revisar integração', commentCount: 3 })],
+    })
+    expect(screen.getByRole('img', { name: '3 comentários' }).textContent).toBe('3')
+    expect(
+      screen.getByRole('button', { name: 'AB-118 · Revisar integração, 3 comentários' }),
+    ).toBeTruthy()
+  })
+
+  it('não mostra o contador sem comentários', () => {
+    renderBoard({ tasks: [makeTask({ title: 'Sem conversa' })] })
+    expect(screen.queryByRole('img', { name: /comentário/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'AB-118 · Sem conversa' })).toBeTruthy()
+  })
+})

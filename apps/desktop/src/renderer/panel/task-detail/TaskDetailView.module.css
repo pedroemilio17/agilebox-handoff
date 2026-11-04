@@ -618,3 +618,119 @@
   white-space: nowrap;
   border: 0;
 }
+
+.commentList {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.commentMain {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.commentHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 12.5px;
+}
+
+.commentAuthor {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.commentBody {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 4px var(--radius-card) var(--radius-card) var(--radius-card);
+  background: var(--color-field-bg);
+  color: var(--color-text-body);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.commentActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.commentAction {
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.commentAction:hover {
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+}
+
+.commentAction:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.commentEditForm,
+.commentForm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.commentConfirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.mentionList {
+  display: grid;
+  margin: 0;
+  padding: 4px;
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  box-shadow: 0 0 0 1px var(--color-hairline-strong);
+  list-style: none;
+}
+
+.mentionOption,
+.mentionOptionActive {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-field);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mentionOptionActive {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-weight: 600;
+}

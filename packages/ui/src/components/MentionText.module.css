@@ -1,0 +1,7 @@
+.mention {
+  padding: 0 3px;
+  border-radius: var(--radius-chip);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-weight: 600;
+}

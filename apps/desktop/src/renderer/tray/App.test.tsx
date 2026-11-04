@@ -340,3 +340,12 @@ describe('Bandeja: progresso das subtarefas', () => {
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 })
+
+describe('Bandeja: contador de comentários', () => {
+  it('mostra o balão com a contagem na linha, sem editar nada', async () => {
+    setup([{ ...A, commentCount: 3 }, B])
+    expect(await screen.findByRole('img', { name: '3 comentários' })).toBeTruthy()
+    expect(screen.queryByRole('img', { name: '0 comentários' })).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+})

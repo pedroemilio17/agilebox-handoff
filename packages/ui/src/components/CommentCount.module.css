@@ -1,0 +1,9 @@
+.count {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}

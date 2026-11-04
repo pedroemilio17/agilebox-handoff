@@ -10,6 +10,8 @@ import {
   MetricTile,
   WipMeter,
   ChecklistProgress,
+  CommentCount,
+  MentionText,
   ProgressBar,
   Sparkline,
   BarChart,
@@ -84,8 +86,16 @@ export function Gallery() {
             <SignalBadge variant="blocked">Bloqueada</SignalBadge>
             <WipMeter count={2} capacity={3} />
             <ChecklistProgress done={2} total={5} />
+            <CommentCount count={3} />
+            <CommentCount count={1} />
             <span style={{ width: 160 }}>
               <ProgressBar done={2} total={5} label="Progresso das subtarefas" />
+            </span>
+            <span style={{ maxWidth: 320, fontSize: 13 }}>
+              <MentionText
+                text="Oi @Ana Souza, o acesso saiu"
+                mentions={[{ id: 'ana', name: 'Ana Souza' }]}
+              />
             </span>
             <MetricTile
               label="Paradas"
