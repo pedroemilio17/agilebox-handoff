@@ -59,12 +59,9 @@ export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): b
   return actor.organizationId === organizationId && actor.role === 'manager'
 }
 export const canManageMeetings = canSeeTaskTotal
-/** Colaborador vê o agendamento só se participa dele; gestor vê todos da organização. */
+/** Todo usuário da organização vê todos os agendamentos dela; só o gestor os altera (canManageMeetings). */
 export function canSeeMeeting(actor: Actor, meeting: Meeting): boolean {
-  return (
-    actor.organizationId === meeting.organizationId &&
-    (actor.role === 'manager' || meeting.participants.includes(actor.userId))
-  )
+  return actor.organizationId === meeting.organizationId
 }
 export const canSeeDashboard = canSeeTaskTotal
 /** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */

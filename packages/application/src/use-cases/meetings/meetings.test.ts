@@ -113,7 +113,7 @@ describe('casos de uso da agenda', () => {
     })
   })
 
-  it('não mostra ao colaborador os agendamentos de que não participa', async () => {
+  it('colaborador vê todos os agendamentos da organização, inclusive os de que não participa', async () => {
     const { useCases, unitOfWork } = setup()
     const mine = aMeeting()
       .with({ id: toMeetingId('00000000000000000000000013') })
@@ -124,18 +124,31 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(organizationId, mine)
     await unitOfWork.repositories.meetings.save(organizationId, notMine)
 
-    await expect(
-      useCases.meetings.listRange.execute(actor, {
-        rangeStart: '2026-01-01',
-        rangeEnd: '2026-01-31',
-      }),
-    ).resolves.toMatchObject([{ id: mine.id }])
-    await expect(
-      useCases.meetings.listRange.execute(manager, {
-        rangeStart: '2026-01-01',
-        rangeEnd: '2026-01-31',
-      }),
-    ).resolves.toHaveLength(2)
+    const range = { rangeStart: '2026-01-01', rangeEnd: '2026-01-31' }
+    await expect(useCases.meetings.listRange.execute(actor, range)).resolves.toMatchObject([
+      { id: mine.id },
+      { id: notMine.id },
+    ])
+    await expect(useCases.meetings.listRange.execute(manager, range)).resolves.toHaveLength(2)
+  })
+
+  it('não mostra agendamentos de outra organização, nem ao gestor dela', async () => {
+    const { useCases, unitOfWork } = setup()
+    const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+    const foreign = aMeeting()
+      .with({
+        id: toMeetingId('00000000000000000000000018'),
+        organizationId: otherOrganizationId,
+        date: parseDateOnly('2026-01-25'),
+        participants: [toUserId('00000000000000000000000099')],
+      })
+      .build()
+    await unitOfWork.repositories.meetings.save(otherOrganizationId, foreign)
+
+    const range = { rangeStart: '2026-01-01', rangeEnd: '2026-01-31' }
+    await expect(useCases.meetings.listRange.execute(actor, range)).resolves.toEqual([])
+    await expect(useCases.meetings.listRange.execute(manager, range)).resolves.toEqual([])
+    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toEqual([])
   })
 
   it('rejeita intervalo invertido', async () => {

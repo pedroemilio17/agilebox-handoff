@@ -215,14 +215,24 @@ describe('agendamentos', () => {
     participants: [user],
   } as unknown as Parameters<typeof policy.canSeeMeeting>[1]
 
-  it('colaborador vê só os agendamentos de que participa; gestor vê todos da organização', () => {
+  it('colaborador vê todos os agendamentos da organização, mesmo sem participar deles', () => {
     expect(policy.canSeeMeeting(collaborator, meeting)).toBe(true)
-    expect(policy.canSeeMeeting({ ...collaborator, userId: other }, meeting)).toBe(false)
-    expect(policy.canSeeMeeting({ ...collaborator, userId: other, role: 'manager' }, meeting)).toBe(
-      true,
-    )
-    expect(
-      policy.canSeeMeeting({ ...collaborator, organizationId: otherOrg, role: 'manager' }, meeting),
-    ).toBe(false)
+    expect(policy.canSeeMeeting({ ...collaborator, userId: other }, meeting)).toBe(true)
+  })
+
+  it('gestor vê todos os agendamentos da organização', () => {
+    expect(policy.canSeeMeeting(manager, meeting)).toBe(true)
+    expect(policy.canSeeMeeting({ ...manager, userId: other }, meeting)).toBe(true)
+  })
+
+  it('usuário de outra organização não vê agendamento algum', () => {
+    expect(policy.canSeeMeeting({ ...collaborator, organizationId: otherOrg }, meeting)).toBe(false)
+    expect(policy.canSeeMeeting({ ...manager, organizationId: otherOrg }, meeting)).toBe(false)
+  })
+
+  it('só o gestor cria, edita e exclui agendamentos', () => {
+    expect(policy.canManageMeetings(manager, org)).toBe(true)
+    expect(policy.canManageMeetings(collaborator, org)).toBe(false)
+    expect(policy.canManageMeetings(manager, otherOrg)).toBe(false)
   })
 })
