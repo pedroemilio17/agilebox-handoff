@@ -3,13 +3,25 @@ export const TRAY_MAX_HEIGHT = 600
 export const TRAY_COLLAPSED_HEIGHT = 52
 export const TRAY_KEYBOARD_STEP = 24
 
-export type TrayScreenKind = 'home' | 'update' | 'new'
+export type TrayScreenKind = 'home' | 'update' | 'new' | 'daily'
 
-/** Altura automática por tela (HANDOFF "Bandeja"); no início depende de quantas linhas aparecem (1 a 2). */
-export function autoHeight(screen: TrayScreenKind, visibleTasks: number): number {
-  if (screen === 'update') return 560
+/** Espaço extra do cartão de convite da daily na tela inicial. */
+export const DAILY_INVITE_HEIGHT = 156
+
+/**
+ * Altura automática por tela (HANDOFF "Bandeja"); no início depende de quantas linhas aparecem (1 a 2)
+ * e de o cartão de convite da daily estar visível.
+ */
+export function autoHeight(
+  screen: TrayScreenKind,
+  visibleTasks: number,
+  inviteVisible = false,
+): number {
+  if (screen === 'update' || screen === 'daily') return 560
   if (screen === 'new') return 316
-  return 246 + Math.max(Math.min(visibleTasks, 2), 1) * 64
+  return (
+    246 + Math.max(Math.min(visibleTasks, 2), 1) * 64 + (inviteVisible ? DAILY_INVITE_HEIGHT : 0)
+  )
 }
 
 export function clampHeight(height: number): number {

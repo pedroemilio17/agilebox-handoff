@@ -42,3 +42,24 @@ describe('máquina de telas da bandeja', () => {
     expect(back).toMatchObject({ screen: { kind: 'home' }, direction: 'back', notice: null })
   })
 })
+
+describe('máquina de telas: daily', () => {
+  it('início → daily → início avança e, ao concluir, avisa "Daily registrada."', () => {
+    const opened = trayReducer(initialTrayState, { type: 'openDaily' })
+    expect(opened.screen).toEqual({ kind: 'daily' })
+    expect(opened.direction).toBe('forward')
+
+    const saved = trayReducer(opened, { type: 'dailySaved' })
+    expect(saved.screen.kind).toBe('home')
+    expect(saved.direction).toBe('back')
+    expect(saved.notice).toBe('Daily registrada.')
+    expect(saved.notice).toBe(TRAY_NOTICES.daily)
+  })
+
+  it('voltar da daily sem salvar não mostra aviso', () => {
+    const opened = trayReducer(initialTrayState, { type: 'openDaily' })
+    const back = trayReducer(opened, { type: 'back' })
+    expect(back.screen.kind).toBe('home')
+    expect(back.notice).toBeNull()
+  })
+})

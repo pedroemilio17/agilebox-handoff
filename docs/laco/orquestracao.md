@@ -28,7 +28,7 @@ Final:
 
 ## Em andamento
 
-- Daily: backend feito; faltam UI da bandeja, coluna "Daily de hoje" no dashboard e polimento do foco do menu de exportação.
+- daily — backend e UI da bandeja feitos; falta a coluna 'Daily de hoje' no dashboard do gestor e o polimento do foco do menu de exportação
 
 ## Aguardando decisão do Pedro (não implementar)
 

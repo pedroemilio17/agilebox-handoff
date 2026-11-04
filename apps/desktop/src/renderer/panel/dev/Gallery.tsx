@@ -17,6 +17,7 @@ import {
   RepeatMark,
   ChecklistProgress,
   ChecklistConfirm,
+  StepIndicator,
   CommentCount,
   MentionText,
   ProgressBar,
@@ -237,6 +238,7 @@ export function Gallery() {
               action={<Button variant="primary">Nova tarefa</Button>}
             />
             <Toast message="Alterações salvas" duration={60_000} />
+            <StepIndicator current={2} total={3} />
           </div>
         </section>
 

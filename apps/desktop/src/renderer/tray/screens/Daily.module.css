@@ -1,0 +1,200 @@
+/* Cartão de convite da daily (tela inicial da bandeja). */
+.invite {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-group);
+  background: var(--color-accent-soft);
+}
+
+.inviteHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.inviteIcon {
+  display: grid;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.inviteText {
+  display: grid;
+  gap: 3px;
+}
+
+.inviteTitle {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+}
+
+.inviteBody {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.inviteActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.inviteActions > button {
+  min-height: var(--size-touch-target);
+}
+
+.inviteActions > button:first-child {
+  flex: 1;
+}
+
+/* Atalho discreto da tela inicial quando o cartão não aparece. */
+.dailyLink {
+  align-self: start;
+  min-height: var(--size-touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Tela de daily em passos. */
+.dailyForm {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.dailyTitle {
+  margin: 0;
+  font-size: var(--font-size-title-small);
+  font-weight: 600;
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.stepTitle:focus {
+  outline: none;
+}
+
+.stepTitle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.stepHint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.notice {
+  margin: 0;
+  color: var(--color-accent-text);
+  font-size: var(--font-size-body-small);
+}
+
+.counterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.counterOver {
+  color: var(--color-signal-danger-text);
+}
+
+.feedback {
+  min-height: 0;
+  margin: 0;
+  color: var(--color-signal-danger-text);
+  font-size: var(--font-size-body-small);
+}
+
+.discard {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--glass-group);
+}
+
+.discard:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.discard p {
+  margin: 0;
+  font-size: var(--font-size-body-small);
+}
+
+.discardActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.discardActions > button {
+  flex: 1;
+  min-height: var(--size-touch-target);
+}
+
+.summary {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.summary dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}
+
+.summary dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.footerRow {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.footerRow > button {
+  min-height: var(--size-touch-target);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}

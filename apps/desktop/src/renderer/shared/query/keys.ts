@@ -20,6 +20,10 @@ export const queryKeys = {
     detail: (taskId: string) => ['agilebox', 'tasks', 'detail', taskId] as const,
   },
   timeline: { list: (taskId: string) => ['agilebox', 'timeline', taskId] as const },
+  daily: {
+    all: ['agilebox', 'daily'] as const,
+    today: (date: string) => ['agilebox', 'daily', 'today', date] as const,
+  },
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },

@@ -7,6 +7,8 @@ import {
   TRAY_HEIGHT_DURATION_MS,
 } from './auto-height'
 import { trayCopy } from './copy'
+import { useDailyToday } from './use-daily-today'
+import { DailyScreen } from './screens/DailyScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { NewTaskScreen } from './screens/NewTaskScreen'
 import { UpdateTaskScreen } from './screens/UpdateTaskScreen'
@@ -20,9 +22,14 @@ export function App() {
   const [manualHeight, setManualHeight] = useState<number | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [dailyDismissed, setDailyDismissed] = useState(false)
+  const daily = useDailyToday()
+  // Sair da daily (Voltar ou Esc) passa pela guarda da tela, que pede confirmação se houver texto.
+  const dailyExit = useRef<(() => void) | null>(null)
   const { screen } = state
+  const inviteVisible = Boolean(daily.data?.due) && !dailyDismissed
 
-  const automatic = autoHeight(screen.kind, visibleTasks)
+  const automatic = autoHeight(screen.kind, visibleTasks, inviteVisible)
   const height = collapsed ? TRAY_COLLAPSED_HEIGHT : (manualHeight ?? automatic)
   const reducedMotion = useReducedMotion()
   // Última altura enviada à janela; a transição parte dela, mesmo se for interrompida.
@@ -70,6 +77,11 @@ export function App() {
 
   const onVisibleCount = useCallback((count: number) => setVisibleTasks(count), [])
 
+  const goBack = () => {
+    if (dailyExit.current) dailyExit.current()
+    else dispatch({ type: 'back' })
+  }
+
   return (
     <main
       className={`${styles.window} ${collapsed ? styles.collapsed : ''}`}
@@ -86,7 +98,7 @@ export function App() {
             {trayCopy.title}
           </h1>
         ) : (
-          <Button type="button" onClick={() => dispatch({ type: 'back' })}>
+          <Button type="button" onClick={goBack}>
             ← {trayCopy.back}
           </Button>
         )}
@@ -105,6 +117,10 @@ export function App() {
           {screen.kind === 'home' ? (
             <HomeScreen
               highlightTaskId={state.highlightTaskId}
+              daily={daily.data}
+              inviteVisible={inviteVisible}
+              onStartDaily={() => dispatch({ type: 'openDaily' })}
+              onDismissDaily={() => setDailyDismissed(true)}
               onOpenTask={(taskId) => dispatch({ type: 'openTask', taskId })}
               onNewTask={() => dispatch({ type: 'newTask' })}
               onCreated={(taskId) => dispatch({ type: 'taskCreated', taskId })}
@@ -112,6 +128,12 @@ export function App() {
             />
           ) : screen.kind === 'new' ? (
             <NewTaskScreen onCreated={(taskId) => dispatch({ type: 'taskCreated', taskId })} />
+          ) : screen.kind === 'daily' ? (
+            <DailyScreen
+              onSaved={() => dispatch({ type: 'dailySaved' })}
+              onExit={() => dispatch({ type: 'back' })}
+              exitRef={dailyExit}
+            />
           ) : (
             <UpdateTaskScreen
               taskId={screen.taskId}

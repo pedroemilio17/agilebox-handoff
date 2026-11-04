@@ -4,6 +4,7 @@ export type TrayScreen =
   | { readonly kind: 'home' }
   | { readonly kind: 'update'; readonly taskId: string; readonly created: boolean }
   | { readonly kind: 'new' }
+  | { readonly kind: 'daily' }
 
 export type TrayDirection = 'forward' | 'back'
 
@@ -21,11 +22,14 @@ export type TrayEvent =
   | { readonly type: 'newTask' }
   | { readonly type: 'taskCreated'; readonly taskId: string }
   | { readonly type: 'saved'; readonly taskId: string }
+  | { readonly type: 'openDaily' }
+  | { readonly type: 'dailySaved' }
   | { readonly type: 'back' }
 
 export const TRAY_NOTICES = {
   saved: 'Atualização salva',
   created: 'Tarefa criada',
+  daily: 'Daily registrada.',
 } as const
 
 export const initialTrayState: TrayState = {
@@ -54,6 +58,10 @@ export function trayReducer(state: TrayState, event: TrayEvent): TrayState {
       }
     case 'newTask':
       return { ...state, screen: { kind: 'new' }, direction: 'forward', notice: null }
+    case 'openDaily':
+      return { ...state, screen: { kind: 'daily' }, direction: 'forward', notice: null }
+    case 'dailySaved':
+      return home('back', { notice: TRAY_NOTICES.daily })
     case 'taskCreated':
       return {
         ...state,

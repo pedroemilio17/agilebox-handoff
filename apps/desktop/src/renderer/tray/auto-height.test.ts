@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { autoHeight, clampHeight, tweenHeight, TRAY_HEIGHT_DURATION_MS } from './auto-height'
+import {
+  autoHeight,
+  clampHeight,
+  DAILY_INVITE_HEIGHT,
+  tweenHeight,
+  TRAY_HEIGHT_DURATION_MS,
+} from './auto-height'
 
 describe('altura automática da bandeja', () => {
   it('no início: 246 + 64 por linha visível, de 1 a 2 linhas', () => {
@@ -37,5 +43,16 @@ describe('transição da altura automática', () => {
   it('ignora progresso fora de 0 a 1', () => {
     expect(tweenHeight(374, 560, -1)).toBe(374)
     expect(tweenHeight(374, 560, 3)).toBe(560)
+  })
+})
+
+describe('altura automática com o cartão de convite da daily', () => {
+  it('o cartão soma sua altura à tela inicial', () => {
+    expect(autoHeight('home', 2, true)).toBe(374 + DAILY_INVITE_HEIGHT)
+    expect(autoHeight('home', 1, true)).toBe(310 + DAILY_INVITE_HEIGHT)
+  })
+
+  it('a daily usa a mesma altura de atualização de tarefa', () => {
+    expect(autoHeight('daily', 2)).toBe(560)
   })
 })

@@ -10,15 +10,24 @@ import { useSessionUsers } from '../../panel/hooks/use-session-users'
 import { useCreateTask } from '../../panel/hooks/use-create-task'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
+import type { DailyTodayDto } from '@agilebox/contract'
 import { trayCopy } from '../copy'
 import { filterTasks } from '../search'
 import { TaskRow } from './TaskRow'
+import { DailyInviteCard } from './DailyInviteCard'
 import styles from '../Tray.module.css'
+import dailyStyles from './Daily.module.css'
 
 type Scope = 'recent' | 'frequent'
 
 export interface HomeScreenProps {
   readonly highlightTaskId: string | null
+  /** Estado da daily de hoje (undefined enquanto carrega ou se falhar). */
+  readonly daily?: DailyTodayDto | undefined
+  /** Cartão de convite visível: devida e não dispensada nesta sessão. */
+  readonly inviteVisible: boolean
+  readonly onStartDaily: () => void
+  readonly onDismissDaily: () => void
   readonly onOpenTask: (taskId: string) => void
   readonly onCreated: (id: string) => void
   readonly onNewTask: () => void
@@ -28,6 +37,10 @@ export interface HomeScreenProps {
 
 export function HomeScreen({
   highlightTaskId,
+  daily,
+  inviteVisible,
+  onStartDaily,
+  onDismissDaily,
   onOpenTask,
   onNewTask,
   onCreated,
@@ -118,6 +131,13 @@ export function HomeScreen({
             {agingCount === 1 ? 'parada' : 'paradas'}
           </p>
         </header>
+        {inviteVisible ? (
+          <DailyInviteCard onStart={onStartDaily} onLater={onDismissDaily} />
+        ) : daily ? (
+          <button type="button" className={dailyStyles.dailyLink} onClick={onStartDaily}>
+            {daily.due ? trayCopy.dailyRegister : trayCopy.dailyEdit}
+          </button>
+        ) : null}
         <input
           className={styles.search}
           aria-label={trayCopy.search}

@@ -33,6 +33,8 @@ export type { SegmentedControlProps, SegmentedOption } from './components/Segmen
 export { Skeleton } from './components/Skeleton'
 export type { SkeletonProps } from './components/Skeleton'
 export { StatusChip } from './components/StatusChip'
+export { StepIndicator } from './components/StepIndicator'
+export type { StepIndicatorProps } from './components/StepIndicator'
 export { TaskKey } from './components/TaskKey'
 export type { TaskKeyProps } from './components/TaskKey'
 export type { StatusChipProps } from './components/StatusChip'
