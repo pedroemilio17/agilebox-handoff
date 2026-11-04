@@ -2,6 +2,8 @@ import { createOrganization, toOrganizationId } from '@agilebox/core'
 import type {
   BoardSettings,
   ChecklistItem,
+  DefinitionOfDoneItem,
+  DefinitionOfDoneItemId,
   Contributor,
   TaskComment,
   Meeting,
@@ -9,6 +11,7 @@ import type {
   OrganizationId,
   Participation,
   Project,
+  ProjectId,
   Task,
   TaskId,
   TimelineEvent,
@@ -18,6 +21,7 @@ import type {
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
+  DefinitionOfDoneRepository,
   TaskCommentRepository,
   MeetingRepository,
   OrganizationRepository,
@@ -37,6 +41,7 @@ export interface InMemoryState {
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   comments: Map<OrganizationId, Map<string, TaskComment>>
   contributors: Map<OrganizationId, Map<string, Contributor>>
+  definitionOfDone: Map<OrganizationId, Map<string, DefinitionOfDoneItem>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
@@ -60,6 +65,7 @@ export function createInMemoryState(): InMemoryState {
     checklist: new Map(),
     comments: new Map(),
     contributors: new Map(),
+    definitionOfDone: new Map(),
     meetings: new Map(),
     participations: new Map(),
     projects: new Map(),
@@ -130,6 +136,34 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
   async remove(org: OrganizationId, itemId: ChecklistItem['id']) {
     await Promise.resolve()
     bucket(this.state.checklist, org).delete(itemId)
+  }
+}
+
+export class InMemoryDefinitionOfDoneRepository implements DefinitionOfDoneRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.definitionOfDone, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort((a, b) => a.position - b.position)
+  }
+  async listByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    return [...bucket(this.state.definitionOfDone, org).values()].sort(
+      (a, b) => a.projectId.localeCompare(b.projectId) || a.position - b.position,
+    )
+  }
+  async saveMany(org: OrganizationId, items: readonly DefinitionOfDoneItem[]) {
+    await Promise.resolve()
+    const projects = bucket(this.state.projects, org)
+    const values = bucket(this.state.definitionOfDone, org)
+    for (const item of items) {
+      if (item.organizationId === org && projects.has(item.projectId)) values.set(item.id, item)
+    }
+  }
+  async remove(org: OrganizationId, itemId: DefinitionOfDoneItemId) {
+    await Promise.resolve()
+    bucket(this.state.definitionOfDone, org).delete(itemId)
   }
 }
 

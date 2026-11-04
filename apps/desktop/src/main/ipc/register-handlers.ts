@@ -116,6 +116,21 @@ export function registerHandlers(
   register('participations.setRate', (actor, input) =>
     useCases.participations.setRate.execute(actor, input),
   )
+  register('projects.definitionOfDone.list', (actor, input) =>
+    useCases.projects.definitionOfDone.list.execute(actor, input),
+  )
+  register('projects.definitionOfDone.add', (actor, input) =>
+    useCases.projects.definitionOfDone.add.execute(actor, input),
+  )
+  register('projects.definitionOfDone.rename', (actor, input) =>
+    useCases.projects.definitionOfDone.rename.execute(actor, input),
+  )
+  register('projects.definitionOfDone.remove', (actor, input) =>
+    useCases.projects.definitionOfDone.remove.execute(actor, input),
+  )
+  register('projects.definitionOfDone.move', (actor, input) =>
+    useCases.projects.definitionOfDone.move.execute(actor, input),
+  )
   register('contributors.list', (actor) => useCases.contributors.list.execute(actor))
   register('contributors.create', (actor, input) =>
     useCases.contributors.create.execute(actor, input),

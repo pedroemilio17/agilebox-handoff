@@ -14,6 +14,7 @@ import type {
   Actor,
   BoardSettings,
   ChecklistItem,
+  DefinitionOfDoneItem,
   WipLimits,
   Contributor,
   Meeting,
@@ -29,6 +30,7 @@ import type {
 import type {
   BoardSettingsDto,
   ChecklistItemDto,
+  DefinitionOfDoneItemDto,
   WipLimitsDto,
   ContributorDto,
   DashboardDto,
@@ -86,13 +88,18 @@ export function toContributorDto(contributor: Contributor, actor: Actor): Contri
   }
 }
 
-export function toProjectDto(project: Project): ProjectDto {
+export function toProjectDto(project: Project, definitionOfDoneCount: number): ProjectDto {
   return {
     id: project.id,
     name: project.name,
     createdBy: project.createdBy,
     createdAt: project.createdAt,
+    definitionOfDoneCount,
   }
+}
+
+export function toDefinitionOfDoneItemDto(item: DefinitionOfDoneItem): DefinitionOfDoneItemDto {
+  return { id: item.id, projectId: item.projectId, title: item.title, position: item.position }
 }
 
 export function toParticipationSummaryDto(
@@ -167,11 +174,13 @@ export function toTaskDetailDto(
   names: Pick<TimelineNames, 'user' | 'contributor'>,
   checklist: readonly ChecklistItem[],
   comments: readonly TaskCommentDto[],
+  definitionOfDone: readonly DefinitionOfDoneItem[],
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   return {
     ...toTaskDto(task, taskPrefix, checklist, comments.length),
     checklist: checklist.map(toChecklistItemDto),
+    projectDefinitionOfDone: definitionOfDone.map(toDefinitionOfDoneItemDto),
     comments: [...comments],
     participations: task.participations.map((participation) =>
       toParticipationSummaryDto(participation, task.organizationId, actor, names),

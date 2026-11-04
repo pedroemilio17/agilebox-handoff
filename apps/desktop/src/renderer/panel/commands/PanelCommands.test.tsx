@@ -25,6 +25,7 @@ describe('comandos do painel', () => {
                 name: 'AgileBox',
                 createdBy: USER_ID,
                 createdAt: task.createdAt,
+                definitionOfDoneCount: 0,
               },
             ]}
             people={[

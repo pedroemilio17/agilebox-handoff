@@ -94,6 +94,7 @@ describe('schemas de tarefas', () => {
       total: null,
       canEdit: true,
       readOnly: false,
+      projectDefinitionOfDone: [],
     }
     expect(getTaskOutputSchema.parse(detail)).toEqual(detail)
     expect(

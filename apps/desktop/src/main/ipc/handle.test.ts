@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PermissionDeniedError, NotFoundError, toUserId, toOrganizationId } from '@agilebox/core'
+import {
+  DefinitionOfDoneNotConfirmedError,
+  PermissionDeniedError,
+  NotFoundError,
+  toUserId,
+  toOrganizationId,
+} from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import type { ActorSession } from '@agilebox/application'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
@@ -63,6 +69,24 @@ describe('handler IPC', () => {
     await expect(handler({}, { name: 'x' })).resolves.toEqual({
       ok: false,
       error: { code: 'CONFLICT', message: 'Ocorreu um erro inesperado' },
+    })
+  })
+
+  it('leva os itens que faltaram na conclusão ao renderer', async () => {
+    const missing = [{ id: '01J8Y4G2XK8Z1S6M3Q9W0A5V01', title: 'Testes passando' }]
+    const handler = createIpcHandler(inputSchema, session, () => {
+      throw new DefinitionOfDoneNotConfirmedError(missing)
+    })
+
+    const result = await handler({}, { name: 'Projeto' })
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'DEFINITION_OF_DONE_NOT_CONFIRMED',
+        message: 'Confirme a definição de pronto antes de concluir',
+        missingItems: missing,
+      },
     })
   })
 })

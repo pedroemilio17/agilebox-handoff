@@ -55,6 +55,7 @@ describe('mappers de DTO', () => {
       },
       [],
       [],
+      [],
     )
 
     expect(dto.participations[0]?.rate).toBeNull()
@@ -83,13 +84,14 @@ describe('mappers de DTO', () => {
       names,
       [],
       [],
+      [],
     )
     expect(managerDto.participations[0]?.rate).toBe(45)
     expect(managerDto.total).toBe(90)
     expect(managerDto.canEdit).toBe(true)
     expect(managerDto.readOnly).toBe(false)
 
-    const memberDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), true, names, [], [])
+    const memberDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), true, names, [], [], [])
     expect(memberDto.canEdit).toBe(false)
     expect(memberDto.readOnly).toBe(true)
   })
@@ -130,6 +132,7 @@ describe('mappers de DTO', () => {
       false,
       { user: () => 'Ana Silva', contributor: () => 'Cliente' },
       [done, open],
+      [],
       [],
     )
     expect(detail.checklist.map((item) => item.title)).toEqual(['Revisar', 'Testar'])

@@ -13,6 +13,7 @@ export const timelineEventTypeSchema = z.enum([
   'priority_changed',
   'blocked',
   'unblocked',
+  'definition_confirmed',
   'checklist_item_added',
   'checklist_item_done',
   'checklist_item_reopened',

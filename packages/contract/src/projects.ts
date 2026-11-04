@@ -12,6 +12,8 @@ export const projectDtoSchema = z.object({
   name: nameSchema,
   createdBy: ulidSchema,
   createdAt: isoDateTimeSchema,
+  /** Quantos itens a definição de pronto tem (0 = conclusão sem conferência). */
+  definitionOfDoneCount: z.number().int().nonnegative().safe(),
 })
 
 export const listProjectsOutputSchema = z.array(projectDtoSchema)

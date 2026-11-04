@@ -1,6 +1,7 @@
 import { createSqliteClient } from './client.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
+import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
@@ -21,6 +22,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     meetings: createSqliteMeetingRepository(database),
     comments: createSqliteTaskCommentRepository(database),
     boardSettings: createSqliteBoardSettingsRepository(database),
+    definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
   }
   return {
     ...repositories,

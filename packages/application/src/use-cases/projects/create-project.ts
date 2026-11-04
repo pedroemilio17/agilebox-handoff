@@ -1,11 +1,16 @@
 import { createProject, toProjectId } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, Project } from '@agilebox/core'
 import type { CreateProjectInput, ProjectDto } from '@agilebox/contract'
 import { toProjectDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 
 export class CreateProject {
   constructor(private readonly deps: AppDeps) {}
+
+  private async toDto(actor: Actor, project: Project): Promise<ProjectDto> {
+    const items = await this.deps.definitionOfDone.listByProject(actor.organizationId, project.id)
+    return toProjectDto(project, items.length)
+  }
 
   async execute(actor: Actor, input: CreateProjectInput): Promise<ProjectDto> {
     const candidate = createProject({
@@ -16,7 +21,7 @@ export class CreateProject {
       createdAt: await this.deps.clock.now(actor.organizationId),
     })
     const existing = await this.deps.projects.findByNameKey(actor.organizationId, candidate.nameKey)
-    if (existing) return toProjectDto(existing)
+    if (existing) return this.toDto(actor, existing)
     const project = await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
       const raced = await repositories.projects.findByNameKey(
         actor.organizationId,
@@ -38,6 +43,6 @@ export class CreateProject {
         ids: [project.id],
       })
     }
-    return toProjectDto(project)
+    return this.toDto(actor, project)
   }
 }

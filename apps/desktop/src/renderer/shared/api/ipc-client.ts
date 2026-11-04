@@ -15,7 +15,8 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     input: ApiInput<Channel>,
   ): Promise<ApiOutput<Channel>> =>
     bridge.invoke(channel, input).then((result) => {
-      if (!result.ok) throw new ApiError(result.error.code, result.error.message)
+      if (!result.ok)
+        throw new ApiError(result.error.code, result.error.message, result.error.missingItems)
       return result.value
     })
 
@@ -32,6 +33,13 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       listMembers: (input) => call('projects.listMembers', input),
       addMember: (input) => call('projects.addMember', input),
       removeMember: (input) => call('projects.removeMember', input),
+      definitionOfDone: {
+        list: (input) => call('projects.definitionOfDone.list', input),
+        add: (input) => call('projects.definitionOfDone.add', input),
+        rename: (input) => call('projects.definitionOfDone.rename', input),
+        remove: (input) => call('projects.definitionOfDone.remove', input),
+        move: (input) => call('projects.definitionOfDone.move', input),
+      },
     },
     tasks: {
       listBoard: (input) => call('tasks.listBoard', input),

@@ -6,6 +6,7 @@ import type {
   Clock,
   TaskCommentRepository,
   ContributorRepository,
+  DefinitionOfDoneRepository,
   IdGenerator,
   MeetingRepository,
   OrganizationRepository,
@@ -26,6 +27,7 @@ export interface AppDeps {
   readonly clock: Clock
   readonly comments: TaskCommentRepository
   readonly contributors: ContributorRepository
+  readonly definitionOfDone: DefinitionOfDoneRepository
   readonly idGenerator: IdGenerator
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository

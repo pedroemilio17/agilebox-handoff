@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { checklistItemDtoSchema, checklistProgressDtoSchema } from './checklist'
 import { taskCommentDtoSchema } from './comments'
 import { wipColumnDtoSchema, wipLimitsSchema } from './board-settings'
+import { definitionOfDoneItemDtoSchema } from './definition-of-done'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
@@ -58,6 +59,8 @@ export const getTaskOutputSchema = taskDtoSchema
   .extend({
     participations: z.array(z.lazy(() => participationSummaryDtoSchema)),
     checklist: z.array(checklistItemDtoSchema),
+    /** Definição de pronto do projeto, para a conferência ao concluir (vazia = sem conferência). */
+    projectDefinitionOfDone: z.array(definitionOfDoneItemDtoSchema),
     comments: z.array(taskCommentDtoSchema),
     total: visibleRateSchema,
     canEdit: z.boolean(),
@@ -66,12 +69,15 @@ export const getTaskOutputSchema = taskDtoSchema
   .refine((task) => task.canEdit !== task.readOnly, {
     message: 'Detalhe deve ser editável ou somente leitura',
   })
+/** Ids dos itens da definição de pronto que o usuário confirmou ao concluir a tarefa. */
+export const confirmedDefinitionItemIdsSchema = z.array(ulidSchema)
 export const createTaskInputSchema = z.object({
   projectId: ulidSchema,
   title: nameSchema,
   status: taskStatusSchema.optional(),
   responsibleId: ulidSchema.optional(),
   deadline: taskDeadlineSchema.optional(),
+  confirmedDefinitionItemIds: confirmedDefinitionItemIdsSchema.optional(),
 })
 export const createTaskOutputSchema = taskDtoSchema
 export const taskUpdateChangesSchema = z
@@ -92,7 +98,11 @@ export const taskUpdateInputSchema = z.object({
   changes: taskUpdateChangesSchema,
 })
 export const taskUpdateOutputSchema = taskDtoSchema
-export const moveTaskInputSchema = z.object({ taskId: ulidSchema, status: taskStatusSchema })
+export const moveTaskInputSchema = z.object({
+  taskId: ulidSchema,
+  status: taskStatusSchema,
+  confirmedDefinitionItemIds: confirmedDefinitionItemIdsSchema.optional(),
+})
 export const moveTaskOutputSchema = taskDtoSchema
 export const blockTaskInputSchema = z.object({ taskId: ulidSchema, reason: taskBlockReasonSchema })
 export const blockTaskOutputSchema = taskDtoSchema

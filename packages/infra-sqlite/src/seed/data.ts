@@ -8,6 +8,12 @@ export const demoSeedData = {
     { name: 'Gestor', email: 'gestor@agilebox.demo', role: 'manager' as const },
   ],
   projects: ['Projeto A', 'Projeto B', 'Projeto C'],
+  /** Definição de pronto por projeto (mesma ordem de `projects`). Projeto C fica sem itens. */
+  definitionOfDone: [
+    ['Testes passando', 'Documentação atualizada', 'Revisado por outra pessoa'],
+    ['Revisado pelo gestor'],
+    [],
+  ],
   contributors: ['Cliente Alfa', 'Parceiro Beta'],
   tasks: [
     {

@@ -89,6 +89,7 @@ describe('Bandeja: tela inicial', () => {
           name: 'Aurora',
           createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
           createdAt: A.createdAt,
+          definitionOfDoneCount: 0,
         },
       ])
       vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
@@ -243,7 +244,13 @@ describe('Bandeja: nova tarefa', () => {
   it('interpreta projeto e data também no formulário de criação', async () => {
     const { api, user } = setup([], (api) => {
       vi.spyOn(api.projects, 'list').mockResolvedValue([
-        { id: A.projectId, name: 'Aurora', createdBy: A.id, createdAt: A.createdAt },
+        {
+          id: A.projectId,
+          name: 'Aurora',
+          createdBy: A.id,
+          createdAt: A.createdAt,
+          definitionOfDoneCount: 0,
+        },
       ])
       vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
       vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id }))
@@ -262,8 +269,20 @@ describe('Bandeja: nova tarefa', () => {
   it('cria, abre a tarefa e ao voltar mostra "Tarefa criada"', async () => {
     const { api, shell, user } = setup()
     const projects: ProjectDto[] = [
-      { id: '01J8Y4G2XK8Z1S6M3Q9W0A5P01', name: 'Aurora', createdBy: A.id, createdAt: A.createdAt },
-      { id: '01J8Y4G2XK8Z1S6M3Q9W0A5P02', name: 'Boreal', createdBy: A.id, createdAt: A.createdAt },
+      {
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P01',
+        name: 'Aurora',
+        createdBy: A.id,
+        createdAt: A.createdAt,
+        definitionOfDoneCount: 0,
+      },
+      {
+        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P02',
+        name: 'Boreal',
+        createdBy: A.id,
+        createdAt: A.createdAt,
+        definitionOfDoneCount: 0,
+      },
     ]
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     const created = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC3', 'Nova coisa')

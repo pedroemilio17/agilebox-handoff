@@ -29,6 +29,16 @@ export function validateChecklistTitle(title: string): string {
   return trimmed
 }
 
+export const DEFINITION_OF_DONE_TITLE_MAX_LENGTH = 200
+
+export function validateDefinitionOfDoneTitle(title: string): string {
+  const trimmed = title.trim()
+  if (!trimmed) throw new ValidationError('Título do item da definição de pronto obrigatório')
+  if (Array.from(trimmed).length > DEFINITION_OF_DONE_TITLE_MAX_LENGTH)
+    throw new ValidationError('Item da definição de pronto deve ter até 200 caracteres')
+  return trimmed
+}
+
 export function validateDefaultRate(rate: number): void {
   validateHundredths(rate)
 }

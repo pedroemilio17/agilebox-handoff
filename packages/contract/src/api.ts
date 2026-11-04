@@ -95,6 +95,16 @@ import {
 } from './meetings'
 import { setDefaultRateInputSchema, setDefaultRateOutputSchema } from './users'
 import {
+  addDefinitionOfDoneItemInputSchema,
+  definitionOfDoneChangeOutputSchema,
+  listDefinitionOfDoneInputSchema,
+  listDefinitionOfDoneOutputSchema,
+  moveDefinitionOfDoneItemInputSchema,
+  removeDefinitionOfDoneItemInputSchema,
+  renameDefinitionOfDoneItemInputSchema,
+} from './definition-of-done'
+import { API_CHANNELS, type ApiChannel } from './channels'
+import {
   getCurrentSessionInputSchema,
   getCurrentSessionOutputSchema,
   listSessionUsersInputSchema,
@@ -102,7 +112,6 @@ import {
   switchUserInputSchema,
   switchUserOutputSchema,
 } from './session'
-import { API_CHANNELS, type ApiChannel } from './channels'
 
 type SchemaPair = { input: z.ZodType; output: z.ZodType }
 
@@ -127,6 +136,26 @@ export const API_SCHEMA_REGISTRY = {
   'projects.removeMember': {
     input: removeProjectMemberInputSchema,
     output: removeProjectMemberOutputSchema,
+  },
+  'projects.definitionOfDone.list': {
+    input: listDefinitionOfDoneInputSchema,
+    output: listDefinitionOfDoneOutputSchema,
+  },
+  'projects.definitionOfDone.add': {
+    input: addDefinitionOfDoneItemInputSchema,
+    output: definitionOfDoneChangeOutputSchema,
+  },
+  'projects.definitionOfDone.rename': {
+    input: renameDefinitionOfDoneItemInputSchema,
+    output: definitionOfDoneChangeOutputSchema,
+  },
+  'projects.definitionOfDone.remove': {
+    input: removeDefinitionOfDoneItemInputSchema,
+    output: definitionOfDoneChangeOutputSchema,
+  },
+  'projects.definitionOfDone.move': {
+    input: moveDefinitionOfDoneItemInputSchema,
+    output: definitionOfDoneChangeOutputSchema,
   },
   'tasks.listBoard': { input: listBoardInputSchema, output: listBoardOutputSchema },
   'tasks.getBoardFlow': { input: listBoardInputSchema, output: getBoardFlowOutputSchema },
@@ -238,6 +267,13 @@ export interface AgileBoxApi {
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
+    definitionOfDone: {
+      list: Method<'projects.definitionOfDone.list'>
+      add: Method<'projects.definitionOfDone.add'>
+      rename: Method<'projects.definitionOfDone.rename'>
+      remove: Method<'projects.definitionOfDone.remove'>
+      move: Method<'projects.definitionOfDone.move'>
+    }
   }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>

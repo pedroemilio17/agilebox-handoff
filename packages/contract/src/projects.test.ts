@@ -22,6 +22,7 @@ describe('schemas de projetos', () => {
       name: 'Projeto Ágil',
       createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
       createdAt: '2026-10-31T12:00:00.000Z',
+      definitionOfDoneCount: 0,
     }
     expect(createProjectOutputSchema.parse(project)).toEqual(project)
     expect(listProjectsOutputSchema.parse([project])).toEqual([project])

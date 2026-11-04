@@ -2,6 +2,13 @@ import type { AppDeps } from './deps'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ListProjects } from './use-cases/projects/list-projects'
 import {
+  AddDefinitionOfDoneItem,
+  ListDefinitionOfDone,
+  MoveDefinitionOfDoneItem,
+  RemoveDefinitionOfDoneItem,
+  RenameDefinitionOfDoneItem,
+} from './use-cases/projects/definition-of-done'
+import {
   AddProjectMember,
   ListProjectMembers,
   RemoveProjectMember,
@@ -71,11 +78,18 @@ export function createUseCases(deps: AppDeps) {
       setDefaultRate: new SetContributorDefaultRate(deps),
     },
     projects: {
-      listProjects: new ListProjects(deps.projects),
+      listProjects: new ListProjects(deps.projects, deps.definitionOfDone),
       createProject: new CreateProject(deps),
       listMembers: new ListProjectMembers(deps),
       addMember: new AddProjectMember(deps),
       removeMember: new RemoveProjectMember(deps),
+      definitionOfDone: {
+        list: new ListDefinitionOfDone(deps),
+        add: new AddDefinitionOfDoneItem(deps),
+        rename: new RenameDefinitionOfDoneItem(deps),
+        remove: new RemoveDefinitionOfDoneItem(deps),
+        move: new MoveDefinitionOfDoneItem(deps),
+      },
     },
     tasks: {
       create: new CreateTask(deps),

@@ -36,6 +36,7 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     changeNotifier: new RecordingNotifier(),
     clock: new FixedClock('2026-01-20T12:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
+    definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
     idGenerator: new SequentialIdGenerator(),

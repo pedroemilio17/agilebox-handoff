@@ -128,6 +128,8 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `reabriu a subtarefa: ${event.payload.title}`
     case 'checklist_item_removed':
       return `removeu a subtarefa: ${event.payload.title}`
+    case 'definition_confirmed':
+      return `concluiu a tarefa confirmando a definição de pronto (${event.payload.count === 1 ? '1 item' : `${event.payload.count} itens`})`
     case 'comment_added':
       return 'comentou na tarefa'
     case 'comment_removed':

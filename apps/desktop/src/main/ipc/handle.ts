@@ -1,5 +1,5 @@
 import type { Actor } from '@agilebox/core'
-import { DomainError } from '@agilebox/core'
+import { DefinitionOfDoneNotConfirmedError, DomainError } from '@agilebox/core'
 import type { ActorSession } from '@agilebox/application'
 import type { ApiResult } from '@agilebox/contract'
 import { failureResult, successResult } from '@agilebox/contract'
@@ -11,6 +11,9 @@ export interface InputSchema<Input> {
 export type IpcHandler = (event: unknown, input: unknown) => Promise<ApiResult<unknown>>
 
 function errorResult(error: unknown): ApiResult<never> {
+  // A conclusão sem confirmação leva os itens que faltaram, para a UI abrir a conferência.
+  if (error instanceof DefinitionOfDoneNotConfirmedError)
+    return failureResult(error.code, error.message, [...error.missingItems])
   if (error instanceof DomainError) return failureResult(error.code, error.message)
   return failureResult('CONFLICT', 'Ocorreu um erro inesperado')
 }

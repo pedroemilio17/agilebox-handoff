@@ -103,4 +103,40 @@ describe('seed de demonstração', () => {
     expect(timeline.filter((event) => event.type === 'comment_added')).toHaveLength(2)
     expect(timeline.some((event) => event.asManager)).toBe(true)
   })
+
+  it('define a definição de pronto da demonstração e confirma as conclusões', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const organizationId = toOrganizationId('00000000000000000000000001')
+    await seedDemo({
+      ...unitOfWork.repositories,
+      unitOfWork,
+      changeNotifier: new RecordingNotifier(),
+      saveOrganization: async () => {
+        await Promise.resolve()
+      },
+      now: () => '2026-11-01T12:00:00.000Z',
+    })
+    const projects = await unitOfWork.repositories.projects.list(organizationId)
+    const titlesOf = async (name: string) => {
+      const project = projects.find((candidate) => candidate.name === name)!
+      return (
+        await unitOfWork.repositories.definitionOfDone.listByProject(organizationId, project.id)
+      ).map((item) => item.title)
+    }
+    expect(await titlesOf('Projeto A')).toEqual([
+      'Testes passando',
+      'Documentação atualizada',
+      'Revisado por outra pessoa',
+    ])
+    expect(await titlesOf('Projeto B')).toEqual(['Revisado pelo gestor'])
+    expect(await titlesOf('Projeto C')).toEqual([])
+
+    const tasks = await unitOfWork.repositories.tasks.listBoard(organizationId, {})
+    const published = tasks.find((task) => task.title === 'Publicar versão de teste')!
+    expect(published.status).toBe('done')
+    const timeline = await unitOfWork.repositories.timeline.listByTask(organizationId, published.id)
+    expect(timeline.filter((event) => event.type === 'definition_confirmed')).toEqual([
+      expect.objectContaining({ payload: { count: 3 } }),
+    ])
+  })
 })

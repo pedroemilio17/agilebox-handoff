@@ -45,6 +45,7 @@ import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
 import { loadCommentDtos } from './comments'
+import { definitionOfDoneCompletion } from './definition-of-done-guard'
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
@@ -82,6 +83,14 @@ export class CreateTask {
         responsibleRateCents: user.defaultRateCents,
       })
       let created = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
+      const definitionEvents = await definitionOfDoneCompletion(
+        repositories.definitionOfDone,
+        actor.organizationId,
+        projectId,
+        initialTask.status,
+        created.status,
+        input.confirmedDefinitionItemIds ?? [],
+      )
       if (input.deadline !== undefined)
         created = setDeadline(
           created,
@@ -115,7 +124,7 @@ export class CreateTask {
         payload: {},
       })
       const initialEvents = await Promise.all(
-        diffTask(initialTask, created).map(async (draft) =>
+        [...diffTask(initialTask, created), ...definitionEvents].map(async (draft) =>
           createTimelineEvent({
             ...draft,
             id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
@@ -150,12 +159,25 @@ export class GetTaskDetail {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     const comments = await loadCommentDtos(this.deps, actor, task)
+    const definitionOfDone = await this.deps.definitionOfDone.listByProject(
+      actor.organizationId,
+      task.projectId,
+    )
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
         : []
     return {
-      ...toTaskDetailDto(task, prefix, actor, isMember, names, checklist, comments),
+      ...toTaskDetailDto(
+        task,
+        prefix,
+        actor,
+        isMember,
+        names,
+        checklist,
+        comments,
+        definitionOfDone,
+      ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
   }
@@ -205,6 +227,7 @@ abstract class ChangeTask {
     rawTaskId: string,
     transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
+    confirmedDefinitionItemIds: readonly string[] = [],
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -214,7 +237,15 @@ abstract class ChangeTask {
     const now = await this.deps.clock.now(actor.organizationId)
     const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
-    const drafts = [...diffTask(task, updated), ...extraEvents]
+    const definitionEvents = await definitionOfDoneCompletion(
+      this.deps.definitionOfDone,
+      actor.organizationId,
+      task.projectId,
+      task.status,
+      updated.status,
+      confirmedDefinitionItemIds,
+    )
+    const drafts = [...diffTask(task, updated), ...extraEvents, ...definitionEvents]
     const events = await Promise.all(
       drafts.map(async (draft) =>
         createTimelineEvent({
@@ -303,9 +334,19 @@ export class UnblockTask extends ChangeTask {
 export class MoveTask extends ChangeTask {
   async execute(
     actor: Actor,
-    input: { readonly taskId: string; readonly status: Task['status'] },
+    input: {
+      readonly taskId: string
+      readonly status: Task['status']
+      readonly confirmedDefinitionItemIds?: readonly string[] | undefined
+    },
   ): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => setStatus(task, input.status))
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => setStatus(task, input.status),
+      [],
+      input.confirmedDefinitionItemIds ?? [],
+    )
   }
 }
 

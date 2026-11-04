@@ -57,6 +57,13 @@
       "when": 1793802578816,
       "tag": "0007_meeting_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793805486133,
+      "tag": "0008_definition_of_done",
+      "breakpoints": true
     }
   ]
 }

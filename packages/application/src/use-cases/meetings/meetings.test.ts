@@ -30,6 +30,7 @@ function setup() {
     changeNotifier: notifier,
     clock: new FixedClock('2026-01-20T12:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
+    definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,
     contributors: unitOfWork.repositories.contributors,

@@ -78,6 +78,16 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
     }
   }
 
+  // Definição de pronto criada pelo criador de cada projeto (o primeiro usuário).
+  for (const [index, titles] of demoSeedData.definitionOfDone.entries()) {
+    for (const title of titles) {
+      await useCases.projects.definitionOfDone.add.execute(actor, {
+        projectId: projects[index]!.id,
+        title,
+      })
+    }
+  }
+
   for (const name of demoSeedData.contributors) {
     await useCases.contributors.create.execute(actor, { name })
   }
@@ -97,7 +107,22 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       },
     })
     if (item.status !== 'planning') {
-      await useCases.tasks.move.execute(actor, { taskId: task.id, status: item.status })
+      // Concluir exige confirmar a definição de pronto do projeto: a demonstração confirma tudo.
+      const confirmation =
+        item.status === 'done'
+          ? {
+              confirmedDefinitionItemIds: (
+                await useCases.projects.definitionOfDone.list.execute(actor, {
+                  projectId: projects[item.project]!.id,
+                })
+              ).map((definitionItem) => definitionItem.id),
+            }
+          : {}
+      await useCases.tasks.move.execute(actor, {
+        taskId: task.id,
+        status: item.status,
+        ...confirmation,
+      })
     }
     if ('priority' in item && item.priority === 'high') {
       await useCases.tasks.update.execute(actor, {

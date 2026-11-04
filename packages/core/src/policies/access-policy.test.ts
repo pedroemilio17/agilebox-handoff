@@ -94,6 +94,15 @@ describe('política de acesso', () => {
     expect(policy.canManageMembers(collaborator, project)).toBe(false)
     expect(policy.canManageMembers(collaborator, { ...project, createdBy: user })).toBe(true)
     expect(policy.canManageMembers(manager, project)).toBe(true)
+    // A definição de pronto segue a mesma regra do botão Membros.
+    expect(policy.canManageDefinitionOfDone(collaborator, project)).toBe(false)
+    expect(policy.canManageDefinitionOfDone(collaborator, { ...project, createdBy: user })).toBe(
+      true,
+    )
+    expect(policy.canManageDefinitionOfDone(manager, project)).toBe(true)
+    expect(
+      policy.canManageDefinitionOfDone(manager, { ...project, organizationId: otherOrg }),
+    ).toBe(false)
   })
   it('protege valores, total, agenda e dashboard', () => {
     for (const check of [policy.canSeeRate, policy.canEditRate]) {
