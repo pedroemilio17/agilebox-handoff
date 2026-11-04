@@ -17,6 +17,7 @@ import type {
   WipLimits,
   Contributor,
   Meeting,
+  MeetingOccurrence,
   Participation,
   Project,
   Task,
@@ -33,6 +34,7 @@ import type {
   DashboardDto,
   GetTaskDto,
   MeetingDto,
+  MeetingOccurrenceDto,
   ParticipationSummaryDto,
   ProjectDto,
   TaskCommentDto,
@@ -209,10 +211,24 @@ export function toMeetingDto(meeting: Meeting): MeetingDto {
     title: meeting.title,
     date: meeting.date,
     time: meeting.time,
+    endTime: meeting.endTime,
+    kind: meeting.kind,
+    recurrence: meeting.recurrence,
+    recurrenceUntil: meeting.recurrenceUntil,
     participants: [...meeting.participants],
     createdBy: meeting.createdBy,
     createdAt: meeting.createdAt,
     updatedAt: meeting.updatedAt,
+  }
+}
+
+export function toMeetingOccurrenceDto(occurrence: MeetingOccurrence): MeetingOccurrenceDto {
+  return {
+    ...toMeetingDto(occurrence.meeting),
+    seriesId: occurrence.seriesId,
+    occurrenceDate: occurrence.date,
+    occurrenceIndex: occurrence.index,
+    occurrenceEndTime: occurrence.endTime,
   }
 }
 

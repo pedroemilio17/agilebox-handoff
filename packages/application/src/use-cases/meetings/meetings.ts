@@ -1,48 +1,76 @@
 import {
+  addDays,
+  canSeeMeeting,
   createMeeting,
+  expandMeetingOccurrences,
   NotFoundError,
   parseDateOnly,
   PermissionDeniedError,
   toMeetingId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
-import type { CreateMeetingInput, MeetingDto, UpdateMeetingInput } from '@agilebox/contract'
-import { toMeetingDto } from '../../mappers'
+import type { Actor, DateOnly } from '@agilebox/core'
+import type {
+  CreateMeetingInput,
+  MeetingDto,
+  MeetingOccurrenceDto,
+  UpdateMeetingInput,
+} from '@agilebox/contract'
+import { toMeetingDto, toMeetingOccurrenceDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 
-interface ListMonthInput {
-  readonly month: string
+interface ListRangeInput {
+  readonly rangeStart: string
+  readonly rangeEnd: string
 }
 
 interface MeetingIdInput {
   readonly meetingId: string
 }
 
+/** Horizonte de "Próximos": 52 semanas, o mesmo limite das séries sem data final. */
+const UPCOMING_HORIZON_DAYS = 52 * 7
+
 function requireManager(actor: Actor): void {
   if (actor.role !== 'manager')
     throw new PermissionDeniedError('Só o gestor cria e edita agendamentos')
 }
 
-export class ListMonthMeetings {
+function optionalDate(value: string | null | undefined): DateOnly | null {
+  return value ? parseDateOnly(value) : null
+}
+
+/** Ocorrências do intervalo, só dos agendamentos que o ator pode ver. */
+async function occurrencesInRange(
+  deps: AppDeps,
+  actor: Actor,
+  rangeStart: DateOnly,
+  rangeEnd: DateOnly,
+): Promise<readonly MeetingOccurrenceDto[]> {
+  const candidates = await deps.meetings.listOverlapping(actor.organizationId, rangeStart, rangeEnd)
+  const visible = candidates.filter((meeting) => canSeeMeeting(actor, meeting))
+  return expandMeetingOccurrences(visible, rangeStart, rangeEnd).map(toMeetingOccurrenceDto)
+}
+
+export class ListMeetingOccurrences {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: ListMonthInput): Promise<readonly MeetingDto[]> {
-    const meetings = await this.deps.meetings.listByMonth(actor.organizationId, input.month)
-    return meetings.map(toMeetingDto)
+  async execute(actor: Actor, input: ListRangeInput): Promise<readonly MeetingOccurrenceDto[]> {
+    return occurrencesInRange(
+      this.deps,
+      actor,
+      parseDateOnly(input.rangeStart),
+      parseDateOnly(input.rangeEnd),
+    )
   }
 }
 
 export class ListUpcomingMeetings {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor): Promise<readonly MeetingDto[]> {
-    const today = (await this.deps.clock.now(actor.organizationId)).slice(0, 10)
-    const meetings = await this.deps.meetings.listUpcoming(
-      actor.organizationId,
-      parseDateOnly(today),
-    )
-    return meetings.map(toMeetingDto)
+  async execute(actor: Actor): Promise<readonly MeetingOccurrenceDto[]> {
+    const today = parseDateOnly((await this.deps.clock.now(actor.organizationId)).slice(0, 10))
+    return occurrencesInRange(this.deps, actor, today, addDays(today, UPCOMING_HORIZON_DAYS))
   }
 }
 
@@ -58,6 +86,10 @@ export class CreateMeeting {
       title: input.title,
       date: parseDateOnly(input.date),
       time: input.time,
+      endTime: input.endTime ?? null,
+      kind: input.kind ?? 'meeting',
+      recurrence: input.recurrence ?? 'none',
+      recurrenceUntil: optionalDate(input.recurrenceUntil),
       participants: input.participants.map(toUserId),
       createdBy: actor.userId,
       createdAt: now,
@@ -77,17 +109,26 @@ export class CreateMeeting {
 export class UpdateMeeting {
   constructor(private readonly deps: AppDeps) {}
 
+  /** Edita a série inteira: não há exceções por ocorrência nesta fase. */
   async execute(actor: Actor, input: UpdateMeetingInput): Promise<MeetingDto> {
     requireManager(actor)
     const meetingId = toMeetingId(input.meetingId)
     const existing = await this.deps.meetings.findById(actor.organizationId, meetingId)
     if (!existing) throw new NotFoundError('Agendamento não encontrado')
+    const { changes } = input
     const meeting = createMeeting({
       ...existing,
-      title: input.changes.title ?? existing.title,
-      date: input.changes.date ? parseDateOnly(input.changes.date) : existing.date,
-      time: input.changes.time ?? existing.time,
-      participants: input.changes.participants?.map(toUserId) ?? existing.participants,
+      title: changes.title ?? existing.title,
+      date: changes.date ? parseDateOnly(changes.date) : existing.date,
+      time: changes.time ?? existing.time,
+      endTime: changes.endTime !== undefined ? changes.endTime : existing.endTime,
+      kind: changes.kind ?? existing.kind,
+      recurrence: changes.recurrence ?? existing.recurrence,
+      recurrenceUntil:
+        changes.recurrenceUntil !== undefined
+          ? optionalDate(changes.recurrenceUntil)
+          : existing.recurrenceUntil,
+      participants: changes.participants?.map(toUserId) ?? existing.participants,
       updatedAt: await this.deps.clock.now(actor.organizationId),
     })
     await this.deps.unitOfWork.run(actor.organizationId, async ({ meetings }) => {
@@ -104,6 +145,7 @@ export class UpdateMeeting {
 export class DeleteMeeting {
   constructor(private readonly deps: AppDeps) {}
 
+  /** Exclui a série inteira. */
   async execute(actor: Actor, input: MeetingIdInput): Promise<void> {
     requireManager(actor)
     const meetingId = toMeetingId(input.meetingId)

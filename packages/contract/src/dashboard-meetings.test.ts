@@ -39,12 +39,18 @@ describe('schemas de dashboard e agenda', () => {
       title: 'Alinhamento semanal',
       date: '2026-11-02',
       time: '09:00',
+      endTime: '10:00',
+      kind: 'meeting',
+      recurrence: 'weekly',
+      recurrenceUntil: '2026-12-31',
       participants: [userId],
       createdBy: userId,
       createdAt: '2026-10-31T12:00:00.000Z',
       updatedAt: '2026-10-31T12:00:00.000Z',
     }
-    expect(listMeetingsInputSchema.parse({ month: '2026-11' })).toEqual({ month: '2026-11' })
+    expect(
+      listMeetingsInputSchema.parse({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' }),
+    ).toEqual({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' })
     expect(meetingDtoSchema.parse(meeting)).toEqual(meeting)
     expect(
       createMeetingInputSchema.parse({
@@ -67,7 +73,27 @@ describe('schemas de dashboard e agenda', () => {
   })
 
   it('rejeita mês, data, hora, lista de participantes e atualização inválidos', () => {
-    expect(listMeetingsInputSchema.safeParse({ month: '2026-13' }).success).toBe(false)
+    expect(
+      listMeetingsInputSchema.safeParse({ rangeStart: '2026-13-01', rangeEnd: '2026-13-30' })
+        .success,
+    ).toBe(false)
+    expect(
+      listMeetingsInputSchema.safeParse({ rangeStart: '2026-11-10', rangeEnd: '2026-11-01' })
+        .success,
+    ).toBe(false)
+    expect(
+      listMeetingsInputSchema.safeParse({ rangeStart: '2026-01-01', rangeEnd: '2027-06-01' })
+        .success,
+    ).toBe(false)
+    expect(
+      createMeetingInputSchema.safeParse({
+        title: 'Reunião',
+        date: '2026-11-02',
+        time: '09:00',
+        kind: 'prazo',
+        participants: [userId],
+      }).success,
+    ).toBe(false)
     expect(
       createMeetingInputSchema.safeParse({
         title: 'Reunião',

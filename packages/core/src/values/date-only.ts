@@ -35,6 +35,20 @@ function calendarTimestamp(value: DateOnly): number {
   return date.getTime()
 }
 
+/** Soma dias de calendário a uma data (aritmética de calendário, sem fuso nem relógio). */
+export function addDays(value: DateOnly, days: number): DateOnly {
+  const date = new Date(0)
+  date.setUTCFullYear(
+    Number(value.slice(0, 4)),
+    Number(value.slice(5, 7)) - 1,
+    Number(value.slice(8, 10)) + days,
+  )
+  const year = String(date.getUTCFullYear()).padStart(4, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return parseDateOnly(`${year}-${month}-${day}`)
+}
+
 /** Número de dias de calendário de a até b. */
 export function diffInDays(a: DateOnly, b: DateOnly): number {
   return (calendarTimestamp(b) - calendarTimestamp(a)) / 86_400_000

@@ -48,7 +48,7 @@ function setup() {
 }
 
 describe('casos de uso da agenda', () => {
-  it('lista os agendamentos do mês em ordem cronológica', async () => {
+  it('lista as ocorrências do intervalo em ordem cronológica', async () => {
     const { useCases, unitOfWork } = setup()
     const later = aMeeting()
       .with({
@@ -70,11 +70,85 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(organizationId, earlier)
 
     await expect(
-      useCases.meetings.listMonth.execute(actor, { month: '2026-02' }),
-    ).resolves.toMatchObject([{ id: earlier.id }, { id: later.id }])
+      useCases.meetings.listRange.execute(actor, {
+        rangeStart: '2026-02-01',
+        rangeEnd: '2026-02-28',
+      }),
+    ).resolves.toMatchObject([
+      { id: earlier.id, occurrenceDate: '2026-02-02', occurrenceIndex: 0, seriesId: earlier.id },
+      { id: later.id, occurrenceDate: '2026-02-20', occurrenceEndTime: '11:00' },
+    ])
   })
 
-  it('lista os próximos agendamentos a partir de hoje', async () => {
+  it('expande séries semanais nas ocorrências do intervalo', async () => {
+    const { useCases, unitOfWork } = setup()
+    const series = aMeeting()
+      .with({
+        id: toMeetingId('00000000000000000000000012'),
+        date: parseDateOnly('2026-12-29'),
+        time: '09:00',
+        endTime: '10:00',
+        recurrence: 'weekly',
+        recurrenceUntil: parseDateOnly('2027-01-12'),
+        participants: [userId],
+      })
+      .build()
+    await unitOfWork.repositories.meetings.save(organizationId, series)
+
+    const occurrences = await useCases.meetings.listRange.execute(actor, {
+      rangeStart: '2026-12-01',
+      rangeEnd: '2027-01-31',
+    })
+    expect(occurrences.map((item) => [item.occurrenceDate, item.occurrenceIndex])).toEqual([
+      ['2026-12-29', 0],
+      ['2027-01-05', 1],
+      ['2027-01-12', 2],
+    ])
+    expect(occurrences[0]).toMatchObject({
+      seriesId: series.id,
+      recurrence: 'weekly',
+      recurrenceUntil: '2027-01-12',
+      endTime: '10:00',
+      occurrenceEndTime: '10:00',
+    })
+  })
+
+  it('não mostra ao colaborador os agendamentos de que não participa', async () => {
+    const { useCases, unitOfWork } = setup()
+    const mine = aMeeting()
+      .with({ id: toMeetingId('00000000000000000000000013') })
+      .build()
+    const notMine = aMeeting()
+      .with({ id: toMeetingId('00000000000000000000000014'), participants: [managerId] })
+      .build()
+    await unitOfWork.repositories.meetings.save(organizationId, mine)
+    await unitOfWork.repositories.meetings.save(organizationId, notMine)
+
+    await expect(
+      useCases.meetings.listRange.execute(actor, {
+        rangeStart: '2026-01-01',
+        rangeEnd: '2026-01-31',
+      }),
+    ).resolves.toMatchObject([{ id: mine.id }])
+    await expect(
+      useCases.meetings.listRange.execute(manager, {
+        rangeStart: '2026-01-01',
+        rangeEnd: '2026-01-31',
+      }),
+    ).resolves.toHaveLength(2)
+  })
+
+  it('rejeita intervalo invertido', async () => {
+    const { useCases } = setup()
+    await expect(
+      useCases.meetings.listRange.execute(actor, {
+        rangeStart: '2026-02-10',
+        rangeEnd: '2026-02-01',
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('lista os próximos agendamentos a partir de hoje, incluindo ocorrências futuras de séries', async () => {
     const { useCases, unitOfWork } = setup()
     const today = aMeeting()
       .with({ date: parseDateOnly('2026-01-20') })
@@ -82,14 +156,31 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(
       organizationId,
       aMeeting()
-        .with({ date: parseDateOnly('2026-01-19') })
+        .with({ id: toMeetingId('00000000000000000000000015'), date: parseDateOnly('2026-01-19') })
         .build(),
     )
     await unitOfWork.repositories.meetings.save(organizationId, today)
+    await unitOfWork.repositories.meetings.save(
+      organizationId,
+      aMeeting()
+        .with({
+          id: toMeetingId('00000000000000000000000016'),
+          date: parseDateOnly('2026-01-13'),
+          recurrence: 'weekly',
+          recurrenceUntil: null,
+        })
+        .build(),
+    )
 
-    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toMatchObject([
-      { id: today.id },
+    const upcoming = await useCases.meetings.listUpcoming.execute(actor)
+    // Avulso e série empatam em 20/01 às 09:00; a série continua em 27/01.
+    expect(upcoming.map((item) => item.occurrenceDate).slice(0, 3)).toEqual([
+      '2026-01-20',
+      '2026-01-20',
+      '2026-01-27',
     ])
+    expect(upcoming.filter((item) => item.id === today.id)).toHaveLength(1)
+    expect(upcoming.every((item) => item.occurrenceDate >= '2026-01-20')).toBe(true)
   })
 
   it('permite somente ao gestor criar, atualizar e excluir agendamentos', async () => {
@@ -146,6 +237,83 @@ describe('casos de uso da agenda', () => {
       { kind: 'meeting', ids: [created.id] },
       { kind: 'meeting', ids: [created.id] },
     ])
+  })
+
+  it('edita e exclui a série inteira, sem exceções por ocorrência', async () => {
+    const { useCases, unitOfWork } = setup()
+    const series = aMeeting()
+      .with({
+        id: toMeetingId('00000000000000000000000017'),
+        date: parseDateOnly('2026-11-02'),
+        recurrence: 'weekly',
+      })
+      .build()
+    await unitOfWork.repositories.meetings.save(organizationId, series)
+
+    await useCases.meetings.update.execute(manager, {
+      meetingId: series.id,
+      changes: { time: '14:00', endTime: '15:00', recurrenceUntil: '2026-11-16' },
+    })
+    const afterEdit = await useCases.meetings.listRange.execute(manager, {
+      rangeStart: '2026-11-01',
+      rangeEnd: '2026-11-30',
+    })
+    expect(
+      afterEdit.map((item) => [item.occurrenceDate, item.time, item.occurrenceEndTime]),
+    ).toEqual([
+      ['2026-11-02', '14:00', '15:00'],
+      ['2026-11-09', '14:00', '15:00'],
+      ['2026-11-16', '14:00', '15:00'],
+    ])
+
+    await useCases.meetings.delete.execute(manager, { meetingId: series.id })
+    await expect(
+      useCases.meetings.listRange.execute(manager, {
+        rangeStart: '2026-11-01',
+        rangeEnd: '2026-11-30',
+      }),
+    ).resolves.toEqual([])
+  })
+
+  it('valida fim, tipo e data limite na criação e na edição', async () => {
+    const { useCases } = setup()
+    await expect(
+      useCases.meetings.create.execute(manager, {
+        title: 'Reunião',
+        date: '2026-02-10',
+        time: '09:30',
+        endTime: '09:30',
+        participants: [userId],
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+    const created = await useCases.meetings.create.execute(manager, {
+      title: 'Retro',
+      date: '2026-02-10',
+      time: '09:30',
+      endTime: '10:30',
+      kind: 'retro',
+      recurrence: 'weekly',
+      recurrenceUntil: '2026-03-10',
+      participants: [userId],
+    })
+    expect(created).toMatchObject({
+      endTime: '10:30',
+      kind: 'retro',
+      recurrence: 'weekly',
+      recurrenceUntil: '2026-03-10',
+    })
+    await expect(
+      useCases.meetings.update.execute(manager, {
+        meetingId: created.id,
+        changes: { recurrenceUntil: '2026-02-01' },
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+    await expect(
+      useCases.meetings.update.execute(manager, {
+        meetingId: created.id,
+        changes: { endTime: null, recurrenceUntil: null },
+      }),
+    ).resolves.toMatchObject({ endTime: null, recurrenceUntil: null })
   })
 
   it('rejeita atualização e exclusão de agendamento inexistente', async () => {

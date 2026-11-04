@@ -208,3 +208,21 @@ describe('comentários', () => {
     ).toBe(false)
   })
 })
+
+describe('agendamentos', () => {
+  const meeting = {
+    organizationId: org,
+    participants: [user],
+  } as unknown as Parameters<typeof policy.canSeeMeeting>[1]
+
+  it('colaborador vê só os agendamentos de que participa; gestor vê todos da organização', () => {
+    expect(policy.canSeeMeeting(collaborator, meeting)).toBe(true)
+    expect(policy.canSeeMeeting({ ...collaborator, userId: other }, meeting)).toBe(false)
+    expect(policy.canSeeMeeting({ ...collaborator, userId: other, role: 'manager' }, meeting)).toBe(
+      true,
+    )
+    expect(
+      policy.canSeeMeeting({ ...collaborator, organizationId: otherOrg, role: 'manager' }, meeting),
+    ).toBe(false)
+  })
+})

@@ -50,7 +50,7 @@ import { ListTimeline } from './use-cases/timeline/list-timeline'
 import {
   CreateMeeting,
   DeleteMeeting,
-  ListMonthMeetings,
+  ListMeetingOccurrences,
   ListUpcomingMeetings,
   UpdateMeeting,
 } from './use-cases/meetings/meetings'
@@ -121,7 +121,7 @@ export function createUseCases(deps: AppDeps) {
       setWipLimits: new SetWipLimits(deps),
     },
     meetings: {
-      listMonth: new ListMonthMeetings(deps),
+      listRange: new ListMeetingOccurrences(deps),
       listUpcoming: new ListUpcomingMeetings(deps),
       create: new CreateMeeting(deps),
       update: new UpdateMeeting(deps),

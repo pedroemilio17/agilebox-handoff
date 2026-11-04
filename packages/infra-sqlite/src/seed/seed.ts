@@ -177,6 +177,10 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       title: meeting.title,
       date: meeting.date,
       time: meeting.time,
+      endTime: meeting.endTime,
+      kind: meeting.kind,
+      recurrence: meeting.recurrence,
+      recurrenceUntil: meeting.recurrenceUntil,
       participants: meeting.participants.map((index) => users[index]!.id),
     })
   }

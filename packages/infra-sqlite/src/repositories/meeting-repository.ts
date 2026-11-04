@@ -1,6 +1,13 @@
-import { and, asc, eq, gte, lt } from 'drizzle-orm'
+import { and, asc, eq, gte, isNull, lte, or } from 'drizzle-orm'
 import type { MeetingRepository } from '@agilebox/application'
-import type { Meeting, OrganizationId, UserId } from '@agilebox/core'
+import type {
+  DateOnly,
+  Meeting,
+  MeetingKind,
+  MeetingRecurrence,
+  OrganizationId,
+  UserId,
+} from '@agilebox/core'
 import { toMeetingId, toOrganizationId, toUserId } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
 import { meetingParticipants, meetings, users } from '../schema/index.js'
@@ -15,6 +22,10 @@ function mapMeetingRow(row: MeetingRow, participants: readonly UserId[]): Meetin
     title: row.title,
     date: row.date as Meeting['date'],
     time: row.time,
+    endTime: row.endTime,
+    kind: row.kind as MeetingKind,
+    recurrence: row.recurrence as MeetingRecurrence,
+    recurrenceUntil: row.recurrenceUntil as DateOnly | null,
     participants,
     createdBy: toUserId(row.createdBy),
     createdAt: row.createdAt,
@@ -52,29 +63,23 @@ export function createSqliteMeetingRepository(database: SqliteDatabase): Meeting
       const [meeting] = await mapRows([row])
       return meeting ?? null
     },
-    async listByMonth(organizationId, month) {
-      const year = Number(month.slice(0, 4))
-      const monthNumber = Number(month.slice(5, 7))
-      const start = `${month}-01`
-      const end = new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 10)
+    async listOverlapping(organizationId, rangeStart, rangeEnd) {
       const rows = await database
         .select()
         .from(meetings)
         .where(
           and(
             eq(meetings.organizationId, organizationId),
-            gte(meetings.date, start),
-            lt(meetings.date, end),
+            lte(meetings.date, rangeEnd),
+            or(
+              and(eq(meetings.recurrence, 'none'), gte(meetings.date, rangeStart)),
+              and(
+                eq(meetings.recurrence, 'weekly'),
+                or(isNull(meetings.recurrenceUntil), gte(meetings.recurrenceUntil, rangeStart)),
+              ),
+            ),
           ),
         )
-        .orderBy(asc(meetings.date), asc(meetings.time))
-      return mapRows(rows)
-    },
-    async listUpcoming(organizationId, today) {
-      const rows = await database
-        .select()
-        .from(meetings)
-        .where(and(eq(meetings.organizationId, organizationId), gte(meetings.date, today)))
         .orderBy(asc(meetings.date), asc(meetings.time))
       return mapRows(rows)
     },
@@ -108,6 +113,10 @@ export function createSqliteMeetingRepository(database: SqliteDatabase): Meeting
         title: meeting.title,
         date: meeting.date,
         time: meeting.time,
+        endTime: meeting.endTime,
+        kind: meeting.kind,
+        recurrence: meeting.recurrence,
+        recurrenceUntil: meeting.recurrenceUntil,
         createdBy: meeting.createdBy,
         createdAt: meeting.createdAt,
         updatedAt: meeting.updatedAt,

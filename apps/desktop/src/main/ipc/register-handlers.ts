@@ -129,7 +129,7 @@ export function registerHandlers(
   register('boardSettings.setWipLimits', (actor, input) =>
     useCases.boardSettings.setWipLimits.execute(actor, input),
   )
-  register('meetings.list', (actor, input) => useCases.meetings.listMonth.execute(actor, input))
+  register('meetings.list', (actor, input) => useCases.meetings.listRange.execute(actor, input))
   register('meetings.listUpcoming', (actor) => useCases.meetings.listUpcoming.execute(actor))
   register('meetings.create', (actor, input) => useCases.meetings.create.execute(actor, input))
   register('meetings.update', (actor, input) => useCases.meetings.update.execute(actor, input))

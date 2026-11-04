@@ -186,16 +186,19 @@ export class InMemoryMeetingRepository implements MeetingRepository {
     await Promise.resolve()
     return bucket(this.state.meetings, org).get(id) ?? null
   }
-  async listByMonth(org: OrganizationId, month: string) {
+  async listOverlapping(
+    org: OrganizationId,
+    rangeStart: Meeting['date'],
+    rangeEnd: Meeting['date'],
+  ) {
     await Promise.resolve()
     return [...bucket(this.state.meetings, org).values()]
-      .filter((item) => item.date.startsWith(month))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-  }
-  async listUpcoming(org: OrganizationId, today: Meeting['date']) {
-    await Promise.resolve()
-    return [...bucket(this.state.meetings, org).values()]
-      .filter((item) => item.date >= today)
+      .filter((item) =>
+        item.recurrence === 'weekly'
+          ? item.date <= rangeEnd &&
+            (item.recurrenceUntil === null || item.recurrenceUntil >= rangeStart)
+          : item.date >= rangeStart && item.date <= rangeEnd,
+      )
       .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
   }
   async save(org: OrganizationId, value: Meeting) {

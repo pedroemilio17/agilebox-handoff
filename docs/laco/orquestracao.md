@@ -34,7 +34,7 @@ Final:
 
 ## Em andamento
 
-- B9: agenda com hora de fim, tipo de evento e recorrência; só o gestor cria e edita agendamentos. Decisão D6: eventos sem duração seguem valendo 1h.
+- B9: agenda com hora de fim, tipo de evento e recorrência; só o gestor cria e edita agendamentos. Decisão D6: eventos sem duração seguem valendo 1h. Backend feito; falta UI (formulário com tipo/fim/repetir, eventos com duração e cor por tipo na grade, recorrência nos Próximos).
 
 ## Concluído
 
@@ -47,6 +47,7 @@ Final:
 
 ## Bloqueios
 
+- B9, pendência de ambiente: a migração `0007_meeting_fields.sql` (colunas `meetings.end_time`, `kind`, `recurrence` e `recurrence_until`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` e reescrita à mão com `ALTER TABLE ... ADD`, sem recriar `meetings`, porque o gerado recriava a tabela.
 - B4, pendência de ambiente: as migrações `0005_task_comments.sql` (B7) e `0006_board_settings.sql` (tabela `board_settings`, B4) ainda não foram aplicadas num banco real (`pnpm db:migrate`). A `0006` foi gerada pelo `drizzle-kit generate`, e o SQL conferido só cria a tabela e o índice único.
 - B7, pendência de ambiente: a migração `0005_task_comments.sql` (tabela `task_comments`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela e índice, sem recriar as existentes).
 - B5, pendência de ambiente: a migração `0004_familiar_zeigeist.sql` (tabela `task_checklist_items`) ainda não foi aplicada num banco real (`pnpm db:migrate`). Gerada pelo `drizzle-kit generate` (só cria tabela, sem recriar as existentes).

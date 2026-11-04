@@ -1,3 +1,4 @@
+import type { Meeting } from '../entities/meeting'
 import type { Participant } from '../entities/participation'
 import type { Project } from '../entities/project'
 import type { Task } from '../entities/task'
@@ -58,6 +59,13 @@ export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): b
   return actor.organizationId === organizationId && actor.role === 'manager'
 }
 export const canManageMeetings = canSeeTaskTotal
+/** Colaborador vê o agendamento só se participa dele; gestor vê todos da organização. */
+export function canSeeMeeting(actor: Actor, meeting: Meeting): boolean {
+  return (
+    actor.organizationId === meeting.organizationId &&
+    (actor.role === 'manager' || meeting.participants.includes(actor.userId))
+  )
+}
 export const canSeeDashboard = canSeeTaskTotal
 /** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */
 export function canViewBoardSettings(actor: Actor, organizationId: OrganizationId): boolean {

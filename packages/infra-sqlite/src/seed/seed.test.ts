@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId } from '@agilebox/core'
+import { expandMeetingOccurrences, parseDateOnly, toOrganizationId } from '@agilebox/core'
 import { InMemoryUnitOfWork, RecordingNotifier } from '@agilebox/application/testing'
 import { seedDemo } from './seed.js'
 
@@ -24,9 +24,39 @@ describe('seed de demonstração', () => {
     await expect(unitOfWork.repositories.users.list(organizationId)).resolves.toHaveLength(5)
     await expect(unitOfWork.repositories.projects.list(organizationId)).resolves.toHaveLength(3)
     await expect(unitOfWork.repositories.contributors.list(organizationId)).resolves.toHaveLength(2)
-    await expect(
-      unitOfWork.repositories.meetings.listByMonth(organizationId, '2026-11'),
-    ).resolves.toHaveLength(3)
+    const novemberMeetings = await unitOfWork.repositories.meetings.listOverlapping(
+      organizationId,
+      parseDateOnly('2026-11-01'),
+      parseDateOnly('2026-11-30'),
+    )
+    expect(novemberMeetings.map((meeting) => meeting.title)).toEqual([
+      'Alinhamento semanal',
+      'Revisão de entrega',
+      'Planejamento da próxima entrega',
+    ])
+    const occurrences = expandMeetingOccurrences(
+      novemberMeetings,
+      parseDateOnly('2026-11-01'),
+      parseDateOnly('2026-11-30'),
+    )
+    // Alinhamento semanal cai nas segundas 02, 09, 16, 23 e 30; os outros são avulsos.
+    expect(occurrences.map((occurrence) => occurrence.date)).toEqual([
+      '2026-11-02',
+      '2026-11-06',
+      '2026-11-09',
+      '2026-11-09',
+      '2026-11-16',
+      '2026-11-23',
+      '2026-11-30',
+    ])
+    expect(novemberMeetings[0]).toMatchObject({
+      endTime: '10:00',
+      kind: 'meeting',
+      recurrence: 'weekly',
+      recurrenceUntil: null,
+    })
+    expect(novemberMeetings[1]).toMatchObject({ endTime: '15:30', kind: 'review' })
+    expect(novemberMeetings[2]).toMatchObject({ endTime: null, recurrence: 'none' })
     await expect(
       unitOfWork.repositories.boardSettings.findByOrganization(organizationId),
     ).resolves.toMatchObject({ wipLimits: { in_progress: 3, review: 2 } })

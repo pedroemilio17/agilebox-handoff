@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { MeetingDto, SessionUserDto } from '@agilebox/contract'
+import type { MeetingOccurrenceDto, SessionUserDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { boardResponse, createFakeApi } from '../../shared/testing/fake-api'
@@ -18,20 +18,33 @@ const users: SessionUserDto[] = [
   { id: ANA, name: 'Ana Souza', initials: 'AS', role: 'collaborator', defaultRate: null },
 ]
 
-const meeting = (id: string, title: string, date: string, time = '10:00'): MeetingDto => ({
+const meeting = (
+  id: string,
+  title: string,
+  date: string,
+  time = '10:00',
+): MeetingOccurrenceDto => ({
   id,
   title,
   date,
   time,
+  endTime: null,
+  kind: 'meeting',
+  recurrence: 'none',
+  recurrenceUntil: null,
   participants: [ANA],
   createdBy: MANAGER,
   createdAt: '2026-10-31T12:00:00.000Z',
   updatedAt: '2026-10-31T12:00:00.000Z',
+  seriesId: id,
+  occurrenceDate: date,
+  occurrenceIndex: 0,
+  occurrenceEndTime: time,
 })
 
 const M1 = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M01', 'Planejamento da sprint', '2026-11-10')
 
-function setup(role: 'manager' | 'collaborator', month: MeetingDto[] = [M1]) {
+function setup(role: 'manager' | 'collaborator', month: MeetingOccurrenceDto[] = [M1]) {
   const api = createFakeApi()
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
     userId: role === 'manager' ? MANAGER : ANA,
@@ -55,7 +68,7 @@ describe('Agenda: calendário', () => {
   it('mantém carregamento explícito e depois informa falha em vez de mostrar agenda vazia', async () => {
     const api = createFakeApi()
     let rejectList!: (reason: Error) => void
-    const pending = new Promise<MeetingDto[]>((_resolve, reject) => {
+    const pending = new Promise<MeetingOccurrenceDto[]>((_resolve, reject) => {
       rejectList = reject
     })
     vi.spyOn(api.meetings, 'list').mockReturnValue(pending)
@@ -78,8 +91,10 @@ describe('Agenda: calendário', () => {
     const { list, user } = setup('manager')
     expect(await screen.findByRole('region', { name: 'Agenda semanal' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Semana' }).getAttribute('aria-pressed')).toBe('true')
-    await waitFor(() => expect(list).toHaveBeenCalledWith({ month: '2026-10' }))
-    expect(list).toHaveBeenCalledWith({ month: '2026-11' })
+    await waitFor(() =>
+      expect(list).toHaveBeenCalledWith({ rangeStart: '2026-10-01', rangeEnd: '2026-10-31' }),
+    )
+    expect(list).toHaveBeenCalledWith({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' })
     await user.click(screen.getByRole('button', { name: 'Dia' }))
     expect(screen.getByRole('region', { name: 'Agenda diária' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Próximo período' }))
@@ -97,7 +112,9 @@ describe('Agenda: calendário', () => {
     expect(
       screen.getByRole('button', { name: /domingo, 1 de novembro/i }).getAttribute('aria-current'),
     ).toBe('date')
-    await waitFor(() => expect(list).toHaveBeenCalledWith({ month: '2026-11' }))
+    await waitFor(() =>
+      expect(list).toHaveBeenCalledWith({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' }),
+    )
     expect(
       await screen.findByText('10:00 Planejamento da sprint', { selector: 'span' }),
     ).toBeTruthy()
@@ -110,7 +127,9 @@ describe('Agenda: calendário', () => {
     await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
     await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
     expect(await screen.findByRole('heading', { name: /janeiro de 2027/i })).toBeTruthy()
-    await waitFor(() => expect(list).toHaveBeenLastCalledWith({ month: '2027-01' }))
+    await waitFor(() =>
+      expect(list).toHaveBeenLastCalledWith({ rangeStart: '2027-01-01', rangeEnd: '2027-01-31' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Mês anterior' }))
     expect(await screen.findByRole('heading', { name: /dezembro de 2026/i })).toBeTruthy()
   })

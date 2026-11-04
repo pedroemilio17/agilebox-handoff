@@ -50,6 +50,13 @@
       "when": 1793800844340,
       "tag": "0006_board_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793802578816,
+      "tag": "0007_meeting_fields",
+      "breakpoints": true
     }
   ]
 }

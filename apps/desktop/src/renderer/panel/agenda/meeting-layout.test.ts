@@ -4,6 +4,10 @@ import { positionMeetings } from './meeting-layout'
 const meeting = (id: string, time: string): MeetingDto => ({
   id,
   time,
+  endTime: null,
+  kind: 'meeting',
+  recurrence: 'none',
+  recurrenceUntil: null,
   date: '2026-11-02',
   title: id,
   participants: [],

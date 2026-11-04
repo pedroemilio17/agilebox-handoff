@@ -20,6 +20,13 @@ type FormState =
   | { readonly mode: 'create' }
   | { readonly mode: 'edit'; readonly meeting: MeetingDto }
 
+/** Primeiro e último dia de um mês 'YYYY-MM', para a consulta por intervalo. */
+function monthRange(month: string): { rangeStart: string; rangeEnd: string } {
+  const [year, monthNumber] = month.split('-').map(Number) as [number, number]
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()
+  return { rangeStart: `${month}-01`, rangeEnd: `${month}-${String(lastDay).padStart(2, '0')}` }
+}
+
 export interface AgendaViewProps {
   readonly onOpenTask?: (id: string) => void
   readonly today?: string
@@ -48,7 +55,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
   const meetingQueries = useQueries({
     queries: months.map((month) => ({
       queryKey: [...queryKeys.meetings.all, 'month', month],
-      queryFn: () => api.meetings.list({ month }),
+      queryFn: () => api.meetings.list(monthRange(month)),
     })),
   })
   const meetings = [
