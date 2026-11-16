@@ -146,6 +146,7 @@ import {
   completeTeamWindDownInputSchema,
   getTeamToolsInputSchema,
   previewTeamToolsChangeInputSchema,
+  setModuleConfigInputSchema,
   setTeamLevelInputSchema,
   teamToolsChangeInputSchema,
   teamToolsChangeResultDtoSchema,
@@ -174,6 +175,26 @@ import {
   sendToBacklogInputSchema,
   sendToBacklogOutputSchema,
 } from './backlog'
+import {
+  addSprintTaskInputSchema,
+  addSprintTaskOutputSchema,
+  closeSprintInputSchema,
+  closeSprintOutputSchema,
+  createSprintInputSchema,
+  createSprintOutputSchema,
+  discardSprintInputSchema,
+  discardSprintOutputSchema,
+  getSprintInputSchema,
+  getSprintOutputSchema,
+  listSprintsInputSchema,
+  listSprintsOutputSchema,
+  removeSprintTaskInputSchema,
+  removeSprintTaskOutputSchema,
+  startSprintInputSchema,
+  startSprintOutputSchema,
+  updateSprintInputSchema,
+  updateSprintOutputSchema,
+} from './sprints'
 import {
   getCurrentSessionInputSchema,
   getCurrentSessionOutputSchema,
@@ -312,6 +333,18 @@ export const API_SCHEMA_REGISTRY = {
   'backlog.reorder': { input: reorderBacklogInputSchema, output: reorderBacklogOutputSchema },
   'backlog.pull': { input: pullFromBacklogInputSchema, output: pullFromBacklogOutputSchema },
   'backlog.sendBack': { input: sendToBacklogInputSchema, output: sendToBacklogOutputSchema },
+  'sprints.list': { input: listSprintsInputSchema, output: listSprintsOutputSchema },
+  'sprints.get': { input: getSprintInputSchema, output: getSprintOutputSchema },
+  'sprints.create': { input: createSprintInputSchema, output: createSprintOutputSchema },
+  'sprints.update': { input: updateSprintInputSchema, output: updateSprintOutputSchema },
+  'sprints.start': { input: startSprintInputSchema, output: startSprintOutputSchema },
+  'sprints.close': { input: closeSprintInputSchema, output: closeSprintOutputSchema },
+  'sprints.discard': { input: discardSprintInputSchema, output: discardSprintOutputSchema },
+  'sprints.addTask': { input: addSprintTaskInputSchema, output: addSprintTaskOutputSchema },
+  'sprints.removeTask': {
+    input: removeSprintTaskInputSchema,
+    output: removeSprintTaskOutputSchema,
+  },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -401,6 +434,10 @@ export const API_SCHEMA_REGISTRY = {
   'teamTools.applyPreset': {
     input: applyTeamPresetInputSchema,
     output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.setModuleConfig': {
+    input: setModuleConfigInputSchema,
+    output: teamToolsViewDtoSchema,
   },
 } satisfies Record<ApiChannel, SchemaPair>
 
@@ -517,6 +554,17 @@ export interface AgileBoxApi {
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
   }
+  sprints: {
+    list: Method<'sprints.list'>
+    get: Method<'sprints.get'>
+    create: Method<'sprints.create'>
+    update: Method<'sprints.update'>
+    start: Method<'sprints.start'>
+    close: Method<'sprints.close'>
+    discard: Method<'sprints.discard'>
+    addTask: Method<'sprints.addTask'>
+    removeTask: Method<'sprints.removeTask'>
+  }
   backlog: {
     list: Method<'backlog.list'>
     add: Method<'backlog.add'>
@@ -531,6 +579,7 @@ export interface AgileBoxApi {
     completeWindDown: Method<'teamTools.completeWindDown'>
     setLevel: Method<'teamTools.setLevel'>
     applyPreset: Method<'teamTools.applyPreset'>
+    setModuleConfig: Method<'teamTools.setModuleConfig'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

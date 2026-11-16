@@ -81,6 +81,17 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       search: (input) => call('tasks.search', input),
       recordOpen: (input) => call('tasks.recordOpen', input),
     },
+    sprints: {
+      list: (input) => call('sprints.list', input),
+      get: (input) => call('sprints.get', input),
+      create: (input) => call('sprints.create', input),
+      update: (input) => call('sprints.update', input),
+      start: (input) => call('sprints.start', input),
+      close: (input) => call('sprints.close', input),
+      discard: (input) => call('sprints.discard', input),
+      addTask: (input) => call('sprints.addTask', input),
+      removeTask: (input) => call('sprints.removeTask', input),
+    },
     backlog: {
       list: (input) => call('backlog.list', input),
       add: (input) => call('backlog.add', input),
@@ -136,6 +147,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       completeWindDown: (input) => call('teamTools.completeWindDown', input),
       setLevel: (input) => call('teamTools.setLevel', input),
       applyPreset: (input) => call('teamTools.applyPreset', input),
+      setModuleConfig: (input) => call('teamTools.setModuleConfig', input),
     },
     onChanges: bridge.onChanges,
   }

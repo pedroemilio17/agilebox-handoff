@@ -46,12 +46,19 @@ export const applyTeamPresetInputSchema = z.object({
 })
 export const setTeamLevelInputSchema = z.object({ level: experienceLevelSchema })
 export const completeTeamWindDownInputSchema = z.object({ moduleId: teamModuleIdSchema })
+/** Configuração de um módulo (M4.2): o objeto é validado por módulo na aplicação, nunca aqui. */
+export const setModuleConfigInputSchema = z.object({
+  moduleId: teamModuleIdSchema,
+  config: z.record(z.string(), z.unknown()),
+})
 
 export const teamToolDtoSchema = z.object({
   id: z.string(),
   label: z.string(),
   state: teamModuleStateSchema,
   minLevel: experienceLevelSchema,
+  /** Configuração atual do módulo (ex.: limite de sprints ativas). Nula quando não há. */
+  config: z.record(z.string(), z.unknown()).nullable().optional(),
 })
 
 export const teamPresetDtoSchema = z.object({
@@ -107,6 +114,7 @@ export type PreviewTeamToolsChangeInput = z.infer<typeof previewTeamToolsChangeI
 export type ApplyTeamPresetInput = z.infer<typeof applyTeamPresetInputSchema>
 export type SetTeamLevelInput = z.infer<typeof setTeamLevelInputSchema>
 export type CompleteTeamWindDownInput = z.infer<typeof completeTeamWindDownInputSchema>
+export type SetModuleConfigInput = z.infer<typeof setModuleConfigInputSchema>
 export type TeamToolDto = z.infer<typeof teamToolDtoSchema>
 export type TeamPresetDto = z.infer<typeof teamPresetDtoSchema>
 export type TeamToolsViewDto = z.infer<typeof teamToolsViewDtoSchema>

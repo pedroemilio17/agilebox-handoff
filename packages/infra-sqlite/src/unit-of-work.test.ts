@@ -10,6 +10,7 @@ import { createSqliteDailyEntryRepository } from './repositories/daily-entry-rep
 import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
+import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
@@ -31,6 +32,7 @@ describe('SqliteUnitOfWork', () => {
       acceptance: createSqliteAcceptanceRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
@@ -66,6 +68,7 @@ describe('SqliteUnitOfWork', () => {
       acceptance: createSqliteAcceptanceRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,

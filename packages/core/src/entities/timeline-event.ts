@@ -91,18 +91,18 @@ export type TimelineEvent = EventBase &
         readonly type: 'participant_added' | 'participant_removed'
         readonly payload: ParticipantChange
       }
+    | {
+        readonly type: 'task_added_to_sprint' | 'task_removed_from_sprint'
+        readonly payload: { readonly sprintId: SprintId; readonly sprintNumber: number }
+      }
   )
 
 export function createTimelineEvent(event: TimelineEvent): TimelineEvent {
   return { ...event, payload: { ...event.payload } } as TimelineEvent
 }
 
-/**
- * Entrar e sair de sprint (M4.1). Fica fora de `TimelineEvent` de propósito: o contrato e o mapeador
- * da aplicação enumeram os tipos aceitos, e isso é do M4.2. Quando eles aceitarem, a união entra em
- * `TimelineEvent`.
- */
-export type TaskSprintTimelineEvent = EventBase & {
-  readonly type: 'task_added_to_sprint' | 'task_removed_from_sprint'
-  readonly payload: { readonly sprintId: SprintId; readonly sprintNumber: number }
-}
+/** Entrar e sair de sprint (M4.1 e M4.2): membros da união `TimelineEvent`. */
+export type TaskSprintTimelineEvent = Extract<
+  TimelineEvent,
+  { type: 'task_added_to_sprint' | 'task_removed_from_sprint' }
+>

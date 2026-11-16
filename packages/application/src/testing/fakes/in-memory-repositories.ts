@@ -1,6 +1,7 @@
 import {
   applyTeamToolsUpdate,
   auditRecordsFor,
+  ConflictError,
   createOrganization,
   createTeamToolsSettings,
   defaultTeamTools,
@@ -30,6 +31,10 @@ import type {
   Participation,
   Project,
   ProjectId,
+  Sprint,
+  SprintId,
+  SprintStatus,
+  SprintTask,
   Task,
   TaskId,
   TimelineEvent,
@@ -49,6 +54,8 @@ import type {
   ProjectMember,
   ProjectRepository,
   RetroActionRepository,
+  SprintRepository,
+  SprintTaskRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamToolsRepository,
@@ -68,6 +75,10 @@ export interface InMemoryState {
   definitionOfDone: Map<OrganizationId, Map<string, DefinitionOfDoneItem>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   retroActions: Map<OrganizationId, Map<string, RetroAction>>
+  /** Sprints por id, com o descarte lógico (linha não some; `discarded` marca a exclusão). */
+  sprints: Map<OrganizationId, Map<string, InMemorySprintRow>>
+  /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
+  sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
@@ -102,6 +113,8 @@ export function createInMemoryState(): InMemoryState {
     definitionOfDone: new Map(),
     meetings: new Map(),
     retroActions: new Map(),
+    sprints: new Map(),
+    sprintTasks: new Map(),
     participations: new Map(),
     projects: new Map(),
     members: new Map(),
@@ -115,6 +128,13 @@ export function createInMemoryState(): InMemoryState {
     timeline: new Map(),
     users: new Map(),
   }
+}
+
+/** Linha de sprint no fake: a sprint e o descarte lógico (nulos enquanto não descartada). */
+export interface InMemorySprintRow {
+  readonly sprint: Sprint
+  readonly discardedAt: string | null
+  readonly discardedBy: string | null
 }
 
 export interface TeamPreferenceRow {
@@ -679,5 +699,118 @@ export class InMemoryTeamToolsRepository implements TeamToolsRepository {
     return [...bucket(this.state.teamToolsAudit, organizationId).values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
       .slice(0, limit)
+  }
+}
+
+const sprintRowKey = (row: Pick<SprintTask, 'sprintId' | 'taskId' | 'addedAt'>) =>
+  `${row.sprintId}|${row.taskId}|${row.addedAt}`
+
+export class InMemorySprintRepository implements SprintRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private visible(org: OrganizationId): Sprint[] {
+    return [...bucket(this.state.sprints, org).values()]
+      .filter((row) => row.discardedAt === null)
+      .map((row) => row.sprint)
+  }
+
+  async findById(org: OrganizationId, sprintId: SprintId) {
+    await Promise.resolve()
+    const row = bucket(this.state.sprints, org).get(sprintId)
+    return row && row.discardedAt === null ? row.sprint : null
+  }
+  async listByProject(org: OrganizationId, projectId: ProjectId, status?: SprintStatus) {
+    await Promise.resolve()
+    return this.visible(org)
+      .filter((sprint) => sprint.projectId === projectId)
+      .filter((sprint) => status === undefined || sprint.status === status)
+      .sort((a, b) => a.number - b.number)
+  }
+  async nextNumber(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const numbers = [...bucket(this.state.sprints, org).values()]
+      .filter((row) => row.sprint.projectId === projectId)
+      .map((row) => row.sprint.number)
+    return Math.max(0, ...numbers) + 1
+  }
+  async countActive(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return this.visible(org).filter(
+      (sprint) => sprint.projectId === projectId && sprint.status === 'active',
+    ).length
+  }
+  async countNotClosed(org: OrganizationId) {
+    await Promise.resolve()
+    return this.visible(org).filter((sprint) => sprint.status !== 'closed').length
+  }
+  async save(org: OrganizationId, sprint: Sprint) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprints, org)
+    const previous = values.get(sprint.id)
+    values.set(sprint.id, {
+      sprint,
+      discardedAt: previous?.discardedAt ?? null,
+      discardedBy: previous?.discardedBy ?? null,
+    })
+  }
+  async markDiscarded(org: OrganizationId, sprintId: SprintId, at: string, by: UserId) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprints, org)
+    const row = values.get(sprintId)
+    if (row) values.set(sprintId, { ...row, discardedAt: at, discardedBy: by })
+  }
+}
+
+export class InMemorySprintTaskRepository implements SprintTaskRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private rows(org: OrganizationId): SprintTask[] {
+    return [...bucket(this.state.sprintTasks, org).values()]
+  }
+
+  async listBySprint(org: OrganizationId, sprintId: SprintId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.sprintId === sprintId)
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt) || a.taskId.localeCompare(b.taskId))
+  }
+  async listOpenByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    return this.rows(org).filter((row) => row.removedAt === null && taskIds.includes(row.taskId))
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.taskId === taskId)
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt))
+  }
+  async countOpenInNotClosed(org: OrganizationId) {
+    await Promise.resolve()
+    const sprints = bucket(this.state.sprints, org)
+    return this.rows(org).filter(
+      (row) =>
+        row.removedAt === null &&
+        sprints.get(row.sprintId)?.discardedAt === null &&
+        sprints.get(row.sprintId)?.sprint.status !== 'closed',
+    ).length
+  }
+  async saveRows(org: OrganizationId, requested: readonly SprintTask[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprintTasks, org)
+    const sprints = bucket(this.state.sprints, org)
+    const tasks = bucket(this.state.tasks, org)
+    // Sprint ou tarefa de outra organização não é regravada (mesma regra dos demais repositórios).
+    const rows = requested.filter((row) => sprints.has(row.sprintId) && tasks.has(row.taskId))
+    // Confere o estado final do lote: no máximo uma linha aberta por tarefa.
+    const next = new Map(values)
+    for (const row of rows) next.set(sprintRowKey(row), row)
+    const openPerTask = new Map<string, number>()
+    for (const row of next.values()) {
+      if (row.removedAt !== null) continue
+      openPerTask.set(row.taskId, (openPerTask.get(row.taskId) ?? 0) + 1)
+    }
+    if ([...openPerTask.values()].some((count) => count > 1))
+      throw new ConflictError('Tarefa já tem uma sprint aberta')
+    for (const row of rows) values.set(sprintRowKey(row), row)
   }
 }

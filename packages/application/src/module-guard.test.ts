@@ -107,6 +107,8 @@ async function setup(options: SetupOptions = {}) {
       (options.wrapTeamTools
         ? options.wrapTeamTools(repositories.teamTools)
         : repositories.teamTools),
+    sprints: repositories.sprints,
+    sprintTasks: repositories.sprintTasks,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: repositories.meetings,
@@ -478,7 +480,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(81)
+    expect(registered).toHaveLength(91)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -496,6 +498,9 @@ describe('mapa de módulos dos casos de uso', () => {
       'daily.save',
       'meetings.create',
       'meetings.retroActions.add',
+      'sprints.addTask',
+      'sprints.create',
+      'sprints.start',
       'tasks.block',
       'tasks.checklist.add',
       'tasks.criteria.add',

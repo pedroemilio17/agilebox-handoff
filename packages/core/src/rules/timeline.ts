@@ -119,11 +119,7 @@ function estimateText(hundredths: number | null): string {
   return hundredths === null ? 'sem estimativa' : formatHours(hundredths)
 }
 
-export function describeEvent(
-  event: TimelineEvent | TaskSprintTimelineEvent,
-  viewer: Actor,
-  names: TimelineNames,
-): string {
+export function describeEvent(event: TimelineEvent, viewer: Actor, names: TimelineNames): string {
   const name = (p: Participant) =>
     p.kind === 'user' ? names.user(p.userId) : names.contributor(p.contributorId)
   const ticket = (value: Ticket | null) =>

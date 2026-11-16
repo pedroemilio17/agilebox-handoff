@@ -86,6 +86,8 @@ async function setup() {
     contributors: repos.contributors,
     dailyEntries: repos.dailyEntries,
     teamTools: repos.teamTools,
+    sprints: repos.sprints,
+    sprintTasks: repos.sprintTasks,
     definitionOfDone: repos.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: repos.meetings,

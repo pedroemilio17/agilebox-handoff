@@ -26,6 +26,7 @@ import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
+import { loadSprintRefs } from '../sprints/sprint-refs'
 
 export interface AddChecklistItemInput {
   readonly taskId: string
@@ -87,8 +88,9 @@ abstract class ChangeChecklist {
     const commentCount = counts.get(task.id) ?? 0
     // Subtarefas não mexem nos critérios: lidos uma vez, valem para as duas respostas abaixo.
     const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
+    const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, step.items, commentCount, criteria)
+      return toTaskDto(task, prefix, step.items, commentCount, criteria, sprint ?? null)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -112,7 +114,7 @@ abstract class ChangeChecklist {
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, prefix, step.items, commentCount, criteria)
+    return toTaskDto(updated, prefix, step.items, commentCount, criteria, sprint ?? null)
   }
 }
 

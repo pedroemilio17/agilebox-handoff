@@ -37,6 +37,8 @@ export const timelineEventTypeSchema = z.enum([
   'rate_changed',
   'participant_added',
   'participant_removed',
+  'task_added_to_sprint',
+  'task_removed_from_sprint',
 ])
 
 export const timelineEventDtoSchema = z.object({

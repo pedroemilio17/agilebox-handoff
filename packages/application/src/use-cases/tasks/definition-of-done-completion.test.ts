@@ -44,6 +44,8 @@ function setup(actor: Actor = owner) {
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

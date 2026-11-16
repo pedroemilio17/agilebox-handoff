@@ -18,6 +18,8 @@ import {
   InMemoryTaskRepository,
   InMemoryTeamToolsRepository,
   InMemoryTimelineRepository,
+  InMemorySprintRepository,
+  InMemorySprintTaskRepository,
   InMemoryUserRepository,
 } from './in-memory-repositories'
 import type { InMemoryState } from './in-memory-repositories'
@@ -46,6 +48,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       participations: new InMemoryParticipationRepository(state),
       projects: new InMemoryProjectRepository(state),
       retroActions: new InMemoryRetroActionRepository(state),
+      sprints: new InMemorySprintRepository(state),
+      sprintTasks: new InMemorySprintTaskRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
       tasks: new InMemoryTaskRepository(state),
       teamTools: new InMemoryTeamToolsRepository(state),
@@ -73,6 +77,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       projects: copyMap(this.state.projects),
       members: copyMap(this.state.members),
       retroActions: copyMap(this.state.retroActions),
+      sprints: copyMap(this.state.sprints),
+      sprintTasks: copyMap(this.state.sprintTasks),
       organizations: new Map(this.state.organizations),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),

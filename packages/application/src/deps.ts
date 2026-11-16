@@ -15,6 +15,8 @@ import type {
   ParticipationRepository,
   ProjectRepository,
   RetroActionRepository,
+  SprintRepository,
+  SprintTaskRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamToolsRepository,
@@ -40,6 +42,8 @@ export interface AppDeps {
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
   readonly retroActions: RetroActionRepository
+  readonly sprints: SprintRepository
+  readonly sprintTasks: SprintTaskRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamTools: TeamToolsRepository

@@ -32,6 +32,7 @@ import type {
   ApplyTeamPresetInput,
   CompleteTeamWindDownInput,
   PreviewTeamToolsChangeInput,
+  SetModuleConfigInput,
   SetTeamLevelInput,
   TeamToolsChangeInput,
   TeamToolsChangeResultDto,
@@ -40,6 +41,7 @@ import type {
   TeamToolsViewDto,
 } from '@agilebox/contract'
 import type { AppDeps } from '../../deps'
+import { validateModuleConfig } from './module-config'
 
 /** Intervalo que cobre qualquer agendamento, para contar a agenda inteira. */
 const ALL_DATES_START = parseDateOnly('1900-01-01')
@@ -60,6 +62,7 @@ function toView(actor: Actor, settings: TeamToolsSettings): TeamToolsViewDto {
       label: MODULE_LABELS[id],
       state: moduleStateOf(settings.modules, id),
       minLevel: getModule(id).minLevel,
+      config: settings.modules.find((module) => module.moduleId === id)?.config ?? null,
     })),
     presets: TEAM_PRESETS.map((preset) => ({
       id: preset.id,
@@ -108,6 +111,8 @@ async function countUsage(deps: AppDeps, organizationId: OrganizationId): Promis
           meetings.map((meeting) => meeting.id),
         )
   const wipLimits = [board?.wipLimits.in_progress, board?.wipLimits.review]
+  const openSprints = await deps.sprints.countNotClosed(organizationId)
+  const sprintItems = await deps.sprintTasks.countOpenInNotClosed(organizationId)
   return {
     subtasks: items.length,
     blockedTasks: tasks.filter((task) => task.blockedReason !== null).length,
@@ -118,6 +123,8 @@ async function countUsage(deps: AppDeps, organizationId: OrganizationId): Promis
     backlogItems: tasks.filter((task) => isInBacklog(task)).length,
     acceptanceCriteria: await deps.acceptance.countByOrganization(organizationId),
     estimatedTasks: tasks.filter((task) => task.estimatedHoursHundredths !== null).length,
+    openSprints,
+    sprintItems,
   }
 }
 
@@ -232,6 +239,38 @@ export class PreviewTeamToolsChange {
       dependents: [],
       impact,
     }
+  }
+}
+
+/**
+ * Grava a configuração de um módulo (só o gestor). O estado do módulo fica como está. Mudança só de
+ * config não gera linha de auditoria: `team_tools_audit` aceita só estado, nível e preset, e ampliar
+ * o CHECK exige recriar a tabela (lacuna registrada no relatório do M4.2).
+ */
+export class SetTeamModuleConfig {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(actor: Actor, input: SetModuleConfigInput): Promise<TeamToolsViewDto> {
+    requireManager(actor)
+    const moduleId = toModuleId(input.moduleId)
+    const config = validateModuleConfig(moduleId, input.config)
+    const organizationId = actor.organizationId
+    const now = await this.deps.clock.now(organizationId)
+    return this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      const settings = await repositories.teamTools.getSettings(organizationId)
+      await repositories.teamTools.saveSettings(
+        organizationId,
+        {
+          level: settings.level,
+          modules: [{ moduleId, state: moduleStateOf(settings.modules, moduleId), config }],
+        },
+        actor.userId,
+        now,
+      )
+      const saved = await repositories.teamTools.getSettings(organizationId)
+      await this.deps.changeNotifier.publish(organizationId, { kind: 'board', ids: [] })
+      return toView(actor, saved)
+    })
   }
 }
 

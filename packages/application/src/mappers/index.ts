@@ -15,6 +15,7 @@ import {
   describeEvent,
   formatTaskKey,
   isReadOnlyFor,
+  sprintLabel,
   total as calculateTaskTotal,
 } from '@agilebox/core'
 import type {
@@ -31,6 +32,8 @@ import type {
   Participation,
   Project,
   RetroAction,
+  Sprint,
+  SprintTask,
   Task,
   TaskComment,
   TimelineEvent,
@@ -52,6 +55,9 @@ import type {
   ParticipationSummaryDto,
   ProjectDto,
   RetroActionDto,
+  SprintDto,
+  SprintHistoryRowDto,
+  SprintRefDto,
   TaskCommentDto,
   SessionUserDto,
   TaskDto,
@@ -151,13 +157,17 @@ export function toChecklistItemDto(item: ChecklistItem): ChecklistItemDto {
   }
 }
 
-/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. `criteria` são os critérios de aceitação, dos quais sai o x/y. */
+/**
+ * `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. `criteria` são os critérios de aceitação, dos quais sai o x/y.
+ * `sprint` é a sprint aberta da tarefa (M4.2), carregada em lote por `loadSprintRefs`; nulo sem sprint.
+ */
 export function toTaskDto(
   task: Task,
   taskPrefix: string,
   checklist: readonly ChecklistItem[],
   commentCount: number,
   criteria: readonly AcceptanceCriterion[],
+  sprint: SprintRefDto | null,
 ): TaskDto {
   return {
     id: task.id,
@@ -186,8 +196,50 @@ export function toTaskDto(
       total: criteria.length,
     },
     commentCount,
+    sprint,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
+  }
+}
+
+/** Sprint como o card e o detalhe a mostram: "Sprint N" pelo número, com o nome e o estado. */
+export function toSprintRefDto(sprint: Sprint): SprintRefDto {
+  return { id: sprint.id, number: sprint.number, name: sprint.name, status: sprint.status }
+}
+
+export function toSprintDto(sprint: Sprint): SprintDto {
+  return {
+    id: sprint.id,
+    projectId: sprint.projectId,
+    number: sprint.number,
+    label: sprintLabel(sprint.number),
+    name: sprint.name,
+    goal: sprint.goal,
+    plannedStart: sprint.plannedStart,
+    plannedEnd: sprint.plannedEnd,
+    status: sprint.status,
+    startedAt: sprint.startedAt,
+    closedAt: sprint.closedAt,
+    closePolicy: sprint.closePolicy?.kind ?? null,
+    createdBy: sprint.createdBy,
+    createdAt: sprint.createdAt,
+  }
+}
+
+/** Uma linha do histórico. `taskKey` e `taskTitle` vêm da tarefa, que o chamador carrega. */
+export function toSprintHistoryRowDto(
+  row: SprintTask,
+  task: { readonly key: string; readonly title: string },
+): SprintHistoryRowDto {
+  return {
+    taskId: row.taskId,
+    taskKey: task.key,
+    taskTitle: task.title,
+    addedAt: row.addedAt,
+    addedBy: row.addedBy,
+    removedAt: row.removedAt,
+    removedBy: row.removedBy,
+    outcome: row.outcome,
   }
 }
 
@@ -218,13 +270,14 @@ export function toTaskDetailDto(
   definitionOfDone: readonly DefinitionOfDoneItem[],
   criteria: readonly AcceptanceCriterion[],
   responsibleDefaultRateCents: number,
+  sprint: SprintRefDto | null,
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   const cost = canSeeEstimatedCost(actor, task)
     ? estimatedCostOf(task, responsibleDefaultRateCents)
     : null
   return {
-    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria),
+    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint),
     checklist: checklist.map(toChecklistItemDto),
     criteria: criteria.map(toAcceptanceCriterionDto),
     estimatedCost: cost === null ? null : rateInReais(cost),

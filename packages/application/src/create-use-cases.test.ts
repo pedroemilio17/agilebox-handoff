@@ -38,6 +38,8 @@ describe('composição dos casos de uso', () => {
       retroActions: unitOfWork.repositories.retroActions,
       dailyEntries: unitOfWork.repositories.dailyEntries,
       teamTools: unitOfWork.repositories.teamTools,
+      sprints: unitOfWork.repositories.sprints,
+      sprintTasks: unitOfWork.repositories.sprintTasks,
       definitionOfDone: unitOfWork.repositories.definitionOfDone,
       comments: unitOfWork.repositories.comments,
       boardSettings: unitOfWork.repositories.boardSettings,

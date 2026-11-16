@@ -25,6 +25,7 @@ import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
+import { loadSprintRefs } from '../sprints/sprint-refs'
 import { assertTaskEditable } from './task-access'
 
 export interface AddAcceptanceCriterionInput {
@@ -93,8 +94,9 @@ abstract class ChangeAcceptance {
     const counts = await loadCommentCounts(this.deps, actor, [task])
     const commentCount = counts.get(task.id) ?? 0
     const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
+    const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, checklist, commentCount, criteria)
+      return toTaskDto(task, prefix, checklist, commentCount, criteria, sprint ?? null)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -119,7 +121,7 @@ abstract class ChangeAcceptance {
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
     const saved = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
-    return toTaskDto(updated, prefix, checklist, commentCount, saved)
+    return toTaskDto(updated, prefix, checklist, commentCount, saved, sprint ?? null)
   }
 }
 

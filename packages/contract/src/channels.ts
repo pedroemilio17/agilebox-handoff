@@ -83,6 +83,16 @@ export const API_CHANNELS = [
   'backlog.reorder',
   'backlog.pull',
   'backlog.sendBack',
+  'sprints.list',
+  'sprints.get',
+  'sprints.create',
+  'sprints.update',
+  'sprints.start',
+  'sprints.close',
+  'sprints.discard',
+  'sprints.addTask',
+  'sprints.removeTask',
+  'teamTools.setModuleConfig',
 ] as const
 
 export type ApiChannel = (typeof API_CHANNELS)[number]

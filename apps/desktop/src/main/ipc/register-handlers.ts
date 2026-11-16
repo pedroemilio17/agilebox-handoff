@@ -145,6 +145,17 @@ export function registerHandlers(
   register('tasks.recordOpen', (context, input) =>
     useCases.tasks.recordOpen.execute(context, input),
   )
+  register('sprints.list', (context, input) => useCases.sprints.list.execute(context, input))
+  register('sprints.get', (context, input) => useCases.sprints.get.execute(context, input))
+  register('sprints.create', (context, input) => useCases.sprints.create.execute(context, input))
+  register('sprints.update', (context, input) => useCases.sprints.update.execute(context, input))
+  register('sprints.start', (context, input) => useCases.sprints.start.execute(context, input))
+  register('sprints.close', (context, input) => useCases.sprints.close.execute(context, input))
+  register('sprints.discard', (context, input) => useCases.sprints.discard.execute(context, input))
+  register('sprints.addTask', (context, input) => useCases.sprints.addTask.execute(context, input))
+  register('sprints.removeTask', (context, input) =>
+    useCases.sprints.removeTask.execute(context, input),
+  )
   register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
   register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))
   register('backlog.reorder', (context, input) => useCases.backlog.reorder.execute(context, input))
@@ -239,5 +250,8 @@ export function registerHandlers(
   )
   register('teamTools.applyPreset', (context, input) =>
     useCases.teamTools.applyPreset.execute(context, input),
+  )
+  register('teamTools.setModuleConfig', (context, input) =>
+    useCases.teamTools.setModuleConfig.execute(context, input),
   )
 }

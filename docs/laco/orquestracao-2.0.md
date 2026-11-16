@@ -54,8 +54,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M4 · Sprints
 
 - [x] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
-- [~] M4.2 Persistência, migração, casos de uso e contrato.
-- [ ] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
+- [x] M4.2 Persistência, migração, casos de uso e contrato.
+- [~] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
 
 ### M5 · Check-ins e impedimentos
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M4.2 (Haiku), lançado após o commit do M4.1. Resultado chega por notificação.
+M4.3 (Haiku), lançado após o commit do M4.2. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -116,7 +116,11 @@ M4.2 (Haiku), lançado após o commit do M4.1. Resultado chega por notificação
 
 - Sprint no domínio (M4.1): `maxActiveSprints` (padrão 1, ADR-08) como chave de configuração do módulo; qualquer tarefa não arquivada do mesmo projeto e fora de outra sprint aberta pode entrar (backlog ou quadro, inclusive concluída); sprint vazia pode iniciar e encerrar; o encerramento gera eventos de saída e, no `carry_over`, de entrada na linha do tempo; itens arquivados e abertos saem como `removed`; o número da sprint é máximo+1 (descartar pode reaproveitar número se a linha for apagada). Decisões do orquestrador para o M4.2, a confirmar: (A) o `return_to_backlog` conflita com a regra do backlog (item já iniciado, em Desenvolvendo ou Revisar, não volta ao backlog): itens ainda não iniciados (Planejamento, A fazer) voltam ao backlog, os iniciados ficam no quadro sem sprint com um novo desfecho `left_on_board`; (B) descartar rascunho é exclusão lógica (`discarded_at`), a linha nunca é apagada e o número não se reaproveita; (C) adicionar um item de backlog a uma sprint não o move; iniciar a sprint puxa os itens de backlog para o quadro (A fazer), e item de backlog adicionado a sprint ativa é puxado na hora; (D) iniciar uma sprint conta como criar para o módulo "Encerrando".
 
+- Sprints no backend (M4.2): as decisões (A) a (D) foram aplicadas; o descarte também deixa no quadro, como `left_on_board`, o item já iniciado; `carry_over` é recusado com o módulo em "Encerrando" (cria linhas na próxima sprint); "Sprint N" no card continua visível durante o encerramento do módulo e some só com o módulo desligado; a faixa 1 a 5 do limite de sprints ativas é validada na aplicação (`teamTools.setModuleConfig`, só gestor; só `sprints.maxActiveSprints` é configurável); eventos de "sprint iniciada/encerrada" não são gravados (o histórico vem de `sprint_tasks` e da linha do tempo das tarefas); a chave de `sprint_tasks` é (sprint, tarefa, `added_at` em ms), então a mesma tarefa na mesma sprint no mesmo milissegundo colidiria (alternativa: id ULID); adicionar item a sprint de projeto arquivado não é recusado de forma explícita. Lacuna aberta: mudança só de `config` do módulo NÃO é auditada (o CHECK de `team_tools_audit.kind` exigiria recriar a tabela), contra a regra 7 do plano.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 159: M4.2 concluído (Haiku). Tabelas `sprints` e `sprint_tasks` (migração 0015, índice parcial único de linha aberta por tarefa), 9 casos de uso `sprints.*` e `teamTools.setModuleConfig`, campo `sprint` no DTO da tarefa, contagem de impacto; encerramento atômico; +47 testes. `pnpm check` pelo orquestrador: 263 arquivos, 2318 testes, exit 0.
 
 - Ciclo 148: M4.1 concluído (Haiku). `Sprint` (rascunho, ativa, encerrada), `SprintTask` com histórico, limite de sprints ativas, `planSprintClose` com as duas políticas, políticas de acesso e eventos pt-BR, tudo puro em `packages/core` (+59 testes). `pnpm check` pelo orquestrador: 258 arquivos, 2271 testes, exit 0.
 

@@ -174,6 +174,8 @@ describe('contagem de impacto', () => {
     backlogItems: 5,
     acceptanceCriteria: 6,
     estimatedTasks: 7,
+    openSprints: 2,
+    sprintItems: 3,
   }
 
   it('usa o que o código consegue contar e zero para o que ainda não tem dados', () => {
@@ -185,7 +187,7 @@ describe('contagem de impacto', () => {
     expect(moduleImpact('backlog', usage)).toMatchObject({ count: 5 })
     expect(moduleImpact('acceptance', usage)).toMatchObject({ count: 6 })
     expect(moduleImpact('estimates.hours', usage)).toMatchObject({ count: 7 })
-    expect(moduleImpact('sprints', usage)).toMatchObject({ count: 0 })
+    expect(moduleImpact('sprints', usage)).toMatchObject({ count: 5 })
     expect(moduleImpact('estimates.points', usage)).toMatchObject({ count: 0 })
   })
 
@@ -199,6 +201,15 @@ describe('contagem de impacto', () => {
     )
     expect(moduleImpact('estimates.hours', usage).description).toBe(
       '7 tarefas com estimativa em horas',
+    )
+  })
+
+  it('sprints: frase com sprints não encerradas e itens em sprint, no singular e no plural', () => {
+    expect(moduleImpact('sprints', usage).description).toBe(
+      '2 sprints não encerradas e 3 itens em sprint',
+    )
+    expect(moduleImpact('sprints', { ...usage, openSprints: 1, sprintItems: 0 }).description).toBe(
+      '1 sprint não encerrada e 0 itens em sprint',
     )
   })
 

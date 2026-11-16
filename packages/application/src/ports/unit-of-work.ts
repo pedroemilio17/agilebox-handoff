@@ -11,6 +11,7 @@ import type { OrganizationRepository } from './organization-repository'
 import type { ParticipationRepository } from './participation-repository'
 import type { ProjectRepository } from './project-repository'
 import type { RetroActionRepository } from './retro-action-repository'
+import type { SprintRepository, SprintTaskRepository } from './sprint-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
 import type { TeamToolsRepository } from './team-tools-repository'
@@ -30,6 +31,8 @@ export interface UnitOfWorkRepositories {
   readonly participations: ParticipationRepository
   readonly projects: ProjectRepository
   readonly retroActions: RetroActionRepository
+  readonly sprints: SprintRepository
+  readonly sprintTasks: SprintTaskRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamTools: TeamToolsRepository

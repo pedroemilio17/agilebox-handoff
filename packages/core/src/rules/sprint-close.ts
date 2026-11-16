@@ -35,6 +35,8 @@ export interface SprintClosePlan {
   readonly completed: TaskId[]
   /** Arquivadas e abertas: saem da sprint sem mudar de lugar. */
   readonly removed: TaskId[]
+  /** Já iniciadas, sem sprint: ficam no quadro como estavam (`left_on_board`). */
+  readonly leftOnBoard: TaskId[]
   readonly timeline: TaskTimelineDraft[]
 }
 
@@ -52,11 +54,18 @@ export interface CloseSprintInput {
   readonly actor: Pick<Actor, 'userId'>
 }
 
+/** Já iniciada: em Desenvolvimento ou Revisão. Quem já começou não volta ao backlog. */
+export function isStartedTaskStatus(status: TaskStatus): boolean {
+  return status === 'in_progress' || status === 'review'
+}
+
 /**
  * Encerra a sprint e decide o destino de cada item aberto:
  * - concluído (estado Concluído) → `completed`;
  * - arquivado (não concluído) → `removed`, sem mudar de lugar;
- * - demais → `returnToBacklog` (padrão) ou `carried_over` para a sprint seguinte.
+ * - levado para a sprint seguinte (`carry_over`) → `carried_over`;
+ * - já iniciado (Desenvolvendo ou Revisar) com `return_to_backlog` → `leftOnBoard`: fica no quadro, sem sprint (M4.2, decisão A);
+ * - demais (Planejamento ou A fazer) → `returnToBacklog` (padrão).
  * Toda linha aberta fecha; nada é apagado.
  */
 export function planSprintClose(input: CloseSprintInput): SprintClosePlan {
@@ -80,6 +89,7 @@ export function planSprintClose(input: CloseSprintInput): SprintClosePlan {
   const carriedOver: TaskId[] = []
   const completed: TaskId[] = []
   const removed: TaskId[] = []
+  const leftOnBoard: TaskId[] = []
   const timeline: TaskTimelineDraft[] = []
   const leftEvent = {
     type: 'task_removed_from_sprint' as const,
@@ -90,7 +100,7 @@ export function planSprintClose(input: CloseSprintInput): SprintClosePlan {
     if (row.sprintId !== sprint.id || !isOpenSprintTask(row)) continue
     const task = input.tasks.find((candidate) => candidate.id === row.taskId)
     if (!task) throw new ValidationError('Tarefa da sprint não foi carregada')
-    let outcome: 'completed' | 'removed' | 'returned_to_backlog' | 'carried_over'
+    let outcome: 'completed' | 'removed' | 'returned_to_backlog' | 'carried_over' | 'left_on_board'
     if (task.status === 'done') {
       outcome = 'completed'
       completed.push(task.id)
@@ -100,6 +110,9 @@ export function planSprintClose(input: CloseSprintInput): SprintClosePlan {
     } else if (policy.kind === 'carry_over' && target) {
       outcome = 'carried_over'
       carriedOver.push(task.id)
+    } else if (isStartedTaskStatus(task.status)) {
+      outcome = 'left_on_board'
+      leftOnBoard.push(task.id)
     } else {
       outcome = 'returned_to_backlog'
       returnToBacklog.push(task.id)
@@ -134,6 +147,7 @@ export function planSprintClose(input: CloseSprintInput): SprintClosePlan {
     carriedOver,
     completed,
     removed,
+    leftOnBoard,
     timeline,
   }
 }
@@ -153,6 +167,8 @@ export interface DiscardSprintPlan {
   readonly rows: SprintTask[]
   readonly returnToBacklog: TaskId[]
   readonly removed: TaskId[]
+  /** Já iniciadas: ficam no quadro (`left_on_board`), como no encerramento. */
+  readonly leftOnBoard: TaskId[]
   readonly timeline: TaskTimelineDraft[]
 }
 
@@ -172,6 +188,7 @@ export function planSprintDiscard(input: DiscardSprintInput): DiscardSprintPlan 
   const rows: SprintTask[] = []
   const returnToBacklog: TaskId[] = []
   const removed: TaskId[] = []
+  const leftOnBoard: TaskId[] = []
   const timeline: TaskTimelineDraft[] = []
   for (const row of open) {
     const task = input.tasks.find((candidate) => candidate.id === row.taskId)
@@ -179,6 +196,9 @@ export function planSprintDiscard(input: DiscardSprintInput): DiscardSprintPlan 
     if (task.archivedAt !== null) {
       removed.push(task.id)
       rows.push(closeSprintTask(row, 'removed', at, actor.userId))
+    } else if (isStartedTaskStatus(task.status)) {
+      leftOnBoard.push(task.id)
+      rows.push(closeSprintTask(row, 'left_on_board', at, actor.userId))
     } else {
       returnToBacklog.push(task.id)
       rows.push(closeSprintTask(row, 'returned_to_backlog', at, actor.userId))
@@ -191,5 +211,5 @@ export function planSprintDiscard(input: DiscardSprintInput): DiscardSprintPlan 
       },
     })
   }
-  return { rows, returnToBacklog, removed, timeline }
+  return { rows, returnToBacklog, removed, leftOnBoard, timeline }
 }

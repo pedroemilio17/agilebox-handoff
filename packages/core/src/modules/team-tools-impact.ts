@@ -25,6 +25,10 @@ export interface TeamToolsUsage {
   readonly acceptanceCriteria: number
   /** Tarefas não arquivadas com estimativa em horas (no quadro ou no backlog). */
   readonly estimatedTasks: number
+  /** Sprints não encerradas e não descartadas (rascunho ou ativa). */
+  readonly openSprints: number
+  /** Itens abertos em sprints não encerradas (tarefas que entraram e ainda não saíram). */
+  readonly sprintItems: number
 }
 
 export interface ModuleImpact {
@@ -102,6 +106,14 @@ export function moduleImpact(module: ModuleId, usage: TeamToolsUsage): ModuleImp
           'critérios de aceitação em tarefas não arquivadas',
         ),
       }
+    case 'sprints': {
+      const count = usage.openSprints + usage.sprintItems
+      return {
+        module,
+        count,
+        description: `${countLabel(usage.openSprints, 'sprint não encerrada', 'sprints não encerradas')} e ${countLabel(usage.sprintItems, 'item em sprint', 'itens em sprint')}`,
+      }
+    }
     case 'estimates.hours':
       return {
         module,

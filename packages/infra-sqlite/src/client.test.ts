@@ -33,6 +33,8 @@ describe('createSqliteClient', () => {
         'team_modules',
         'team_preferences',
         'team_tools_audit',
+        'sprints',
+        'sprint_tasks',
       ].sort(),
     )
 

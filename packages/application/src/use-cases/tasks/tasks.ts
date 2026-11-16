@@ -52,6 +52,7 @@ import { toTaskDetailDto, toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
+import { loadSprintRefs } from '../sprints/sprint-refs'
 import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
@@ -173,7 +174,8 @@ export class CreateTask {
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0, [])
+    // Tarefa recém-criada não está em sprint: nulo sem consultar.
+    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0, [], null)
   }
 }
 
@@ -203,6 +205,7 @@ export class GetTaskDetail {
       responsible?.participant.kind === 'user'
         ? await this.deps.users.findById(actor.organizationId, responsible.participant.userId)
         : null
+    const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
@@ -219,6 +222,7 @@ export class GetTaskDetail {
         definitionOfDone,
         criteria,
         responsibleUser?.defaultRateCents ?? 0,
+        sprint ?? null,
       ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
@@ -319,12 +323,14 @@ export abstract class ChangeTask {
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     const counts = await loadCommentCounts(this.deps, actor, [updated])
+    const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
     return toTaskDto(
       updated,
       await findTaskPrefix(this.deps, actor.organizationId),
       checklist,
       counts.get(task.id) ?? 0,
       criteria,
+      sprint ?? null,
     )
   }
 }

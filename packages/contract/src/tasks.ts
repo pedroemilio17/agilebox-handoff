@@ -15,6 +15,15 @@ export const taskBlockReasonSchema = z.string().trim().min(1).max(280)
 
 export const taskKeySchema = z.string().regex(/^[A-Z]{2,5}-[1-9]\d*$/u)
 
+/** Sprint aberta atual da tarefa (M4.2): "Sprint N" no card. Nulo sem sprint ou sem o módulo ativo. */
+export const sprintRefStatusSchema = z.enum(['draft', 'active', 'closed'])
+export const sprintRefDtoSchema = z.object({
+  id: ulidSchema,
+  number: z.number().int().positive().safe(),
+  name: z.string(),
+  status: sprintRefStatusSchema,
+})
+
 export const taskDtoSchema = z.object({
   id: ulidSchema,
   number: z.number().int().positive().safe(),
@@ -45,6 +54,8 @@ export const taskDtoSchema = z.object({
   checklistProgress: checklistProgressDtoSchema,
   /** Critérios de aceitação feitos e totais (M3.3). Ausente em respostas antigas: não mostrar marcador. */
   criteriaProgress: acceptanceProgressDtoSchema.optional(),
+  /** Sprint aberta da tarefa (M4.2). Ausente em respostas antigas: tratar como nulo. */
+  sprint: sprintRefDtoSchema.nullable().optional(),
   commentCount: z.number().int().nonnegative().safe(),
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),
@@ -172,6 +183,7 @@ export const recordTaskOpenOutputSchema = z.void()
 import { participationSummaryDtoSchema } from './participations'
 
 export type TaskDto = z.infer<typeof taskDtoSchema>
+export type SprintRefDto = z.infer<typeof sprintRefDtoSchema>
 export type ListBoardDto = z.infer<typeof listBoardOutputSchema>
 export type GetTaskDto = z.infer<typeof getTaskOutputSchema>
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>

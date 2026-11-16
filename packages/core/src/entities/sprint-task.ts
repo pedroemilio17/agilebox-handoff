@@ -7,6 +7,8 @@ import type { OrganizationId, SprintId, TaskId, UserId } from '../shared/ids'
  * - `returned_to_backlog`: aberta, devolvida ao backlog no encerramento ou no descarte.
  * - `carried_over`: aberta, levada para a sprint seguinte (a linha nova nasce lá).
  * - `removed`: saiu antes do fim (removida manualmente ou arquivada no encerramento).
+ * - `left_on_board` (M4.2, decisão A): já iniciada (Desenvolvendo ou Revisar) no encerramento com a
+ *   política `return_to_backlog`. Sai da sprint e fica no quadro, sem voltar ao backlog.
  */
 export const SPRINT_TASK_OUTCOMES = [
   'open',
@@ -14,6 +16,7 @@ export const SPRINT_TASK_OUTCOMES = [
   'returned_to_backlog',
   'carried_over',
   'removed',
+  'left_on_board',
 ] as const
 export type SprintTaskOutcome = (typeof SPRINT_TASK_OUTCOMES)[number]
 

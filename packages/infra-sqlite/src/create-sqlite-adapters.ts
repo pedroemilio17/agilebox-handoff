@@ -6,6 +6,7 @@ import { createSqliteDailyEntryRepository } from './repositories/daily-entry-rep
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
+import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
@@ -31,6 +32,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
     dailyEntries: createSqliteDailyEntryRepository(database),
     teamTools: createSqliteTeamToolsRepository(database),
+    ...createSqliteSprintRepositories(database),
   }
   return {
     ...repositories,

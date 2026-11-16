@@ -88,6 +88,8 @@ function setup(actorOf: Actor = collaborator) {
     retroActions: repos.retroActions,
     dailyEntries: repos.dailyEntries,
     teamTools: repos.teamTools,
+    sprints: repos.sprints,
+    sprintTasks: repos.sprintTasks,
     definitionOfDone: repos.definitionOfDone,
     comments: repos.comments,
     boardSettings: repos.boardSettings,

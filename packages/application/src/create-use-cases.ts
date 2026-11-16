@@ -12,7 +12,19 @@ import {
   GetTeamTools,
   PreviewTeamToolsChange,
   SetTeamLevel,
+  SetTeamModuleConfig,
 } from './use-cases/team-tools/team-tools'
+import {
+  AddSprintTask,
+  CloseSprint,
+  CreateSprint,
+  DiscardSprint,
+  GetSprint,
+  ListSprints,
+  RemoveSprintTask,
+  StartSprint,
+  UpdateSprint,
+} from './use-cases/sprints/sprints'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { RenameProject } from './use-cases/projects/rename-project'
@@ -245,6 +257,17 @@ export function createUseCases(deps: AppDeps) {
       listForDate: forTenant('daily.listForDate', new ListDailyForDate(deps)),
       getForUser: forTenant('daily.getForUser', new GetDailyForUser(deps)),
     },
+    sprints: {
+      list: forTenant('sprints.list', new ListSprints(deps)),
+      get: forTenant('sprints.get', new GetSprint(deps)),
+      create: forTenant('sprints.create', new CreateSprint(deps)),
+      update: forTenant('sprints.update', new UpdateSprint(deps)),
+      start: forTenant('sprints.start', new StartSprint(deps)),
+      close: forTenant('sprints.close', new CloseSprint(deps)),
+      discard: forTenant('sprints.discard', new DiscardSprint(deps)),
+      addTask: forTenant('sprints.addTask', new AddSprintTask(deps)),
+      removeTask: forTenant('sprints.removeTask', new RemoveSprintTask(deps)),
+    },
     backlog: {
       list: forTenant('backlog.list', new ListBacklog(deps)),
       add: forTenant('backlog.add', new AddToBacklog(deps)),
@@ -259,6 +282,7 @@ export function createUseCases(deps: AppDeps) {
       completeWindDown: forTenant('teamTools.completeWindDown', new CompleteTeamWindDown(deps)),
       setLevel: forTenant('teamTools.setLevel', new SetTeamLevel(deps)),
       applyPreset: forTenant('teamTools.applyPreset', new ApplyTeamPreset(deps)),
+      setModuleConfig: forTenant('teamTools.setModuleConfig', new SetTeamModuleConfig(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

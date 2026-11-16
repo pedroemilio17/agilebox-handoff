@@ -385,3 +385,58 @@ describe('descartar rascunho', () => {
     ).toThrow(ConflictError)
   })
 })
+
+describe('encerrar sprint: itens já iniciados ficam no quadro (M4.2, decisão A)', () => {
+  it('Desenvolvendo e Revisar saem da sprint sem voltar ao backlog; Planejamento e A fazer voltam', () => {
+    const sprint = aSprint(4)
+    const rows = [openRow(sprint, 1), openRow(sprint, 2), openRow(sprint, 3), openRow(sprint, 4)]
+    const plan = planSprintClose({
+      sprint,
+      rows,
+      tasks: [task(1, 'in_progress'), task(2, 'review'), task(3, 'todo'), task(4, 'planning')],
+      policy: returnPolicy,
+      at,
+      actor,
+    })
+    expect(plan.leftOnBoard).toEqual([taskId(1), taskId(2)])
+    expect(plan.returnToBacklog).toEqual([taskId(3), taskId(4)])
+    expect(plan.rows.map((row) => row.outcome)).toEqual([
+      'left_on_board',
+      'left_on_board',
+      'returned_to_backlog',
+      'returned_to_backlog',
+    ])
+    expect(plan.rows.every((row) => row.removedAt === at && row.removedBy === userId)).toBe(true)
+    expect(plan.timeline).toHaveLength(4)
+  })
+
+  it('com carry_over, iniciados também seguem para a sprint seguinte (a política não muda)', () => {
+    const sprint = aSprint(4)
+    const plan = planSprintClose({
+      sprint,
+      rows: [openRow(sprint, 1)],
+      tasks: [task(1, 'in_progress')],
+      policy: carryPolicy,
+      nextSprint: nextDraft,
+      at,
+      actor,
+    })
+    expect(plan.carriedOver).toEqual([taskId(1)])
+    expect(plan.leftOnBoard).toEqual([])
+  })
+
+  it('descarte: iniciado fica no quadro e não volta ao backlog', () => {
+    const sprint = aSprint(4, 'draft')
+    const plan = planSprintDiscard({
+      sprint,
+      rows: [openRow(sprint, 1), openRow(sprint, 2)],
+      tasks: [task(1, 'review'), task(2, 'todo')],
+      returnToBacklog: true,
+      at,
+      actor,
+    })
+    expect(plan.leftOnBoard).toEqual([taskId(1)])
+    expect(plan.returnToBacklog).toEqual([taskId(2)])
+    expect(plan.rows.map((row) => row.outcome)).toEqual(['left_on_board', 'returned_to_backlog'])
+  })
+})

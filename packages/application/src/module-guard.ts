@@ -132,6 +132,19 @@ export const USE_CASE_MODULES = {
   'teamTools.completeWindDown': { module: 'core' },
   'teamTools.setLevel': { module: 'core' },
   'teamTools.applyPreset': { module: 'core' },
+  'teamTools.setModuleConfig': { module: 'core' },
+
+  // Sprints (M4.2): encerrando, não aceita sprint nova, item novo nem início (creates). Encerrar a
+  // ativa, remover item, editar e consultar seguem; descartar rascunho não cria nada.
+  'sprints.list': { module: 'sprints' },
+  'sprints.get': { module: 'sprints' },
+  'sprints.create': { module: 'sprints', creates: true },
+  'sprints.update': { module: 'sprints' },
+  'sprints.start': { module: 'sprints', creates: true },
+  'sprints.close': { module: 'sprints' },
+  'sprints.discard': { module: 'sprints' },
+  'sprints.addTask': { module: 'sprints', creates: true },
+  'sprints.removeTask': { module: 'sprints' },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */
