@@ -23,7 +23,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M0 · Estabilizar o MVP
 
 - [x] M0.1 Semântica de "Minhas tarefas" do gestor: `listTeamBoard` hoje exclui as tarefas do gestor; "Minhas tarefas" deve mostrar as dele e Equipe todas (PLANO 6.1; relatório final, seção f). Corrigir no `core`/`application` com testes.
-- [ ] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
+- [~] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
 - [ ] M0.3 Arquivar tarefa e arquivar projeto (esconde, nunca apaga; linha do tempo registra; só quem edita pode; desfazer arquivamento).
 - [ ] M0.4 Renomear projeto (permissão como a de gerenciar membros; entrada na linha do tempo se aplicável).
 
