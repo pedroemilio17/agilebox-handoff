@@ -90,6 +90,17 @@ export function canSeeRate(actor: Actor, owner: RateOwner): boolean {
   )
 }
 export const canEditRate = canSeeRate
+/**
+ * Custo estimado (M3.2) segue o valor/hora do Responsável: quem vê o valor/hora dele vê o custo
+ * estimado (o gestor, ou o próprio Responsável). Para os demais, o custo vem nulo.
+ */
+export function canSeeEstimatedCost(actor: Actor, task: Task): boolean {
+  const responsible = task.participations.find((p) => p.role === 'responsible')
+  return (
+    responsible !== undefined &&
+    canSeeRate(actor, { organizationId: task.organizationId, participant: responsible.participant })
+  )
+}
 export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): boolean {
   return actor.organizationId === organizationId && actor.role === 'manager'
 }

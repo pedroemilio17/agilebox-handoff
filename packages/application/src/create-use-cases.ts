@@ -39,6 +39,13 @@ import { CreateContributor } from './use-cases/contributors/create-contributor'
 import { AddTaskComment, EditTaskComment, RemoveTaskComment } from './use-cases/tasks/comments'
 import { GetBoardSettings, SetWipLimits } from './use-cases/board-settings/board-settings'
 import {
+  AddAcceptanceCriterion,
+  MoveAcceptanceCriterion,
+  RemoveAcceptanceCriterion,
+  RenameAcceptanceCriterion,
+  ToggleAcceptanceCriterion,
+} from './use-cases/tasks/acceptance'
+import {
   AddChecklistItem,
   MoveChecklistItem,
   RemoveChecklistItem,
@@ -51,6 +58,7 @@ import {
   CreateTask,
   GetTaskDetail,
   MoveTask,
+  SetTaskEstimate,
   UnarchiveTask,
   UnblockTask,
   UpdateTask,
@@ -186,6 +194,14 @@ export function createUseCases(deps: AppDeps) {
       unblock: forTenant('tasks.unblock', new UnblockTask(deps)),
       archive: forTenant('tasks.archive', new ArchiveTask(deps)),
       unarchive: forTenant('tasks.unarchive', new UnarchiveTask(deps)),
+      setEstimate: forTenant('tasks.setEstimate', new SetTaskEstimate(deps)),
+      criteria: {
+        add: forTenant('tasks.criteria.add', new AddAcceptanceCriterion(deps)),
+        toggle: forTenant('tasks.criteria.toggle', new ToggleAcceptanceCriterion(deps)),
+        rename: forTenant('tasks.criteria.rename', new RenameAcceptanceCriterion(deps)),
+        remove: forTenant('tasks.criteria.remove', new RemoveAcceptanceCriterion(deps)),
+        move: forTenant('tasks.criteria.move', new MoveAcceptanceCriterion(deps)),
+      },
       checklist: {
         add: forTenant('tasks.checklist.add', new AddChecklistItem(deps)),
         toggle: forTenant('tasks.checklist.toggle', new ToggleChecklistItem(deps)),

@@ -53,6 +53,7 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     clock: new FixedClock(clockInstant),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

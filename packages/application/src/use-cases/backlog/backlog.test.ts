@@ -81,6 +81,7 @@ async function setup() {
     clock: new FixedClock(NOW),
     boardSettings: repos.boardSettings,
     checklist: repos.checklist,
+    acceptance: repos.acceptance,
     comments: repos.comments,
     contributors: repos.contributors,
     dailyEntries: repos.dailyEntries,

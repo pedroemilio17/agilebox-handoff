@@ -75,6 +75,7 @@ async function setup() {
     clock: new FixedClock(NOW),
     boardSettings: repositories.boardSettings,
     checklist: repositories.checklist,
+    acceptance: repositories.acceptance,
     comments: repositories.comments,
     contributors: repositories.contributors,
     dailyEntries: repositories.dailyEntries,

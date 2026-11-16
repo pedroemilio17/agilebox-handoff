@@ -1,6 +1,13 @@
 import type { z } from 'zod'
 import type { ChangeEvent } from './changes'
 import {
+  addAcceptanceCriterionInputSchema,
+  moveAcceptanceCriterionInputSchema,
+  removeAcceptanceCriterionInputSchema,
+  renameAcceptanceCriterionInputSchema,
+  toggleAcceptanceCriterionInputSchema,
+} from './acceptance'
+import {
   addProjectMemberInputSchema,
   addProjectMemberOutputSchema,
   createProjectInputSchema,
@@ -68,6 +75,9 @@ import {
   unarchiveTaskInputSchema,
   unarchiveTaskOutputSchema,
   checklistChangeOutputSchema,
+  criteriaChangeOutputSchema,
+  setTaskEstimateInputSchema,
+  setTaskEstimateOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -254,6 +264,30 @@ export const API_SCHEMA_REGISTRY = {
     input: moveChecklistItemInputSchema,
     output: checklistChangeOutputSchema,
   },
+  'tasks.setEstimate': {
+    input: setTaskEstimateInputSchema,
+    output: setTaskEstimateOutputSchema,
+  },
+  'tasks.criteria.add': {
+    input: addAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.toggle': {
+    input: toggleAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.rename': {
+    input: renameAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.remove': {
+    input: removeAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.move': {
+    input: moveAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
   'tasks.comments.add': {
     input: addTaskCommentInputSchema,
     output: addTaskCommentOutputSchema,
@@ -417,6 +451,14 @@ export interface AgileBoxApi {
     unblock: Method<'tasks.unblock'>
     archive: Method<'tasks.archive'>
     unarchive: Method<'tasks.unarchive'>
+    setEstimate: Method<'tasks.setEstimate'>
+    criteria: {
+      add: Method<'tasks.criteria.add'>
+      toggle: Method<'tasks.criteria.toggle'>
+      rename: Method<'tasks.criteria.rename'>
+      remove: Method<'tasks.criteria.remove'>
+      move: Method<'tasks.criteria.move'>
+    }
     checklist: {
       add: Method<'tasks.checklist.add'>
       toggle: Method<'tasks.checklist.toggle'>

@@ -40,6 +40,7 @@ function setup(actor: Actor = owner) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: new RecordingNotifier(),
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,

@@ -63,6 +63,14 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
         remove: (input) => call('tasks.checklist.remove', input),
         move: (input) => call('tasks.checklist.move', input),
       },
+      setEstimate: (input) => call('tasks.setEstimate', input),
+      criteria: {
+        add: (input) => call('tasks.criteria.add', input),
+        toggle: (input) => call('tasks.criteria.toggle', input),
+        rename: (input) => call('tasks.criteria.rename', input),
+        remove: (input) => call('tasks.criteria.remove', input),
+        move: (input) => call('tasks.criteria.move', input),
+      },
       comments: {
         add: (input) => call('tasks.comments.add', input),
         edit: (input) => call('tasks.comments.edit', input),

@@ -17,6 +17,7 @@ export type BoardSettingsId = Id<'BoardSettings'>
 export type DefinitionOfDoneItemId = Id<'DefinitionOfDoneItem'>
 export type RetroActionId = Id<'RetroAction'>
 export type DailyEntryId = Id<'DailyEntry'>
+export type AcceptanceCriterionId = Id<'AcceptanceCriterion'>
 
 function toId<Kind extends string>(value: string): Id<Kind> {
   if (!/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(value) || value.length !== 26) {
@@ -38,4 +39,5 @@ export const toTaskCommentId = (value: string): TaskCommentId => toId(value)
 export const toBoardSettingsId = (value: string): BoardSettingsId => toId(value)
 export const toDefinitionOfDoneItemId = (value: string): DefinitionOfDoneItemId => toId(value)
 export const toRetroActionId = (value: string): RetroActionId => toId(value)
+export const toAcceptanceCriterionId = (value: string): AcceptanceCriterionId => toId(value)
 export const toDailyEntryId = (value: string): DailyEntryId => toId(value)

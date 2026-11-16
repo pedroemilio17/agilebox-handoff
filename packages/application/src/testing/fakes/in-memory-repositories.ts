@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
   BacklogRankChange,
   BoardSettings,
   ExperienceLevel,
@@ -35,6 +36,7 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  AcceptanceRepository,
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
@@ -57,6 +59,7 @@ import type {
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
 export interface InMemoryState {
+  acceptance: Map<OrganizationId, Map<string, AcceptanceCriterion>>
   boardSettings: Map<OrganizationId, BoardSettings>
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   comments: Map<OrganizationId, Map<string, TaskComment>>
@@ -90,6 +93,7 @@ export function createInMemoryState(): InMemoryState {
     createdAt: '2026-01-01T00:00:00.000Z',
   })
   return {
+    acceptance: new Map(),
     boardSettings: new Map(),
     checklist: new Map(),
     comments: new Map(),
@@ -159,6 +163,28 @@ export class InMemoryBoardSettingsRepository implements BoardSettingsRepository 
     await Promise.resolve()
     if (settings.organizationId === organizationId)
       this.state.boardSettings.set(organizationId, settings)
+  }
+}
+
+export class InMemoryAcceptanceRepository implements AcceptanceRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.acceptance, org).values()]
+      .filter((criterion) => criterion.taskId === taskId)
+      .sort((a, b) => a.position - b.position)
+  }
+  async saveMany(org: OrganizationId, criteria: readonly AcceptanceCriterion[]) {
+    await Promise.resolve()
+    const tasks = bucket(this.state.tasks, org)
+    const values = bucket(this.state.acceptance, org)
+    for (const criterion of criteria) {
+      if (tasks.has(criterion.taskId)) values.set(criterion.id, criterion)
+    }
+  }
+  async remove(org: OrganizationId, criterionId: AcceptanceCriterion['id']) {
+    await Promise.resolve()
+    bucket(this.state.acceptance, org).delete(criterionId)
   }
 }
 

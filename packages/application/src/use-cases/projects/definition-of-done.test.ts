@@ -39,6 +39,7 @@ function setup(actor: Actor = creator, unitOfWork = new InMemoryUnitOfWork()) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,

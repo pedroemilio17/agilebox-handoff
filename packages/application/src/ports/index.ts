@@ -1,3 +1,4 @@
+export * from './acceptance-repository'
 export * from './board-settings-repository'
 export * from './change-notifier'
 export * from './checklist-repository'

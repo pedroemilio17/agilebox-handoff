@@ -48,8 +48,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M3 · Backlog e critérios
 
 - [x] M3.1 Backlog (core, persistência, aplicação, contrato): itens futuros ordenados, separado da coluna Planejamento; reordenar persiste.
-- [~] M3.2 Critérios de aceitação por tarefa (reaproveitar o padrão da definição de pronto) e estimativa em horas ligada ao custo por hora.
-- [ ] M3.3 Telas de backlog (nível Intermediário) com reordenar, critérios e estimativa.
+- [x] M3.2 Critérios de aceitação por tarefa (reaproveitar o padrão da definição de pronto) e estimativa em horas ligada ao custo por hora.
+- [~] M3.3 Telas de backlog (nível Intermediário) com reordenar, critérios e estimativa.
 
 ### M4 · Sprints
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M3.2 (Haiku), lançado após o commit do M3.1. Resultado chega por notificação.
+M3.3 (Haiku), lançado após o commit do M3.2. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -109,7 +109,11 @@ M3.2 (Haiku), lançado após o commit do M3.1. Resultado chega por notificação
 
 - Backlog (M3.1), implementado: rank inteiro com espaçamento de 1024 (renumera quando não cabe); `backlog.list/add/reorder/pull/sendBack`; `tasks.move` em item de backlog só aceita Planejamento; pull leva a A fazer por padrão. Para decidir: (1) módulo `backlog` em `disabled` deixa os itens escondidos (reativar devolve) e não há passo que os puxe para o quadro no encerramento (o plano prevê o gestor escolher o destino: tarefas da sprint voltando ao Kanban como estão); (2) em projeto arquivado só criar item é recusado (reordenar, puxar e devolver continuam); (3) devolver ao backlog usa a mesma política de puxar (membro ou gestor); (4) o pull gera dois eventos na linha do tempo (`task_pulled_from_backlog` e `status_changed`); (5) `sendBack` calcula o rank fora da transação (corrida rara, ordem de desempate estável); (6) `team-tools.countUsage` conta itens de backlog como tarefas nas contagens de impacto.
 
+- Critérios e estimativa (M3.2): a estimativa é `tasks.setEstimate` (módulo `estimates.hours`), coluna `estimated_hours_hundredths` (centésimos, como `hours_hundredths`), sem CHECK de faixa (um CHECK reconstruiria `tasks` e o DROP dispararia o cascade das subtarefas; a faixa é validada no domínio e no contrato); renomear e reordenar critério geram evento na linha do tempo (o checklist de subtarefas não gera); o custo estimado só aparece para o gestor e para o próprio Responsável; `estimatedHours`, `actualHours` e os critérios vêm no DTO mesmo com o módulo desligado (a UI esconde); `actualHours` aparece para todos (são horas, não valor); a prévia de impacto das ferramentas ainda conta zero para `estimates.hours`, `acceptance` e `backlog` (ajustada no M3.3). Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 128: M3.2 concluído (Haiku). Critérios de aceitação por tarefa (até 20, `tasks.criteria.*`, módulo `acceptance`) e estimativa em horas (`tasks.setEstimate`, módulo `estimates.hours`) com custo estimado respeitando a visibilidade de valores; migração 0014; 83 arquivos tocados (campo novo na tarefa); +121 testes. `pnpm check` pelo orquestrador: 245 arquivos, 2153 testes, exit 0.
 
 - Ciclo 117: M3.1 concluído (Haiku). Backlog como tarefa com posição (`backlogRank`, migração 0013): domínio, persistência, cinco casos de uso `backlog.*` com guard, contrato e IPC; itens de backlog saem do quadro, da busca, dos recentes e do dashboard; +65 testes. `pnpm check` pelo orquestrador: 236 arquivos, 2032 testes, exit 0.
 

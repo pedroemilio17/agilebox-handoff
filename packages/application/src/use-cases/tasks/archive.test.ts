@@ -84,6 +84,7 @@ function setup(actorOf: Actor = collaborator) {
     changeNotifier: new RecordingNotifier(),
     clock: new FixedClock(now),
     checklist: repos.checklist,
+    acceptance: repos.acceptance,
     retroActions: repos.retroActions,
     dailyEntries: repos.dailyEntries,
     teamTools: repos.teamTools,

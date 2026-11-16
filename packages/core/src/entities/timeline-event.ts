@@ -1,4 +1,11 @@
-import type { ChecklistItemId, EventId, TaskCommentId, TaskId, UserId } from '../shared/ids'
+import type {
+  AcceptanceCriterionId,
+  ChecklistItemId,
+  EventId,
+  TaskCommentId,
+  TaskId,
+  UserId,
+} from '../shared/ids'
 import type { DateOnly } from '../values/date-only'
 import type { ParticipationRole } from '../values/role'
 import type { TaskPriority } from '../values/task-priority'
@@ -33,6 +40,26 @@ export type TimelineEvent = EventBase &
           | 'checklist_item_removed'
         readonly payload: { readonly itemId: ChecklistItemId; readonly title: string }
       }
+    | {
+        readonly type:
+          | 'acceptance_criterion_added'
+          | 'acceptance_criterion_removed'
+          | 'acceptance_criterion_done'
+          | 'acceptance_criterion_reopened'
+        readonly payload: { readonly criterionId: AcceptanceCriterionId; readonly text: string }
+      }
+    | {
+        readonly type: 'acceptance_criterion_renamed'
+        readonly payload: Change<string> & { readonly criterionId: AcceptanceCriterionId }
+      }
+    | {
+        readonly type: 'acceptance_criterion_moved'
+        readonly payload: Change<number> & {
+          readonly criterionId: AcceptanceCriterionId
+          readonly text: string
+        }
+      }
+    | { readonly type: 'estimate_changed'; readonly payload: Change<number | null> }
     | {
         readonly type: 'comment_added'
         readonly payload: { readonly commentId: TaskCommentId; readonly excerpt: string }

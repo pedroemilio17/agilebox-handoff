@@ -1,4 +1,5 @@
 import type {
+  AcceptanceRepository,
   ActorSession,
   BoardSettingsRepository,
   ChangeNotifier,
@@ -23,6 +24,7 @@ import type {
 } from './ports'
 
 export interface AppDeps {
+  readonly acceptance: AcceptanceRepository
   readonly actorSession: ActorSession
   readonly boardSettings: BoardSettingsRepository
   readonly changeNotifier: ChangeNotifier

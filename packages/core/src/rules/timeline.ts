@@ -68,6 +68,11 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
     })
   if (!sameTicket(before.ticket, after.ticket))
     events.push({ type: 'ticket_changed', payload: { before: before.ticket, after: after.ticket } })
+  if (before.estimatedHoursHundredths !== after.estimatedHoursHundredths)
+    events.push({
+      type: 'estimate_changed',
+      payload: { before: before.estimatedHoursHundredths, after: after.estimatedHoursHundredths },
+    })
   for (const previous of before.participations) {
     const next = after.participations.find((p) => key(p.participant) === key(previous.participant))
     if (!next)
@@ -106,6 +111,11 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
   return events
 }
 
+/** Estimativa em centésimos para o texto da linha do tempo ("2 h") ou "sem estimativa". */
+function estimateText(hundredths: number | null): string {
+  return hundredths === null ? 'sem estimativa' : formatHours(hundredths)
+}
+
 export function describeEvent(event: TimelineEvent, viewer: Actor, names: TimelineNames): string {
   const name = (p: Participant) =>
     p.kind === 'user' ? names.user(p.userId) : names.contributor(p.contributorId)
@@ -130,6 +140,20 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `removeu a subtarefa: ${event.payload.title}`
     case 'definition_confirmed':
       return `concluiu a tarefa confirmando a definição de pronto (${event.payload.count === 1 ? '1 item' : `${event.payload.count} itens`})`
+    case 'acceptance_criterion_added':
+      return `adicionou o critério: ${event.payload.text}`
+    case 'acceptance_criterion_removed':
+      return `removeu o critério: ${event.payload.text}`
+    case 'acceptance_criterion_done':
+      return `marcou o critério como atendido: ${event.payload.text}`
+    case 'acceptance_criterion_reopened':
+      return `desmarcou o critério: ${event.payload.text}`
+    case 'acceptance_criterion_renamed':
+      return `renomeou o critério de "${event.payload.before}" para "${event.payload.after}"`
+    case 'acceptance_criterion_moved':
+      return `reordenou o critério "${event.payload.text}" para a posição ${event.payload.after + 1}`
+    case 'estimate_changed':
+      return `alterou a estimativa de ${estimateText(event.payload.before)} para ${estimateText(event.payload.after)}`
     case 'comment_added':
       return 'comentou na tarefa'
     case 'comment_removed':

@@ -32,6 +32,12 @@ export const tasks = sqliteTable(
     archivedBy: text('archived_by').references(() => users.id),
     /** Posição no backlog do projeto (M3.1). Nulo = a tarefa está no quadro. */
     backlogRank: integer('backlog_rank'),
+    /**
+     * Estimativa em centésimos de hora (ADR-07, M3.2). Nulo = sem estimativa. Sem CHECK de faixa de propósito:
+     * adicionar CHECK exige reconstruir `tasks` (DROP + cópia), e o DROP dispara o cascade das filhas. A faixa
+     * (0 a 9999 h) é validada no domínio (`estimateToHundredths`) e no contrato.
+     */
+    estimatedHoursHundredths: integer('estimated_hours_hundredths'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),

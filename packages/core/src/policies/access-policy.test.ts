@@ -40,6 +40,7 @@ const task: Task = {
   archivedAt: null,
   archivedBy: null,
   backlogRank: null,
+  estimatedHoursHundredths: null,
   deadline: null,
   ticket: null,
   searchText: '',

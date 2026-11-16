@@ -38,6 +38,7 @@ function setup(actor: Actor = owner) {
     actorSession,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,

@@ -1,5 +1,9 @@
 import {
+  canSeeEstimatedCost,
+  estimatedCostOf,
+  hundredthsToHours,
   isInBacklog,
+  spentHundredths,
   canChangeTaskArchive,
   canEditComment,
   canRemoveComment,
@@ -14,6 +18,7 @@ import {
   total as calculateTaskTotal,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
   Actor,
   BoardSettings,
   ChecklistItem,
@@ -33,6 +38,7 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterionDto,
   BoardSettingsDto,
   ChecklistItemDto,
   DailyEntryDto,
@@ -167,6 +173,9 @@ export function toTaskDto(
     archivedAt: task.archivedAt,
     backlogRank: task.backlogRank,
     inBacklog: isInBacklog(task),
+    // Horas, não dinheiro: a comparação estimado × realizado é visível a quem vê a tarefa.
+    estimatedHours: hundredthsToHours(task.estimatedHoursHundredths),
+    actualHours: spentHundredths(task.participations) / 100,
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,
@@ -177,6 +186,22 @@ export function toTaskDto(
   }
 }
 
+export function toAcceptanceCriterionDto(criterion: AcceptanceCriterion): AcceptanceCriterionDto {
+  return {
+    id: criterion.id,
+    taskId: criterion.taskId,
+    text: criterion.text,
+    done: criterion.done,
+    position: criterion.position,
+    createdAt: criterion.createdAt,
+    updatedAt: criterion.updatedAt,
+  }
+}
+
+/**
+ * `responsibleDefaultRateCents` é o padrão do Responsável, usado no custo estimado quando o envolvimento
+ * dele está sem valor. O custo estimado só sai para quem vê o valor/hora do Responsável (`canSeeEstimatedCost`).
+ */
 export function toTaskDetailDto(
   task: Task,
   taskPrefix: string,
@@ -186,11 +211,18 @@ export function toTaskDetailDto(
   checklist: readonly ChecklistItem[],
   comments: readonly TaskCommentDto[],
   definitionOfDone: readonly DefinitionOfDoneItem[],
+  criteria: readonly AcceptanceCriterion[],
+  responsibleDefaultRateCents: number,
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
+  const cost = canSeeEstimatedCost(actor, task)
+    ? estimatedCostOf(task, responsibleDefaultRateCents)
+    : null
   return {
     ...toTaskDto(task, taskPrefix, checklist, comments.length),
     checklist: checklist.map(toChecklistItemDto),
+    criteria: criteria.map(toAcceptanceCriterionDto),
+    estimatedCost: cost === null ? null : rateInReais(cost),
     projectDefinitionOfDone: definitionOfDone.map(toDefinitionOfDoneItemDto),
     comments: [...comments],
     participations: task.participations.map((participation) =>

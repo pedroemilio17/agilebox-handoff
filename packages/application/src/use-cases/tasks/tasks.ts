@@ -1,6 +1,7 @@
 import {
   addParticipant,
   addToBacklog,
+  setEstimatedHours,
   archiveTask,
   blockTask,
   canChangeTaskArchive,
@@ -190,11 +191,18 @@ export class GetTaskDetail {
     const now = await this.deps.clock.now(actor.organizationId)
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
+    const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     const comments = await loadCommentDtos(this.deps, actor, task)
     const definitionOfDone = await this.deps.definitionOfDone.listByProject(
       actor.organizationId,
       task.projectId,
     )
+    // Custo estimado usa o padrão do Responsável quando o envolvimento está sem valor (M3.2).
+    const responsible = task.participations.find((p) => p.role === 'responsible')
+    const responsibleUser =
+      responsible?.participant.kind === 'user'
+        ? await this.deps.users.findById(actor.organizationId, responsible.participant.userId)
+        : null
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
@@ -209,6 +217,8 @@ export class GetTaskDetail {
         checklist,
         comments,
         definitionOfDone,
+        criteria,
+        responsibleUser?.defaultRateCents ?? 0,
       ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
@@ -358,6 +368,20 @@ export class UpdateTask extends ChangeTask {
       },
       input.changes.progressConfirmed ? [{ type: 'progress_confirmed', payload: {} }] : [],
     )
+  }
+}
+
+/**
+ * Estimativa em horas (M3.2, módulo `estimates.hours`). Fica em `tasks.setEstimate`, e não no
+ * `tasks.update`, porque o guard de módulo é por caso de uso: o `update` é do núcleo e não pode
+ * deixar a estimativa passar com o módulo desligado. Quem edita a tarefa define a estimativa.
+ */
+export class SetTaskEstimate extends ChangeTask {
+  async execute(
+    actor: Actor,
+    input: { readonly taskId: string; readonly estimatedHours: number | null },
+  ): Promise<TaskDto> {
+    return this.change(actor, input.taskId, (task) => setEstimatedHours(task, input.estimatedHours))
   }
 }
 

@@ -2,6 +2,7 @@ import { ConflictError, ValidationError } from '../shared/errors'
 import type { OrganizationId, ParticipationId, ProjectId, TaskId, UserId } from '../shared/ids'
 import { parseDateOnly } from '../values/date-only'
 import type { DateOnly } from '../values/date-only'
+import { estimateToHundredths } from '../values/hours'
 import { parseTaskPriority } from '../values/task-priority'
 import type { TaskPriority } from '../values/task-priority'
 import { parseTaskStatus, TASK_STATUS_LABELS } from '../values/task-status'
@@ -33,6 +34,8 @@ export interface Task {
    * está no quadro; não nulo = é um item de backlog, que não aparece no quadro nem nas listas.
    */
   readonly backlogRank: number | null
+  /** Estimativa em centésimos de hora (ADR-07, módulo `estimates.hours`). Nulo = sem estimativa. */
+  readonly estimatedHoursHundredths: number | null
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -92,6 +95,7 @@ export function createTask(input: CreateTaskInput): Task {
     archivedAt: null,
     archivedBy: null,
     backlogRank: null,
+    estimatedHoursHundredths: null,
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -182,6 +186,15 @@ export function setBacklogRank(task: Task, rank: number): Task {
   assertBacklogAllowed(task)
   if (!isInBacklog(task)) throw new ConflictError('Tarefa não está no backlog')
   return { ...task, backlogRank: rank }
+}
+/**
+ * Estimativa em horas (M3.2). Nulo remove a estimativa. Tarefa arquivada não muda, como nas demais
+ * alterações. Valor igual ao atual devolve a mesma tarefa (sem evento na linha do tempo).
+ */
+export function setEstimatedHours(task: Task, hours: number | null): Task {
+  if (task.archivedAt !== null) throw new ConflictError('Tarefa arquivada não pode ser alterada')
+  const next = estimateToHundredths(hours)
+  return next === task.estimatedHoursHundredths ? task : { ...task, estimatedHoursHundredths: next }
 }
 export function setPriority(task: Task, priority: TaskPriority): Task {
   return { ...task, priority: parseTaskPriority(priority) }

@@ -67,6 +67,7 @@ async function setup() {
     clock: new FixedClock('2026-01-02T12:00:00.000Z'),
     boardSettings: repositories.boardSettings,
     checklist: repositories.checklist,
+    acceptance: repositories.acceptance,
     comments: repositories.comments,
     contributors: repositories.contributors,
     dailyEntries: repositories.dailyEntries,

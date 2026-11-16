@@ -6,7 +6,15 @@ import {
   createTask,
   createUser,
 } from '@agilebox/core'
-import type { Contributor, Meeting, Participation, Project, Task, User } from '@agilebox/core'
+import type {
+  Contributor,
+  Meeting,
+  Participation,
+  Project,
+  Task,
+  User,
+  UserRole,
+} from '@agilebox/core'
 import {
   toContributorId,
   toMeetingId,
@@ -30,7 +38,7 @@ export function aUser() {
     organizationId,
     name: 'Ana Silva',
     email: 'ana@example.com',
-    role: 'collaborator' as const,
+    role: 'collaborator' as UserRole,
     defaultRateCents: 4500,
     createdAt: timestamp,
   }

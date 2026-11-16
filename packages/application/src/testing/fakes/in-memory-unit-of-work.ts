@@ -2,6 +2,7 @@ import type { OrganizationId } from '@agilebox/core'
 import type { UnitOfWork, UnitOfWorkRepositories } from '../../ports'
 import {
   createInMemoryState,
+  InMemoryAcceptanceRepository,
   InMemoryBoardSettingsRepository,
   InMemoryChecklistRepository,
   InMemoryContributorRepository,
@@ -33,6 +34,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   constructor(state = createInMemoryState()) {
     this.state = state
     this.repositories = {
+      acceptance: new InMemoryAcceptanceRepository(state),
       boardSettings: new InMemoryBoardSettingsRepository(state),
       checklist: new InMemoryChecklistRepository(state),
       comments: new InMemoryTaskCommentRepository(state),
@@ -59,6 +61,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     if (this.active) throw new Error('Transações aninhadas não são suportadas pelo fake')
     this.active = true
     const snapshot = {
+      acceptance: copyMap(this.state.acceptance),
       boardSettings: new Map(this.state.boardSettings),
       checklist: copyMap(this.state.checklist),
       comments: copyMap(this.state.comments),

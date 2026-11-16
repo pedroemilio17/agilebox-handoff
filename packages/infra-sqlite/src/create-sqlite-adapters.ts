@@ -1,4 +1,5 @@
 import { createSqliteClient } from './client.js'
+import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
@@ -21,6 +22,7 @@ export function createSqliteAdapters(filename: string, migrationsFolder?: string
 export function createSqliteAdaptersForDatabase(database: ReturnType<typeof createSqliteClient>) {
   const repositories = {
     ...createSqliteCoreRepositories(database),
+    acceptance: createSqliteAcceptanceRepository(database),
     ...createSqliteTaskRepositories(database),
     meetings: createSqliteMeetingRepository(database),
     retroActions: createSqliteRetroActionRepository(database),

@@ -4,6 +4,7 @@ import type { Task } from '../entities/task'
 import type { TimelineEventDraft } from './timeline'
 import { CHECKLIST_MAX_ITEMS, validateChecklistTitle } from '../entities/validation'
 import { ValidationError } from '../shared/errors'
+import { changedPositions, moveToPosition, removeAndReindex } from './positions'
 import type { ChecklistItemId } from '../shared/ids'
 
 export interface ChecklistProgress {
@@ -18,23 +19,12 @@ export function checklistProgress(items: readonly ChecklistItem[]): ChecklistPro
   return { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100) }
 }
 
-function sortByPosition(items: readonly ChecklistItem[]): ChecklistItem[] {
-  return [...items].sort((a, b) => a.position - b.position)
-}
-
-/** Reatribui posições 0..n-1 mantendo a ordem atual. */
-function reindex(items: readonly ChecklistItem[]): ChecklistItem[] {
-  return items.map((item, position) => (item.position === position ? item : { ...item, position }))
-}
-
 /** Itens cuja posição mudou entre `before` e `after` (os que precisam ser gravados). */
 export function changedChecklistPositions(
   before: readonly ChecklistItem[],
   after: readonly ChecklistItem[],
 ): ChecklistItem[] {
-  return after.filter(
-    (item) => before.find((previous) => previous.id === item.id)?.position !== item.position,
-  )
+  return changedPositions(before, after)
 }
 
 /** Nova subtarefa vai para o fim. Só tarefa não concluída aceita itens novos. */
@@ -77,12 +67,7 @@ export function removeChecklistItem(
   items: readonly ChecklistItem[],
   id: ChecklistItemId,
 ): { readonly removed: ChecklistItem; readonly remaining: ChecklistItem[] } {
-  const removed = items.find((item) => item.id === id)
-  if (!removed) throw new ValidationError('Subtarefa não encontrada')
-  return {
-    removed,
-    remaining: reindex(sortByPosition(items.filter((item) => item.id !== id))),
-  }
+  return removeAndReindex(items, id, 'Subtarefa não encontrada')
 }
 
 /** Move a subtarefa para a posição informada (0 a n-1) e reatribui as posições. */
@@ -91,15 +76,10 @@ export function moveChecklistItem(
   id: ChecklistItemId,
   position: number,
 ): ChecklistItem[] {
-  if (!Number.isSafeInteger(position) || position < 0 || position >= items.length)
-    throw new ValidationError('Posição da subtarefa inválida')
-  const ordered = sortByPosition(items)
-  const from = ordered.findIndex((item) => item.id === id)
-  if (from === -1) throw new ValidationError('Subtarefa não encontrada')
-  const [moved] = ordered.splice(from, 1)
-  if (!moved) throw new ValidationError('Subtarefa não encontrada')
-  ordered.splice(position, 0, moved)
-  return reindex(ordered)
+  return moveToPosition(items, id, position, {
+    invalidPosition: 'Posição da subtarefa inválida',
+    notFound: 'Subtarefa não encontrada',
+  })
 }
 
 export type ChecklistEventType =

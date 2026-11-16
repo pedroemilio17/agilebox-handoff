@@ -16,7 +16,7 @@ export interface ModuleUsePolicy {
 }
 
 /**
- * Mapa de módulos dos casos de uso registrados em `createUseCases` (as 64 folhas que passam pela
+ * Mapa de módulos dos casos de uso registrados em `createUseCases` (todas as folhas que passam pela
  * fronteira `forTenant`). Cada caso de uso declara seu módulo; o guard recusa a chamada conforme o
  * estado do módulo na equipe (PLANO-2.0, regra 6).
  *
@@ -29,8 +29,10 @@ export interface ModuleUsePolicy {
  *   por item. Editar a daily já existente durante o encerramento também é recusado.
  * - `participations.setHours` e `setRate` ficam em `core`: horas e valor/hora alimentam o custo,
  *   que é regra do produto e não da ferramenta de estimativa (`estimates.hours`).
- * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto. O módulo
- *   `acceptance` não tem casos de uso próprios hoje.
+ * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto, não é o módulo
+ *   `acceptance` (critérios de aceitação, por tarefa).
+ * - `tasks.setEstimate` tem módulo próprio (`estimates.hours`) porque `tasks.update` é do núcleo e o
+ *   guard não olha campo a campo.
  * - `teamTools.*` fica em `core`: a gestão das ferramentas não pode ser desligada por ela mesma.
  */
 export const USE_CASE_MODULES = {
@@ -64,6 +66,13 @@ export const USE_CASE_MODULES = {
   'tasks.unblock': { module: 'impediments' },
   'tasks.archive': { module: 'core' },
   'tasks.unarchive': { module: 'core' },
+  // Critérios de aceitação (M3.2): o módulo `acceptance` guarda a lista; adicionar é criar (encerrando, recusa).
+  'tasks.criteria.add': { module: 'acceptance', creates: true },
+  'tasks.criteria.toggle': { module: 'acceptance' },
+  'tasks.criteria.rename': { module: 'acceptance' },
+  'tasks.criteria.remove': { module: 'acceptance' },
+  'tasks.criteria.move': { module: 'acceptance' },
+  'tasks.setEstimate': { module: 'estimates.hours' },
   'tasks.checklist.add': { module: 'subtasks', creates: true },
   'tasks.checklist.toggle': { module: 'subtasks' },
   'tasks.checklist.rename': { module: 'subtasks' },

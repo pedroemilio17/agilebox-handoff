@@ -50,6 +50,7 @@ function setup(actor: Actor = manager) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     clock,

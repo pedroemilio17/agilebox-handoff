@@ -98,6 +98,7 @@ async function setup(options: SetupOptions = {}) {
     clock: new FixedClock(NOW),
     boardSettings: repositories.boardSettings,
     checklist: repositories.checklist,
+    acceptance: repositories.acceptance,
     comments: repositories.comments,
     contributors: repositories.contributors,
     dailyEntries: repositories.dailyEntries,
@@ -477,7 +478,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(75)
+    expect(registered).toHaveLength(81)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -497,6 +498,7 @@ describe('mapa de módulos dos casos de uso', () => {
       'meetings.retroActions.add',
       'tasks.block',
       'tasks.checklist.add',
+      'tasks.criteria.add',
     ])
   })
 

@@ -112,6 +112,24 @@ export function registerHandlers(
   register('tasks.checklist.move', (context, input) =>
     useCases.tasks.checklist.move.execute(context, input),
   )
+  register('tasks.setEstimate', (context, input) =>
+    useCases.tasks.setEstimate.execute(context, input),
+  )
+  register('tasks.criteria.add', (context, input) =>
+    useCases.tasks.criteria.add.execute(context, input),
+  )
+  register('tasks.criteria.toggle', (context, input) =>
+    useCases.tasks.criteria.toggle.execute(context, input),
+  )
+  register('tasks.criteria.rename', (context, input) =>
+    useCases.tasks.criteria.rename.execute(context, input),
+  )
+  register('tasks.criteria.remove', (context, input) =>
+    useCases.tasks.criteria.remove.execute(context, input),
+  )
+  register('tasks.criteria.move', (context, input) =>
+    useCases.tasks.criteria.move.execute(context, input),
+  )
   register('tasks.comments.add', (context, input) =>
     useCases.tasks.comments.add.execute(context, input),
   )
