@@ -259,6 +259,13 @@ export const panelCopy = {
   unarchiveProjectAction: 'Desarquivar projeto',
   archiveConfirmProject:
     'Arquivar este projeto? Ele não aceita tarefas novas até ser desarquivado.',
+  renameProjectAction: 'Renomear',
+  renameProjectName: 'Novo nome do projeto',
+  renameProjectSave: 'Salvar nome',
+  renameProjectCancel: 'Cancelar',
+  renameProjectEmpty: 'Informe um nome para o projeto.',
+  renameProjectDuplicate: 'Já existe um projeto com este nome.',
+  renameProjectError: 'Não foi possível renomear o projeto.',
   participantsCard: 'Envolvidos',
   costCard: 'Custo',
   timelineCard: 'Atividade',

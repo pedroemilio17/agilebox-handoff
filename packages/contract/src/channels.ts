@@ -10,6 +10,7 @@ export const API_CHANNELS = [
   'projects.removeMember',
   'projects.archive',
   'projects.unarchive',
+  'projects.rename',
   'projects.definitionOfDone.list',
   'projects.definitionOfDone.add',
   'projects.definitionOfDone.rename',

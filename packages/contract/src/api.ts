@@ -15,6 +15,8 @@ import {
   archiveProjectOutputSchema,
   unarchiveProjectInputSchema,
   unarchiveProjectOutputSchema,
+  renameProjectInputSchema,
+  renameProjectOutputSchema,
 } from './projects'
 import {
   addParticipationInputSchema,
@@ -177,6 +179,7 @@ export const API_SCHEMA_REGISTRY = {
     input: unarchiveProjectInputSchema,
     output: unarchiveProjectOutputSchema,
   },
+  'projects.rename': { input: renameProjectInputSchema, output: renameProjectOutputSchema },
   'projects.definitionOfDone.list': {
     input: listDefinitionOfDoneInputSchema,
     output: listDefinitionOfDoneOutputSchema,
@@ -347,6 +350,7 @@ export interface AgileBoxApi {
     removeMember: Method<'projects.removeMember'>
     archive: Method<'projects.archive'>
     unarchive: Method<'projects.unarchive'>
+    rename: Method<'projects.rename'>
     definitionOfDone: {
       list: Method<'projects.definitionOfDone.list'>
       add: Method<'projects.definitionOfDone.add'>

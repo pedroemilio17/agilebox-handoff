@@ -26,11 +26,11 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
 - [x] M0.3a Arquivar tarefa e projeto, backend: campo `archived_at`/`archived_by` em tarefa e projeto (core, migração Drizzle, repositórios, casos de uso `ArchiveTask`/`UnarchiveTask`/`ArchiveProject`/`UnarchiveProject`, contrato, IPC). Esconde, nunca apaga; linha do tempo registra (tarefa); só quem edita a tarefa pode arquivá-la; projeto só o gestor e quem o criou; arquivados saem das listas e do quadro por padrão; desfazer arquivamento. Testes de regra de acesso e de isolamento por organização.
 - [x] M0.3b Arquivar tarefa e projeto, interface: ação "Arquivar"/"Desarquivar" no detalhe da tarefa e no diálogo/seletor de projetos, filtro "Mostrar arquivados", textos em pt-BR, testes de interface.
-- [~] M0.4 Renomear projeto (permissão como a de gerenciar membros; entrada na linha do tempo se aplicável).
+- [x] M0.4 Renomear projeto (permissão como a de gerenciar membros; entrada na linha do tempo se aplicável).
 
 ### M1 · Motor de capacidades
 
-- [ ] M1.1 `ExperienceLevel` (`basic`, `intermediate`, `advanced`) e `ModuleId`/`ModuleDefinition` com `packages/core/src/modules/registry.ts` (catálogo dos 15 módulos do plano, com `requires`, `requiresAnyOf`, `conflicts`, `minLevel`, `core`). Teste que falha se houver ciclo.
+- [~] M1.1 `ExperienceLevel` (`basic`, `intermediate`, `advanced`) e `ModuleId`/`ModuleDefinition` com `packages/core/src/modules/registry.ts` (catálogo dos 15 módulos do plano, com `requires`, `requiresAnyOf`, `conflicts`, `minLevel`, `core`). Teste que falha se houver ciclo.
 - [ ] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
 - [ ] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
 - [ ] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
@@ -63,7 +63,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M0.4 (Haiku), lançado após o commit do M0.3b. Resultado chega por notificação.
+M1.1 (Haiku), lançado após o commit do M0.4. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -80,7 +80,12 @@ M0.4 (Haiku), lançado após o commit do M0.3b. Resultado chega por notificaçã
 - Interface do arquivamento (M0.3b): arquivar tarefa pede confirmação e desarquivar é direto; "Mostrar arquivados" vale também na Equipe e no seletor de projetos; arquivados na barra lateral só com o toggle ligado; atalho N com projeto arquivado selecionado abre no primeiro projeto ativo; arquivar invalida o dashboard. Confirmar cada uma.
 - O DTO de detalhe da tarefa ganhou `canArchive` (opcional, calculado no backend). Para projeto, a tela reaproveita `canManageProject` (gestor ou criador), regra duplicada com `canArchiveProject` do core; opção: mover para `canArchive` no `ProjectDto`.
 
+- Renomear projeto (M0.4): nome repetido é recusado com CONFLICT (a criação, ao contrário, devolve o projeto existente); sem limite de tamanho (a criação também não tem); o botão Renomear age sobre o projeto selecionado no diálogo e some em projeto arquivado. Confirmar.
+- Funções já implementadas no redesign (WIP, subtarefas, retro, bloqueio, daily) ainda não passam por módulo: hoje aparecem para todos. O guard e a interface adaptativa (M1.6, M2) é que passam a escondê-las conforme as ferramentas da equipe.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 25: M0.4 concluído (Haiku). `renameProject` no core, `RenameProject` na aplicação (gestor e criador; recusa nome vazio, repetido e projeto arquivado), contrato, IPC e edição inline no diálogo de projetos; +26 testes. `pnpm check` pelo orquestrador: 201 arquivos, 1653 testes, exit 0. **M0 completo.**
 
 - Ciclo 19: M0.3b concluído (Haiku). Botões Arquivar/Desarquivar na tarefa e no projeto, filtro "Mostrar arquivados", cartões atenuados, criação bloqueada em projeto arquivado; +17 testes. `pnpm check` pelo orquestrador: 197 arquivos, 1627 testes, exit 0.
 

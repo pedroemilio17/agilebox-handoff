@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Button, Modal } from '@agilebox/ui'
-import type { ProjectDto } from '@agilebox/contract'
+import { ApiError, type ProjectDto } from '@agilebox/contract'
 import { useCreateProject } from '../hooks/use-create-project'
 import { useArchiveProject, useUnarchiveProject } from '../hooks/use-archive-project'
+import { useRenameProject } from '../hooks/use-rename-project'
 import { SaveError } from '../task-detail/SaveError'
 import { DefinitionOfDoneEditor } from './DefinitionOfDoneEditor'
 import { panelCopy } from '../copy'
@@ -20,6 +21,8 @@ export interface ProjectDialogProps {
   readonly canEditDefinition?: (project: ProjectDto) => boolean
   /** Quem arquiva e desarquiva o projeto: gestor e quem criou (mesma regra do botão Membros). */
   readonly canArchiveProject?: (project: ProjectDto) => boolean
+  /** Quem renomeia o projeto: gestor e quem criou (mesma regra do botão Membros). */
+  readonly canRenameProject?: (project: ProjectDto) => boolean
   /** Mostra projetos arquivados (desligado por padrão). A consulta é feita pelo pai. */
   readonly showArchived?: boolean
   readonly onShowArchivedChange?: (show: boolean) => void
@@ -44,19 +47,29 @@ export function ProjectDialog({
   onManageMembers,
   canEditDefinition,
   canArchiveProject,
+  canRenameProject,
   showArchived = false,
   onShowArchivedChange,
 }: ProjectDialogProps) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [confirmingArchive, setConfirmingArchive] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [renameMessage, setRenameMessage] = useState<string | null>(null)
   const createProject = useCreateProject()
   const archiveProject = useArchiveProject()
   const unarchiveProject = useUnarchiveProject()
+  const renameProject = useRenameProject()
   const selectedProject = projects.find((project) => project.id === selectedProjectId)
   const archiveAllowed =
     selectedProject !== undefined && canArchiveProject?.(selectedProject) === true
   const selectedArchived = selectedProject?.archivedAt != null
+  // Arquivado não se renomeia: a tela não oferece, e a aplicação recusa se chegar.
+  const renameAllowed =
+    selectedProject !== undefined &&
+    !selectedArchived &&
+    canRenameProject?.(selectedProject) === true
   const membersAllowed =
     selectedProject !== undefined &&
     onManageMembers !== undefined &&
@@ -68,8 +81,51 @@ export function ProjectDialog({
     setCreating(false)
     setName('')
     setConfirmingArchive(false)
+    setRenaming(false)
+    setRenameDraft('')
+    setRenameMessage(null)
+    renameProject.reset()
     createProject.reset()
     onClose()
+  }
+
+  function startRename(project: ProjectDto) {
+    setRenameDraft(project.name)
+    setRenameMessage(null)
+    renameProject.reset()
+    setRenaming(true)
+  }
+
+  function cancelRename() {
+    setRenaming(false)
+    setRenameMessage(null)
+    renameProject.reset()
+  }
+
+  function submitRename(project: ProjectDto) {
+    const trimmed = renameDraft.trim()
+    if (!trimmed) {
+      setRenameMessage(panelCopy.renameProjectEmpty)
+      return
+    }
+    const nameTaken = projects.some(
+      (other) => other.id !== project.id && projectNameKey(other.name) === projectNameKey(trimmed),
+    )
+    if (nameTaken) {
+      setRenameMessage(panelCopy.renameProjectDuplicate)
+      return
+    }
+    setRenameMessage(null)
+    renameProject.mutate(
+      { projectId: project.id, name: trimmed },
+      { onSuccess: () => setRenaming(false) },
+    )
+  }
+
+  function renameErrorMessage(error: unknown): string {
+    // Conflito vindo do servidor traz a mensagem de domínio, já em português.
+    if (error instanceof ApiError && error.code === 'CONFLICT') return error.message
+    return panelCopy.renameProjectError
   }
 
   async function createOrSelect() {
@@ -152,6 +208,54 @@ export function ProjectDialog({
             type="button"
           >
             {panelCopy.members}
+          </Button>
+        ) : null}
+        {renameAllowed && selectedProject && renaming ? (
+          <div className={styles.createRow}>
+            <input
+              aria-invalid={renameMessage !== null}
+              aria-label={panelCopy.renameProjectName}
+              autoFocus
+              className={styles.nameField}
+              onChange={(event) => setRenameDraft(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !renameProject.isPending) {
+                  event.preventDefault()
+                  submitRename(selectedProject)
+                } else if (event.key === 'Escape') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  cancelRename()
+                }
+              }}
+              value={renameDraft}
+            />
+            <Button
+              disabled={renameProject.isPending}
+              onClick={() => submitRename(selectedProject)}
+              type="button"
+              variant="primary"
+            >
+              {panelCopy.renameProjectSave}
+            </Button>
+            <Button onClick={cancelRename} type="button">
+              {panelCopy.renameProjectCancel}
+            </Button>
+            {renameMessage ? <p role="alert">{renameMessage}</p> : null}
+            {renameProject.error instanceof ApiError && renameProject.error.code === 'FORBIDDEN' ? (
+              <SaveError error={renameProject.error} />
+            ) : renameProject.error ? (
+              <p role="alert">{renameErrorMessage(renameProject.error)}</p>
+            ) : null}
+          </div>
+        ) : null}
+        {renameAllowed && selectedProject && !renaming ? (
+          <Button
+            className={styles.newProject}
+            onClick={() => startRename(selectedProject)}
+            type="button"
+          >
+            {panelCopy.renameProjectAction}
           </Button>
         ) : null}
         {archiveAllowed && selectedProject ? (

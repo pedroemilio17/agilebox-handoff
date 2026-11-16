@@ -59,6 +59,8 @@ export function canManageMembers(actor: Actor, project: Project): boolean {
     (actor.role === 'manager' || actor.userId === project.createdBy)
   )
 }
+/** Renomear projeto segue o botão Membros: gestor ou criador do projeto (M0.4). */
+export const canRenameProject = canManageMembers
 /** Editar a definição de pronto segue o botão Membros: gestor ou criador do projeto (PLANO 12.1). */
 export const canManageDefinitionOfDone = canManageMembers
 export function canSeeRate(actor: Actor, owner: RateOwner): boolean {

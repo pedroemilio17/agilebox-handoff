@@ -174,6 +174,12 @@ describe('arquivamento', () => {
     expect(policy.canArchiveProject(collaborator, project)).toBe(false)
     expect(policy.canArchiveProject({ ...manager, organizationId: otherOrg }, project)).toBe(false)
   })
+  it('projeto: renomear segue a mesma regra de arquivar (gestor e criador)', () => {
+    expect(policy.canRenameProject(manager, project)).toBe(true)
+    expect(policy.canRenameProject({ ...collaborator, userId: other }, project)).toBe(true)
+    expect(policy.canRenameProject(collaborator, project)).toBe(false)
+    expect(policy.canRenameProject({ ...manager, organizationId: otherOrg }, project)).toBe(false)
+  })
 })
 
 describe('limites de WIP', () => {

@@ -11,6 +11,7 @@ export const addProjectMemberInputSchema = z.object({ projectId: ulidSchema, use
 export const removeProjectMemberInputSchema = addProjectMemberInputSchema
 export const archiveProjectInputSchema = z.object({ projectId: ulidSchema })
 export const unarchiveProjectInputSchema = archiveProjectInputSchema
+export const renameProjectInputSchema = z.object({ projectId: ulidSchema, name: nameSchema })
 
 export const projectDtoSchema = z.object({
   id: ulidSchema,
@@ -30,8 +31,10 @@ export const addProjectMemberOutputSchema = z.void()
 export const removeProjectMemberOutputSchema = z.void()
 export const archiveProjectOutputSchema = projectDtoSchema
 export const unarchiveProjectOutputSchema = projectDtoSchema
+export const renameProjectOutputSchema = projectDtoSchema
 
 export type CreateProjectInput = z.infer<typeof createProjectInputSchema>
+export type RenameProjectInput = z.infer<typeof renameProjectInputSchema>
 export type AddProjectMemberInput = z.infer<typeof addProjectMemberInputSchema>
 export type RemoveProjectMemberInput = z.infer<typeof removeProjectMemberInputSchema>
 export type ProjectDto = z.infer<typeof projectDtoSchema>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createUser, toOrganizationId, toProjectId, toUserId } from '@agilebox/core'
+import { archiveProject, createUser, toOrganizationId, toProjectId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { aProject, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
@@ -145,5 +145,102 @@ describe('casos de uso de projetos', () => {
     await expect(
       useCases.projects.listMembers.execute(manager, { projectId: project.id }),
     ).resolves.toEqual([expect.objectContaining({ id: userId, name: 'Ana Silva' })])
+  })
+})
+
+describe('renomear projeto', () => {
+  it('o criador renomeia, o nome é aparado e a alteração notifica', async () => {
+    const { useCases, unitOfWork, notifier } = setup()
+    const project = aProject().with({ createdBy: userId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    const renamed = await useCases.projects.rename.execute(actor, {
+      projectId: project.id,
+      name: '  Projeto Renovado  ',
+    })
+    expect(renamed).toMatchObject({ id: project.id, name: 'Projeto Renovado' })
+    expect(
+      await unitOfWork.repositories.projects.findById(organizationId, project.id),
+    ).toMatchObject({ name: 'Projeto Renovado', nameKey: 'projeto renovado' })
+    expect(notifier.changes.at(-1)?.change).toEqual({ kind: 'project', ids: [project.id] })
+  })
+
+  it('o gestor renomeia projeto de outro colaborador', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: otherUserId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    await expect(
+      useCases.projects.rename.execute(manager, { projectId: project.id, name: 'Novo' }),
+    ).resolves.toMatchObject({ name: 'Novo' })
+  })
+
+  it('colaborador que não criou o projeto recebe FORBIDDEN e o nome não muda', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: otherUserId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'Invasão' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    expect(
+      await unitOfWork.repositories.projects.findById(organizationId, project.id),
+    ).toMatchObject({ name: 'Projeto AgileBox' })
+  })
+
+  it('projeto de outra organização é NOT_FOUND, mesmo para gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const otherOrganizationId = toOrganizationId('00000000000000000000000099')
+    const project = aProject().with({ organizationId: otherOrganizationId }).build()
+    await unitOfWork.repositories.projects.save(otherOrganizationId, project)
+    const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+    await expect(
+      useCases.projects.rename.execute(manager, { projectId: project.id, name: 'Novo' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  it('nome vazio é VALIDATION', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: userId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.rename.execute(actor, { projectId: project.id, name: '   ' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('nome já usado por outro projeto da organização é CONFLICT', async () => {
+    const { useCases, unitOfWork } = setup()
+    const mine = aProject().with({ createdBy: userId }).build()
+    const other = aProject()
+      .with({ id: toProjectId('00000000000000000000000009'), name: 'Gestão Ágil' })
+      .build()
+    await unitOfWork.repositories.projects.save(organizationId, mine)
+    await unitOfWork.repositories.projects.save(organizationId, other)
+    await expect(
+      useCases.projects.rename.execute(actor, { projectId: mine.id, name: '  gestao agil ' }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' })
+    expect(await unitOfWork.repositories.projects.findById(organizationId, mine.id)).toMatchObject({
+      name: 'Projeto AgileBox',
+    })
+  })
+
+  it('regravar o próprio nome com outra caixa não conta como repetido', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().with({ createdBy: userId }).build()
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'PROJETO agilebox' }),
+    ).resolves.toMatchObject({ name: 'PROJETO agilebox' })
+  })
+
+  it('projeto arquivado não é renomeado (CONFLICT) até ser desarquivado', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = archiveProject(
+      aProject().with({ createdBy: userId }).build(),
+      userId,
+      '2026-01-03T00:00:00.000Z',
+    )
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await expect(
+      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'Novo' }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' })
   })
 })

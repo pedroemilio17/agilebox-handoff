@@ -458,6 +458,7 @@ export function App() {
               canManageMembers={canManageProject}
               canEditDefinition={canManageProject}
               canArchiveProject={canManageProject}
+              canRenameProject={canManageProject}
               onManageMembers={setMembersProject}
               showArchived={showArchivedProjects}
               onShowArchivedChange={(show) => {

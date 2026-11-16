@@ -35,6 +35,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       removeMember: (input) => call('projects.removeMember', input),
       archive: (input) => call('projects.archive', input),
       unarchive: (input) => call('projects.unarchive', input),
+      rename: (input) => call('projects.rename', input),
       definitionOfDone: {
         list: (input) => call('projects.definitionOfDone.list', input),
         add: (input) => call('projects.definitionOfDone.add', input),

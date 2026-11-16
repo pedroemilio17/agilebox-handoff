@@ -65,6 +65,7 @@ export function registerHandlers(
   register('projects.unarchive', (actor, input) =>
     useCases.projects.unarchive.execute(actor, input),
   )
+  register('projects.rename', (actor, input) => useCases.projects.rename.execute(actor, input))
   register('tasks.getBoardFlow', (actor, input) =>
     useCases.tasks.getBoardFlow.execute(actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),

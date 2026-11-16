@@ -1,6 +1,7 @@
 import type { AppDeps } from './deps'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
+import { RenameProject } from './use-cases/projects/rename-project'
 import { ListProjects } from './use-cases/projects/list-projects'
 import {
   AddDefinitionOfDoneItem,
@@ -102,6 +103,7 @@ export function createUseCases(deps: AppDeps) {
       removeMember: new RemoveProjectMember(deps),
       archive: new ArchiveProject(deps),
       unarchive: new UnarchiveProject(deps),
+      rename: new RenameProject(deps),
       definitionOfDone: {
         list: new ListDefinitionOfDone(deps),
         add: new AddDefinitionOfDoneItem(deps),
