@@ -15,7 +15,7 @@ export interface PanelCommandsProps {
   readonly isManager: boolean
   readonly onClose: () => void
   readonly onOpenTask: (id: string) => void
-  readonly onNavigate: (view: 'projects' | 'dashboard' | 'agenda') => void
+  readonly onNavigate: (view: 'projects' | 'dashboard' | 'backlog' | 'agenda') => void
 }
 const fold = (text: string) =>
   text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR')
@@ -87,6 +87,9 @@ export function PanelCommands({
     })
   const destinations = [
     ...(isManager ? [{ view: 'dashboard' as const, label: 'Dashboard', shortcut: 'G D' }] : []),
+    ...(capabilities.showScreen('backlog')
+      ? [{ view: 'backlog' as const, label: 'Backlog', shortcut: 'G B' }]
+      : []),
     ...(capabilities.showScreen('agenda')
       ? [{ view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' }]
       : []),

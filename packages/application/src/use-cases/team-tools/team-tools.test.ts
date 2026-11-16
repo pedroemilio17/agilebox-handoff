@@ -132,6 +132,7 @@ async function fixtures(useCases: UseCases) {
   await useCases.tasks.checklist.add.execute(contextA, { taskId: task.id, title: 'Item 1' })
   await useCases.tasks.checklist.add.execute(contextA, { taskId: task.id, title: 'Item 2' })
   await useCases.tasks.checklist.add.execute(contextA, { taskId: archived.id, title: 'Antigo' })
+  await useCases.tasks.criteria.add.execute(contextA, { taskId: archived.id, text: 'Antigo' })
   await useCases.tasks.archive.execute(contextA, { taskId: archived.id })
   await useCases.tasks.block.execute(contextA, { taskId: blocked.id, reason: 'Aguardando' })
   await useCases.boardSettings.setWipLimits.execute(contextA, {
@@ -153,6 +154,23 @@ async function fixtures(useCases: UseCases) {
     date: TODAY,
     answers: { progress: 'Revisei', nextStep: 'Testar', blocker: '' },
   })
+  // Backlog: um item não arquivado e um arquivado (que não conta).
+  const backlogItem = await useCases.backlog.add.execute(contextA, {
+    projectId: project.id,
+    title: 'Ideia',
+  })
+  const backlogArchived = await useCases.backlog.add.execute(contextA, {
+    projectId: project.id,
+    title: 'Ideia antiga',
+  })
+  await useCases.tasks.archive.execute(contextA, { taskId: backlogArchived.id })
+  await useCases.tasks.setEstimate.execute(contextA, {
+    taskId: backlogItem.id,
+    estimatedHours: 2,
+  })
+  await useCases.tasks.setEstimate.execute(contextA, { taskId: task.id, estimatedHours: 1.5 })
+  await useCases.tasks.criteria.add.execute(contextA, { taskId: task.id, text: 'Login funciona' })
+  await useCases.tasks.criteria.add.execute(contextA, { taskId: task.id, text: 'Logout funciona' })
   return { project, task }
 }
 
@@ -308,7 +326,17 @@ describe('prévia de impacto', () => {
     const auditBefore = await unitOfWork.repositories.teamTools.listAudit(orgA, 100)
 
     const preview = await useCases.teamTools.previewChange.execute(contextA, {
-      disable: ['subtasks', 'impediments', 'wip', 'reviewRetro', 'checkins', 'agenda'],
+      disable: [
+        'subtasks',
+        'impediments',
+        'wip',
+        'reviewRetro',
+        'checkins',
+        'agenda',
+        'backlog',
+        'acceptance',
+        'estimates.hours',
+      ],
     })
 
     const counts = Object.fromEntries(preview.impact.map((item) => [item.module, item.count]))
@@ -319,6 +347,9 @@ describe('prévia de impacto', () => {
       reviewRetro: 1,
       checkins: 1,
       agenda: 1,
+      backlog: 1,
+      acceptance: 2,
+      'estimates.hours': 2,
     })
     expect(await stateOf(useCases)).toEqual(stateBefore)
     expect(await unitOfWork.repositories.teamTools.listAudit(orgA, 100)).toEqual(auditBefore)

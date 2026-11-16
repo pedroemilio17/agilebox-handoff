@@ -18,6 +18,9 @@ import { useBlurSave } from './use-blur-save'
 import { BlockControl } from './BlockControl'
 import { ArchiveControl } from './ArchiveControl'
 import { ChecklistCard } from './ChecklistCard'
+import { CriteriaCard } from './CriteriaCard'
+import { EstimateProperty } from './EstimateProperty'
+import { BacklogControl } from './BacklogControl'
 import { CommentsCard } from './CommentsCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import { useDefinitionOfDoneGate } from '../../shared/definition-of-done/use-definition-of-done-gate'
@@ -183,6 +186,7 @@ export function TaskDetailView({
       />
       {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
       <BlockControl task={task!} readOnly={readOnly} />
+      <BacklogControl task={task!} readOnly={readOnly} onSent={onBack} />
       <ArchiveControl task={task!} canArchive={task!.canArchive === true && !readOnlyScope} />
       {isAgingTask(task!) && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
@@ -240,6 +244,9 @@ export function TaskDetailView({
           onUpdate={(changes) => update.mutate(changes)}
         />
         <CostCard task={task!} readOnly={readOnly} />
+        {capabilities.showScreen('estimates.hours') ? (
+          <EstimateProperty task={task!} readOnly={readOnly} />
+        ) : null}
       </dl>
       <TaskDescription
         task={task!}
@@ -248,6 +255,13 @@ export function TaskDetailView({
       />
       {capabilities.can('subtasks:screen') ? (
         <ChecklistCard task={task!} readOnly={readOnly} />
+      ) : null}
+      {capabilities.showScreen('acceptance') ? (
+        <CriteriaCard
+          task={task!}
+          readOnly={readOnly}
+          windingDown={capabilities.isWindingDown('acceptance')}
+        />
       ) : null}
       <CommentsCard task={task!} readOnlyScope={readOnlyScope} />
       <TimelineCard taskId={taskId} />

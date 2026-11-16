@@ -408,3 +408,10 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.passiveMark {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}

@@ -53,6 +53,17 @@ describe('buildCapabilities', () => {
   })
 })
 
+describe('ferramenta em encerramento', () => {
+  it('a leitura marca o módulo como encerrando e nada além dele; sem a lista, ninguém encerra', () => {
+    const granted = buildCapabilities(['backlog:screen', 'core:screen'], false, ['backlog'])
+    expect(granted.isWindingDown('backlog')).toBe(true)
+    expect(granted.isWindingDown('acceptance')).toBe(false)
+    expect(granted.showScreen('backlog')).toBe(true)
+    expect(ALLOW_ALL.isWindingDown('backlog')).toBe(false)
+    expect(buildCapabilities(undefined, true).isWindingDown('backlog')).toBe(false)
+  })
+})
+
 describe('capacidades do servidor por nível e ferramentas', () => {
   it('nível abaixo do mínimo deixa só o efeito passivo do módulo ativo', () => {
     const capabilities = buildCapabilities(

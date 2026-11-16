@@ -3,8 +3,8 @@ import type { ModuleId } from './registry'
 
 /**
  * O que a organização já tem gravado, contado pelo que o código de hoje consegue contar (PLANO-2.0,
- * prévia de impacto). Módulos sem dados gravados hoje (backlog, sprints, estimativas, critérios,
- * burndown, métricas de fluxo, plug-ins) não têm campo aqui: a contagem deles é zero.
+ * prévia de impacto). Módulos sem dados gravados hoje (sprints, estimativa em pontos, burndown,
+ * métricas de fluxo, plug-ins) não têm campo aqui: a contagem deles é zero.
  */
 export interface TeamToolsUsage {
   /** Subtarefas de tarefas não arquivadas. */
@@ -19,6 +19,12 @@ export interface TeamToolsUsage {
   readonly checkins: number
   /** Agendamentos da agenda (séries e avulsos). */
   readonly meetings: number
+  /** Itens de backlog não arquivados (posição de backlog definida). */
+  readonly backlogItems: number
+  /** Critérios de aceitação de tarefas não arquivadas. */
+  readonly acceptanceCriteria: number
+  /** Tarefas não arquivadas com estimativa em horas (no quadro ou no backlog). */
+  readonly estimatedTasks: number
 }
 
 export interface ModuleImpact {
@@ -79,6 +85,32 @@ export function moduleImpact(module: ModuleId, usage: TeamToolsUsage): ModuleImp
         module,
         count: usage.meetings,
         description: countLabel(usage.meetings, 'agendamento na agenda', 'agendamentos na agenda'),
+      }
+    case 'backlog':
+      return {
+        module,
+        count: usage.backlogItems,
+        description: countLabel(usage.backlogItems, 'item de backlog', 'itens de backlog'),
+      }
+    case 'acceptance':
+      return {
+        module,
+        count: usage.acceptanceCriteria,
+        description: countLabel(
+          usage.acceptanceCriteria,
+          'critério de aceitação em tarefa não arquivada',
+          'critérios de aceitação em tarefas não arquivadas',
+        ),
+      }
+    case 'estimates.hours':
+      return {
+        module,
+        count: usage.estimatedTasks,
+        description: countLabel(
+          usage.estimatedTasks,
+          'tarefa com estimativa em horas',
+          'tarefas com estimativa em horas',
+        ),
       }
     default:
       return { module, count: 0, description: `${MODULE_LABELS[module]}: sem dados gravados hoje` }

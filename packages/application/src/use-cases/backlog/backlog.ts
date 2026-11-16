@@ -25,6 +25,7 @@ import type { AppDeps } from '../../deps'
 import { ChangeTask, CreateTask } from '../tasks/tasks'
 import { findTaskPrefix } from '../tasks/task-prefix'
 import { loadChecklists } from '../tasks/checklist-loader'
+import { loadCriteria } from '../tasks/criteria-loader'
 import { loadCommentCounts } from '../tasks/comment-loader'
 import { archivedProjectIds, filterVisibleTasks } from '../tasks/task-visibility'
 import { toTaskDtos } from '../tasks/list-tasks'
@@ -143,12 +144,14 @@ export class ReorderBacklogItem {
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
     if (!task) throw new NotFoundError('Tarefa não encontrada')
     const checklists = await loadChecklists(this.deps, actor.organizationId, [task.id])
+    const criteria = await loadCriteria(this.deps, actor.organizationId, [task.id])
     const counts = await loadCommentCounts(this.deps, actor, [task])
     return toTaskDto(
       task,
       await findTaskPrefix(this.deps, actor.organizationId),
       checklists.get(task.id) ?? [],
       counts.get(task.id) ?? 0,
+      criteria.get(task.id) ?? [],
     )
   }
 }

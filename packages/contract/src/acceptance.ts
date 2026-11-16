@@ -11,6 +11,12 @@ export const acceptanceTextSchema = z
     message: 'Critério deve ter até 200 caracteres',
   })
 
+/** Progresso dos critérios no DTO de tarefa (x/y no backlog e marcador no card). Ausente em respostas antigas. */
+export const acceptanceProgressDtoSchema = z.object({
+  done: z.number().int().nonnegative().safe(),
+  total: z.number().int().nonnegative().safe(),
+})
+
 export const acceptanceCriterionDtoSchema = z.object({
   id: ulidSchema,
   taskId: ulidSchema,

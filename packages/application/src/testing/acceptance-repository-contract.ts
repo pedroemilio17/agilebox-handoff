@@ -64,6 +64,19 @@ export function describeAcceptanceRepositoryContract(
       ])
     })
 
+    it('lista em lote os critérios de várias tarefas, sem misturar tarefas', async () => {
+      const { acceptance, taskA, taskB } = await makeAdapters()
+      const org = acceptanceFixtures.organizationA
+      await acceptance.saveMany(org, [
+        criterionOf(taskA, '01ARZ3NDEKTSV4RRFFQ69G5FC7', 1),
+        criterionOf(taskA, '01ARZ3NDEKTSV4RRFFQ69G5FC8', 0),
+      ])
+      expect(await acceptance.listByTasks(org, [taskA.id])).toHaveLength(2)
+      expect(await acceptance.listByTasks(org, [taskB.id])).toEqual([])
+      expect(await acceptance.listByTasks(org, [])).toEqual([])
+      expect(await acceptance.listByTasks(acceptanceFixtures.organizationB, [taskA.id])).toEqual([])
+    })
+
     it('grava, altera e remove critérios por identificador', async () => {
       const { acceptance, taskA } = await makeAdapters()
       const org = acceptanceFixtures.organizationA
@@ -93,6 +106,20 @@ export function describeAcceptanceRepositoryContract(
         criterionOf(taskA, '01ARZ3NDEKTSV4RRFFQ69G5FC3', 0),
       ])
       expect(await acceptance.listByTask(acceptanceFixtures.organizationB, taskA.id)).toEqual([])
+    })
+
+    it('conta os critérios das tarefas não arquivadas da própria organização', async () => {
+      const { acceptance, taskA, taskB } = await makeAdapters()
+      const org = acceptanceFixtures.organizationA
+      await acceptance.saveMany(org, [
+        criterionOf(taskA, '01ARZ3NDEKTSV4RRFFQ69G5FC4', 0),
+        criterionOf(taskA, '01ARZ3NDEKTSV4RRFFQ69G5FC5', 1),
+      ])
+      await acceptance.saveMany(acceptanceFixtures.organizationB, [
+        criterionOf(taskB, '01ARZ3NDEKTSV4RRFFQ69G5FC6', 0),
+      ])
+      expect(await acceptance.countByOrganization(org)).toBe(2)
+      expect(await acceptance.countByOrganization(acceptanceFixtures.organizationB)).toBe(1)
     })
 
     it('grava a estimativa em horas junto com a tarefa e a devolve', async () => {

@@ -14,6 +14,7 @@ import { useProjects } from './hooks/use-projects'
 import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
+import { BacklogView } from './backlog/BacklogView'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -45,6 +46,8 @@ function PanelContent() {
   const capabilities = useCapabilities()
   // Agenda só aparece com o módulo ligado e o nível da pessoa; a view guardada cai no Quadro.
   const agendaVisible = capabilities.showScreen('agenda')
+  // Backlog segue o mesmo caminho: módulo ligado e nível da pessoa; senão a view cai no Quadro.
+  const backlogVisible = capabilities.showScreen('backlog')
   const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
   const [view, setView] = useState<PanelView>(() => {
@@ -57,7 +60,10 @@ function PanelContent() {
       return 'projects'
     }
   })
-  const currentView: PanelView = view === 'agenda' && !agendaVisible ? 'projects' : view
+  const currentView: PanelView =
+    (view === 'agenda' && !agendaVisible) || (view === 'backlog' && !backlogVisible)
+      ? 'projects'
+      : view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
@@ -294,9 +300,22 @@ function PanelContent() {
       if (goTo) {
         goTo = false
         if (timer) clearTimeout(timer)
-        if (key === 'q' || (key === 'a' && agendaVisible) || (key === 'd' && isManager)) {
+        if (
+          key === 'q' ||
+          (key === 'b' && backlogVisible) ||
+          (key === 'a' && agendaVisible) ||
+          (key === 'd' && isManager)
+        ) {
           event.preventDefault()
-          setView(key === 'q' ? 'projects' : key === 'a' ? 'agenda' : 'dashboard')
+          setView(
+            key === 'q'
+              ? 'projects'
+              : key === 'b'
+                ? 'backlog'
+                : key === 'a'
+                  ? 'agenda'
+                  : 'dashboard',
+          )
         }
         return
       }
@@ -318,7 +337,7 @@ function PanelContent() {
       window.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [isManager, agendaVisible])
+  }, [isManager, agendaVisible, backlogVisible])
 
   return (
     <>
@@ -359,6 +378,13 @@ function PanelContent() {
           currentUserId: actor.actor?.userId,
           onSwitch: (userId) => switchUser.mutate(userId),
         }}
+        backlog={
+          <BacklogView
+            initialProjectId={selectedProjectId}
+            projects={activeProjects}
+            isManager={isManager}
+          />
+        }
         agenda={
           <AgendaView
             onOpenTask={(id) => {

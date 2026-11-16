@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { checklistItemDtoSchema, checklistProgressDtoSchema } from './checklist'
-import { acceptanceCriterionDtoSchema } from './acceptance'
+import { acceptanceCriterionDtoSchema, acceptanceProgressDtoSchema } from './acceptance'
 import { taskCommentDtoSchema } from './comments'
 import { wipColumnDtoSchema, wipLimitsSchema } from './board-settings'
 import { definitionOfDoneItemDtoSchema } from './definition-of-done'
@@ -43,6 +43,8 @@ export const taskDtoSchema = z.object({
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
   checklistProgress: checklistProgressDtoSchema,
+  /** Critérios de aceitação feitos e totais (M3.3). Ausente em respostas antigas: não mostrar marcador. */
+  criteriaProgress: acceptanceProgressDtoSchema.optional(),
   commentCount: z.number().int().nonnegative().safe(),
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),

@@ -85,8 +85,10 @@ abstract class ChangeChecklist {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
     const counts = await loadCommentCounts(this.deps, actor, [task])
     const commentCount = counts.get(task.id) ?? 0
+    // Subtarefas não mexem nos critérios: lidos uma vez, valem para as duas respostas abaixo.
+    const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, step.items, commentCount)
+      return toTaskDto(task, prefix, step.items, commentCount, criteria)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -110,7 +112,7 @@ abstract class ChangeChecklist {
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, prefix, step.items, commentCount)
+    return toTaskDto(updated, prefix, step.items, commentCount, criteria)
   }
 }
 

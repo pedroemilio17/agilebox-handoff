@@ -92,8 +92,9 @@ abstract class ChangeAcceptance {
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     const counts = await loadCommentCounts(this.deps, actor, [task])
     const commentCount = counts.get(task.id) ?? 0
+    const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, checklist, commentCount)
+      return toTaskDto(task, prefix, checklist, commentCount, criteria)
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -117,7 +118,8 @@ abstract class ChangeAcceptance {
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, prefix, checklist, commentCount)
+    const saved = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
+    return toTaskDto(updated, prefix, checklist, commentCount, saved)
   }
 }
 

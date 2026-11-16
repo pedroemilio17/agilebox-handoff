@@ -72,6 +72,28 @@ export const FLOW_TASK_WITH_PLANNING: GetTaskDto = makeDetail({
     },
   ],
   checklistProgress: { done: 1, total: 2, percent: 50 },
+  // Critérios e estimativa (M3.3): só aparecem no card quando o módulo está ligado.
+  criteria: [
+    {
+      id: '01J8Y4G2XK8Z1S6M3Q9W0A5CA1',
+      taskId: FLOW_TASK.id,
+      text: 'Rota de login responde',
+      done: true,
+      position: 0,
+      createdAt: '2026-10-31T12:00:00.000Z',
+      updatedAt: '2026-11-02T10:00:00.000Z',
+    },
+    {
+      id: '01J8Y4G2XK8Z1S6M3Q9W0A5CA2',
+      taskId: FLOW_TASK.id,
+      text: 'Erro de senha mostra aviso',
+      done: false,
+      position: 1,
+      createdAt: '2026-10-31T12:00:00.000Z',
+      updatedAt: '2026-10-31T12:00:00.000Z',
+    },
+  ],
+  estimatedHours: 2,
   participations: [makeParticipation({ hours: 2.5, rate: 40 })],
 })
 
@@ -104,6 +126,11 @@ export function toTaskDto(detail: GetTaskDto): TaskDto {
     blockedReason: detail.blockedReason,
     blockedAt: detail.blockedAt,
     checklistProgress: detail.checklistProgress,
+    criteriaProgress: {
+      done: (detail.criteria ?? []).filter((criterion) => criterion.done).length,
+      total: (detail.criteria ?? []).length,
+    },
+    estimatedHours: detail.estimatedHours ?? null,
     commentCount: detail.comments.length,
     deadline: detail.deadline,
     ticketId: detail.ticketId,

@@ -42,6 +42,15 @@ export const PASSIVE_IMPEDIMENT_TERMS: readonly RegExp[] = [
   startsWord('Bloqueadas'),
 ]
 
+/**
+ * Efeitos passivos de critérios e estimativa (M3.3): só o marcador no card, em qualquer nível com o
+ * módulo ligado. As telas (seção de critérios e campo de estimativa) continuam proibidas no Básico.
+ */
+export const PASSIVE_TOOL_TERMS: readonly RegExp[] = [
+  startsWord('Critério'),
+  startsWord('Estimativa'),
+]
+
 export const FORBIDDEN_TERMS: readonly RegExp[] = [
   // Nomes de ferramentas (catálogo de MODULE_LABELS) e as palavras-raiz deles.
   startsWord('Backlog'),
@@ -57,6 +66,10 @@ export const FORBIDDEN_TERMS: readonly RegExp[] = [
   startsWord('Burndown'),
   startsWord('Velocity'),
   startsWord(MODULE_LABELS.flowMetrics),
+  // Vocabulário do backlog e dos critérios (M3.3): "Backlog" e "Critérios" só onde a ferramenta existe.
+  startsWord('Critério'),
+  startsWord('Estimado'),
+  startsWord('Puxar'),
   // Controles e textos de impedimento, subtarefas e fluxo.
   startsWord(panelCopy.blockAction),
   startsWord(panelCopy.unblockAction),

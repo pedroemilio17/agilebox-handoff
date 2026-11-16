@@ -171,6 +171,9 @@ describe('contagem de impacto', () => {
     retroActions: 0,
     checkins: 1,
     meetings: 4,
+    backlogItems: 5,
+    acceptanceCriteria: 6,
+    estimatedTasks: 7,
   }
 
   it('usa o que o código consegue contar e zero para o que ainda não tem dados', () => {
@@ -179,7 +182,24 @@ describe('contagem de impacto', () => {
     expect(moduleImpact('wip', usage)).toMatchObject({ count: 2 })
     expect(moduleImpact('reviewRetro', usage)).toMatchObject({ count: 0 })
     expect(moduleImpact('agenda', usage)).toMatchObject({ count: 4 })
-    expect(moduleImpact('backlog', usage)).toMatchObject({ count: 0 })
+    expect(moduleImpact('backlog', usage)).toMatchObject({ count: 5 })
+    expect(moduleImpact('acceptance', usage)).toMatchObject({ count: 6 })
+    expect(moduleImpact('estimates.hours', usage)).toMatchObject({ count: 7 })
+    expect(moduleImpact('sprints', usage)).toMatchObject({ count: 0 })
+    expect(moduleImpact('estimates.points', usage)).toMatchObject({ count: 0 })
+  })
+
+  it('frases em pt-BR no singular e no plural', () => {
+    expect(moduleImpact('backlog', { ...usage, backlogItems: 1 }).description).toBe(
+      '1 item de backlog',
+    )
+    expect(moduleImpact('backlog', usage).description).toBe('5 itens de backlog')
+    expect(moduleImpact('acceptance', { ...usage, acceptanceCriteria: 1 }).description).toBe(
+      '1 critério de aceitação em tarefa não arquivada',
+    )
+    expect(moduleImpact('estimates.hours', usage).description).toBe(
+      '7 tarefas com estimativa em horas',
+    )
   })
 
   it('escreve no singular quando há um item', () => {

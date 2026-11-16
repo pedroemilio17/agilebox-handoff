@@ -49,11 +49,11 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 - [x] M3.1 Backlog (core, persistência, aplicação, contrato): itens futuros ordenados, separado da coluna Planejamento; reordenar persiste.
 - [x] M3.2 Critérios de aceitação por tarefa (reaproveitar o padrão da definição de pronto) e estimativa em horas ligada ao custo por hora.
-- [~] M3.3 Telas de backlog (nível Intermediário) com reordenar, critérios e estimativa.
+- [x] M3.3 Telas de backlog (nível Intermediário) com reordenar, critérios e estimativa.
 
 ### M4 · Sprints
 
-- [ ] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
+- [~] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
 - [ ] M4.2 Persistência, migração, casos de uso e contrato.
 - [ ] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M3.3 (Haiku), lançado após o commit do M3.2. Resultado chega por notificação.
+M4.1 (Haiku), lançado após o commit do M3.3. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -111,7 +111,12 @@ M3.3 (Haiku), lançado após o commit do M3.2. Resultado chega por notificação
 
 - Critérios e estimativa (M3.2): a estimativa é `tasks.setEstimate` (módulo `estimates.hours`), coluna `estimated_hours_hundredths` (centésimos, como `hours_hundredths`), sem CHECK de faixa (um CHECK reconstruiria `tasks` e o DROP dispararia o cascade das subtarefas; a faixa é validada no domínio e no contrato); renomear e reordenar critério geram evento na linha do tempo (o checklist de subtarefas não gera); o custo estimado só aparece para o gestor e para o próprio Responsável; `estimatedHours`, `actualHours` e os critérios vêm no DTO mesmo com o módulo desligado (a UI esconde); `actualHours` aparece para todos (são horas, não valor); a prévia de impacto das ferramentas ainda conta zero para `estimates.hours`, `acceptance` e `backlog` (ajustada no M3.3). Confirmar.
 
+- Telas de Backlog (M3.3): o DTO de tarefa ganhou `criteriaProgress {done,total}` (opcional), mudança no contrato do M3.2 para mostrar o x/y; puxar para Concluído passa pela conferência da definição de pronto; estimativa vazia remove a estimativa; reordenar usa arrastar HTML5 nativo (o quadro usa dnd-kit) e botões Subir/Descer com `aria-live`, sem setas com modificador; o seletor de projetos do colaborador consulta os membros de cada projeto (N consultas; alternativa: o backend filtrar em `projects.list`); em "Encerrando" somem criar item e criar critério. Confirmar.
+- Sprints (M4), suposições do orquestrador para o agente: o plano só diz "Sprint com `draft`, `active`, `closed`; `sprint_tasks` com histórico; limite de sprints ativas configurável (ADR-08); encerramento com política para itens abertos". Assumi: uma tarefa está em no máximo uma sprint ativa por vez; quem planeja, inicia, encerra e mexe nos itens da sprint é o gestor e os membros do projeto (como o backlog; o plano não define); política de encerramento: itens abertos voltam ao backlog (padrão) ou seguem para a próxima sprint em planejamento; itens concluídos ficam na sprint como resultado. Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 141: M3.3 concluído (Haiku). Tela Backlog (item na barra lateral, atalho G B, lista por projeto, criação rápida, reordenar por arrastar e por teclado, puxar para o quadro, devolver ao backlog), seção Critérios de aceitação e campo Estimativa no detalhe, marcadores passivos; `countUsage` das ferramentas agora conta backlog, critérios e estimativas; +59 testes. `pnpm check` pelo orquestrador: 252 arquivos, 2212 testes, exit 0. **M3 completo.**
 
 - Ciclo 128: M3.2 concluído (Haiku). Critérios de aceitação por tarefa (até 20, `tasks.criteria.*`, módulo `acceptance`) e estimativa em horas (`tasks.setEstimate`, módulo `estimates.hours`) com custo estimado respeitando a visibilidade de valores; migração 0014; 83 arquivos tocados (campo novo na tarefa); +121 testes. `pnpm check` pelo orquestrador: 245 arquivos, 2153 testes, exit 0.
 

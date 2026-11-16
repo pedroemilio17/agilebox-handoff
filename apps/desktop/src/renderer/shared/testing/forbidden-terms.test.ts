@@ -27,6 +27,12 @@ describe('Termos proibidos no Kanban simples', () => {
       'Adicionar combinado',
       'Burndown e velocity',
       'Check-ins',
+      'Critérios de aceitação',
+      'Critérios feitos',
+      'Estimado × realizado',
+      'Puxar para o quadro',
+      'Devolver ao backlog',
+      'Item de backlog',
     ]
     for (const text of cases) {
       expect(forbiddenTermsIn(text), text).not.toEqual([])

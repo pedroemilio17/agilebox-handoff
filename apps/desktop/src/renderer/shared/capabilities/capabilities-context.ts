@@ -15,6 +15,11 @@ export interface Capabilities {
   showScreen(moduleId: ModuleId): boolean
   /** Pode pedir os dados de uma ferramenta: só depois de a lista chegar, para não pedir o que o backend recusa. */
   canFetch(capability: Capability): boolean
+  /**
+   * Ferramenta em encerramento (`winding_down`): o que já existe segue visível e editável, mas
+   * não se cria nada novo. Vem do estado que `teamTools.get` devolve, sem regra paralela aqui.
+   */
+  isWindingDown(moduleId: ModuleId): boolean
 }
 
 /**
@@ -27,6 +32,7 @@ export const ALLOW_ALL: Capabilities = {
   can: () => true,
   showScreen: () => true,
   canFetch: () => true,
+  isWindingDown: () => false,
 }
 
 /**
@@ -36,7 +42,10 @@ export const ALLOW_ALL: Capabilities = {
 export function buildCapabilities(
   granted: readonly string[] | undefined,
   loading = false,
+  windingDown: readonly string[] = [],
 ): Capabilities {
+  const windingSet = new Set<string>(windingDown)
+  const isWindingDown = (moduleId: ModuleId) => windingSet.has(moduleId)
   if (granted === undefined) {
     if (!loading) return ALLOW_ALL
     // Carregando: a tela segue permissiva, mas nenhum dado de módulo é pedido antes da lista.
@@ -46,6 +55,7 @@ export function buildCapabilities(
       can: () => true,
       showScreen: () => true,
       canFetch: () => false,
+      isWindingDown,
     }
   }
   const set = new Set<string>(granted)
@@ -56,6 +66,7 @@ export function buildCapabilities(
     can,
     showScreen: (moduleId) => can(`${moduleId}:screen`),
     canFetch: can,
+    isWindingDown,
   }
 }
 

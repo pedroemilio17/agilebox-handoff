@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm'
 import type { AcceptanceRepository } from '@agilebox/application'
 import type { AcceptanceCriterion, AcceptanceCriterionId } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
@@ -17,6 +17,20 @@ export function createSqliteAcceptanceRepository(database: SqliteDatabase): Acce
           and(
             eq(taskAcceptanceCriteria.organizationId, organizationId),
             eq(taskAcceptanceCriteria.taskId, taskId),
+          ),
+        )
+        .orderBy(asc(taskAcceptanceCriteria.position))
+      return rows.map(mapAcceptanceCriterionRow)
+    },
+    async listByTasks(organizationId, taskIds) {
+      if (taskIds.length === 0) return []
+      const rows = await database
+        .select()
+        .from(taskAcceptanceCriteria)
+        .where(
+          and(
+            eq(taskAcceptanceCriteria.organizationId, organizationId),
+            inArray(taskAcceptanceCriteria.taskId, [...taskIds]),
           ),
         )
         .orderBy(asc(taskAcceptanceCriteria.position))
@@ -50,6 +64,20 @@ export function createSqliteAcceptanceRepository(database: SqliteDatabase): Acce
             where: eq(taskAcceptanceCriteria.organizationId, organizationId),
           })
       }
+    },
+    async countByOrganization(organizationId) {
+      const [row] = await database
+        .select({ total: count() })
+        .from(taskAcceptanceCriteria)
+        .innerJoin(tasks, eq(taskAcceptanceCriteria.taskId, tasks.id))
+        .where(
+          and(
+            eq(taskAcceptanceCriteria.organizationId, organizationId),
+            eq(tasks.organizationId, organizationId),
+            isNull(tasks.archivedAt),
+          ),
+        )
+      return row?.total ?? 0
     },
     async remove(organizationId, criterionId: AcceptanceCriterionId) {
       await database

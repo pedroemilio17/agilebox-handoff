@@ -151,12 +151,13 @@ export function toChecklistItemDto(item: ChecklistItem): ChecklistItemDto {
   }
 }
 
-/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. */
+/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. `criteria` são os critérios de aceitação, dos quais sai o x/y. */
 export function toTaskDto(
   task: Task,
   taskPrefix: string,
   checklist: readonly ChecklistItem[],
   commentCount: number,
+  criteria: readonly AcceptanceCriterion[],
 ): TaskDto {
   return {
     id: task.id,
@@ -180,6 +181,10 @@ export function toTaskDto(
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,
     checklistProgress: checklistProgress(checklist),
+    criteriaProgress: {
+      done: criteria.filter((criterion) => criterion.done).length,
+      total: criteria.length,
+    },
     commentCount,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -219,7 +224,7 @@ export function toTaskDetailDto(
     ? estimatedCostOf(task, responsibleDefaultRateCents)
     : null
   return {
-    ...toTaskDto(task, taskPrefix, checklist, comments.length),
+    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria),
     checklist: checklist.map(toChecklistItemDto),
     criteria: criteria.map(toAcceptanceCriterionDto),
     estimatedCost: cost === null ? null : rateInReais(cost),

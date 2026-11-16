@@ -173,7 +173,7 @@ export class CreateTask {
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0)
+    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0, [])
   }
 }
 
@@ -317,12 +317,14 @@ export abstract class ChangeTask {
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
+    const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     const counts = await loadCommentCounts(this.deps, actor, [updated])
     return toTaskDto(
       updated,
       await findTaskPrefix(this.deps, actor.organizationId),
       checklist,
       counts.get(task.id) ?? 0,
+      criteria,
     )
   }
 }

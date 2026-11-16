@@ -174,6 +174,12 @@ export class InMemoryAcceptanceRepository implements AcceptanceRepository {
       .filter((criterion) => criterion.taskId === taskId)
       .sort((a, b) => a.position - b.position)
   }
+  async listByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    return [...bucket(this.state.acceptance, org).values()]
+      .filter((criterion) => taskIds.includes(criterion.taskId))
+      .sort((a, b) => a.position - b.position)
+  }
   async saveMany(org: OrganizationId, criteria: readonly AcceptanceCriterion[]) {
     await Promise.resolve()
     const tasks = bucket(this.state.tasks, org)
@@ -185,6 +191,13 @@ export class InMemoryAcceptanceRepository implements AcceptanceRepository {
   async remove(org: OrganizationId, criterionId: AcceptanceCriterion['id']) {
     await Promise.resolve()
     bucket(this.state.acceptance, org).delete(criterionId)
+  }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    const tasks = bucket(this.state.tasks, org)
+    return [...bucket(this.state.acceptance, org).values()].filter(
+      (criterion) => tasks.get(criterion.taskId)?.archivedAt === null,
+    ).length
   }
 }
 

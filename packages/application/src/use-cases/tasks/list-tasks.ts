@@ -20,6 +20,7 @@ import { toTaskDto, toWipLimitsDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadChecklists } from './checklist-loader'
+import { loadCriteria } from './criteria-loader'
 import { loadCommentCounts } from './comment-loader'
 import { archivedProjectIds, filterVisibleTasks, visibleTasks } from './task-visibility'
 
@@ -88,6 +89,11 @@ export class ListBoard {
       actor.organizationId,
       tasks.map((task) => task.id),
     )
+    const criteria = await loadCriteria(
+      this.deps,
+      actor.organizationId,
+      tasks.map((task) => task.id),
+    )
     const counts = await loadCommentCounts(this.deps, actor, tasks)
     const settings = await this.deps.boardSettings.findByOrganization(actor.organizationId)
     const wipLimits = settings?.wipLimits ?? {}
@@ -98,7 +104,13 @@ export class ListBoard {
             ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
             : []
         return {
-          ...toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+          ...toTaskDto(
+            task,
+            prefix,
+            checklists.get(task.id) ?? [],
+            counts.get(task.id) ?? 0,
+            criteria.get(task.id) ?? [],
+          ),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
         }
@@ -156,6 +168,11 @@ export class ListTeamBoard {
       actor.organizationId,
       visible.map((task) => task.id),
     )
+    const criteria = await loadCriteria(
+      this.deps,
+      actor.organizationId,
+      visible.map((task) => task.id),
+    )
     const counts = await loadCommentCounts(this.deps, actor, visible)
     // Sinais de parada e de prazo calculados como no quadro, para os filtros da visão Equipe.
     const now = await this.deps.clock.now(actor.organizationId)
@@ -168,7 +185,13 @@ export class ListTeamBoard {
             ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
             : []
         return {
-          ...toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+          ...toTaskDto(
+            task,
+            prefix,
+            checklists.get(task.id) ?? [],
+            counts.get(task.id) ?? 0,
+            criteria.get(task.id) ?? [],
+          ),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
         }
@@ -188,9 +211,20 @@ export async function toTaskDtos(
     actor.organizationId,
     tasks.map((task) => task.id),
   )
+  const criteria = await loadCriteria(
+    deps,
+    actor.organizationId,
+    tasks.map((task) => task.id),
+  )
   const counts = await loadCommentCounts(deps, actor, tasks)
   return tasks.map((task) =>
-    toTaskDto(task, prefix, checklists.get(task.id) ?? [], counts.get(task.id) ?? 0),
+    toTaskDto(
+      task,
+      prefix,
+      checklists.get(task.id) ?? [],
+      counts.get(task.id) ?? 0,
+      criteria.get(task.id) ?? [],
+    ),
   )
 }
 

@@ -90,6 +90,8 @@ async function auditCollaborator(user: ReturnType<typeof userEvent.setup>): Prom
       ['ciclo médio', screen.queryByText(/Ciclo médio desta semana/) !== null],
       ['marcador de bloqueio no card', cardLabel.includes('bloqueada')],
       ['progresso de subtarefas no card', cardLabel.includes('subtarefas')],
+      ['marcador de critérios no card', cardLabel.includes('critérios')],
+      ['estimativa no card', cardLabel.includes('Estimativa')],
     ])}`,
   )
 
@@ -101,12 +103,27 @@ async function auditCollaborator(user: ReturnType<typeof userEvent.setup>): Prom
       ['Bloquear', within(dialog).queryByRole('button', { name: 'Bloquear' }) !== null],
       ['Desbloquear', within(dialog).queryByRole('button', { name: 'Desbloquear' }) !== null],
       ['Subtarefas', within(dialog).queryByRole('region', { name: 'Subtarefas' }) !== null],
+      [
+        'Critérios de aceitação',
+        within(dialog).queryByRole('region', { name: 'Critérios de aceitação' }) !== null,
+      ],
+      ['Estimativa (h)', within(dialog).queryByRole('group', { name: 'Estimativa (h)' }) !== null],
     ])}`,
   )
   await user.keyboard('{Escape}')
   await waitFor(() =>
     expect(screen.queryByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })).toBeNull(),
   )
+
+  if (screen.queryByRole('button', { name: 'Backlog' })) {
+    await user.click(screen.getByRole('button', { name: 'Backlog' }))
+    lines.push(
+      `  backlog: ${screen.queryByRole('region', { name: 'Backlog' }) ? 'aberto' : 'sem tela'}`,
+    )
+    await user.click(screen.getByRole('button', { name: 'Quadro' }))
+  } else {
+    lines.push('  backlog: fora do menu')
+  }
 
   if (screen.queryByRole('button', { name: 'Agenda' })) {
     await user.click(screen.getByRole('button', { name: 'Agenda' }))
@@ -189,6 +206,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -199,6 +217,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -209,6 +228,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -217,8 +237,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
       Scrum · Básico
         colaborador
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação
         gestor
@@ -226,9 +247,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Intermediário
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
-        detalhe: motivo do bloqueio, Desbloquear
+        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -236,9 +258,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Avançado
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
-        detalhe: motivo do bloqueio, Desbloquear
+        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -249,6 +272,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: badge parada no card, progresso de subtarefas no card
         detalhe: nenhum
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
@@ -259,6 +283,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: badge parada no card, progresso de subtarefas no card
         detalhe: nenhum
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
@@ -269,6 +294,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Paradas, badge parada no card, medidor WIP, ciclo médio, progresso de subtarefas no card
         detalhe: Subtarefas
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
@@ -277,8 +303,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
       Scrum completo · Básico
         colaborador
         menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio
+        backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação, Review e retro, Burndown e velocity
         gestor
@@ -286,9 +313,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Intermediário
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
-        detalhe: motivo do bloqueio, Desbloquear
+        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Review e retro, Burndown e velocity
         gestor
@@ -296,9 +324,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Avançado
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card
-        detalhe: motivo do bloqueio, Desbloquear
+        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor

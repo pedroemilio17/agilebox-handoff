@@ -15,7 +15,7 @@ import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
 import styles from './PanelShell.module.css'
 
-export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
+export type PanelView = 'dashboard' | 'projects' | 'backlog' | 'agenda' | 'plugins' | 'settings'
 
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
@@ -46,6 +46,7 @@ export interface PanelShellProps {
   }
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
+  readonly backlog?: ReactNode
   readonly children?: ReactNode
   /** Escopo do quadro: "Minhas tarefas" ou "Equipe". Só aparece com o quadro aberto. */
   readonly taskScope?: TaskScope
@@ -55,6 +56,7 @@ export interface PanelShellProps {
 const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
   projects: 'Quadro',
+  backlog: panelCopy.backlogTitle,
   agenda: panelCopy.agenda,
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
@@ -80,6 +82,7 @@ export function PanelShell({
   onSearch,
   dashboard,
   agenda,
+  backlog,
   children,
   taskScope = 'mine',
   onTaskScopeChange,
@@ -90,6 +93,10 @@ export function PanelShell({
   const items: readonly { id: PanelView; label: string; icon: string; soon?: boolean }[] = [
     ...(isManager ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: '▥' }] : []),
     { id: 'projects', label: 'Quadro', icon: '▦' },
+    // Backlog só com o módulo ligado e o nível da pessoa (Intermediário em diante).
+    ...(capabilities.showScreen('backlog')
+      ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
+      : []),
     // Agenda só com o módulo ligado e o nível da pessoa; sem "em breve" nem item desabilitado.
     ...(capabilities.showScreen('agenda')
       ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
@@ -132,6 +139,8 @@ export function PanelShell({
             children
           ) : visibleView === 'dashboard' && dashboard ? (
             dashboard
+          ) : visibleView === 'backlog' && backlog ? (
+            backlog
           ) : visibleView === 'agenda' && agenda ? (
             agenda
           ) : visibleView === 'settings' ? (
@@ -368,6 +377,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     projects: 'M3 4h5v16H3ZM10 4h5v11h-5ZM17 4h4v8h-4Z',
     dashboard: 'M4 20V10m8 10V4m8 16v-7',
     agenda: 'M4 5h16v16H4ZM4 10h16M8 2v6m8-6v6',
+    backlog: 'M4 6h10M4 12h10M4 18h6M16 16l3 3 3-3M19 19V9',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
   }

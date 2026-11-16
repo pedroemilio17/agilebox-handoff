@@ -191,3 +191,80 @@ export function useUnarchiveTask(taskId: string) {
     onSettled: () => refreshAfterArchive(queryClient, taskId),
   })
 }
+
+/**
+ * Critérios e estimativa (M3.3) mudam a tarefa, o quadro, o backlog, o dashboard e a linha do tempo.
+ */
+function refreshAfterCriteriaOrEstimate(
+  queryClient: ReturnType<typeof useQueryClient>,
+  taskId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+}
+
+export function useAddCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => api.tasks.criteria.add({ taskId, text }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useToggleCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ criterionId, done }: { readonly criterionId: string; readonly done: boolean }) =>
+      api.tasks.criteria.toggle({ taskId, criterionId, done }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useRenameCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ criterionId, text }: { readonly criterionId: string; readonly text: string }) =>
+      api.tasks.criteria.rename({ taskId, criterionId, text }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useRemoveCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (criterionId: string) => api.tasks.criteria.remove({ taskId, criterionId }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useMoveCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      criterionId,
+      position,
+    }: {
+      readonly criterionId: string
+      readonly position: number
+    }) => api.tasks.criteria.move({ taskId, criterionId, position }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+/** Estimativa em horas; `null` tira a estimativa. */
+export function useSetEstimate(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (estimatedHours: number | null) =>
+      api.tasks.setEstimate({ taskId, estimatedHours }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}

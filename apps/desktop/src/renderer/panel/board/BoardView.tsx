@@ -27,6 +27,7 @@ import {
   TASK_STATUS_LABELS,
 } from '@agilebox/core'
 import type { TaskDto, WipColumnDto } from '@agilebox/contract'
+import { formatHours } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
@@ -708,6 +709,20 @@ function TaskCard({
     showChecklist && total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
   const commentLabel =
     !readOnly && task.commentCount > 0 ? `, ${panelCopy.commentCountLabel(task.commentCount)}` : ''
+  // Marcadores passivos (M3.3): aparecem em qualquer nível, quando o módulo está ligado.
+  const criteria = task.criteriaProgress
+  const criteriaText =
+    capabilities.can('acceptance:passive') && criteria && criteria.total > 0
+      ? panelCopy.criteriaMarker(criteria.done, criteria.total)
+      : null
+  const estimateText =
+    capabilities.can('estimates.hours:passive') && task.estimatedHours != null
+      ? panelCopy.backlogEstimate(formatHours(Math.round(task.estimatedHours * 100)))
+      : null
+  const passiveLabel = [criteriaText, estimateText]
+    .filter(Boolean)
+    .map((text) => `, ${text}`)
+    .join('')
   const ariaLabel = readOnly
     ? panelCopy.teamCardLabel(
         task.key,
@@ -715,7 +730,7 @@ function TaskCard({
         TASK_STATUS_LABELS[task.status],
         responsibleName ?? panelCopy.noResponsible.toLowerCase(),
       )
-    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${archived ? ', arquivada' : ''}${checklistLabel}${commentLabel}`
+    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${archived ? ', arquivada' : ''}${checklistLabel}${passiveLabel}${commentLabel}`
 
   return (
     <button
@@ -759,6 +774,8 @@ function TaskCard({
           <span />
         )}
         {showChecklist ? <ChecklistProgress done={done} total={total} /> : null}
+        {criteriaText ? <span className={styles.passiveMark}>{criteriaText}</span> : null}
+        {estimateText ? <span className={styles.passiveMark}>{estimateText}</span> : null}
         {readOnly ? null : <CommentCount count={task.commentCount} />}
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}

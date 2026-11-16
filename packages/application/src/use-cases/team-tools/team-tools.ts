@@ -2,6 +2,7 @@ import {
   canManageTeamTools,
   effectiveCapabilities,
   getModule,
+  isInBacklog,
   MODULE_IDS,
   MODULE_LABELS,
   moduleImpact,
@@ -85,6 +86,7 @@ function toView(actor: Actor, settings: TeamToolsSettings): TeamToolsViewDto {
 
 /** Contagens do que já está gravado, pelo que as portas atuais conseguem ler. */
 async function countUsage(deps: AppDeps, organizationId: OrganizationId): Promise<TeamToolsUsage> {
+  // listBoard traz também os itens de backlog: o quadro os filtra, a contagem não.
   const tasks = (await deps.tasks.listBoard(organizationId, {})).filter(
     (task) => task.archivedAt === null,
   )
@@ -113,6 +115,9 @@ async function countUsage(deps: AppDeps, organizationId: OrganizationId): Promis
     retroActions: actions.length,
     checkins: await deps.dailyEntries.countByOrganization(organizationId),
     meetings: meetings.length,
+    backlogItems: tasks.filter((task) => isInBacklog(task)).length,
+    acceptanceCriteria: await deps.acceptance.countByOrganization(organizationId),
+    estimatedTasks: tasks.filter((task) => task.estimatedHoursHundredths !== null).length,
   }
 }
 
