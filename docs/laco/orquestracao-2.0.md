@@ -33,8 +33,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M1.1 `ExperienceLevel` (`basic`, `intermediate`, `advanced`) e `ModuleId`/`ModuleDefinition` com `packages/core/src/modules/registry.ts` (catálogo dos 15 módulos do plano, com `requires`, `requiresAnyOf`, `conflicts`, `minLevel`, `core`). Teste que falha se houver ciclo.
 - [x] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
 - [x] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
-- [~] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
-- [ ] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
+- [x] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
+- [~] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
 - [ ] M1.6 Guard de módulo no backend: cada caso de uso declara seu módulo; chamada a módulo desligado é recusada. Estados `active`, `winding_down`, `disabled` e prévia de impacto.
 
 ### M2 · Interface adaptativa
@@ -63,7 +63,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.4 (Haiku), lançado após o commit do M1.3. Resultado chega por notificação.
+M1.5 (Haiku), lançado após o commit do M1.4. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -89,7 +89,12 @@ M1.4 (Haiku), lançado após o commit do M1.3. Resultado chega por notificação
 
 - Capacidades (M1.3): `effectiveCapabilities` não resolve dependências (quem chama usa `resolveModuleSet` antes); o efeito passivo (`:passive`) vale para todo módulo ativo, inclusive `core` e `agenda`; `tools:view` para todos e `tools:manage` só para o gestor. Confirmar.
 
+- TenantContext (M1.4): `TenantContext = { tenantId, actor }` com `tenantId = organizationId`; `createUseCases` envolve as 64 folhas e exige o contexto (ator cru não compila nem roda); o IPC monta o contexto da sessão e ignora `userId`/`tenantId` do payload. Fechou uma lacuna real: os `upsert` de users, contributors, projects e tasks agora não regravam id de outra organização. Decidir: (1) o tipo é estrutural, não nominal (aceitável ou quer tipo "branded"?); (2) gravação com id de outra organização é no-op silencioso (ou erro NOT_FOUND/CONFLICT?); (3) as classes de caso de uso continuam exportadas e instanciáveis fora da fronteira. Para o M6a: RLS no Postgres e coluna de organização em `task_participations`.
+- Default das ferramentas (M1.5): para preservar o comportamento atual (WIP, subtarefas, retro, daily e bloqueio já aparecem para todos), o backfill da migração e o seed deixam a equipe em "Scrum completo, nível Avançado". O plano pede o seed em "Kanban simples"; mudar isso esconderia funções que hoje existem. Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 49: M1.4 concluído (Haiku). `TenantContext` obrigatório na fronteira dos casos de uso, IPC monta o contexto da sessão, guardas de organização nos repositórios SQLite e nos fakes; testes estruturais (64 casos de uso recusam ator cru ou contexto de outra organização). `pnpm check` pelo orquestrador: 207 arquivos, 1779 testes, exit 0.
 
 - Ciclo 40: M1.3 concluído (Haiku). `effectiveCapabilities`, `hasCapability`, `shouldShowModuleScreen` e `moduleLevelWarning` (base do aviso "Sprints aparece a partir do Intermediário"), 27 testes. `pnpm check` pelo orquestrador: 206 arquivos, 1774 testes, exit 0.
 

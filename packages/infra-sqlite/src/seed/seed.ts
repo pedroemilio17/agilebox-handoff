@@ -8,7 +8,7 @@ import {
   toUserId,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
-import { createUseCases } from '@agilebox/application'
+import { createTenantContext, createUseCases } from '@agilebox/application'
 import type { AppDeps } from '@agilebox/application'
 import { demoSeedData } from './data.js'
 
@@ -74,11 +74,13 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   })
   const projects = []
   for (const name of demoSeedData.projects) {
-    const project = await useCases.projects.createProject.execute(actor, { name })
+    const project = await useCases.projects.createProject.execute(createTenantContext(actor), {
+      name,
+    })
     projects.push(project)
     for (const user of users) {
       if (user.id !== users[0]!.id) {
-        await useCases.projects.addMember.execute(actor, {
+        await useCases.projects.addMember.execute(createTenantContext(actor), {
           projectId: project.id,
           userId: user.id,
         })
@@ -89,7 +91,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   // Definição de pronto criada pelo criador de cada projeto (o primeiro usuário).
   for (const [index, titles] of demoSeedData.definitionOfDone.entries()) {
     for (const title of titles) {
-      await useCases.projects.definitionOfDone.add.execute(actor, {
+      await useCases.projects.definitionOfDone.add.execute(createTenantContext(actor), {
         projectId: projects[index]!.id,
         title,
       })
@@ -97,19 +99,19 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   }
 
   for (const name of demoSeedData.contributors) {
-    await useCases.contributors.create.execute(actor, { name })
+    await useCases.contributors.create.execute(createTenantContext(actor), { name })
   }
 
   const taskIdsByTitle = new Map<string, string>()
   for (const item of demoSeedData.tasks) {
     const owner = users[item.owner]!
     actor = { userId: owner.id, organizationId, role: owner.role }
-    const task = await useCases.tasks.create.execute(actor, {
+    const task = await useCases.tasks.create.execute(createTenantContext(actor), {
       projectId: projects[item.project]!.id,
       title: item.title,
     })
     taskIdsByTitle.set(item.title, task.id)
-    await useCases.tasks.update.execute(actor, {
+    await useCases.tasks.update.execute(createTenantContext(actor), {
       taskId: task.id,
       changes: {
         description: 'description' in item ? item.description : '',
@@ -122,36 +124,44 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
         item.status === 'done'
           ? {
               confirmedDefinitionItemIds: (
-                await useCases.projects.definitionOfDone.list.execute(actor, {
+                await useCases.projects.definitionOfDone.list.execute(createTenantContext(actor), {
                   projectId: projects[item.project]!.id,
                 })
               ).map((definitionItem) => definitionItem.id),
             }
           : {}
-      await useCases.tasks.move.execute(actor, {
+      await useCases.tasks.move.execute(createTenantContext(actor), {
         taskId: task.id,
         status: item.status,
         ...confirmation,
       })
     }
     if ('priority' in item && item.priority === 'high') {
-      await useCases.tasks.update.execute(actor, {
+      await useCases.tasks.update.execute(createTenantContext(actor), {
         taskId: task.id,
         changes: { priority: 'high' },
       })
     }
     if ('blockedReason' in item) {
-      await useCases.tasks.block.execute(actor, { taskId: task.id, reason: item.blockedReason })
+      await useCases.tasks.block.execute(createTenantContext(actor), {
+        taskId: task.id,
+        reason: item.blockedReason,
+      })
     }
     if ('checklist' in item) {
       for (const entry of item.checklist) {
-        await useCases.tasks.checklist.add.execute(actor, { taskId: task.id, title: entry.title })
+        await useCases.tasks.checklist.add.execute(createTenantContext(actor), {
+          taskId: task.id,
+          title: entry.title,
+        })
       }
-      const withItems = await useCases.tasks.getDetail.execute(actor, { taskId: task.id })
+      const withItems = await useCases.tasks.getDetail.execute(createTenantContext(actor), {
+        taskId: task.id,
+      })
       for (const entry of item.checklist) {
         const sub = withItems.checklist.find((candidate) => candidate.title === entry.title)
         if (entry.done && sub) {
-          await useCases.tasks.checklist.toggle.execute(actor, {
+          await useCases.tasks.checklist.toggle.execute(createTenantContext(actor), {
             taskId: task.id,
             itemId: sub.id,
             done: true,
@@ -160,20 +170,22 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       }
     }
     if (item.owner === 0 && item.title === 'Atualizar documentação da API') {
-      const support = await useCases.participations.add.execute(actor, {
+      const support = await useCases.participations.add.execute(createTenantContext(actor), {
         taskId: task.id,
         participant: { kind: 'user', userId: users[1]!.id },
         role: 'support',
       })
-      await useCases.participations.setHours.execute(actor, {
+      await useCases.participations.setHours.execute(createTenantContext(actor), {
         taskId: task.id,
         participationId: support.id,
         hours: '2',
       })
-      const details = await useCases.tasks.getDetail.execute(actor, { taskId: task.id })
+      const details = await useCases.tasks.getDetail.execute(createTenantContext(actor), {
+        taskId: task.id,
+      })
       const responsible = details.participations.find((part) => part.role === 'responsible')
       if (responsible) {
-        await useCases.participations.setHours.execute(actor, {
+        await useCases.participations.setHours.execute(createTenantContext(actor), {
           taskId: task.id,
           participationId: responsible.id,
           hours: '6',
@@ -181,21 +193,21 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       }
       // Dois comentários: um do responsável e uma resposta com menção ao responsável.
       actor = { userId: users[0]!.id, organizationId, role: 'collaborator' }
-      await useCases.tasks.comments.add.execute(actor, {
+      await useCases.tasks.comments.add.execute(createTenantContext(actor), {
         taskId: task.id,
         body: 'Começando pelos endpoints de autenticação.',
       })
       actor = { userId: users[1]!.id, organizationId, role: 'collaborator' }
-      await useCases.tasks.comments.add.execute(actor, {
+      await useCases.tasks.comments.add.execute(createTenantContext(actor), {
         taskId: task.id,
         body: '@Pedro revisa os exemplos de requisição quando puder.',
       })
       actor = { userId: users[4]!.id, organizationId, role: 'manager' }
-      await useCases.tasks.update.execute(actor, {
+      await useCases.tasks.update.execute(createTenantContext(actor), {
         taskId: task.id,
         changes: { deadline: null },
       })
-      await useCases.tasks.update.execute(actor, {
+      await useCases.tasks.update.execute(createTenantContext(actor), {
         taskId: task.id,
         changes: { deadline: item.deadline },
       })
@@ -204,12 +216,12 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
 
   actor = { userId: users[4]!.id, organizationId, role: 'manager' }
   // Limites de WIP da demonstração: Desenvolvendo até 3 e Revisar até 2 (sinal, não bloqueio).
-  await useCases.boardSettings.setWipLimits.execute(actor, {
+  await useCases.boardSettings.setWipLimits.execute(createTenantContext(actor), {
     wipLimits: { in_progress: 3, review: 2 },
   })
   const createdMeetings = new Map<string, string>()
   for (const meeting of demoSeedData.meetings) {
-    const created = await useCases.meetings.create.execute(actor, {
+    const created = await useCases.meetings.create.execute(createTenantContext(actor), {
       title: meeting.title,
       date: meeting.date,
       time: meeting.time,
@@ -246,7 +258,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   const retroMeetingId = createdMeetings.get(retro.meeting)
   if (retroMeetingId) {
     for (const item of retro.items) {
-      const created = await useCases.meetings.retroActions.add.execute(actor, {
+      const created = await useCases.meetings.retroActions.add.execute(createTenantContext(actor), {
         meetingId: retroMeetingId,
         occurrenceDate: retro.occurrenceDate,
         title: item.title,
@@ -254,7 +266,7 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
         dueDate: item.dueDate,
       })
       if (item.done) {
-        await useCases.meetings.retroActions.toggle.execute(actor, {
+        await useCases.meetings.retroActions.toggle.execute(createTenantContext(actor), {
           actionId: created.id,
           done: true,
         })

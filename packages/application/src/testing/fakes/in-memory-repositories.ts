@@ -95,6 +95,15 @@ function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: Or
   return values
 }
 
+/** Como o SQLite (conflito de id), um id já usado por outra organização não é regravado. */
+function usedByOtherOrganization<T>(
+  root: Map<OrganizationId, Map<string, T>>,
+  organizationId: OrganizationId,
+  id: string,
+): boolean {
+  return [...root].some(([owner, values]) => owner !== organizationId && values.has(id))
+}
+
 export class InMemoryOrganizationRepository implements OrganizationRepository {
   constructor(private readonly state: InMemoryState) {}
   async findById(id: OrganizationId) {
@@ -218,7 +227,8 @@ export class InMemoryContributorRepository implements ContributorRepository {
   }
   async save(org: OrganizationId, value: Contributor) {
     await Promise.resolve()
-    bucket(this.state.contributors, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.contributors, org, value.id)) return
+    bucket(this.state.contributors, org).set(value.id, { ...value, organizationId: org })
   }
 }
 
@@ -361,7 +371,8 @@ export class InMemoryProjectRepository implements ProjectRepository {
   }
   async save(org: OrganizationId, value: Project) {
     await Promise.resolve()
-    bucket(this.state.projects, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.projects, org, value.id)) return
+    bucket(this.state.projects, org).set(value.id, { ...value, organizationId: org })
   }
   async listMembers(org: OrganizationId, projectId: Project['id']) {
     await Promise.resolve()
@@ -514,6 +525,7 @@ export class InMemoryUserRepository implements UserRepository {
   }
   async save(org: OrganizationId, value: User) {
     await Promise.resolve()
-    bucket(this.state.users, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.users, org, value.id)) return
+    bucket(this.state.users, org).set(value.id, { ...value, organizationId: org })
   }
 }

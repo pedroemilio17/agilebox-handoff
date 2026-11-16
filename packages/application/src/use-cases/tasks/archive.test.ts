@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
@@ -133,7 +134,9 @@ describe('arquivar e desarquivar tarefa', () => {
   it('quem participa arquiva: grava quando e quem, e a linha do tempo registra sem marca de gestor', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    const dto = await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE })
+    const dto = await useCases.tasks.archive.execute(createTenantContext(collaborator), {
+      taskId: ID_MINE,
+    })
     expect(dto).toMatchObject({ archivedAt: now })
     const saved = await repos.tasks.findById(organizationId, toTaskId(ID_MINE))
     expect(saved).toMatchObject({ archivedAt: now, archivedBy: collaboratorId })
@@ -150,7 +153,7 @@ describe('arquivar e desarquivar tarefa', () => {
   it('gestor arquiva tarefa de outra pessoa e a linha do tempo recebe a marca Gestor', async () => {
     const { useCases, repos } = setup(manager)
     await seed(repos)
-    await useCases.tasks.archive.execute(manager, { taskId: ID_OTHER })
+    await useCases.tasks.archive.execute(createTenantContext(manager), { taskId: ID_OTHER })
     const events = await repos.timeline.listByTask(organizationId, toTaskId(ID_OTHER))
     expect(events).toContainEqual(
       expect.objectContaining({ type: 'task_archived', asManager: true, actorUserId: managerId }),
@@ -163,9 +166,11 @@ describe('arquivar e desarquivar tarefa', () => {
   it('colaborador sem participação não arquiva: FORBIDDEN', async () => {
     const { useCases, repos } = setup(other)
     await seed(repos)
-    await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE }).catch(() => undefined)
+    await useCases.tasks.archive
+      .execute(createTenantContext(collaborator), { taskId: ID_MINE })
+      .catch(() => undefined)
     await expect(
-      useCases.tasks.archive.execute(collaborator, { taskId: ID_OTHER }),
+      useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_OTHER }),
     ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
@@ -182,7 +187,9 @@ describe('arquivar e desarquivar tarefa', () => {
       organizationId: foreignOrganizationId,
     })
     await expect(
-      useCases.tasks.archive.execute(collaborator, { taskId: '00000000000000000000000300' }),
+      useCases.tasks.archive.execute(createTenantContext(collaborator), {
+        taskId: '00000000000000000000000300',
+      }),
     ).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
@@ -191,15 +198,21 @@ describe('arquivar e desarquivar tarefa', () => {
   it('tarefa arquivada não pode ser editada, movida nem comentada; arquivar de novo é conflito', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE })
+    await useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_MINE })
     await expect(
-      useCases.tasks.update.execute(collaborator, { taskId: ID_MINE, changes: { title: 'Novo' } }),
+      useCases.tasks.update.execute(createTenantContext(collaborator), {
+        taskId: ID_MINE,
+        changes: { title: 'Novo' },
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT' })
     await expect(
-      useCases.tasks.move.execute(collaborator, { taskId: ID_MINE, status: 'todo' }),
+      useCases.tasks.move.execute(createTenantContext(collaborator), {
+        taskId: ID_MINE,
+        status: 'todo',
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT' })
     await expect(
-      useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE }),
+      useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_MINE }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
     })
@@ -208,8 +221,10 @@ describe('arquivar e desarquivar tarefa', () => {
   it('desarquivar devolve a tarefa às visões e registra o evento; desarquivar ativa é conflito', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE })
-    const restored = await useCases.tasks.unarchive.execute(collaborator, { taskId: ID_MINE })
+    await useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_MINE })
+    const restored = await useCases.tasks.unarchive.execute(createTenantContext(collaborator), {
+      taskId: ID_MINE,
+    })
     expect(restored).toMatchObject({ archivedAt: null })
     const saved = await repos.tasks.findById(organizationId, toTaskId(ID_MINE))
     expect(saved).toMatchObject({ archivedAt: null, archivedBy: null, title: 'Relatório mensal' })
@@ -218,11 +233,11 @@ describe('arquivar e desarquivar tarefa', () => {
     )
     expect(types).toContain('task_unarchived')
     await expect(
-      useCases.tasks.unarchive.execute(collaborator, { taskId: ID_MINE }),
+      useCases.tasks.unarchive.execute(createTenantContext(collaborator), { taskId: ID_MINE }),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
     })
-    await useCases.tasks.update.execute(collaborator, {
+    await useCases.tasks.update.execute(createTenantContext(collaborator), {
       taskId: ID_MINE,
       changes: { title: 'Depois' },
     })
@@ -231,44 +246,56 @@ describe('arquivar e desarquivar tarefa', () => {
   it('tarefa arquivada some das visões padrão e volta com includeArchived; GetTask abre em leitura', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE })
+    await useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_MINE })
 
-    const board = await useCases.tasks.listBoard.execute(collaborator, {})
+    const board = await useCases.tasks.listBoard.execute(createTenantContext(collaborator), {})
     expect(board.tasks.map((t) => t.id)).not.toContain(ID_MINE)
-    const withArchived = await useCases.tasks.listBoard.execute(collaborator, {
+    const withArchived = await useCases.tasks.listBoard.execute(createTenantContext(collaborator), {
       includeArchived: true,
     })
     expect(withArchived.tasks.map((t) => t.id)).toContain(ID_MINE)
 
-    const team = await useCases.tasks.listTeamBoard.execute(manager, {})
+    const team = await useCases.tasks.listTeamBoard.execute(createTenantContext(manager), {})
     expect(team.map((t) => t.id)).not.toContain(ID_MINE)
-    const teamAll = await useCases.tasks.listTeamBoard.execute(manager, { includeArchived: true })
+    const teamAll = await useCases.tasks.listTeamBoard.execute(createTenantContext(manager), {
+      includeArchived: true,
+    })
     expect(teamAll.map((t) => t.id)).toContain(ID_MINE)
 
-    expect((await useCases.tasks.listRecent.execute(collaborator)).map((t) => t.id)).not.toContain(
-      ID_MINE,
-    )
-    await useCases.tasks.recordOpen.execute(collaborator, { taskId: ID_MINE })
     expect(
-      (await useCases.tasks.listFrequent.execute(collaborator)).map((t) => t.id),
+      (await useCases.tasks.listRecent.execute(createTenantContext(collaborator))).map((t) => t.id),
+    ).not.toContain(ID_MINE)
+    await useCases.tasks.recordOpen.execute(createTenantContext(collaborator), { taskId: ID_MINE })
+    expect(
+      (await useCases.tasks.listFrequent.execute(createTenantContext(collaborator))).map(
+        (t) => t.id,
+      ),
     ).not.toContain(ID_MINE)
 
     expect(
-      (await useCases.tasks.search.execute(collaborator, { query: 'Relatório' })).map((t) => t.id),
+      (
+        await useCases.tasks.search.execute(createTenantContext(collaborator), {
+          query: 'Relatório',
+        })
+      ).map((t) => t.id),
     ).toEqual([])
     expect(
-      (await useCases.tasks.search.execute(collaborator, { query: '1' })).map((t) => t.id),
+      (await useCases.tasks.search.execute(createTenantContext(collaborator), { query: '1' })).map(
+        (t) => t.id,
+      ),
     ).toEqual([])
 
-    const detail = await useCases.tasks.getDetail.execute(collaborator, { taskId: ID_MINE })
+    const detail = await useCases.tasks.getDetail.execute(createTenantContext(collaborator), {
+      taskId: ID_MINE,
+    })
     expect(detail).toMatchObject({ archivedAt: now, canEdit: false })
   })
 
   it('dashboard do gestor não conta tarefas arquivadas', async () => {
     const { useCases, repos } = setup(manager)
     await seed(repos)
-    await useCases.tasks.archive.execute(manager, { taskId: ID_OTHER })
-    const dashboard = await useCases.dashboard.get.execute(manager)
+    await useCases.tasks.archive.execute(createTenantContext(manager), { taskId: ID_OTHER })
+    const dashboard = await useCases.dashboard.get.execute(createTenantContext(manager))
     const ana = dashboard.collaborators.find((stat) => stat.user.name === 'Ana')
     const bruno = dashboard.collaborators.find((stat) => stat.user.name === 'Bruno')
     expect(ana?.taskCount).toBe(1)
@@ -278,7 +305,7 @@ describe('arquivar e desarquivar tarefa', () => {
   it('isola organizações: o quadro de outra organização não traz tarefas arquivadas daqui', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    await useCases.tasks.archive.execute(collaborator, { taskId: ID_MINE })
+    await useCases.tasks.archive.execute(createTenantContext(collaborator), { taskId: ID_MINE })
     await repos.organizations.save(
       createOrganization({
         id: foreignOrganizationId,
@@ -292,7 +319,9 @@ describe('arquivar e desarquivar tarefa', () => {
       organizationId: foreignOrganizationId,
       role: 'manager',
     }
-    const board = await useCases.tasks.listBoard.execute(foreignManager, { includeArchived: true })
+    const board = await useCases.tasks.listBoard.execute(createTenantContext(foreignManager), {
+      includeArchived: true,
+    })
     expect(board.tasks).toEqual([])
   })
 })
@@ -302,50 +331,68 @@ describe('projeto arquivado', () => {
     const { useCases, repos } = setup()
     await seed(repos)
     const before = await repos.tasks.findById(organizationId, toTaskId(ID_MINE))
-    await useCases.projects.archive.execute(collaborator, { projectId })
+    await useCases.projects.archive.execute(createTenantContext(collaborator), { projectId })
     expect(
-      (await useCases.projects.listProjects.execute(collaborator)).map((p) => p.id),
-    ).not.toContain(projectId)
-    expect(
-      (await useCases.projects.listProjects.execute(collaborator, { includeArchived: true })).map(
+      (await useCases.projects.listProjects.execute(createTenantContext(collaborator))).map(
         (p) => p.id,
       ),
-    ).toContain(projectId)
-    expect((await useCases.tasks.listBoard.execute(collaborator, {})).tasks).toEqual([])
+    ).not.toContain(projectId)
     expect(
-      (await useCases.tasks.listBoard.execute(collaborator, { includeArchived: true })).tasks
-        .length,
+      (
+        await useCases.projects.listProjects.execute(createTenantContext(collaborator), {
+          includeArchived: true,
+        })
+      ).map((p) => p.id),
+    ).toContain(projectId)
+    expect(
+      (await useCases.tasks.listBoard.execute(createTenantContext(collaborator), {})).tasks,
+    ).toEqual([])
+    expect(
+      (
+        await useCases.tasks.listBoard.execute(createTenantContext(collaborator), {
+          includeArchived: true,
+        })
+      ).tasks.length,
     ).toBe(1)
     expect(await repos.tasks.findById(organizationId, toTaskId(ID_MINE))).toEqual(before)
 
-    await useCases.projects.unarchive.execute(collaborator, { projectId })
+    await useCases.projects.unarchive.execute(createTenantContext(collaborator), { projectId })
     expect(
-      (await useCases.tasks.listBoard.execute(collaborator, {})).tasks.map((t) => t.id),
+      (await useCases.tasks.listBoard.execute(createTenantContext(collaborator), {})).tasks.map(
+        (t) => t.id,
+      ),
     ).toEqual([ID_MINE])
   })
 
   it('projeto arquivado não aceita tarefa nova: CONFLICT', async () => {
     const { useCases, repos } = setup()
     await seed(repos)
-    await useCases.projects.archive.execute(collaborator, { projectId })
+    await useCases.projects.archive.execute(createTenantContext(collaborator), { projectId })
     await expect(
-      useCases.tasks.create.execute(collaborator, { projectId, title: 'Nova' }),
+      useCases.tasks.create.execute(createTenantContext(collaborator), {
+        projectId,
+        title: 'Nova',
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT' })
   })
 
   it('só o gestor e o criador do projeto arquivam: colaborador de fora recebe FORBIDDEN', async () => {
     const { useCases, repos } = setup(other)
     await seed(repos)
-    await expect(useCases.projects.archive.execute(other, { projectId })).rejects.toMatchObject({
+    await expect(
+      useCases.projects.archive.execute(createTenantContext(other), { projectId }),
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
     await expect(
       useCases.projects.archive.execute(
-        { ...collaborator, organizationId: foreignOrganizationId },
+        createTenantContext({ ...collaborator, organizationId: foreignOrganizationId }),
         { projectId },
       ),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
-    await expect(useCases.projects.archive.execute(manager, { projectId })).resolves.toMatchObject({
+    await expect(
+      useCases.projects.archive.execute(createTenantContext(manager), { projectId }),
+    ).resolves.toMatchObject({
       archivedAt: now,
     })
   })

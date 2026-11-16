@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -51,7 +52,10 @@ describe('definir valor padrão do usuário', () => {
   it('permite ao usuário alterar o próprio valor e publica a mudança', async () => {
     const { useCases, notifier } = setup()
     await expect(
-      useCases.users.setDefaultRate.execute(actor, { userId, rateCents: 5500 }),
+      useCases.users.setDefaultRate.execute(createTenantContext(actor), {
+        userId,
+        rateCents: 5500,
+      }),
     ).resolves.toMatchObject({ defaultRate: 55 })
     expect(notifier.changes).toHaveLength(1)
     expect(notifier.changes[0]?.change).toEqual({ kind: 'user', ids: [userId] })
@@ -60,24 +64,27 @@ describe('definir valor padrão do usuário', () => {
   it('nega que colaborador altere o valor de outra pessoa', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.users.setDefaultRate.execute(actor, { userId: otherUserId, rateCents: 5500 }),
+      useCases.users.setDefaultRate.execute(createTenantContext(actor), {
+        userId: otherUserId,
+        rateCents: 5500,
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
   it('gestor altera o valor de qualquer usuário da organização', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.users.setDefaultRate.execute(
-        { ...actor, role: 'manager' },
-        { userId: otherUserId, rateCents: 5500 },
-      ),
+      useCases.users.setDefaultRate.execute(createTenantContext({ ...actor, role: 'manager' }), {
+        userId: otherUserId,
+        rateCents: 5500,
+      }),
     ).resolves.toMatchObject({ defaultRate: 55 })
   })
 
   it('rejeita tarifa padrão inválida', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.users.setDefaultRate.execute(actor, { userId, rateCents: 0 }),
+      useCases.users.setDefaultRate.execute(createTenantContext(actor), { userId, rateCents: 0 }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 })

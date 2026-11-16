@@ -183,6 +183,36 @@ export function describeRepositoryContract(
       await expect(repositories.users.list(otherOrganizationId)).resolves.toEqual([])
     })
 
+    it('não regrava, por identificador, registro de outra organização', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId, name: 'Ana' }).build()
+      const project = aProject().with({ id: projectId, organizationId, name: 'Projeto A' }).build()
+      const contributor = aContributor().with({ organizationId }).build()
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.contributors.save(organizationId, contributor)
+
+      // Mesmos identificadores, gravados pela organização B: nada de A pode mudar.
+      await repositories.users.save(otherOrganizationId, { ...user, name: 'Intrusa' })
+      await repositories.projects.save(otherOrganizationId, { ...project, name: 'Intruso' })
+      await repositories.contributors.save(otherOrganizationId, {
+        ...contributor,
+        name: 'Intruso',
+      })
+
+      await expect(repositories.users.findById(organizationId, user.id)).resolves.toEqual(user)
+      await expect(repositories.projects.findById(organizationId, project.id)).resolves.toEqual(
+        project,
+      )
+      await expect(
+        repositories.contributors.findById(organizationId, contributor.id),
+      ).resolves.toEqual(contributor)
+      await expect(repositories.users.findById(otherOrganizationId, user.id)).resolves.toBeNull()
+      await expect(
+        repositories.projects.findById(otherOrganizationId, project.id),
+      ).resolves.toBeNull()
+    })
+
     it('remove registros removíveis do contrato', async () => {
       const repositories = makeAdapters()
       const meeting = aMeeting().with({ organizationId }).build()

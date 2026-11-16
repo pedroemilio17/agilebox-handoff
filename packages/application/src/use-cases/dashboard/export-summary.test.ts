@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { createUser, toOrganizationId, toTaskId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -67,21 +68,28 @@ describe('dashboard.exportSummary', () => {
   it('restringe a exportação ao gestor (FORBIDDEN para colaborador)', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const period = (await useCases.dashboard.get.execute(manager)).insights!.weeks[5]!.start
+    const period = (await useCases.dashboard.get.execute(createTenantContext(manager))).insights!
+      .weeks[5]!.start
     await expect(
-      useCases.dashboard.exportSummary.execute(actor, { period, format: 'md' }),
+      useCases.dashboard.exportSummary.execute(createTenantContext(actor), {
+        period,
+        format: 'md',
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
-      useCases.dashboard.exportSummary.execute(actor, { period, format: 'csv' }),
+      useCases.dashboard.exportSummary.execute(createTenantContext(actor), {
+        period,
+        format: 'csv',
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
   it('devolve o Markdown com o nome do arquivo e os mesmos números da consulta do dashboard', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const dashboard = await useCases.dashboard.get.execute(manager)
+    const dashboard = await useCases.dashboard.get.execute(createTenantContext(manager))
     const insights = dashboard.insights!
-    const result = await useCases.dashboard.exportSummary.execute(manager, {
+    const result = await useCases.dashboard.exportSummary.execute(createTenantContext(manager), {
       period: insights.weeks[5]!.start,
       format: 'md',
     })
@@ -103,8 +111,8 @@ describe('dashboard.exportSummary', () => {
   it('devolve a planilha com BOM UTF-8 e uma linha por pessoa da equipe', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const insights = (await useCases.dashboard.get.execute(manager)).insights!
-    const result = await useCases.dashboard.exportSummary.execute(manager, {
+    const insights = (await useCases.dashboard.get.execute(createTenantContext(manager))).insights!
+    const result = await useCases.dashboard.exportSummary.execute(createTenantContext(manager), {
       period: insights.weeks[5]!.start,
       format: 'csv',
     })
@@ -120,7 +128,10 @@ describe('dashboard.exportSummary', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.dashboard.exportSummary.execute(manager, { period: '2020-01-06', format: 'md' }),
+      useCases.dashboard.exportSummary.execute(createTenantContext(manager), {
+        period: '2020-01-06',
+        format: 'md',
+      }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 })

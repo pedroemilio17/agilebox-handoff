@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createChecklistItem,
@@ -88,8 +89,11 @@ describe('casos de uso de subtarefas', () => {
   it('adiciona ao fim, devolve o progresso e registra o evento', async () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Revisar endpoints' })
-    const result = await useCases.tasks.checklist.add.execute(owner, {
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Revisar endpoints',
+    })
+    const result = await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
       taskId,
       title: '  Atualizar exemplos  ',
     })
@@ -127,26 +131,35 @@ describe('casos de uso de subtarefas', () => {
     )
     await unitOfWork.repositories.checklist.saveMany(organizationId, full)
     await expect(
-      useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Excedente' }),
+      useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+        taskId,
+        title: 'Excedente',
+      }),
     ).rejects.toThrow('Limite de 50 subtarefas por tarefa')
     expect(await itemsOf(unitOfWork)).toHaveLength(50)
 
-    await useCases.tasks.move.execute(owner, { taskId, status: 'done' })
+    await useCases.tasks.move.execute(createTenantContext(owner), { taskId, status: 'done' })
     expect(task?.status).toBe('in_progress')
     await expect(
-      useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Depois de concluir' }),
+      useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+        taskId,
+        title: 'Depois de concluir',
+      }),
     ).rejects.toThrow(ValidationError)
   })
 
   it('marca, desmarca e registra cada mudança; repetir a mesma marcação não gera evento', async () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
-    const added = await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Testar' })
+    const added = await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Testar',
+    })
     expect(added.checklistProgress.total).toBe(1)
     const [item] = await itemsOf(unitOfWork)
     const id = item!.id
 
-    const done = await useCases.tasks.checklist.toggle.execute(owner, {
+    const done = await useCases.tasks.checklist.toggle.execute(createTenantContext(owner), {
       taskId,
       itemId: id,
       done: true,
@@ -156,8 +169,16 @@ describe('casos de uso de subtarefas', () => {
       done: true,
       doneAt: '2026-01-02T00:00:00.000Z',
     })
-    await useCases.tasks.checklist.toggle.execute(owner, { taskId, itemId: id, done: true })
-    await useCases.tasks.checklist.toggle.execute(owner, { taskId, itemId: id, done: false })
+    await useCases.tasks.checklist.toggle.execute(createTenantContext(owner), {
+      taskId,
+      itemId: id,
+      done: true,
+    })
+    await useCases.tasks.checklist.toggle.execute(createTenantContext(owner), {
+      taskId,
+      itemId: id,
+      done: false,
+    })
 
     const types = (await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)).map(
       (event) => event.type,
@@ -174,17 +195,17 @@ describe('casos de uso de subtarefas', () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
     for (const title of ['A', 'B', 'C']) {
-      await useCases.tasks.checklist.add.execute(owner, { taskId, title })
+      await useCases.tasks.checklist.add.execute(createTenantContext(owner), { taskId, title })
     }
     const before = await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)
     const [first, second, third] = await itemsOf(unitOfWork)
 
-    await useCases.tasks.checklist.rename.execute(owner, {
+    await useCases.tasks.checklist.rename.execute(createTenantContext(owner), {
       taskId,
       itemId: second!.id,
       title: 'B2',
     })
-    await useCases.tasks.checklist.move.execute(owner, {
+    await useCases.tasks.checklist.move.execute(createTenantContext(owner), {
       taskId,
       itemId: third!.id,
       position: 0,
@@ -198,7 +219,10 @@ describe('casos de uso de subtarefas', () => {
       before.length,
     )
 
-    await useCases.tasks.checklist.remove.execute(owner, { taskId, itemId: first!.id })
+    await useCases.tasks.checklist.remove.execute(createTenantContext(owner), {
+      taskId,
+      itemId: first!.id,
+    })
     expect(await titles(unitOfWork)).toEqual([
       ['C', 0],
       ['B2', 1],
@@ -210,13 +234,20 @@ describe('casos de uso de subtarefas', () => {
   it('recusa posição inválida e subtarefa inexistente', async () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Único' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Único',
+    })
     const [item] = await itemsOf(unitOfWork)
     await expect(
-      useCases.tasks.checklist.move.execute(owner, { taskId, itemId: item!.id, position: 1 }),
+      useCases.tasks.checklist.move.execute(createTenantContext(owner), {
+        taskId,
+        itemId: item!.id,
+        position: 1,
+      }),
     ).rejects.toThrow(ValidationError)
     await expect(
-      useCases.tasks.checklist.toggle.execute(owner, {
+      useCases.tasks.checklist.toggle.execute(createTenantContext(owner), {
         taskId,
         itemId: toChecklistItemId('00000000000000000000000999'),
         done: true,
@@ -227,24 +258,45 @@ describe('casos de uso de subtarefas', () => {
   it('bloqueia quem não participa da tarefa em todas as operações', async () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Privado' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Privado',
+    })
     const [item] = await itemsOf(unitOfWork)
     const id = item!.id
 
     await expect(
-      useCases.tasks.checklist.add.execute(outsider, { taskId, title: 'Intruso' }),
+      useCases.tasks.checklist.add.execute(createTenantContext(outsider), {
+        taskId,
+        title: 'Intruso',
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.tasks.checklist.toggle.execute(outsider, { taskId, itemId: id, done: true }),
+      useCases.tasks.checklist.toggle.execute(createTenantContext(outsider), {
+        taskId,
+        itemId: id,
+        done: true,
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.tasks.checklist.rename.execute(outsider, { taskId, itemId: id, title: 'X' }),
+      useCases.tasks.checklist.rename.execute(createTenantContext(outsider), {
+        taskId,
+        itemId: id,
+        title: 'X',
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.tasks.checklist.remove.execute(outsider, { taskId, itemId: id }),
+      useCases.tasks.checklist.remove.execute(createTenantContext(outsider), {
+        taskId,
+        itemId: id,
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.tasks.checklist.move.execute(outsider, { taskId, itemId: id, position: 0 }),
+      useCases.tasks.checklist.move.execute(createTenantContext(outsider), {
+        taskId,
+        itemId: id,
+        position: 0,
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     expect(await titles(unitOfWork)).toEqual([['Privado', 0]])
   })
@@ -252,9 +304,12 @@ describe('casos de uso de subtarefas', () => {
   it('gestor edita qualquer tarefa e o evento sai marcado como Gestor', async () => {
     const { useCases, unitOfWork } = setup(manager)
     await seedTask(unitOfWork)
-    await useCases.tasks.checklist.add.execute(manager, { taskId, title: 'Pelo gestor' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(manager), {
+      taskId,
+      title: 'Pelo gestor',
+    })
     const [item] = await itemsOf(unitOfWork)
-    await useCases.tasks.checklist.toggle.execute(manager, {
+    await useCases.tasks.checklist.toggle.execute(createTenantContext(manager), {
       taskId,
       itemId: item!.id,
       done: true,
@@ -267,7 +322,10 @@ describe('casos de uso de subtarefas', () => {
   it('isola organizações: outra organização não vê nem altera as subtarefas', async () => {
     const { useCases, unitOfWork } = setup()
     await seedTask(unitOfWork)
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Da organização' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Da organização',
+    })
     const [item] = await itemsOf(unitOfWork)
     await unitOfWork.repositories.organizations.save(
       createOrganization({
@@ -283,10 +341,17 @@ describe('casos de uso de subtarefas', () => {
     }
 
     await expect(
-      useCases.tasks.checklist.toggle.execute(stranger, { taskId, itemId: item!.id, done: true }),
+      useCases.tasks.checklist.toggle.execute(createTenantContext(stranger), {
+        taskId,
+        itemId: item!.id,
+        done: true,
+      }),
     ).rejects.toThrow(NotFoundError)
     await expect(
-      useCases.tasks.checklist.remove.execute(stranger, { taskId, itemId: item!.id }),
+      useCases.tasks.checklist.remove.execute(createTenantContext(stranger), {
+        taskId,
+        itemId: item!.id,
+      }),
     ).rejects.toThrow(NotFoundError)
     expect(
       await unitOfWork.repositories.checklist.listByTasks(otherOrganizationId, [taskId]),
@@ -303,12 +368,19 @@ describe('casos de uso de subtarefas', () => {
       ...aTask().with({ id: otherTaskId, number: 3 }).build(),
       status: 'todo',
     })
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Um' })
-    await useCases.tasks.checklist.add.execute(owner, { taskId, title: 'Dois' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), { taskId, title: 'Um' })
+    await useCases.tasks.checklist.add.execute(createTenantContext(owner), {
+      taskId,
+      title: 'Dois',
+    })
     const [first] = await itemsOf(unitOfWork)
-    await useCases.tasks.checklist.toggle.execute(owner, { taskId, itemId: first!.id, done: true })
+    await useCases.tasks.checklist.toggle.execute(createTenantContext(owner), {
+      taskId,
+      itemId: first!.id,
+      done: true,
+    })
 
-    const { tasks: board } = await useCases.tasks.listBoard.execute(owner, {})
+    const { tasks: board } = await useCases.tasks.listBoard.execute(createTenantContext(owner), {})
     const progressOf = (id: TaskId) => board.find((task) => task.id === id)?.checklistProgress
     expect(progressOf(taskId)).toEqual({ done: 1, total: 2, percent: 50 })
     expect(progressOf(otherTaskId)).toEqual({ done: 0, total: 0, percent: 0 })

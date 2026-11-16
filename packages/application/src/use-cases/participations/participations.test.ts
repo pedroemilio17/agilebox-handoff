@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toOrganizationId, toParticipationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -53,7 +54,7 @@ describe('casos de uso de envolvimentos', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.users.save(organizationId, user)
 
-    const added = await useCases.participations.add.execute(actor, {
+    const added = await useCases.participations.add.execute(createTenantContext(actor), {
       taskId: task.id,
       participant: { kind: 'user', userId: otherUserId },
       role: 'support',
@@ -77,7 +78,7 @@ describe('casos de uso de envolvimentos', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
 
-    const added = await useCases.participations.add.execute(manager, {
+    const added = await useCases.participations.add.execute(createTenantContext(manager), {
       taskId: task.id,
       participant: { kind: 'contributor', contributorId: contributor.id },
       role: 'support',
@@ -96,14 +97,14 @@ describe('casos de uso de envolvimentos', () => {
       .build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await expect(
-      useCases.participations.add.execute(actor, {
+      useCases.participations.add.execute(createTenantContext(actor), {
         taskId: task.id,
         participant: { kind: 'user', userId: otherUserId },
         role: 'support',
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
-      useCases.participations.add.execute(manager, {
+      useCases.participations.add.execute(createTenantContext(manager), {
         taskId: task.id,
         participant: { kind: 'user', userId },
         role: 'support',
@@ -123,7 +124,7 @@ describe('casos de uso de envolvimentos', () => {
     const taskWithSupport = { ...task, participations: [...task.participations, support] }
     await unitOfWork.repositories.tasks.save(organizationId, taskWithSupport)
 
-    await useCases.participations.remove.execute(actor, {
+    await useCases.participations.remove.execute(createTenantContext(actor), {
       taskId: task.id,
       participationId: support.id,
     })
@@ -131,7 +132,7 @@ describe('casos de uso de envolvimentos', () => {
       (await unitOfWork.repositories.tasks.findById(organizationId, task.id))?.participations,
     ).toHaveLength(1)
     await expect(
-      useCases.participations.remove.execute(actor, {
+      useCases.participations.remove.execute(createTenantContext(actor), {
         taskId: task.id,
         participationId: task.participations[0]!.id,
       }),
@@ -152,7 +153,7 @@ describe('casos de uso de envolvimentos', () => {
       participations: [...task.participations, support],
     })
 
-    const changed = await useCases.participations.setHours.execute(actor, {
+    const changed = await useCases.participations.setHours.execute(createTenantContext(actor), {
       taskId: task.id,
       participationId: support.id,
       hours: '2,5',
@@ -187,7 +188,7 @@ describe('casos de uso de envolvimentos', () => {
       participations: [...task.participations, other],
     })
 
-    await useCases.participations.setRate.execute(actor, {
+    await useCases.participations.setRate.execute(createTenantContext(actor), {
       taskId: task.id,
       participationId: self.id,
       rateCents: 5100,
@@ -196,7 +197,7 @@ describe('casos de uso de envolvimentos', () => {
       (await unitOfWork.repositories.users.findById(organizationId, userId))?.defaultRateCents,
     ).toBe(5100)
     await expect(
-      useCases.participations.setRate.execute(actor, {
+      useCases.participations.setRate.execute(createTenantContext(actor), {
         taskId: task.id,
         participationId: other.id,
         rateCents: 5100,
@@ -225,7 +226,7 @@ describe('casos de uso de envolvimentos', () => {
     })
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
 
-    await useCases.participations.setRate.execute(manager, {
+    await useCases.participations.setRate.execute(createTenantContext(manager), {
       taskId: task.id,
       participationId: participation.id,
       rateCents: 3000,
@@ -250,7 +251,7 @@ describe('casos de uso de envolvimentos', () => {
       Promise.reject(new Error('falha ao gravar evento'))
 
     await expect(
-      useCases.participations.setRate.execute(actor, {
+      useCases.participations.setRate.execute(createTenantContext(actor), {
         taskId: task.id,
         participationId: task.participations[0]!.id,
         rateCents: 5100,

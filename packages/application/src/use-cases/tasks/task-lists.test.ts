@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it, vi } from 'vitest'
 import {
   toOrganizationId,
@@ -111,17 +112,19 @@ describe('listas de tarefas', () => {
       },
     ])
     const timeline = vi.spyOn(unitOfWork.repositories.timeline, 'listByTask')
-    expect(await useCases.tasks.getBoardFlow.execute(actor, {})).toMatchObject({
-      cycleDays: 3,
-      weekStart: '2025-12-29',
-    })
+    expect(await useCases.tasks.getBoardFlow.execute(createTenantContext(actor), {})).toMatchObject(
+      {
+        cycleDays: 3,
+        weekStart: '2025-12-29',
+      },
+    )
     expect(timeline).toHaveBeenCalledExactlyOnceWith(organizationId, mine.id)
     await expect(
-      useCases.tasks.getBoardFlow.execute(actor, { forUserId: otherUserId }),
+      useCases.tasks.getBoardFlow.execute(createTenantContext(actor), { forUserId: otherUserId }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     expect(
       await useCases.tasks.getBoardFlow.execute(
-        { ...actor, role: 'manager' },
+        createTenantContext({ ...actor, role: 'manager' }),
         { forUserId: otherUserId },
       ),
     ).toMatchObject({ cycleDays: null })
@@ -158,7 +161,7 @@ describe('listas de tarefas', () => {
       },
     ])
     const timeline = vi.spyOn(unitOfWork.repositories.timeline, 'listByTask')
-    const { tasks: result } = await useCases.tasks.listBoard.execute(actor, {})
+    const { tasks: result } = await useCases.tasks.listBoard.execute(createTenantContext(actor), {})
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({ id: mine.id, overdue: true })
     expect(result[0]!.agingDays).toBeGreaterThan(4)
@@ -179,7 +182,7 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, mine)
     await unitOfWork.repositories.tasks.save(organizationId, others)
 
-    const { tasks: result } = await useCases.tasks.listBoard.execute(actor, {})
+    const { tasks: result } = await useCases.tasks.listBoard.execute(createTenantContext(actor), {})
 
     expect(result.map(({ id }) => id)).toEqual([mine.id])
   })
@@ -197,11 +200,11 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
 
     await expect(
-      useCases.tasks.listBoard.execute(actor, { forUserId: otherUserId }),
+      useCases.tasks.listBoard.execute(createTenantContext(actor), { forUserId: otherUserId }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
       useCases.tasks.listBoard.execute(
-        { userId: managerId, organizationId, role: 'manager' },
+        createTenantContext({ userId: managerId, organizationId, role: 'manager' }),
         { projectId: project.id, forUserId: otherUserId },
       ),
     ).resolves.toMatchObject({ tasks: [{ id: task.id }] })
@@ -235,7 +238,7 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, team)
     await unitOfWork.repositories.tasks.save(organizationId, unrelated)
 
-    const result = await useCases.tasks.listTeamBoard.execute(actor, {})
+    const result = await useCases.tasks.listTeamBoard.execute(createTenantContext(actor), {})
 
     expect(result.map(({ id }) => id)).toEqual([team.id])
   })
@@ -264,7 +267,10 @@ describe('listas de tarefas', () => {
     for (const task of [created, assigned, others])
       await unitOfWork.repositories.tasks.save(organizationId, task)
 
-    const { tasks: result } = await useCases.tasks.listBoard.execute(manager, {})
+    const { tasks: result } = await useCases.tasks.listBoard.execute(
+      createTenantContext(manager),
+      {},
+    )
 
     expect(idsOf(result)).toEqual(idsOf([created, assigned]))
   })
@@ -293,7 +299,7 @@ describe('listas de tarefas', () => {
     for (const task of [created, assigned, others])
       await unitOfWork.repositories.tasks.save(organizationId, task)
 
-    const result = await useCases.tasks.listTeamBoard.execute(manager, {})
+    const result = await useCases.tasks.listTeamBoard.execute(createTenantContext(manager), {})
 
     expect(idsOf(result)).toEqual(idsOf([created, assigned, others]))
   })
@@ -317,11 +323,19 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, mine)
     await unitOfWork.repositories.tasks.save(foreignOrganizationId, foreign)
 
-    expect(idsOf((await useCases.tasks.listBoard.execute(manager, {})).tasks)).toEqual([mine.id])
-    expect(idsOf(await useCases.tasks.listTeamBoard.execute(manager, {}))).toEqual([mine.id])
+    expect(
+      idsOf((await useCases.tasks.listBoard.execute(createTenantContext(manager), {})).tasks),
+    ).toEqual([mine.id])
+    expect(
+      idsOf(await useCases.tasks.listTeamBoard.execute(createTenantContext(manager), {})),
+    ).toEqual([mine.id])
     // Colaborador: a tarefa do gestor aparece na Equipe do projeto dele, não no próprio quadro.
-    expect((await useCases.tasks.listBoard.execute(actor, {})).tasks).toEqual([])
-    expect(idsOf(await useCases.tasks.listTeamBoard.execute(actor, {}))).toEqual([mine.id])
+    expect((await useCases.tasks.listBoard.execute(createTenantContext(actor), {})).tasks).toEqual(
+      [],
+    )
+    expect(
+      idsOf(await useCases.tasks.listTeamBoard.execute(createTenantContext(actor), {})),
+    ).toEqual([mine.id])
   })
 
   it('traz na Equipe os sinais de parada e de prazo, como o quadro', async () => {
@@ -341,7 +355,7 @@ describe('listas de tarefas', () => {
     await addProjectMember(unitOfWork, project.id, userId)
     await unitOfWork.repositories.tasks.save(organizationId, team)
 
-    const [result] = await useCases.tasks.listTeamBoard.execute(actor, {})
+    const [result] = await useCases.tasks.listTeamBoard.execute(createTenantContext(actor), {})
 
     expect(result).toMatchObject({ id: team.id, overdue: true })
     expect(result!.agingDays).toBeGreaterThan(4)
@@ -367,12 +381,14 @@ describe('listas de tarefas', () => {
       '2026-01-02T00:00:00.000Z',
     )
 
-    await expect(useCases.tasks.listRecent.execute(actor)).resolves.toMatchObject([{ id: mine.id }])
-    await expect(useCases.tasks.listFrequent.execute(actor)).resolves.toMatchObject([
-      { id: mine.id },
-    ])
     await expect(
-      useCases.tasks.search.execute(actor, { query: mine.title }),
+      useCases.tasks.listRecent.execute(createTenantContext(actor)),
+    ).resolves.toMatchObject([{ id: mine.id }])
+    await expect(
+      useCases.tasks.listFrequent.execute(createTenantContext(actor)),
+    ).resolves.toMatchObject([{ id: mine.id }])
+    await expect(
+      useCases.tasks.search.execute(createTenantContext(actor), { query: mine.title }),
     ).resolves.toMatchObject([{ id: mine.id }])
   })
 
@@ -391,14 +407,18 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, mine)
     await unitOfWork.repositories.tasks.save(organizationId, hidden)
 
-    await expect(useCases.tasks.search.execute(actor, { query: 'ab-118' })).resolves.toMatchObject([
-      { id: mine.id, key: 'AB-118' },
-    ])
-    await expect(useCases.tasks.search.execute(actor, { query: '118' })).resolves.toMatchObject([
-      { id: mine.id },
-    ])
-    await expect(useCases.tasks.search.execute(actor, { query: 'XY-118' })).resolves.toEqual([])
-    await expect(useCases.tasks.search.execute(actor, { query: '119' })).resolves.toEqual([])
+    await expect(
+      useCases.tasks.search.execute(createTenantContext(actor), { query: 'ab-118' }),
+    ).resolves.toMatchObject([{ id: mine.id, key: 'AB-118' }])
+    await expect(
+      useCases.tasks.search.execute(createTenantContext(actor), { query: '118' }),
+    ).resolves.toMatchObject([{ id: mine.id }])
+    await expect(
+      useCases.tasks.search.execute(createTenantContext(actor), { query: 'XY-118' }),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.tasks.search.execute(createTenantContext(actor), { query: '119' }),
+    ).resolves.toEqual([])
   })
 
   it('registra abertura somente quando o ator tem acesso à tarefa', async () => {
@@ -427,13 +447,16 @@ describe('listas de tarefas', () => {
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.tasks.save(organizationId, hidden)
 
-    await useCases.tasks.recordOpen.execute(actor, { taskId: task.id })
+    await useCases.tasks.recordOpen.execute(createTenantContext(actor), { taskId: task.id })
     await expect(
-      useCases.tasks.recordOpen.execute(actor, { taskId: hidden.id }),
+      useCases.tasks.recordOpen.execute(createTenantContext(actor), { taskId: hidden.id }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
       useCases.tasks.recordOpen.execute(
-        { ...actor, organizationId: toOrganizationId('00000000000000000000000009') },
+        createTenantContext({
+          ...actor,
+          organizationId: toOrganizationId('00000000000000000000000009'),
+        }),
         { taskId: task.id },
       ),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
@@ -468,7 +491,7 @@ describe('listas de tarefas', () => {
       '2026-01-02T00:00:00.000Z',
     )
 
-    const result = await useCases.tasks.listFrequent.execute(actor)
+    const result = await useCases.tasks.listFrequent.execute(createTenantContext(actor))
 
     expect(result.map(({ id }) => id)).toEqual([second.id, first.id])
   })

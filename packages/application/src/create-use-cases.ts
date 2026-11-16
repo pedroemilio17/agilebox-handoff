@@ -1,4 +1,7 @@
+import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
+import { assertTenantContext } from './tenant-context'
+import type { TenantContext } from './tenant-context'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { RenameProject } from './use-cases/projects/rename-project'
@@ -80,102 +83,118 @@ import {
   UpdateRetroAction,
 } from './use-cases/meetings/retro-actions'
 
+/**
+ * Expõe um caso de uso que recebe o `Actor` só pelo contexto da fronteira: sem `TenantContext`,
+ * a chamada nem chega ao caso de uso.
+ */
+function forTenant<Input extends unknown[], Output>(useCase: {
+  execute(actor: Actor, ...args: Input): Output
+}) {
+  return {
+    execute(context: TenantContext, ...args: Input): Output {
+      assertTenantContext(context)
+      return useCase.execute(context.actor, ...args)
+    },
+  }
+}
+
 export function createUseCases(deps: AppDeps) {
   return {
+    // Exceção: estes dois estabelecem a sessão (quem é o ator atual); não há contexto antes deles.
     session: {
       getCurrentActor: new GetCurrentActor(deps.actorSession),
       switchUser: new SwitchUser(deps.actorSession, deps.users, deps.changeNotifier),
-      listUsers: new ListSessionUsers(deps.users),
+      listUsers: forTenant(new ListSessionUsers(deps.users)),
     },
     users: {
-      setDefaultRate: new SetDefaultRate(deps),
+      setDefaultRate: forTenant(new SetDefaultRate(deps)),
     },
     contributors: {
-      list: new ListContributors(deps.contributors),
-      create: new CreateContributor(deps),
-      setDefaultRate: new SetContributorDefaultRate(deps),
+      list: forTenant(new ListContributors(deps.contributors)),
+      create: forTenant(new CreateContributor(deps)),
+      setDefaultRate: forTenant(new SetContributorDefaultRate(deps)),
     },
     projects: {
-      listProjects: new ListProjects(deps.projects, deps.definitionOfDone),
-      createProject: new CreateProject(deps),
-      listMembers: new ListProjectMembers(deps),
-      addMember: new AddProjectMember(deps),
-      removeMember: new RemoveProjectMember(deps),
-      archive: new ArchiveProject(deps),
-      unarchive: new UnarchiveProject(deps),
-      rename: new RenameProject(deps),
+      listProjects: forTenant(new ListProjects(deps.projects, deps.definitionOfDone)),
+      createProject: forTenant(new CreateProject(deps)),
+      listMembers: forTenant(new ListProjectMembers(deps)),
+      addMember: forTenant(new AddProjectMember(deps)),
+      removeMember: forTenant(new RemoveProjectMember(deps)),
+      archive: forTenant(new ArchiveProject(deps)),
+      unarchive: forTenant(new UnarchiveProject(deps)),
+      rename: forTenant(new RenameProject(deps)),
       definitionOfDone: {
-        list: new ListDefinitionOfDone(deps),
-        add: new AddDefinitionOfDoneItem(deps),
-        rename: new RenameDefinitionOfDoneItem(deps),
-        remove: new RemoveDefinitionOfDoneItem(deps),
-        move: new MoveDefinitionOfDoneItem(deps),
+        list: forTenant(new ListDefinitionOfDone(deps)),
+        add: forTenant(new AddDefinitionOfDoneItem(deps)),
+        rename: forTenant(new RenameDefinitionOfDoneItem(deps)),
+        remove: forTenant(new RemoveDefinitionOfDoneItem(deps)),
+        move: forTenant(new MoveDefinitionOfDoneItem(deps)),
       },
     },
     tasks: {
-      create: new CreateTask(deps),
-      getDetail: new GetTaskDetail(deps),
-      update: new UpdateTask(deps),
-      move: new MoveTask(deps),
-      block: new BlockTask(deps),
-      unblock: new UnblockTask(deps),
-      archive: new ArchiveTask(deps),
-      unarchive: new UnarchiveTask(deps),
+      create: forTenant(new CreateTask(deps)),
+      getDetail: forTenant(new GetTaskDetail(deps)),
+      update: forTenant(new UpdateTask(deps)),
+      move: forTenant(new MoveTask(deps)),
+      block: forTenant(new BlockTask(deps)),
+      unblock: forTenant(new UnblockTask(deps)),
+      archive: forTenant(new ArchiveTask(deps)),
+      unarchive: forTenant(new UnarchiveTask(deps)),
       checklist: {
-        add: new AddChecklistItem(deps),
-        toggle: new ToggleChecklistItem(deps),
-        rename: new RenameChecklistItem(deps),
-        remove: new RemoveChecklistItem(deps),
-        move: new MoveChecklistItem(deps),
+        add: forTenant(new AddChecklistItem(deps)),
+        toggle: forTenant(new ToggleChecklistItem(deps)),
+        rename: forTenant(new RenameChecklistItem(deps)),
+        remove: forTenant(new RemoveChecklistItem(deps)),
+        move: forTenant(new MoveChecklistItem(deps)),
       },
       comments: {
-        add: new AddTaskComment(deps),
-        edit: new EditTaskComment(deps),
-        remove: new RemoveTaskComment(deps),
+        add: forTenant(new AddTaskComment(deps)),
+        edit: forTenant(new EditTaskComment(deps)),
+        remove: forTenant(new RemoveTaskComment(deps)),
       },
-      listBoard: new ListBoard(deps),
-      getBoardFlow: new GetBoardFlow(deps),
-      listTeamBoard: new ListTeamBoard(deps),
-      listRecent: new ListRecentTasks(deps),
-      listFrequent: new ListFrequentTasks(deps),
-      search: new SearchTasks(deps),
-      recordOpen: new RecordTaskOpen(deps),
+      listBoard: forTenant(new ListBoard(deps)),
+      getBoardFlow: forTenant(new GetBoardFlow(deps)),
+      listTeamBoard: forTenant(new ListTeamBoard(deps)),
+      listRecent: forTenant(new ListRecentTasks(deps)),
+      listFrequent: forTenant(new ListFrequentTasks(deps)),
+      search: forTenant(new SearchTasks(deps)),
+      recordOpen: forTenant(new RecordTaskOpen(deps)),
     },
     participations: {
-      add: new AddParticipation(deps),
-      remove: new RemoveParticipation(deps),
-      setHours: new SetParticipationHours(deps),
-      setRate: new SetParticipationRate(deps),
+      add: forTenant(new AddParticipation(deps)),
+      remove: forTenant(new RemoveParticipation(deps)),
+      setHours: forTenant(new SetParticipationHours(deps)),
+      setRate: forTenant(new SetParticipationRate(deps)),
     },
     timeline: {
-      list: new ListTimeline(deps),
+      list: forTenant(new ListTimeline(deps)),
     },
     dashboard: {
-      get: new GetDashboard(deps),
-      exportSummary: new ExportDashboardSummary(deps),
+      get: forTenant(new GetDashboard(deps)),
+      exportSummary: forTenant(new ExportDashboardSummary(deps)),
     },
     boardSettings: {
-      get: new GetBoardSettings(deps),
-      setWipLimits: new SetWipLimits(deps),
+      get: forTenant(new GetBoardSettings(deps)),
+      setWipLimits: forTenant(new SetWipLimits(deps)),
     },
     daily: {
-      getToday: new GetTodayDaily(deps),
-      save: new SaveDaily(deps),
-      listForDate: new ListDailyForDate(deps),
-      getForUser: new GetDailyForUser(deps),
+      getToday: forTenant(new GetTodayDaily(deps)),
+      save: forTenant(new SaveDaily(deps)),
+      listForDate: forTenant(new ListDailyForDate(deps)),
+      getForUser: forTenant(new GetDailyForUser(deps)),
     },
     meetings: {
-      listRange: new ListMeetingOccurrences(deps),
-      listUpcoming: new ListUpcomingMeetings(deps),
-      create: new CreateMeeting(deps),
-      update: new UpdateMeeting(deps),
-      delete: new DeleteMeeting(deps),
+      listRange: forTenant(new ListMeetingOccurrences(deps)),
+      listUpcoming: forTenant(new ListUpcomingMeetings(deps)),
+      create: forTenant(new CreateMeeting(deps)),
+      update: forTenant(new UpdateMeeting(deps)),
+      delete: forTenant(new DeleteMeeting(deps)),
       retroActions: {
-        list: new ListRetroActions(deps),
-        add: new AddRetroAction(deps),
-        update: new UpdateRetroAction(deps),
-        toggle: new ToggleRetroAction(deps),
-        remove: new RemoveRetroAction(deps),
+        list: forTenant(new ListRetroActions(deps)),
+        add: forTenant(new AddRetroAction(deps)),
+        update: forTenant(new UpdateRetroAction(deps)),
+        toggle: forTenant(new ToggleRetroAction(deps)),
+        remove: forTenant(new RemoveRetroAction(deps)),
       },
     },
   }

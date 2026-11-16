@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { archiveProject, createUser, toOrganizationId, toProjectId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -53,7 +54,9 @@ function setup() {
 describe('casos de uso de projetos', () => {
   it('cria projeto, torna criador membro e notifica', async () => {
     const { useCases, unitOfWork, notifier } = setup()
-    const project = await useCases.projects.createProject.execute(actor, { name: 'Projeto novo' })
+    const project = await useCases.projects.createProject.execute(createTenantContext(actor), {
+      name: 'Projeto novo',
+    })
     expect(
       await unitOfWork.repositories.projects.listMembers(organizationId, toProjectId(project.id)),
     ).toEqual([
@@ -69,15 +72,19 @@ describe('casos de uso de projetos', () => {
 
   it('devolve projeto existente com o mesmo nome normalizado', async () => {
     const { useCases } = setup()
-    const created = await useCases.projects.createProject.execute(actor, { name: 'Gestão Ágil' })
-    const reused = await useCases.projects.createProject.execute(actor, { name: '  gestao agil  ' })
+    const created = await useCases.projects.createProject.execute(createTenantContext(actor), {
+      name: 'Gestão Ágil',
+    })
+    const reused = await useCases.projects.createProject.execute(createTenantContext(actor), {
+      name: '  gestao agil  ',
+    })
     expect(reused.id).toBe(created.id)
   })
 
   it('rejeita nome de projeto vazio', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.projects.createProject.execute(actor, { name: '  ' }),
+      useCases.projects.createProject.execute(createTenantContext(actor), { name: '  ' }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 
@@ -99,13 +106,15 @@ describe('casos de uso de projetos', () => {
       addedBy: userId,
       addedAt: mine.createdAt,
     })
-    expect(await useCases.projects.listProjects.execute(actor)).toHaveLength(1)
+    expect(await useCases.projects.listProjects.execute(createTenantContext(actor))).toHaveLength(1)
     expect(
-      await useCases.projects.listProjects.execute({
-        ...actor,
-        userId: managerId,
-        role: 'manager',
-      }),
+      await useCases.projects.listProjects.execute(
+        createTenantContext({
+          ...actor,
+          userId: managerId,
+          role: 'manager',
+        }),
+      ),
     ).toHaveLength(2)
   })
 
@@ -113,11 +122,14 @@ describe('casos de uso de projetos', () => {
     const { useCases, unitOfWork, notifier } = setup()
     const project = aProject().build()
     await unitOfWork.repositories.projects.save(organizationId, project)
-    await useCases.projects.addMember.execute(actor, { projectId: project.id, userId: otherUserId })
+    await useCases.projects.addMember.execute(createTenantContext(actor), {
+      projectId: project.id,
+      userId: otherUserId,
+    })
     expect(
       await unitOfWork.repositories.projects.listMembers(organizationId, project.id),
     ).toHaveLength(1)
-    await useCases.projects.removeMember.execute(actor, {
+    await useCases.projects.removeMember.execute(createTenantContext(actor), {
       projectId: project.id,
       userId: otherUserId,
     })
@@ -132,7 +144,10 @@ describe('casos de uso de projetos', () => {
     const project = aProject().with({ createdBy: otherUserId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.projects.addMember.execute(actor, { projectId: project.id, userId: managerId }),
+      useCases.projects.addMember.execute(createTenantContext(actor), {
+        projectId: project.id,
+        userId: managerId,
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
@@ -141,9 +156,14 @@ describe('casos de uso de projetos', () => {
     const project = aProject().with({ createdBy: otherUserId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
-    await useCases.projects.addMember.execute(manager, { projectId: project.id, userId })
+    await useCases.projects.addMember.execute(createTenantContext(manager), {
+      projectId: project.id,
+      userId,
+    })
     await expect(
-      useCases.projects.listMembers.execute(manager, { projectId: project.id }),
+      useCases.projects.listMembers.execute(createTenantContext(manager), {
+        projectId: project.id,
+      }),
     ).resolves.toEqual([expect.objectContaining({ id: userId, name: 'Ana Silva' })])
   })
 })
@@ -153,7 +173,7 @@ describe('renomear projeto', () => {
     const { useCases, unitOfWork, notifier } = setup()
     const project = aProject().with({ createdBy: userId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
-    const renamed = await useCases.projects.rename.execute(actor, {
+    const renamed = await useCases.projects.rename.execute(createTenantContext(actor), {
       projectId: project.id,
       name: '  Projeto Renovado  ',
     })
@@ -170,7 +190,10 @@ describe('renomear projeto', () => {
     await unitOfWork.repositories.projects.save(organizationId, project)
     const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
     await expect(
-      useCases.projects.rename.execute(manager, { projectId: project.id, name: 'Novo' }),
+      useCases.projects.rename.execute(createTenantContext(manager), {
+        projectId: project.id,
+        name: 'Novo',
+      }),
     ).resolves.toMatchObject({ name: 'Novo' })
   })
 
@@ -179,7 +202,10 @@ describe('renomear projeto', () => {
     const project = aProject().with({ createdBy: otherUserId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'Invasão' }),
+      useCases.projects.rename.execute(createTenantContext(actor), {
+        projectId: project.id,
+        name: 'Invasão',
+      }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     expect(
       await unitOfWork.repositories.projects.findById(organizationId, project.id),
@@ -193,7 +219,10 @@ describe('renomear projeto', () => {
     await unitOfWork.repositories.projects.save(otherOrganizationId, project)
     const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
     await expect(
-      useCases.projects.rename.execute(manager, { projectId: project.id, name: 'Novo' }),
+      useCases.projects.rename.execute(createTenantContext(manager), {
+        projectId: project.id,
+        name: 'Novo',
+      }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
 
@@ -202,7 +231,10 @@ describe('renomear projeto', () => {
     const project = aProject().with({ createdBy: userId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.projects.rename.execute(actor, { projectId: project.id, name: '   ' }),
+      useCases.projects.rename.execute(createTenantContext(actor), {
+        projectId: project.id,
+        name: '   ',
+      }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 
@@ -215,7 +247,10 @@ describe('renomear projeto', () => {
     await unitOfWork.repositories.projects.save(organizationId, mine)
     await unitOfWork.repositories.projects.save(organizationId, other)
     await expect(
-      useCases.projects.rename.execute(actor, { projectId: mine.id, name: '  gestao agil ' }),
+      useCases.projects.rename.execute(createTenantContext(actor), {
+        projectId: mine.id,
+        name: '  gestao agil ',
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT' })
     expect(await unitOfWork.repositories.projects.findById(organizationId, mine.id)).toMatchObject({
       name: 'Projeto AgileBox',
@@ -227,7 +262,10 @@ describe('renomear projeto', () => {
     const project = aProject().with({ createdBy: userId }).build()
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'PROJETO agilebox' }),
+      useCases.projects.rename.execute(createTenantContext(actor), {
+        projectId: project.id,
+        name: 'PROJETO agilebox',
+      }),
     ).resolves.toMatchObject({ name: 'PROJETO agilebox' })
   })
 
@@ -240,7 +278,10 @@ describe('renomear projeto', () => {
     )
     await unitOfWork.repositories.projects.save(organizationId, project)
     await expect(
-      useCases.projects.rename.execute(actor, { projectId: project.id, name: 'Novo' }),
+      useCases.projects.rename.execute(createTenantContext(actor), {
+        projectId: project.id,
+        name: 'Novo',
+      }),
     ).rejects.toMatchObject({ code: 'CONFLICT' })
   })
 })

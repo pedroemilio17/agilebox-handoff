@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -75,7 +76,7 @@ describe('casos de uso de sessão', () => {
 
   it('lista usuários com tarifa filtrada pela política do ator', async () => {
     const { useCases } = setup()
-    await expect(useCases.session.listUsers.execute(actor)).resolves.toEqual([
+    await expect(useCases.session.listUsers.execute(createTenantContext(actor))).resolves.toEqual([
       expect.objectContaining({ id: userId, defaultRate: 45 }),
       expect.objectContaining({ id: otherUserId, defaultRate: null }),
     ])

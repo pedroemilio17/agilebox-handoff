@@ -152,8 +152,8 @@ function startApp(): void {
         compositionRoot.useCases,
         compositionRoot.actorSession,
         createSaveDashboardSummary({
-          exportSummary: (actor, input) =>
-            compositionRoot.useCases.dashboard.exportSummary.execute(actor, input),
+          exportSummary: (context, input) =>
+            compositionRoot.useCases.dashboard.exportSummary.execute(context, input),
           showSaveDialog: (options) => {
             const parent = BrowserWindow.getFocusedWindow()
             return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options)

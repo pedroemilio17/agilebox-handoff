@@ -230,6 +230,13 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       return Number(row?.current ?? 0) + 1
     },
     async save(organizationId, task) {
+      // Tarefa de outra organização não é regravada: o save também apaga as participações dela.
+      const [owner] = await database
+        .select({ organizationId: tasks.organizationId })
+        .from(tasks)
+        .where(eq(tasks.id, task.id))
+        .limit(1)
+      if (owner && owner.organizationId !== organizationId) return
       const [project] = await database
         .select({ id: projects.id })
         .from(projects)
@@ -270,7 +277,11 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       await database
         .insert(tasks)
         .values(value)
-        .onConflictDoUpdate({ target: tasks.id, set: value })
+        .onConflictDoUpdate({
+          target: tasks.id,
+          set: value,
+          setWhere: eq(tasks.organizationId, organizationId),
+        })
       await database.delete(taskParticipations).where(eq(taskParticipations.taskId, task.id))
       if (task.participations.length)
         await database.insert(taskParticipations).values(
@@ -320,6 +331,14 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         .where(and(eq(tasks.id, participation.taskId), eq(tasks.organizationId, organizationId)))
         .limit(1)
       if (!task) return
+      // Participação cujo id já pertence a tarefa de outra organização não é regravada.
+      const [owner] = await database
+        .select({ organizationId: tasks.organizationId })
+        .from(taskParticipations)
+        .innerJoin(tasks, eq(tasks.id, taskParticipations.taskId))
+        .where(eq(taskParticipations.id, participation.id))
+        .limit(1)
+      if (owner && owner.organizationId !== organizationId) return
       if (!(await participantBelongsToOrganization(organizationId, participation))) return
       const value = {
         id: participation.id,

@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createUser,
@@ -124,7 +125,10 @@ describe('combinados da retro: criação', () => {
   it('gestor cria combinado com responsável e prazo, e o nome do responsável volta no DTO', async () => {
     const { useCases, unitOfWork, notifier } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
     expect(created).toMatchObject({
       meetingId: retroId,
       occurrenceDate: '2026-11-06',
@@ -145,16 +149,16 @@ describe('combinados da retro: criação', () => {
     const { useCases, unitOfWork } = setup(ana)
     await seed(unitOfWork)
     await expect(
-      useCases.meetings.retroActions.add.execute(ana, addInput()),
+      useCases.meetings.retroActions.add.execute(createTenantContext(ana), addInput()),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
   })
 
   it('recusa agendamento que não é do tipo Retro', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, retro({ kind: 'review' }))
-    await expect(useCases.meetings.retroActions.add.execute(manager, addInput())).rejects.toThrow(
-      'Só agendamentos do tipo Retro aceitam combinados',
-    )
+    await expect(
+      useCases.meetings.retroActions.add.execute(createTenantContext(manager), addInput()),
+    ).rejects.toThrow('Só agendamentos do tipo Retro aceitam combinados')
   })
 
   it('recusa data que não é ocorrência da série', async () => {
@@ -162,7 +166,7 @@ describe('combinados da retro: criação', () => {
     await seed(unitOfWork)
     await expect(
       useCases.meetings.retroActions.add.execute(
-        manager,
+        createTenantContext(manager),
         addInput({ occurrenceDate: '2026-11-07' }),
       ),
     ).rejects.toBeInstanceOf(ValidationError)
@@ -172,7 +176,10 @@ describe('combinados da retro: criação', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.meetings.retroActions.add.execute(manager, addInput({ dueDate: '2026-11-05' })),
+      useCases.meetings.retroActions.add.execute(
+        createTenantContext(manager),
+        addInput({ dueDate: '2026-11-05' }),
+      ),
     ).rejects.toBeInstanceOf(ValidationError)
   })
 
@@ -182,13 +189,13 @@ describe('combinados da retro: criação', () => {
     const contributorId = toContributorId('00000000000000000000000012')
     await expect(
       useCases.meetings.retroActions.add.execute(
-        manager,
+        createTenantContext(manager),
         addInput({ responsibleId: contributorId }),
       ),
     ).rejects.toBeInstanceOf(ValidationError)
     await expect(
       useCases.meetings.retroActions.add.execute(
-        manager,
+        createTenantContext(manager),
         addInput({ responsibleId: '00000000000000000000000099' }),
       ),
     ).rejects.toBeInstanceOf(ValidationError)
@@ -198,7 +205,7 @@ describe('combinados da retro: criação', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     const created = await useCases.meetings.retroActions.add.execute(
-      manager,
+      createTenantContext(manager),
       addInput({ responsibleId: null, dueDate: null }),
     )
     expect(created).toMatchObject({ responsibleId: null, responsibleName: null, dueDate: null })
@@ -208,10 +215,16 @@ describe('combinados da retro: criação', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     for (let index = 0; index < 30; index++) {
-      await useCases.meetings.retroActions.add.execute(manager, addInput({ dueDate: null }))
+      await useCases.meetings.retroActions.add.execute(
+        createTenantContext(manager),
+        addInput({ dueDate: null }),
+      )
     }
     await expect(
-      useCases.meetings.retroActions.add.execute(manager, addInput({ dueDate: null })),
+      useCases.meetings.retroActions.add.execute(
+        createTenantContext(manager),
+        addInput({ dueDate: null }),
+      ),
     ).rejects.toThrow('Limite de 30 combinados por ocorrência')
   })
 })
@@ -220,21 +233,30 @@ describe('combinados da retro: listagem e contagens', () => {
   it('qualquer usuário que vê a agenda vê os combinados, e a agenda traz as contagens', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const first = await useCases.meetings.retroActions.add.execute(manager, addInput())
+    const first = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
     await useCases.meetings.retroActions.add.execute(
-      manager,
+      createTenantContext(manager),
       addInput({ title: 'Outro', responsibleId: brunoId, dueDate: null }),
     )
-    await useCases.meetings.retroActions.toggle.execute(ana, { actionId: first.id, done: true })
-
-    const listed = await useCases.meetings.retroActions.list.execute(outsider, {
-      meetingId: retroId,
-      occurrenceDate: '2026-11-06',
+    await useCases.meetings.retroActions.toggle.execute(createTenantContext(ana), {
+      actionId: first.id,
+      done: true,
     })
+
+    const listed = await useCases.meetings.retroActions.list.execute(
+      createTenantContext(outsider),
+      {
+        meetingId: retroId,
+        occurrenceDate: '2026-11-06',
+      },
+    )
     expect(listed).toHaveLength(2)
     expect(listed[0]).toMatchObject({ canManage: false, canToggle: false })
 
-    const range = await useCases.meetings.listRange.execute(ana, {
+    const range = await useCases.meetings.listRange.execute(createTenantContext(ana), {
       rangeStart: '2026-11-01',
       rangeEnd: '2026-11-30',
     })
@@ -250,12 +272,12 @@ describe('combinados da retro: listagem e contagens', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, retro({ kind: 'meeting' }))
     await expect(
-      useCases.meetings.retroActions.list.execute(manager, {
+      useCases.meetings.retroActions.list.execute(createTenantContext(manager), {
         meetingId: retroId,
         occurrenceDate: '2026-11-06',
       }),
     ).resolves.toEqual([])
-    const range = await useCases.meetings.listRange.execute(manager, {
+    const range = await useCases.meetings.listRange.execute(createTenantContext(manager), {
       rangeStart: '2026-11-01',
       rangeEnd: '2026-11-07',
     })
@@ -265,9 +287,9 @@ describe('combinados da retro: listagem e contagens', () => {
   it('data que não é ocorrência não lista combinados', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.meetings.retroActions.add.execute(manager, addInput())
+    await useCases.meetings.retroActions.add.execute(createTenantContext(manager), addInput())
     await expect(
-      useCases.meetings.retroActions.list.execute(manager, {
+      useCases.meetings.retroActions.list.execute(createTenantContext(manager), {
         meetingId: retroId,
         occurrenceDate: '2026-11-07',
       }),
@@ -277,9 +299,9 @@ describe('combinados da retro: listagem e contagens', () => {
   it('usuário de outra organização não vê o agendamento nem os combinados', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.meetings.retroActions.add.execute(manager, addInput())
+    await useCases.meetings.retroActions.add.execute(createTenantContext(manager), addInput())
     await expect(
-      useCases.meetings.retroActions.list.execute(otherOrgManager, {
+      useCases.meetings.retroActions.list.execute(createTenantContext(otherOrgManager), {
         meetingId: retroId,
         occurrenceDate: '2026-11-06',
       }),
@@ -291,11 +313,17 @@ describe('combinados da retro: edição, marcação e remoção', () => {
   it('gestor renomeia, troca responsável e prazo', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
-    const updated = await useCases.meetings.retroActions.update.execute(manager, {
-      actionId: created.id,
-      changes: { title: 'Novo título', responsibleId: brunoId, dueDate: null },
-    })
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
+    const updated = await useCases.meetings.retroActions.update.execute(
+      createTenantContext(manager),
+      {
+        actionId: created.id,
+        changes: { title: 'Novo título', responsibleId: brunoId, dueDate: null },
+      },
+    )
     expect(updated).toMatchObject({
       title: 'Novo título',
       responsibleId: brunoId,
@@ -307,9 +335,12 @@ describe('combinados da retro: edição, marcação e remoção', () => {
   it('colaborador, mesmo responsável, não renomeia nem troca o combinado', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
     await expect(
-      useCases.meetings.retroActions.update.execute(ana, {
+      useCases.meetings.retroActions.update.execute(createTenantContext(ana), {
         actionId: created.id,
         changes: { title: 'Mudei' },
       }),
@@ -319,32 +350,48 @@ describe('combinados da retro: edição, marcação e remoção', () => {
   it('responsável marca o próprio combinado; outro colaborador não marca', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
-    const done = await useCases.meetings.retroActions.toggle.execute(ana, {
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
+    const done = await useCases.meetings.retroActions.toggle.execute(createTenantContext(ana), {
       actionId: created.id,
       done: true,
     })
     expect(done).toMatchObject({ done: true, doneAt: '2026-11-07T10:00:00.000Z' })
     await expect(
-      useCases.meetings.retroActions.toggle.execute(bruno, { actionId: created.id, done: false }),
+      useCases.meetings.retroActions.toggle.execute(createTenantContext(bruno), {
+        actionId: created.id,
+        done: false,
+      }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
-    const reopened = await useCases.meetings.retroActions.toggle.execute(manager, {
-      actionId: created.id,
-      done: false,
-    })
+    const reopened = await useCases.meetings.retroActions.toggle.execute(
+      createTenantContext(manager),
+      {
+        actionId: created.id,
+        done: false,
+      },
+    )
     expect(reopened).toMatchObject({ done: false, doneAt: null })
   })
 
   it('só o gestor remove combinados', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
     await expect(
-      useCases.meetings.retroActions.remove.execute(ana, { actionId: created.id }),
+      useCases.meetings.retroActions.remove.execute(createTenantContext(ana), {
+        actionId: created.id,
+      }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
-    await useCases.meetings.retroActions.remove.execute(manager, { actionId: created.id })
+    await useCases.meetings.retroActions.remove.execute(createTenantContext(manager), {
+      actionId: created.id,
+    })
     await expect(
-      useCases.meetings.retroActions.list.execute(manager, {
+      useCases.meetings.retroActions.list.execute(createTenantContext(manager), {
         meetingId: retroId,
         occurrenceDate: '2026-11-06',
       }),
@@ -354,9 +401,12 @@ describe('combinados da retro: edição, marcação e remoção', () => {
   it('combinado de outra organização não é alcançado', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const created = await useCases.meetings.retroActions.add.execute(manager, addInput())
+    const created = await useCases.meetings.retroActions.add.execute(
+      createTenantContext(manager),
+      addInput(),
+    )
     await expect(
-      useCases.meetings.retroActions.toggle.execute(otherOrgManager, {
+      useCases.meetings.retroActions.toggle.execute(createTenantContext(otherOrgManager), {
         actionId: created.id,
         done: true,
       }),
@@ -368,8 +418,8 @@ describe('combinados da retro: cascata e séries que mudam', () => {
   it('excluir a Retro leva os combinados junto', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.meetings.retroActions.add.execute(manager, addInput())
-    await useCases.meetings.delete.execute(manager, { meetingId: retroId })
+    await useCases.meetings.retroActions.add.execute(createTenantContext(manager), addInput())
+    await useCases.meetings.delete.execute(createTenantContext(manager), { meetingId: retroId })
     await expect(
       unitOfWork.repositories.retroActions.listByMeetings(organizationId, [retroId]),
     ).resolves.toEqual([])
@@ -378,16 +428,16 @@ describe('combinados da retro: cascata e séries que mudam', () => {
   it('combinados de datas que deixaram de ser ocorrências somem da listagem e das contagens', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.meetings.retroActions.add.execute(manager, addInput())
+    await useCases.meetings.retroActions.add.execute(createTenantContext(manager), addInput())
     const stale = await useCases.meetings.retroActions.add.execute(
-      manager,
+      createTenantContext(manager),
       addInput({ occurrenceDate: '2026-11-13', title: 'Fica na data antiga' }),
     )
-    await useCases.meetings.update.execute(manager, {
+    await useCases.meetings.update.execute(createTenantContext(manager), {
       meetingId: retroId,
       changes: { date: '2026-11-20', recurrenceUntil: '2026-11-27' },
     })
-    const range = await useCases.meetings.listRange.execute(manager, {
+    const range = await useCases.meetings.listRange.execute(createTenantContext(manager), {
       rangeStart: '2026-11-01',
       rangeEnd: '2026-11-30',
     })
@@ -395,7 +445,10 @@ describe('combinados da retro: cascata e séries que mudam', () => {
     expect(range.every((item) => item.retroActionsCount === 0)).toBe(true)
     // O combinado antigo continua armazenado, mas não é acessível.
     await expect(
-      useCases.meetings.retroActions.toggle.execute(manager, { actionId: stale.id, done: true }),
+      useCases.meetings.retroActions.toggle.execute(createTenantContext(manager), {
+        actionId: stale.id,
+        done: true,
+      }),
     ).rejects.toBeInstanceOf(NotFoundError)
     await expect(
       unitOfWork.repositories.retroActions.findById(organizationId, stale.id as RetroActionId),

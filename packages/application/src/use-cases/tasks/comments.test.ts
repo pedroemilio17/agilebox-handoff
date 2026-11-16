@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createContributor,
@@ -144,7 +145,7 @@ describe('casos de uso de comentários', () => {
   it('participante comenta, registra o evento e resolve a menção só entre participantes-usuários', async () => {
     const { useCases, unitOfWork, notifier } = setup(bruno)
     await seed(unitOfWork)
-    const result = await useCases.tasks.comments.add.execute(bruno, {
+    const result = await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
       taskId,
       body: 'Oi @Bruna, e @Cliente Alfa? Também @Caio e @Bru',
     })
@@ -170,7 +171,10 @@ describe('casos de uso de comentários', () => {
     const { useCases, unitOfWork, notifier } = setup(bruno)
     await seed(unitOfWork)
     const before = notifier.changes.length
-    await useCases.tasks.comments.add.execute(bruno, { taskId, body: '@Ana Silva revisa' })
+    await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+      taskId,
+      body: '@Ana Silva revisa',
+    })
     expect(notifier.changes).toHaveLength(before + 1)
     expect(notifier.changes.at(-1)?.change).toEqual({ kind: 'task', ids: [taskId] })
     const comments = await unitOfWork.repositories.comments.listByTask(organizationId, taskId)
@@ -180,7 +184,10 @@ describe('casos de uso de comentários', () => {
   it('gestor comenta marcado como Gestor e o evento sai marcado', async () => {
     const { useCases, unitOfWork } = setup(manager)
     await seed(unitOfWork)
-    const result = await useCases.tasks.comments.add.execute(manager, { taskId, body: 'Ok' })
+    const result = await useCases.tasks.comments.add.execute(createTenantContext(manager), {
+      taskId,
+      body: 'Ok',
+    })
     expect(result).toMatchObject({ asManager: true, authorName: 'Gestora Lia' })
     const events = await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)
     expect(events.find((event) => event.type === 'comment_added')).toMatchObject({
@@ -192,12 +199,15 @@ describe('casos de uso de comentários', () => {
     const { useCases, unitOfWork } = setup(outsider)
     await seed(unitOfWork, 'done')
     await expect(
-      useCases.tasks.comments.add.execute(outsider, { taskId, body: 'Oi' }),
+      useCases.tasks.comments.add.execute(createTenantContext(outsider), { taskId, body: 'Oi' }),
     ).rejects.toThrow(PermissionDeniedError)
 
     const { useCases: participantCases } = setup(bruno)
     await expect(
-      participantCases.tasks.comments.add.execute(bruno, { taskId, body: 'Obrigado' }),
+      participantCases.tasks.comments.add.execute(createTenantContext(bruno), {
+        taskId,
+        body: 'Obrigado',
+      }),
     ).rejects.toThrow(NotFoundError)
   })
 
@@ -205,12 +215,18 @@ describe('casos de uso de comentários', () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
     await expect(
-      useCases.tasks.comments.add.execute(bruno, { taskId, body: '   ' }),
+      useCases.tasks.comments.add.execute(createTenantContext(bruno), { taskId, body: '   ' }),
     ).rejects.toThrow(ValidationError)
     await expect(
-      useCases.tasks.comments.add.execute(bruno, { taskId, body: 'a'.repeat(2001) }),
+      useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+        taskId,
+        body: 'a'.repeat(2001),
+      }),
     ).rejects.toThrow('Comentário deve ter até 2000 caracteres')
-    await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'a'.repeat(2000) })
+    await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+      taskId,
+      body: 'a'.repeat(2000),
+    })
     expect(await unitOfWork.repositories.comments.listByTask(organizationId, taskId)).toHaveLength(
       1,
     )
@@ -219,21 +235,28 @@ describe('casos de uso de comentários', () => {
   it('só o autor edita o próprio comentário; a edição marca editedAt e não gera evento', async () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
-    const added = await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'Versão um' })
+    const added = await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+      taskId,
+      body: 'Versão um',
+    })
     const eventsBefore = await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)
 
     await expect(
-      useCases.tasks.comments.edit.execute(ana, { taskId, commentId: added.id, body: 'Ana edita' }),
+      useCases.tasks.comments.edit.execute(createTenantContext(ana), {
+        taskId,
+        commentId: added.id,
+        body: 'Ana edita',
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.tasks.comments.edit.execute(manager, {
+      useCases.tasks.comments.edit.execute(createTenantContext(manager), {
         taskId,
         commentId: added.id,
         body: 'Gestor',
       }),
     ).rejects.toThrow(PermissionDeniedError)
 
-    const edited = await useCases.tasks.comments.edit.execute(bruno, {
+    const edited = await useCases.tasks.comments.edit.execute(createTenantContext(bruno), {
       taskId,
       commentId: added.id,
       body: 'Versão dois com @Ana Silva',
@@ -250,8 +273,14 @@ describe('casos de uso de comentários', () => {
   it('o autor remove o próprio comentário e a remoção gera evento', async () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
-    const added = await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'Apagar' })
-    await useCases.tasks.comments.remove.execute(bruno, { taskId, commentId: added.id })
+    const added = await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+      taskId,
+      body: 'Apagar',
+    })
+    await useCases.tasks.comments.remove.execute(createTenantContext(bruno), {
+      taskId,
+      commentId: added.id,
+    })
 
     expect(await unitOfWork.repositories.comments.listByTask(organizationId, taskId)).toEqual([])
     const events = await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)
@@ -265,21 +294,27 @@ describe('casos de uso de comentários', () => {
   it('outro participante não remove comentário alheio; o gestor remove qualquer um, marcado como Gestor', async () => {
     const unitOfWork = new InMemoryUnitOfWork()
     await seed(unitOfWork)
-    const added = await setup(bruno, unitOfWork).useCases.tasks.comments.add.execute(bruno, {
-      taskId,
-      body: 'De Bruno',
-    })
+    const added = await setup(bruno, unitOfWork).useCases.tasks.comments.add.execute(
+      createTenantContext(bruno),
+      {
+        taskId,
+        body: 'De Bruno',
+      },
+    )
     await expect(
-      setup(ana, unitOfWork).useCases.tasks.comments.remove.execute(ana, {
+      setup(ana, unitOfWork).useCases.tasks.comments.remove.execute(createTenantContext(ana), {
         taskId,
         commentId: added.id,
       }),
     ).rejects.toThrow(PermissionDeniedError)
 
-    await setup(manager, unitOfWork).useCases.tasks.comments.remove.execute(manager, {
-      taskId,
-      commentId: added.id,
-    })
+    await setup(manager, unitOfWork).useCases.tasks.comments.remove.execute(
+      createTenantContext(manager),
+      {
+        taskId,
+        commentId: added.id,
+      },
+    )
     expect(await unitOfWork.repositories.comments.listByTask(organizationId, taskId)).toEqual([])
     const events = await unitOfWork.repositories.timeline.listByTask(organizationId, taskId)
     expect(events.find((event) => event.type === 'comment_removed')).toMatchObject({
@@ -290,24 +325,30 @@ describe('casos de uso de comentários', () => {
   it('o detalhe traz comentários só para participante ou gestor; outro membro vê lista vazia', async () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
-    await useCases.tasks.comments.add.execute(ana, { taskId, body: 'Primeiro' })
-    await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'Segundo' })
+    await useCases.tasks.comments.add.execute(createTenantContext(ana), {
+      taskId,
+      body: 'Primeiro',
+    })
+    await useCases.tasks.comments.add.execute(createTenantContext(bruno), {
+      taskId,
+      body: 'Segundo',
+    })
 
-    const detail = await useCases.tasks.getDetail.execute(bruno, { taskId })
+    const detail = await useCases.tasks.getDetail.execute(createTenantContext(bruno), { taskId })
     expect(detail.comments.map((comment) => comment.body)).toEqual(['Primeiro', 'Segundo'])
     expect(detail.commentCount).toBe(2)
 
-    const member = await useCases.tasks.getDetail.execute(outsider, { taskId })
+    const member = await useCases.tasks.getDetail.execute(createTenantContext(outsider), { taskId })
     expect(member).toMatchObject({ readOnly: true, comments: [], commentCount: 0 })
   })
 
   it('o card traz a contagem para quem vê os comentários e zero para quem não vê', async () => {
     const { useCases, unitOfWork } = setup(bruno)
     await seed(unitOfWork)
-    await useCases.tasks.comments.add.execute(bruno, { taskId, body: 'Um' })
-    const { tasks: board } = await useCases.tasks.listBoard.execute(bruno, {})
+    await useCases.tasks.comments.add.execute(createTenantContext(bruno), { taskId, body: 'Um' })
+    const { tasks: board } = await useCases.tasks.listBoard.execute(createTenantContext(bruno), {})
     expect(board.find((task) => task.id === taskId)?.commentCount).toBe(1)
-    const team = await useCases.tasks.listTeamBoard.execute(outsider, {})
+    const team = await useCases.tasks.listTeamBoard.execute(createTenantContext(outsider), {})
     expect(team.find((task) => task.id === taskId)?.commentCount).toBe(0)
   })
 
