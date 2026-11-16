@@ -36,8 +36,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
 - [x] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
 - [x] M1.5b Ajuste do padrão das ferramentas: o preset Scrum completo não inclui `wip`, `subtasks` nem `flowMetrics` (estão em Kanban com fluxo), então o backfill/seed não preserva o que já existe. Padrão passa a ser todos os módulos, exceto `estimates.points` (conflita com horas, ADR-07) e `integrations` (plug-ins fora do MVP), nível Avançado; ajustar `defaultTeamTools`, o backfill da migração 0012 (ainda não enviada ao remoto), o seed e os testes.
-- [~] M1.6a Guard de módulo no backend: cada caso de uso declara seu módulo e se cria itens; chamada a módulo `disabled` é recusada no backend (painel, chat ou MCP), e `winding_down` recusa só criação (o que já existe segue visível e editável). Mapear os casos de uso atuais (agenda→`agenda`, limite de WIP→`wip`, checklist/subtarefas→`subtasks`, retro→`reviewRetro`, daily→`checkins`, bloqueio→`impediments`, fluxo/insights→`flowMetrics`, demais→`core`). Leitura de dado do módulo desligado: esconde, nunca apaga.
-- [ ] M1.6b Casos de uso das ferramentas da equipe: `GetTeamTools` (ferramentas, nível e `effectiveCapabilities` do ator), `PreviewTeamToolsChange` (prévia de impacto com contagens do que depende de cada módulo e quem depende), `ApplyTeamToolsChange` (só gestor; aplica via `resolveModuleSet`; ativar é imediato, desativar entra em `winding_down` e só vira `disabled` quando acaba, com destino opcional por tipo de item; auditoria), `ChangeTeamLevel` e `ApplyTeamPreset`; contrato e IPC; testes.
+- [x] M1.6a Guard de módulo no backend: cada caso de uso declara seu módulo e se cria itens; chamada a módulo `disabled` é recusada no backend (painel, chat ou MCP), e `winding_down` recusa só criação (o que já existe segue visível e editável). Mapear os casos de uso atuais (agenda→`agenda`, limite de WIP→`wip`, checklist/subtarefas→`subtasks`, retro→`reviewRetro`, daily→`checkins`, bloqueio→`impediments`, fluxo/insights→`flowMetrics`, demais→`core`). Leitura de dado do módulo desligado: esconde, nunca apaga.
+- [~] M1.6b Casos de uso das ferramentas da equipe: `GetTeamTools` (ferramentas, nível e `effectiveCapabilities` do ator), `PreviewTeamToolsChange` (prévia de impacto com contagens do que depende de cada módulo e quem depende), `ApplyTeamToolsChange` (só gestor; aplica via `resolveModuleSet`; ativar é imediato, desativar entra em `winding_down` e só vira `disabled` quando acaba, com destino opcional por tipo de item; auditoria), `ChangeTeamLevel` e `ApplyTeamPreset`; contrato e IPC; testes.
 
 ### M2 · Interface adaptativa
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.6a (Haiku), lançado após o commit do M1.5b. Resultado chega por notificação.
+M1.6b (Haiku), lançado após o commit do M1.6a. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -96,7 +96,11 @@ M1.6a (Haiku), lançado após o commit do M1.5b. Resultado chega por notificaç�
 
 - Persistência (M1.5): linha ausente em `team_modules` conta como desligada (o padrão em código só vale quando a equipe nunca gravou); ator de outra organização em `saveSettings` lança ValidationError (diferente do no-op silencioso do M1.4); mudança só de `config` não é auditada (o `kind` da auditoria não tem esse valor; regra 7 do plano pede auditoria de toda mudança, tratar no M2); id da auditoria é autoincrement. Confirmar.
 
+- Guard (M1.6a): os insights de fluxo do dashboard (`dashboard.get`/`exportSummary`) ficaram em `core`, porque o caso de uso mistura estatística do núcleo com insight de fluxo; mapear para `flowMetrics` esconderia o painel do gestor inteiro. Efeito: com `flowMetrics` desligado, esses insights ainda saem pelo dashboard, o que contraria "zero chamada a módulo desativado" da tabela de segurança. Decidir: dividir em um caso de uso só de fluxo no M2 ou adaptar o DTO. Outros: `daily.save` recusa qualquer gravação durante o encerramento (inclusive editar a daily de hoje); `boardSettings.get` é recusado com WIP desligado (a interface precisa tratar); horas e valor/hora por participação ficam em `core` (alimentam o custo); o guard lê as configurações fora da transação do caso de uso (reavaliar no M6b, Postgres). DTOs que ainda expõem campos de módulos desligados, para o M2: `checklistProgress`, `blockedReason/blockedAt`, `wipLimits/wipColumns`, `checklist`, `insights`, `blockedCount`, eventos de checklist/bloqueio na linha do tempo e contagens de retro na agenda.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 67: M1.6a concluído (Haiku). `USE_CASE_MODULES` mapeia as 64 folhas para módulos (40 em `core`); o guard roda dentro de `forTenant`: `disabled` recusa com FORBIDDEN, `winding_down` recusa só criação com CONFLICT, `core` nunca é bloqueado; um caso de uso novo sem declaração não compila. +25 testes. `pnpm check` pelo orquestrador: 212 arquivos, 1852 testes, exit 0.
 
 - Ciclo 61: M1.5b concluído (Haiku). `defaultTeamTools` e backfill da migração 0012 agora cobrem os 13 módulos (todos menos `estimates.points` e `integrations`, nível Avançado), preservando WIP, subtarefas, retro, daily, bloqueio e métricas; +4 testes. `pnpm check` pelo orquestrador: 211 arquivos, 1827 testes, exit 0. M1.6 dividido em M1.6a (guard) e M1.6b (casos de uso das ferramentas).
 - Ciclo 57: M1.5 concluído (Haiku). Tabelas `team_modules`, `team_preferences` e `team_tools_audit` (migração 0012 com backfill), porta e repositório SQLite/fake atômicos com auditoria, seed, 25 testes de core e contrato nos dois lados. `pnpm check` pelo orquestrador: 211 arquivos, 1823 testes, exit 0. O agente apontou que o backfill "Scrum completo" não preserva WIP/subtarefas/métricas de fluxo: criado o M1.5b para corrigir o padrão antes do guard.

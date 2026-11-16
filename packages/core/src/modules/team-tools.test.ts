@@ -10,6 +10,8 @@ import {
   createTeamToolsSettings,
   DEFAULT_TEAM_MODULE_IDS,
   defaultTeamTools,
+  moduleStateOf,
+  moduleUseRefusal,
   teamToolsUpdateFromPreset,
   toActiveModuleIds,
   validateTeamModuleSet,
@@ -377,5 +379,28 @@ describe('gravação de ajustes', () => {
         createdAt: at,
       },
     ])
+  })
+})
+
+describe('estado efetivo e recusa de uso de um módulo', () => {
+  it('ferramenta sem linha gravada conta como desativada', () => {
+    expect(moduleStateOf([{ moduleId: 'wip', state: 'active' }], 'wip')).toBe('active')
+    expect(moduleStateOf([{ moduleId: 'wip', state: 'active' }], 'subtasks')).toBe('disabled')
+    expect(moduleStateOf([], 'core')).toBe('disabled')
+  })
+
+  it('desativado recusa tudo, leitura inclusive', () => {
+    expect(moduleUseRefusal('disabled', { creates: false })).toBe('module_disabled')
+    expect(moduleUseRefusal('disabled', { creates: true })).toBe('module_disabled')
+  })
+
+  it('encerrando aceita leitura e edição, e recusa só a criação', () => {
+    expect(moduleUseRefusal('winding_down', { creates: false })).toBeNull()
+    expect(moduleUseRefusal('winding_down', { creates: true })).toBe('module_winding_down')
+  })
+
+  it('ativo aceita tudo', () => {
+    expect(moduleUseRefusal('active', { creates: false })).toBeNull()
+    expect(moduleUseRefusal('active', { creates: true })).toBeNull()
   })
 })

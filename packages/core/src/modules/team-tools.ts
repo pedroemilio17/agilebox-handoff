@@ -13,8 +13,8 @@ import type { TeamPresetId } from './presets'
  * em andamento"):
  * - `active`: existe e aceita itens novos.
  * - `winding_down`: em encerramento. Conta como "existe" para a regra de dependência e para o
- *   conjunto ativo (`toActiveModuleIds`), mas só aceita o que já existe: essa restrição é aplicada
- *   pelo guard de módulo no M1.6, não aqui.
+ *   conjunto ativo (`toActiveModuleIds`), mas só aceita o que já existe: essa restrição é decidida
+ *   em `moduleUseRefusal` e aplicada pelo guard de módulo da application.
  * - `disabled`: desligado. Os dados seguem guardados e voltam ao reativar.
  */
 export const MODULE_STATES = ['active', 'winding_down', 'disabled'] as const
@@ -160,6 +160,34 @@ export function toActiveModuleIds(
     modules.filter((module) => module.state !== 'disabled').map((module) => module.moduleId),
   )
   return MODULE_IDS.filter((id) => ids.has(id))
+}
+
+/** Estado efetivo de um módulo para o time: ferramenta sem linha gravada conta como `disabled`. */
+export function moduleStateOf(
+  modules: readonly Pick<TeamModuleSetting, 'moduleId' | 'state'>[],
+  moduleId: ModuleId,
+): ModuleState {
+  return modules.find((module) => module.moduleId === moduleId)?.state ?? 'disabled'
+}
+
+/** Motivo pelo qual um caso de uso de módulo não pode rodar agora. */
+export type ModuleUseRefusal = 'module_disabled' | 'module_winding_down'
+
+/**
+ * Decide se um caso de uso de módulo pode rodar, dado o estado do módulo (PLANO-2.0, regra 6 e
+ * "Mudar ferramentas sem quebrar o que está em andamento"):
+ * - `disabled`: recusa tudo, leitura inclusive.
+ * - `winding_down`: só o que já existe. Recusa o que cria itens novos; leitura e edição passam.
+ * - `active`: tudo passa.
+ * O núcleo nunca passa por aqui: quem chama decide isso.
+ */
+export function moduleUseRefusal(
+  state: ModuleState,
+  use: { readonly creates: boolean },
+): ModuleUseRefusal | null {
+  if (state === 'disabled') return 'module_disabled'
+  if (state === 'winding_down' && use.creates) return 'module_winding_down'
+  return null
 }
 
 /**
