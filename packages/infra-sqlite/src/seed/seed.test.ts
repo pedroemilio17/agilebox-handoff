@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  defaultTeamTools,
   expandMeetingOccurrences,
   parseDateOnly,
   toOrganizationId,
@@ -193,7 +194,7 @@ describe('seed de demonstração', () => {
 })
 
 describe('seed de demonstração: ferramentas da equipe', () => {
-  it('grava o preset Scrum completo no nível Avançado, como o padrão atual', async () => {
+  it('grava o padrão de defaultTeamTools (nível Avançado), sem estimates.points nem integrations', async () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const organizationId = toOrganizationId('00000000000000000000000001')
 
@@ -209,18 +210,11 @@ describe('seed de demonstração: ferramentas da equipe', () => {
     })
 
     const settings = await unitOfWork.repositories.teamTools.getSettings(organizationId)
-    expect(settings.level).toBe('advanced')
-    expect(toActiveModuleIds(settings.modules)).toEqual([
-      'core',
-      'agenda',
-      'backlog',
-      'sprints',
-      'checkins',
-      'impediments',
-      'estimates.hours',
-      'acceptance',
-      'reviewRetro',
-      'burndown',
-    ])
+    const expected = defaultTeamTools(organizationId)
+    expect(settings.level).toBe(expected.level)
+    expect(toActiveModuleIds(settings.modules)).toEqual(toActiveModuleIds(expected.modules))
+    expect(toActiveModuleIds(settings.modules)).toContain('wip')
+    expect(toActiveModuleIds(settings.modules)).not.toContain('estimates.points')
+    expect(toActiveModuleIds(settings.modules)).not.toContain('integrations')
   })
 })

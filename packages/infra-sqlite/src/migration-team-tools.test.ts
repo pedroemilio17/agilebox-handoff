@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import BetterSqlite3 from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
-import { defaultTeamTools, toOrganizationId, teamToolsUpdateFromPreset } from '@agilebox/core'
+import { defaultTeamTools, toOrganizationId } from '@agilebox/core'
 import { createSqliteClient } from './client.js'
 import { organizations } from './schema/index.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
@@ -28,9 +28,17 @@ function applyAll(client: BetterSqlite3.Database, list: readonly string[]) {
 }
 
 const createdAt = '2026-01-01T00:00:00.000Z'
-const SCRUM_COMPLETE_MODULES = teamToolsUpdateFromPreset('scrum-complete').modules.map(
-  (module) => module.moduleId,
-)
+const backfillOrganizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
+const defaults = defaultTeamTools(backfillOrganizationId)
+const defaultModuleIds = defaults.modules.map((module) => module.moduleId)
+
+/** Lista de módulos que o backfill grava, lida do próprio SQL da migração. */
+function backfillModuleIdsFromSql(): string[] {
+  const sql = statementsOf(teamToolsMigration).join('\n')
+  const match = /json_each\('(\[[^']*\])'\)/u.exec(sql)
+  if (!match) throw new Error('backfill de team_modules não encontrado na migração')
+  return JSON.parse(match[1]!) as string[]
+}
 
 describe('migração de ferramentas da equipe', () => {
   it('existe no diário, cria só as tabelas novas e não apaga dados', () => {
@@ -42,7 +50,7 @@ describe('migração de ferramentas da equipe', () => {
     expect(sql).not.toMatch(/DROP TABLE|DELETE FROM|ALTER TABLE `(tasks|projects|users)`/iu)
   })
 
-  it('organizações existentes recebem o preset Scrum completo no nível Avançado; as criadas depois caem no padrão de código', () => {
+  it('organizações existentes recebem o padrão de defaultTeamTools (nível Avançado); as criadas depois caem nele também', () => {
     const client = new BetterSqlite3(':memory:')
     client.pragma('foreign_keys = OFF')
     applyAll(client, previous)
@@ -62,8 +70,18 @@ describe('migração de ferramentas da equipe', () => {
         )
         .all(),
     ).toEqual([
-      { organization_id: 'ORG', experience_level: 'advanced', changed_by: null, changed_at: null },
-      { organization_id: 'ORG2', experience_level: 'advanced', changed_by: null, changed_at: null },
+      {
+        organization_id: 'ORG',
+        experience_level: defaults.level,
+        changed_by: null,
+        changed_at: null,
+      },
+      {
+        organization_id: 'ORG2',
+        experience_level: defaults.level,
+        changed_by: null,
+        changed_at: null,
+      },
     ])
     const modules = client
       .prepare(
@@ -76,10 +94,19 @@ describe('migração de ferramentas da equipe', () => {
       changed_by: unknown
       changed_at: unknown
     }[]
-    expect(modules.map((row) => row.module_id).sort()).toEqual([...SCRUM_COMPLETE_MODULES].sort())
+    expect(modules.map((row) => row.module_id).sort()).toEqual([...defaultModuleIds].sort())
     expect(modules.every((row) => row.state === 'active' && row.config === null)).toBe(true)
     expect(modules.every((row) => row.changed_by === null && row.changed_at === null)).toBe(true)
     client.close()
+  })
+
+  it('o backfill grava exatamente a lista e o nível de defaultTeamTools, sem divergir do código', () => {
+    expect(backfillModuleIdsFromSql()).toEqual(defaultModuleIds)
+    expect(defaults.level).toBe('advanced')
+    const sql = statementsOf(teamToolsMigration).join('\n')
+    expect(sql).toMatch(/'advanced', NULL, NULL/u)
+    expect(defaultModuleIds).not.toContain('estimates.points')
+    expect(defaultModuleIds).not.toContain('integrations')
   })
 
   it('organização criada depois da migração não tem linha e lê o padrão de código', async () => {

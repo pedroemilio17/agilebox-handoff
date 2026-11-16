@@ -2,9 +2,9 @@ import {
   createDailyEntry,
   createOrganization,
   createUser,
+  defaultTeamTools,
   toDailyEntryId,
   toOrganizationId,
-  teamToolsUpdateFromPreset,
   toTaskId,
   toUserId,
 } from '@agilebox/core'
@@ -50,12 +50,17 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   )
   for (const user of users) await runtime.users.save(organizationId, user)
 
-  // Ferramentas da demonstração: preset Scrum completo no nível Avançado. O plano pedia Kanban
-  // simples, mas ele esconderia funções que já existem (WIP, subtarefas, retro, daily e bloqueio).
-  // Decisão registrada em docs/laco/orquestracao-2.0.md (M1.5), a confirmar pelo Pedro.
+  // Ferramentas da demonstração: o padrão de defaultTeamTools (todo o catálogo, exceto
+  // estimates.points e integrations, no nível Avançado). O plano pedia Kanban simples, mas ele
+  // esconderia funções que já existem (WIP, subtarefas, retro, daily e bloqueio). Decisão registrada
+  // em docs/laco/orquestracao-2.0.md (M1.5 e M1.5b), a confirmar pelo Pedro.
+  const defaults = defaultTeamTools(organizationId)
   await runtime.teamTools.saveSettings(
     organizationId,
-    teamToolsUpdateFromPreset('scrum-complete'),
+    {
+      level: defaults.level,
+      modules: defaults.modules.map(({ moduleId, state }) => ({ moduleId, state })),
+    },
     users[4]!.id,
     createdAt,
   )

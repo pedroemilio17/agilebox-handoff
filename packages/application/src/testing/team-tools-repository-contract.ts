@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { toOrganizationId, toUserId, ValidationError } from '@agilebox/core'
+import {
+  DEFAULT_TEAM_LEVEL,
+  DEFAULT_TEAM_MODULE_IDS,
+  toOrganizationId,
+  toUserId,
+  ValidationError,
+} from '@agilebox/core'
 import type { TeamToolsRepository } from '../ports'
 
 /**
@@ -15,7 +21,6 @@ export const teamToolsFixtures = {
 
 const FIRST_CHANGE = '2026-11-16T10:00:00.000Z'
 const SECOND_CHANGE = '2026-11-16T11:00:00.000Z'
-const SCRUM_COMPLETE_COUNT = 10
 
 /**
  * Contrato dos ajustes da equipe: vale para o fake em memória e para o SQLite. `makeRepository`
@@ -28,12 +33,12 @@ export function describeTeamToolsRepositoryContract(
   const { organizationA, organizationB, managerA, managerB } = teamToolsFixtures
 
   describe(`contrato dos ajustes da equipe: ${name}`, () => {
-    it('sem preferência gravada devolve o padrão Scrum completo no nível Avançado', async () => {
+    it('sem preferência gravada devolve o padrão de defaultTeamTools (nível Avançado)', async () => {
       const repository = await makeRepository()
       const settings = await repository.getSettings(organizationA)
 
-      expect(settings.level).toBe('advanced')
-      expect(settings.modules).toHaveLength(SCRUM_COMPLETE_COUNT)
+      expect(settings.level).toBe(DEFAULT_TEAM_LEVEL)
+      expect(settings.modules.map((module) => module.moduleId)).toEqual(DEFAULT_TEAM_MODULE_IDS)
       expect(settings.modules.every((module) => module.state === 'active')).toBe(true)
       expect(settings.modules.every((module) => module.changedBy === null)).toBe(true)
     })

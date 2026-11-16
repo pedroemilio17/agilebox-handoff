@@ -95,9 +95,6 @@ export interface TeamToolsAuditEntry extends TeamToolsAuditRecord {
   readonly id: number
 }
 
-/** Preset aplicado no padrão da organização sem linhas gravadas. */
-export const DEFAULT_TEAM_PRESET_ID: TeamPresetId = 'scrum-complete'
-
 export function toModuleState(value: string): ModuleState {
   if (!(MODULE_STATES as readonly string[]).includes(value))
     throw new ValidationError('Estado de ferramenta inválido')
@@ -221,18 +218,25 @@ export function teamToolsUpdateFromPreset(presetId: TeamPresetId): TeamToolsUpda
 }
 
 /**
- * Padrão para a organização que ainda não gravou nenhuma linha: preset "Scrum completo" no nível
- * Avançado (`DEFAULT_TEAM_PRESET_ID`). Vale até alguém gravar; a migração grava a mesma coisa
- * para as organizações que já existiam. Organização criada depois cai aqui.
+ * Padrão transitório para a organização sem linhas gravadas: todo o catálogo, exceto
+ * `estimates.points` (conflita com `estimates.hours`; ADR-07) e `integrations` (plug-ins estão fora
+ * do MVP). Nível Avançado. Existe para preservar o que já funciona hoje (WIP, subtarefas, métricas
+ * de fluxo, retro e burndown aparecem para todos). Vale até a equipe escolher um preset; a migração
+ * 0012 grava esta mesma lista para as organizações que já existiam.
  */
+const DEFAULT_EXCLUDED_MODULE_IDS: readonly ModuleId[] = ['estimates.points', 'integrations']
+export const DEFAULT_TEAM_MODULE_IDS: readonly ModuleId[] = MODULE_IDS.filter(
+  (id) => !DEFAULT_EXCLUDED_MODULE_IDS.includes(id),
+)
+export const DEFAULT_TEAM_LEVEL: ExperienceLevel = 'advanced'
+
 export function defaultTeamTools(organizationId: OrganizationId): TeamToolsSettings {
-  const update = teamToolsUpdateFromPreset(DEFAULT_TEAM_PRESET_ID)
   return {
-    level: update.level,
-    modules: update.modules.map((module) => ({
+    level: DEFAULT_TEAM_LEVEL,
+    modules: DEFAULT_TEAM_MODULE_IDS.map((moduleId) => ({
       organizationId,
-      moduleId: module.moduleId,
-      state: module.state,
+      moduleId,
+      state: 'active' as const,
       changedBy: null,
       changedAt: null,
     })),

@@ -35,8 +35,9 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
 - [x] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
 - [x] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
-- [~] M1.5b Ajuste do padrão das ferramentas: o preset Scrum completo não inclui `wip`, `subtasks` nem `flowMetrics` (estão em Kanban com fluxo), então o backfill/seed não preserva o que já existe. Padrão passa a ser todos os módulos, exceto `estimates.points` (conflita com horas, ADR-07) e `integrations` (plug-ins fora do MVP), nível Avançado; ajustar `defaultTeamTools`, o backfill da migração 0012 (ainda não enviada ao remoto), o seed e os testes.
-- [ ] M1.6 Guard de módulo no backend: cada caso de uso declara seu módulo; chamada a módulo desligado é recusada. Estados `active`, `winding_down`, `disabled` e prévia de impacto.
+- [x] M1.5b Ajuste do padrão das ferramentas: o preset Scrum completo não inclui `wip`, `subtasks` nem `flowMetrics` (estão em Kanban com fluxo), então o backfill/seed não preserva o que já existe. Padrão passa a ser todos os módulos, exceto `estimates.points` (conflita com horas, ADR-07) e `integrations` (plug-ins fora do MVP), nível Avançado; ajustar `defaultTeamTools`, o backfill da migração 0012 (ainda não enviada ao remoto), o seed e os testes.
+- [~] M1.6a Guard de módulo no backend: cada caso de uso declara seu módulo e se cria itens; chamada a módulo `disabled` é recusada no backend (painel, chat ou MCP), e `winding_down` recusa só criação (o que já existe segue visível e editável). Mapear os casos de uso atuais (agenda→`agenda`, limite de WIP→`wip`, checklist/subtarefas→`subtasks`, retro→`reviewRetro`, daily→`checkins`, bloqueio→`impediments`, fluxo/insights→`flowMetrics`, demais→`core`). Leitura de dado do módulo desligado: esconde, nunca apaga.
+- [ ] M1.6b Casos de uso das ferramentas da equipe: `GetTeamTools` (ferramentas, nível e `effectiveCapabilities` do ator), `PreviewTeamToolsChange` (prévia de impacto com contagens do que depende de cada módulo e quem depende), `ApplyTeamToolsChange` (só gestor; aplica via `resolveModuleSet`; ativar é imediato, desativar entra em `winding_down` e só vira `disabled` quando acaba, com destino opcional por tipo de item; auditoria), `ChangeTeamLevel` e `ApplyTeamPreset`; contrato e IPC; testes.
 
 ### M2 · Interface adaptativa
 
@@ -64,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.5b (Haiku), lançado após o M1.5 passar no check. Resultado chega por notificação.
+M1.6a (Haiku), lançado após o commit do M1.5b. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -97,6 +98,7 @@ M1.5b (Haiku), lançado após o M1.5 passar no check. Resultado chega por notifi
 
 ## Diário (mais recente primeiro)
 
+- Ciclo 61: M1.5b concluído (Haiku). `defaultTeamTools` e backfill da migração 0012 agora cobrem os 13 módulos (todos menos `estimates.points` e `integrations`, nível Avançado), preservando WIP, subtarefas, retro, daily, bloqueio e métricas; +4 testes. `pnpm check` pelo orquestrador: 211 arquivos, 1827 testes, exit 0. M1.6 dividido em M1.6a (guard) e M1.6b (casos de uso das ferramentas).
 - Ciclo 57: M1.5 concluído (Haiku). Tabelas `team_modules`, `team_preferences` e `team_tools_audit` (migração 0012 com backfill), porta e repositório SQLite/fake atômicos com auditoria, seed, 25 testes de core e contrato nos dois lados. `pnpm check` pelo orquestrador: 211 arquivos, 1823 testes, exit 0. O agente apontou que o backfill "Scrum completo" não preserva WIP/subtarefas/métricas de fluxo: criado o M1.5b para corrigir o padrão antes do guard.
 
 - Ciclo 49: M1.4 concluído (Haiku). `TenantContext` obrigatório na fronteira dos casos de uso, IPC monta o contexto da sessão, guardas de organização nos repositórios SQLite e nos fakes; testes estruturais (64 casos de uso recusam ator cru ou contexto de outra organização). `pnpm check` pelo orquestrador: 207 arquivos, 1779 testes, exit 0.

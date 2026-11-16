@@ -8,11 +8,13 @@ import {
   applyTeamToolsUpdate,
   auditRecordsFor,
   createTeamToolsSettings,
+  DEFAULT_TEAM_MODULE_IDS,
   defaultTeamTools,
   teamToolsUpdateFromPreset,
   toActiveModuleIds,
   validateTeamModuleSet,
 } from './team-tools'
+import { resolveModuleSet } from './resolve'
 import type { ModuleState, TeamModuleSetting, TeamToolsSettings } from './team-tools'
 
 const organizationId = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FAV')
@@ -31,7 +33,8 @@ function settingsOf(
   return { level, modules: entries.map(([moduleId, state]) => row(moduleId, state)) }
 }
 
-const SCRUM_COMPLETE_IDS: ModuleId[] = [
+/** Padrão transitório: todo o catálogo, menos estimates.points e integrations (ver team-tools.ts). */
+const DEFAULT_IDS: ModuleId[] = [
   'core',
   'agenda',
   'backlog',
@@ -40,6 +43,9 @@ const SCRUM_COMPLETE_IDS: ModuleId[] = [
   'impediments',
   'estimates.hours',
   'acceptance',
+  'wip',
+  'subtasks',
+  'flowMetrics',
   'reviewRetro',
   'burndown',
 ]
@@ -165,14 +171,46 @@ describe('criação e normalização dos ajustes', () => {
 })
 
 describe('padrão e presets', () => {
-  it('padrão sem linhas gravadas é Scrum completo no nível Avançado, válido e sem autoria', () => {
+  it('padrão sem linhas gravadas é todo o catálogo menos estimates.points e integrations, no nível Avançado, válido e sem autoria', () => {
     const settings = defaultTeamTools(organizationId)
     expect(settings.level).toBe('advanced')
-    expect(settings.modules.map((module) => module.moduleId)).toEqual(SCRUM_COMPLETE_IDS)
+    expect(settings.modules.map((module) => module.moduleId)).toEqual(DEFAULT_IDS)
+    expect(DEFAULT_TEAM_MODULE_IDS).toEqual(DEFAULT_IDS)
     expect(settings.modules.every((module) => module.state === 'active')).toBe(true)
     expect(settings.modules.every((module) => module.changedBy === null)).toBe(true)
     expect(settings.modules.every((module) => module.changedAt === null)).toBe(true)
     expect(() => createTeamToolsSettings(settings)).not.toThrow()
+  })
+
+  it('padrão contém os recursos que já existem hoje (WIP, subtarefas, métricas, retro, burndown, backlog, sprints)', () => {
+    const ids = defaultTeamTools(organizationId).modules.map((module) => module.moduleId)
+    for (const id of [
+      'wip',
+      'subtasks',
+      'flowMetrics',
+      'reviewRetro',
+      'burndown',
+      'backlog',
+      'sprints',
+    ] as const) {
+      expect(ids).toContain(id)
+    }
+  })
+
+  it('padrão não contém estimates.points (conflita com horas) nem integrations (fora do MVP)', () => {
+    const ids = defaultTeamTools(organizationId).modules.map((module) => module.moduleId)
+    expect(ids).not.toContain('estimates.points')
+    expect(ids).not.toContain('integrations')
+    expect(ids).toContain('estimates.hours')
+  })
+
+  it('padrão passa pela validação de conjunto e pelo resolvedor de dependências sem erro', () => {
+    const settings = defaultTeamTools(organizationId)
+    expect(() => validateTeamModuleSet(settings.modules)).not.toThrow()
+    const active = toActiveModuleIds(settings.modules)
+    const resolution = resolveModuleSet([], { enable: active })
+    expect(resolution.ok).toBe(true)
+    if (resolution.ok) expect(resolution.autoEnabled).toEqual([])
   })
 
   it('cada preset do catálogo, aplicado sobre o Núcleo, dá um conjunto válido', () => {
@@ -233,7 +271,7 @@ describe('gravação de ajustes', () => {
       { level: 'advanced', modules: [{ moduleId: 'burndown', state: 'disabled' }] },
       stamp,
     )
-    expect(settings.modules).toHaveLength(SCRUM_COMPLETE_IDS.length)
+    expect(settings.modules).toHaveLength(DEFAULT_IDS.length)
     expect(settings.modules.find((module) => module.moduleId === 'sprints')?.state).toBe('active')
   })
 

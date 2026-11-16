@@ -38,6 +38,6 @@ CREATE TABLE `team_tools_audit` (
 );
 --> statement-breakpoint
 CREATE INDEX `team_tools_audit_organization_created_idx` ON `team_tools_audit` (`organization_id`,`created_at`);--> statement-breakpoint
--- Backfill: organizações que já existiam recebem o preset Scrum completo no nível Avançado, para preservar o comportamento atual. Organização criada depois não tem linha e cai no padrão de código (defaultTeamTools).
+-- Backfill: organizações que já existiam recebem o padrão de defaultTeamTools (todas as ferramentas do catálogo, exceto estimates.points e integrations, no nível Avançado), para preservar o comportamento atual. Organização criada depois não tem linha e cai no mesmo padrão em código (defaultTeamTools). O teste migration-team-tools.test.ts confere que as duas listas são iguais.
 INSERT INTO `team_preferences` (`organization_id`, `experience_level`, `changed_by`, `changed_at`) SELECT `id`, 'advanced', NULL, NULL FROM `organizations`;--> statement-breakpoint
-INSERT INTO `team_modules` (`organization_id`, `module_id`, `state`, `config`, `changed_by`, `changed_at`) SELECT `organizations`.`id`, `modules`.`value`, 'active', NULL, NULL, NULL FROM `organizations`, json_each('["core","agenda","backlog","sprints","checkins","impediments","estimates.hours","acceptance","reviewRetro","burndown"]') AS `modules`;
+INSERT INTO `team_modules` (`organization_id`, `module_id`, `state`, `config`, `changed_by`, `changed_at`) SELECT `organizations`.`id`, `modules`.`value`, 'active', NULL, NULL, NULL FROM `organizations`, json_each('["core","agenda","backlog","sprints","checkins","impediments","estimates.hours","acceptance","wip","subtasks","flowMetrics","reviewRetro","burndown"]') AS `modules`;
