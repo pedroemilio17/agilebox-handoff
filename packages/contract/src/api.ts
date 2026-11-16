@@ -11,6 +11,10 @@ import {
   listProjectsOutputSchema,
   removeProjectMemberInputSchema,
   removeProjectMemberOutputSchema,
+  archiveProjectInputSchema,
+  archiveProjectOutputSchema,
+  unarchiveProjectInputSchema,
+  unarchiveProjectOutputSchema,
 } from './projects'
 import {
   addParticipationInputSchema,
@@ -57,6 +61,10 @@ import {
   blockTaskOutputSchema,
   unblockTaskInputSchema,
   unblockTaskOutputSchema,
+  archiveTaskInputSchema,
+  archiveTaskOutputSchema,
+  unarchiveTaskInputSchema,
+  unarchiveTaskOutputSchema,
   checklistChangeOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
@@ -164,6 +172,11 @@ export const API_SCHEMA_REGISTRY = {
     input: removeProjectMemberInputSchema,
     output: removeProjectMemberOutputSchema,
   },
+  'projects.archive': { input: archiveProjectInputSchema, output: archiveProjectOutputSchema },
+  'projects.unarchive': {
+    input: unarchiveProjectInputSchema,
+    output: unarchiveProjectOutputSchema,
+  },
   'projects.definitionOfDone.list': {
     input: listDefinitionOfDoneInputSchema,
     output: listDefinitionOfDoneOutputSchema,
@@ -193,6 +206,8 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
   'tasks.block': { input: blockTaskInputSchema, output: blockTaskOutputSchema },
   'tasks.unblock': { input: unblockTaskInputSchema, output: unblockTaskOutputSchema },
+  'tasks.archive': { input: archiveTaskInputSchema, output: archiveTaskOutputSchema },
+  'tasks.unarchive': { input: unarchiveTaskInputSchema, output: unarchiveTaskOutputSchema },
   'tasks.checklist.add': {
     input: addChecklistItemInputSchema,
     output: checklistChangeOutputSchema,
@@ -309,9 +324,13 @@ export const API_SCHEMA_REGISTRY = {
 type Method<Channel extends ApiChannel> =
   z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']> extends undefined
     ? () => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
-    : (
-        input: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
-      ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
+    : undefined extends z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>
+      ? (
+          input?: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
+        ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
+      : (
+          input: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
+        ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
 
 export interface AgileBoxApi {
   session: {
@@ -326,6 +345,8 @@ export interface AgileBoxApi {
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
+    archive: Method<'projects.archive'>
+    unarchive: Method<'projects.unarchive'>
     definitionOfDone: {
       list: Method<'projects.definitionOfDone.list'>
       add: Method<'projects.definitionOfDone.add'>
@@ -344,6 +365,8 @@ export interface AgileBoxApi {
     move: Method<'tasks.move'>
     block: Method<'tasks.block'>
     unblock: Method<'tasks.unblock'>
+    archive: Method<'tasks.archive'>
+    unarchive: Method<'tasks.unarchive'>
     checklist: {
       add: Method<'tasks.checklist.add'>
       toggle: Method<'tasks.checklist.toggle'>

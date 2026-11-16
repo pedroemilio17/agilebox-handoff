@@ -1,4 +1,4 @@
-import { ValidationError } from '../shared/errors'
+import { ConflictError, ValidationError } from '../shared/errors'
 import type { OrganizationId, ParticipationId, ProjectId, TaskId, UserId } from '../shared/ids'
 import { parseDateOnly } from '../values/date-only'
 import type { DateOnly } from '../values/date-only'
@@ -25,6 +25,9 @@ export interface Task {
   readonly priority: TaskPriority
   readonly blockedReason: string | null
   readonly blockedAt: string | null
+  /** Arquivar esconde a tarefa das visões padrão; nunca apaga. Nulos quando ativa. */
+  readonly archivedAt: string | null
+  readonly archivedBy: UserId | null
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -81,6 +84,8 @@ export function createTask(input: CreateTaskInput): Task {
     priority: 'normal',
     blockedReason: null,
     blockedAt: null,
+    archivedAt: null,
+    archivedBy: null,
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -113,6 +118,15 @@ export function blockTask(task: Task, reason: string, at: string): Task {
 export function unblockTask(task: Task): Task {
   if (task.blockedReason === null) return task
   return { ...task, blockedReason: null, blockedAt: null }
+}
+/** Arquivar esconde a tarefa; ela continua recuperável (desarquivar). */
+export function archiveTask(task: Task, by: UserId, at: string): Task {
+  if (task.archivedAt !== null) throw new ConflictError('Tarefa já está arquivada')
+  return { ...task, archivedAt: at, archivedBy: by }
+}
+export function unarchiveTask(task: Task): Task {
+  if (task.archivedAt === null) throw new ConflictError('Tarefa não está arquivada')
+  return { ...task, archivedAt: null, archivedBy: null }
 }
 export function setPriority(task: Task, priority: TaskPriority): Task {
   return { ...task, priority: parseTaskPriority(priority) }

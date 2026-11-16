@@ -100,6 +100,7 @@ export function toProjectDto(project: Project, definitionOfDoneCount: number): P
     createdBy: project.createdBy,
     createdAt: project.createdAt,
     definitionOfDoneCount,
+    archivedAt: project.archivedAt,
   }
 }
 
@@ -161,6 +162,7 @@ export function toTaskDto(
     priority: task.priority,
     blockedReason: task.blockedReason,
     blockedAt: task.blockedAt,
+    archivedAt: task.archivedAt,
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,

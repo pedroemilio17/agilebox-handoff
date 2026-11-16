@@ -18,6 +18,7 @@ import type { Actor, Task } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { visibleTasks } from '../tasks/task-visibility'
 
 export class GetDashboard {
   constructor(private readonly deps: AppDeps) {}
@@ -26,11 +27,13 @@ export class GetDashboard {
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
-    const [tasks, users, boardSettings] = await Promise.all([
+    const [allTasks, users, boardSettings] = await Promise.all([
       this.deps.tasks.listBoard(actor.organizationId, {}),
       this.deps.users.list(actor.organizationId),
       this.deps.boardSettings.findByOrganization(actor.organizationId),
     ])
+    // Dashboard e insights não contam tarefas arquivadas nem as de projeto arquivado.
+    const tasks = await visibleTasks(this.deps, actor.organizationId, allTasks)
     const collaborators = users
       .map((user) => ({ user, ...collaboratorStats(tasks, actor.organizationId, user.id) }))
       .filter((stat) => stat.taskCount > 0)

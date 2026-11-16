@@ -24,6 +24,8 @@ export const taskDtoSchema = z.object({
   priority: taskPrioritySchema,
   blockedReason: taskBlockReasonSchema.nullable(),
   blockedAt: isoDateTimeSchema.nullable(),
+  /** Nulo quando ativa. Ausente em respostas antigas: tratar como ativa. */
+  archivedAt: isoDateTimeSchema.nullable().optional(),
   deadline: taskDeadlineSchema,
   ticketId: z.number().int().positive().safe().nullable(),
   ticketUrl: z.url().nullable(),
@@ -38,13 +40,18 @@ export const taskDtoSchema = z.object({
 export const listBoardInputSchema = z.object({
   projectId: ulidSchema.optional(),
   forUserId: ulidSchema.optional(),
+  /** Inclui tarefas arquivadas e as de projeto arquivado (padrão: ocultas). */
+  includeArchived: z.boolean().optional(),
 })
 export const getBoardFlowOutputSchema = z.object({
   cycleDays: z.number().nonnegative().nullable(),
   weekStart: z.iso.date(),
   updatedAt: isoDateTimeSchema,
 })
-export const listTeamBoardInputSchema = z.object({ projectId: ulidSchema.optional() })
+export const listTeamBoardInputSchema = z.object({
+  projectId: ulidSchema.optional(),
+  includeArchived: z.boolean().optional(),
+})
 /** Lista simples de tarefas (equipe, recentes, frequentes, busca). */
 export const taskListOutputSchema = z.array(taskDtoSchema)
 /** Quadro: tarefas visíveis ao usuário, limites da organização e contagem de WIP por coluna. */
@@ -108,6 +115,10 @@ export const blockTaskInputSchema = z.object({ taskId: ulidSchema, reason: taskB
 export const blockTaskOutputSchema = taskDtoSchema
 export const unblockTaskInputSchema = z.object({ taskId: ulidSchema })
 export const unblockTaskOutputSchema = taskDtoSchema
+export const archiveTaskInputSchema = z.object({ taskId: ulidSchema })
+export const archiveTaskOutputSchema = taskDtoSchema
+export const unarchiveTaskInputSchema = z.object({ taskId: ulidSchema })
+export const unarchiveTaskOutputSchema = taskDtoSchema
 /** Toda alteração de subtarefa devolve a tarefa atualizada (com o progresso). */
 export const checklistChangeOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()

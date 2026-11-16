@@ -78,6 +78,13 @@
       "when": 1793829038227,
       "tag": "0010_daily_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1794842525531,
+      "tag": "0011_task_project_archive",
+      "breakpoints": true
     }
   ]
 }

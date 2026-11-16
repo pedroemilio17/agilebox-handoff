@@ -48,7 +48,7 @@ export function registerHandlers(
   register('users.setDefaultRate', (actor, input) =>
     useCases.users.setDefaultRate.execute(actor, input),
   )
-  register('projects.list', (actor) => useCases.projects.listProjects.execute(actor))
+  register('projects.list', (actor, input) => useCases.projects.listProjects.execute(actor, input))
   register('projects.create', (actor, input) =>
     useCases.projects.createProject.execute(actor, input),
   )
@@ -61,21 +61,28 @@ export function registerHandlers(
   register('projects.removeMember', (actor, input) =>
     useCases.projects.removeMember.execute(actor, input),
   )
+  register('projects.archive', (actor, input) => useCases.projects.archive.execute(actor, input))
+  register('projects.unarchive', (actor, input) =>
+    useCases.projects.unarchive.execute(actor, input),
+  )
   register('tasks.getBoardFlow', (actor, input) =>
     useCases.tasks.getBoardFlow.execute(actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
       ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
   register('tasks.listBoard', (actor, input) =>
     useCases.tasks.listBoard.execute(actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
       ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
   register('tasks.listTeamBoard', (actor, input) =>
     useCases.tasks.listTeamBoard.execute(actor, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
   register('tasks.get', (actor, input) => useCases.tasks.getDetail.execute(actor, input))
@@ -84,6 +91,8 @@ export function registerHandlers(
   register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
   register('tasks.block', (actor, input) => useCases.tasks.block.execute(actor, input))
   register('tasks.unblock', (actor, input) => useCases.tasks.unblock.execute(actor, input))
+  register('tasks.archive', (actor, input) => useCases.tasks.archive.execute(actor, input))
+  register('tasks.unarchive', (actor, input) => useCases.tasks.unarchive.execute(actor, input))
   register('tasks.checklist.add', (actor, input) =>
     useCases.tasks.checklist.add.execute(actor, input),
   )

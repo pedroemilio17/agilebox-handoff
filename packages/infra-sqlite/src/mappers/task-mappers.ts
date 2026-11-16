@@ -69,6 +69,9 @@ export function mapTaskRow(
     priority: parseTaskPriority(row.priority),
     blockedReason: row.blockedReason ?? null,
     blockedAt: row.blockedAt ?? null,
+    archivedAt: row.archivedAt ?? null,
+    archivedBy:
+      row.archivedBy === null || row.archivedBy === undefined ? null : toUserId(row.archivedBy),
     deadline: row.deadline === null ? null : parseDateOnly(row.deadline),
     ticket:
       row.ticketId === null ? null : createTicket(Number(row.ticketId), row.ticketUrl ?? undefined),

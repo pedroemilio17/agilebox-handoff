@@ -15,6 +15,8 @@ export const projects = sqliteTable(
       .notNull()
       .references(() => users.id),
     createdAt: text('created_at').notNull(),
+    archivedAt: text('archived_at'),
+    archivedBy: text('archived_by').references(() => users.id),
   },
   (table) => [
     uniqueIndex('projects_organization_name_key_unique').on(table.organizationId, table.nameKey),

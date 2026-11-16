@@ -10,8 +10,14 @@ export class ListProjects {
     private readonly definitionOfDone: DefinitionOfDoneRepository,
   ) {}
 
-  async execute(actor: Actor): Promise<readonly ProjectDto[]> {
-    const projects = await this.projects.list(actor.organizationId)
+  /** Padrão: projetos arquivados ficam de fora; `includeArchived` mostra todos. */
+  async execute(
+    actor: Actor,
+    input?: { readonly includeArchived?: boolean | undefined },
+  ): Promise<readonly ProjectDto[]> {
+    const projects = (await this.projects.list(actor.organizationId)).filter(
+      (project) => project.archivedAt === null || input?.includeArchived === true,
+    )
     const counts = new Map<string, number>()
     for (const item of await this.definitionOfDone.listByOrganization(actor.organizationId)) {
       counts.set(item.projectId, (counts.get(item.projectId) ?? 0) + 1)

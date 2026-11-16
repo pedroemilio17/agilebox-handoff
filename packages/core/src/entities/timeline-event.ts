@@ -39,6 +39,10 @@ export type TimelineEvent = EventBase &
       }
     | { readonly type: 'comment_removed'; readonly payload: { readonly commentId: TaskCommentId } }
     | { readonly type: 'definition_confirmed'; readonly payload: { readonly count: number } }
+    | {
+        readonly type: 'task_archived' | 'task_unarchived'
+        readonly payload: Record<string, never>
+      }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }

@@ -134,6 +134,10 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return 'comentou na tarefa'
     case 'comment_removed':
       return 'removeu um comentário'
+    case 'task_archived':
+      return 'arquivou a tarefa'
+    case 'task_unarchived':
+      return 'desarquivou a tarefa'
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':

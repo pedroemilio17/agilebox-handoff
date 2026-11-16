@@ -1,13 +1,11 @@
 import {
   addChecklistItem,
-  canEditTask,
   changedChecklistPositions,
   checklistEventDraft,
   createTimelineEvent,
   isManagerEdit,
   moveChecklistItem,
   NotFoundError,
-  PermissionDeniedError,
   removeChecklistItem,
   renameChecklistItem,
   setChecklistItemDone,
@@ -23,6 +21,7 @@ import type {
   TimelineEventDraft,
 } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
+import { assertTaskEditable } from './task-access'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
@@ -71,8 +70,7 @@ abstract class ChangeChecklist {
   ): Promise<{ readonly task: Task; readonly items: readonly ChecklistItem[] }> {
     const task = await this.deps.tasks.findById(actor.organizationId, toTaskId(rawTaskId))
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (!canEditTask(actor, task))
-      throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
+    assertTaskEditable(actor, task)
     const items = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     return { task, items }
   }

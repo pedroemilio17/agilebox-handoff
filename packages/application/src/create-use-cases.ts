@@ -1,5 +1,6 @@
 import type { AppDeps } from './deps'
 import { CreateProject } from './use-cases/projects/create-project'
+import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { ListProjects } from './use-cases/projects/list-projects'
 import {
   AddDefinitionOfDoneItem,
@@ -30,10 +31,12 @@ import {
   ToggleChecklistItem,
 } from './use-cases/tasks/checklist'
 import {
+  ArchiveTask,
   BlockTask,
   CreateTask,
   GetTaskDetail,
   MoveTask,
+  UnarchiveTask,
   UnblockTask,
   UpdateTask,
 } from './use-cases/tasks/tasks'
@@ -97,6 +100,8 @@ export function createUseCases(deps: AppDeps) {
       listMembers: new ListProjectMembers(deps),
       addMember: new AddProjectMember(deps),
       removeMember: new RemoveProjectMember(deps),
+      archive: new ArchiveProject(deps),
+      unarchive: new UnarchiveProject(deps),
       definitionOfDone: {
         list: new ListDefinitionOfDone(deps),
         add: new AddDefinitionOfDoneItem(deps),
@@ -112,6 +117,8 @@ export function createUseCases(deps: AppDeps) {
       move: new MoveTask(deps),
       block: new BlockTask(deps),
       unblock: new UnblockTask(deps),
+      archive: new ArchiveTask(deps),
+      unarchive: new UnarchiveTask(deps),
       checklist: {
         add: new AddChecklistItem(deps),
         toggle: new ToggleChecklistItem(deps),

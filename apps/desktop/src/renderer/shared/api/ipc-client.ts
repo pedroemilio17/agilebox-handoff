@@ -28,11 +28,13 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     },
     users: { setDefaultRate: (input) => call('users.setDefaultRate', input) },
     projects: {
-      list: () => call('projects.list', undefined),
+      list: (input) => call('projects.list', input),
       create: (input) => call('projects.create', input),
       listMembers: (input) => call('projects.listMembers', input),
       addMember: (input) => call('projects.addMember', input),
       removeMember: (input) => call('projects.removeMember', input),
+      archive: (input) => call('projects.archive', input),
+      unarchive: (input) => call('projects.unarchive', input),
       definitionOfDone: {
         list: (input) => call('projects.definitionOfDone.list', input),
         add: (input) => call('projects.definitionOfDone.add', input),
@@ -51,6 +53,8 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       move: (input) => call('tasks.move', input),
       block: (input) => call('tasks.block', input),
       unblock: (input) => call('tasks.unblock', input),
+      archive: (input) => call('tasks.archive', input),
+      unarchive: (input) => call('tasks.unarchive', input),
       checklist: {
         add: (input) => call('tasks.checklist.add', input),
         toggle: (input) => call('tasks.checklist.toggle', input),

@@ -1,7 +1,11 @@
 import {
   addParticipant,
+  archiveTask,
   blockTask,
+  canChangeTaskArchive,
+  unarchiveTask,
   unblockTask,
+  ConflictError,
   createParticipation,
   changeResponsible,
   toUserId,
@@ -9,7 +13,6 @@ import {
   staleDays,
   toDateOnly,
   canCreateTask,
-  canEditTask,
   canViewTask,
   createTask,
   createTicket,
@@ -46,6 +49,7 @@ import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
 import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
+import { assertTaskEditable } from './task-access'
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
@@ -63,6 +67,10 @@ export class CreateTask {
       )
     )
       throw new PermissionDeniedError('Sem permissão para criar tarefa neste projeto')
+    if (project.archivedAt !== null)
+      throw new ConflictError(
+        'Projeto arquivado não aceita novas tarefas. Desarquive o projeto para criar.',
+      )
     const user = await this.deps.users.findById(actor.organizationId, actor.userId)
     if (!user) throw new NotFoundError('Usuário não encontrado')
     const now = await this.deps.clock.now(actor.organizationId)
@@ -222,18 +230,22 @@ export class GetTaskDetail {
 abstract class ChangeTask {
   constructor(protected readonly deps: AppDeps) {}
 
+  /** `archive`: só arquivar/desarquivar, que vale também para tarefa arquivada. */
   protected async change(
     actor: Actor,
     rawTaskId: string,
     transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
     confirmedDefinitionItemIds: readonly string[] = [],
+    access: 'edit' | 'archive' = 'edit',
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (!canEditTask(actor, task))
-      throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
+    if (access === 'archive') {
+      if (!canChangeTaskArchive(actor, task))
+        throw new PermissionDeniedError('Sem permissão para arquivar ou desarquivar esta tarefa')
+    } else assertTaskEditable(actor, task)
     const now = await this.deps.clock.now(actor.organizationId)
     const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
@@ -328,6 +340,34 @@ export class BlockTask extends ChangeTask {
 export class UnblockTask extends ChangeTask {
   async execute(actor: Actor, input: { readonly taskId: string }) {
     return this.change(actor, input.taskId, (task) => unblockTask(task))
+  }
+}
+
+/** Arquiva (esconde, nunca apaga). Quem pode editar a tarefa pode arquivar; fica na linha do tempo. */
+export class ArchiveTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
+    return this.change(
+      actor,
+      input.taskId,
+      (task, now) => archiveTask(task, actor.userId, now),
+      [{ type: 'task_archived', payload: {} }],
+      [],
+      'archive',
+    )
+  }
+}
+
+/** Desarquiva: a tarefa volta às visões padrão, com o que tinha antes. */
+export class UnarchiveTask extends ChangeTask {
+  async execute(actor: Actor, input: { readonly taskId: string }): Promise<TaskDto> {
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => unarchiveTask(task),
+      [{ type: 'task_unarchived', payload: {} }],
+      [],
+      'archive',
+    )
   }
 }
 

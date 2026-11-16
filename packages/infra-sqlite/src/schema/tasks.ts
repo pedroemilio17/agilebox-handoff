@@ -28,6 +28,8 @@ export const tasks = sqliteTable(
       .default('normal'),
     blockedReason: text('blocked_reason'),
     blockedAt: text('blocked_at'),
+    archivedAt: text('archived_at'),
+    archivedBy: text('archived_by').references(() => users.id),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),

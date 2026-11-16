@@ -21,10 +21,13 @@ import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadChecklists } from './checklist-loader'
 import { loadCommentCounts } from './comment-loader'
+import { archivedProjectIds, filterVisibleTasks, visibleTasks } from './task-visibility'
 
 export interface ListBoardInput {
   readonly projectId?: string
   readonly forUserId?: string
+  /** Inclui arquivadas e as de projeto arquivado. Padrão: ocultas. */
+  readonly includeArchived?: boolean
 }
 
 /**
@@ -39,7 +42,12 @@ async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
     ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
     userId: toUserId(input.forUserId ?? actor.userId),
   }
-  return deps.tasks.listBoard(actor.organizationId, query)
+  return visibleTasks(
+    deps,
+    actor.organizationId,
+    await deps.tasks.listBoard(actor.organizationId, query),
+    input.includeArchived,
+  )
 }
 
 export class GetBoardFlow {
@@ -107,7 +115,10 @@ export class ListBoard {
 export class ListTeamBoard {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: { readonly projectId?: string }): Promise<readonly TaskDto[]> {
+  async execute(
+    actor: Actor,
+    input: { readonly projectId?: string; readonly includeArchived?: boolean },
+  ): Promise<readonly TaskDto[]> {
     const projectId = input.projectId === undefined ? undefined : toProjectId(input.projectId)
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
     const [tasks, projects] = await Promise.all([
@@ -131,10 +142,14 @@ export class ListTeamBoard {
     )
     // Colaborador: as demais tarefas dos seus projetos (as próprias ficam em "Minhas tarefas").
     // Gestor: todas da organização, inclusive as em que participa (PLANO 6.1).
-    const visible = tasks.filter(
-      (task) =>
-        eligibleProjectIds.has(task.projectId) &&
-        (actor.role === 'manager' || !participates(actor, task)),
+    const visible = filterVisibleTasks(
+      tasks.filter(
+        (task) =>
+          eligibleProjectIds.has(task.projectId) &&
+          (actor.role === 'manager' || !participates(actor, task)),
+      ),
+      archivedProjectIds(projects),
+      input.includeArchived,
     )
     const checklists = await loadChecklists(
       this.deps,
@@ -184,7 +199,11 @@ export class ListRecentTasks {
 
   async execute(actor: Actor): Promise<readonly TaskDto[]> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
-    const tasks = await this.deps.tasks.listRecent(actor.organizationId, actor.userId)
+    const tasks = await visibleTasks(
+      this.deps,
+      actor.organizationId,
+      await this.deps.tasks.listRecent(actor.organizationId, actor.userId),
+    )
     return toTaskDtos(this.deps, actor, tasks, prefix)
   }
 }
@@ -194,7 +213,11 @@ export class ListFrequentTasks {
 
   async execute(actor: Actor): Promise<readonly TaskDto[]> {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
-    const tasks = await this.deps.tasks.listFrequent(actor.organizationId, actor.userId)
+    const tasks = await visibleTasks(
+      this.deps,
+      actor.organizationId,
+      await this.deps.tasks.listFrequent(actor.organizationId, actor.userId),
+    )
     return toTaskDtos(this.deps, actor, tasks, prefix)
   }
 }
@@ -224,7 +247,8 @@ export class SearchTasks {
     const found = byNumber
       ? [byNumber, ...byText.filter((task) => task.id !== byNumber.id)]
       : byText
-    return toTaskDtos(this.deps, actor, found, prefix)
+    const visible = await visibleTasks(this.deps, actor.organizationId, found)
+    return toTaskDtos(this.deps, actor, visible, prefix)
   }
 }
 

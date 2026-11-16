@@ -29,7 +29,12 @@ export function canViewTask(actor: Actor, task: Task, isMember: boolean): boolea
     (actor.role === 'manager' || isMember || participates(actor, task))
   )
 }
+/** Editar exige tarefa ativa: a arquivada só pode ser desarquivada (canChangeTaskArchive). */
 export function canEditTask(actor: Actor, task: Task): boolean {
+  return canChangeTaskArchive(actor, task) && task.archivedAt === null
+}
+/** Arquivar e desarquivar seguem a edição (participante ou gestor), inclusive numa tarefa arquivada. */
+export function canChangeTaskArchive(actor: Actor, task: Task): boolean {
   return (
     actor.organizationId === task.organizationId &&
     (actor.role === 'manager' || participates(actor, task))
@@ -43,6 +48,10 @@ export function canSeeProject(actor: Actor, project: Project, isMember: boolean)
 }
 export function canCreateTask(actor: Actor, project: Project, isMember: boolean): boolean {
   return canSeeProject(actor, project, isMember)
+}
+/** Arquivar e desarquivar projeto: só o gestor e quem criou o projeto (mesma regra do botão Membros). */
+export function canArchiveProject(actor: Actor, project: Project): boolean {
+  return canManageMembers(actor, project)
 }
 export function canManageMembers(actor: Actor, project: Project): boolean {
   return (

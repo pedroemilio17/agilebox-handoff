@@ -51,11 +51,16 @@ export function mapContributorRow(row: ContributorRow): Contributor {
 }
 
 export function mapProjectRow(row: ProjectRow): Project {
-  return createProject({
-    id: toProjectId(row.id),
-    organizationId: toOrganizationId(row.organizationId),
-    name: row.name,
-    createdBy: toUserId(row.createdBy),
-    createdAt: row.createdAt,
-  })
+  return {
+    ...createProject({
+      id: toProjectId(row.id),
+      organizationId: toOrganizationId(row.organizationId),
+      name: row.name,
+      createdBy: toUserId(row.createdBy),
+      createdAt: row.createdAt,
+    }),
+    archivedAt: row.archivedAt ?? null,
+    archivedBy:
+      row.archivedBy === null || row.archivedBy === undefined ? null : toUserId(row.archivedBy),
+  }
 }

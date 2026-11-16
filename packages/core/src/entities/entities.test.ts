@@ -65,6 +65,8 @@ describe('entidades de organização', () => {
       ...project,
       name: 'Gestão   de ÁREA',
       nameKey: 'gestao de area',
+      archivedAt: null,
+      archivedBy: null,
     }))
   it.each(['', '   ', '\n\t'])('rejeita nome vazio %j nas quatro entidades', (name) => {
     expect(() => createOrganization({ ...organization, name })).toThrow(ValidationError)

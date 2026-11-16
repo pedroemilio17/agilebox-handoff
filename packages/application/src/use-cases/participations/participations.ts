@@ -1,7 +1,6 @@
 import {
   addParticipant,
   canEditRate,
-  canEditTask,
   createContributor,
   createParticipation,
   createUser,
@@ -31,6 +30,7 @@ import type {
 } from '@agilebox/core'
 import type { ParticipationSummaryDto } from '@agilebox/contract'
 import { toParticipationSummaryDto } from '../../mappers'
+import { assertTaskEditable } from '../tasks/task-access'
 import type { AppDeps } from '../../deps'
 
 interface AddParticipationInput {
@@ -57,8 +57,7 @@ abstract class ChangeParticipation {
   protected async findEditableTask(actor: Actor, rawTaskId: string): Promise<Task> {
     const task = await this.deps.tasks.findById(actor.organizationId, toTaskId(rawTaskId))
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (!canEditTask(actor, task))
-      throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
+    assertTaskEditable(actor, task)
     return task
   }
 
