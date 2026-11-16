@@ -32,8 +32,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 - [x] M1.1 `ExperienceLevel` (`basic`, `intermediate`, `advanced`) e `ModuleId`/`ModuleDefinition` com `packages/core/src/modules/registry.ts` (catálogo dos 15 módulos do plano, com `requires`, `requiresAnyOf`, `conflicts`, `minLevel`, `core`). Teste que falha se houver ciclo.
 - [x] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
-- [~] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
-- [ ] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
+- [x] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
+- [~] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
 - [ ] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
 - [ ] M1.6 Guard de módulo no backend: cada caso de uso declara seu módulo; chamada a módulo desligado é recusada. Estados `active`, `winding_down`, `disabled` e prévia de impacto.
 
@@ -63,7 +63,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.3 (Haiku), lançado após o commit do M1.2. Resultado chega por notificação.
+M1.4 (Haiku), lançado após o commit do M1.3. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -87,7 +87,11 @@ M1.3 (Haiku), lançado após o commit do M1.2. Resultado chega por notificação
 
 - Resolvedor (M1.2): `dependentsOf` é direto (não transitivo); `core` não aparece em `autoEnabled`; não existe `autoDisabled` (a interface pede "desligar os dois" chamando o resolvedor de novo com os dois em `disable`); `burndown` puxa `estimates.hours` (ADR-07). Confirmar.
 
+- Capacidades (M1.3): `effectiveCapabilities` não resolve dependências (quem chama usa `resolveModuleSet` antes); o efeito passivo (`:passive`) vale para todo módulo ativo, inclusive `core` e `agenda`; `tools:view` para todos e `tools:manage` só para o gestor. Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 40: M1.3 concluído (Haiku). `effectiveCapabilities`, `hasCapability`, `shouldShowModuleScreen` e `moduleLevelWarning` (base do aviso "Sprints aparece a partir do Intermediário"), 27 testes. `pnpm check` pelo orquestrador: 206 arquivos, 1774 testes, exit 0.
 
 - Ciclo 36: M1.2 concluído (Haiku). `resolveModuleSet` e `dependentsOf` em `core/modules/resolve.ts`, 44 testes (cada preset aplicado sobre `core` dá exatamente o conjunto do preset). `pnpm check` pelo orquestrador: 205 arquivos, 1747 testes, exit 0.
 
