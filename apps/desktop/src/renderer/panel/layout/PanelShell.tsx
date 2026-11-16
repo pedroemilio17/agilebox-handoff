@@ -26,7 +26,13 @@ export interface PanelShellProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
-  readonly projects?: readonly { readonly id: string; readonly name: string }[]
+  /** Motivo para desabilitar "Nova tarefa" (ex.: projeto arquivado selecionado). */
+  readonly newTaskBlockedReason?: string | undefined
+  readonly projects?: readonly {
+    readonly id: string
+    readonly name: string
+    readonly archivedAt?: string | null | undefined
+  }[]
   readonly selectedProjectId?: string | null
   readonly projectCounts?: Readonly<Record<string, number>>
   readonly onProjectSelect?: (id: string | null) => void
@@ -63,6 +69,7 @@ export function PanelShell({
   onToggleExpand,
   onClose,
   onNewTask,
+  newTaskBlockedReason,
   account,
   projects = [],
   selectedProjectId = null,
@@ -111,6 +118,7 @@ export function PanelShell({
           onToggleExpand={onToggleExpand}
           onClose={onClose}
           onNewTask={onNewTask}
+          newTaskBlockedReason={newTaskBlockedReason}
           taskScope={taskScope}
           onTaskScopeChange={onTaskScopeChange}
         />
@@ -246,6 +254,9 @@ function Rail({
               name={project.name}
             />
             <span className={styles.projectName}>{project.name}</span>
+            {project.archivedAt != null ? (
+              <span className={styles.archivedLabel}>{panelCopy.archivedProject}</span>
+            ) : null}
             <span className={styles.count}>{projectCounts?.[project.id] ?? '—'}</span>
           </button>
         ))}
@@ -283,6 +294,7 @@ interface TitleBarProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
+  readonly newTaskBlockedReason: string | undefined
   readonly taskScope: TaskScope
   readonly onTaskScopeChange: ((scope: TaskScope) => void) | undefined
 }
@@ -296,6 +308,7 @@ function TitleBar({
   onToggleExpand,
   onClose,
   onNewTask,
+  newTaskBlockedReason,
   taskScope,
   onTaskScopeChange,
 }: TitleBarProps) {
@@ -324,6 +337,8 @@ function TitleBar({
             className={styles.newTask}
             aria-label={panelCopy.newTask}
             aria-keyshortcuts="N"
+            disabled={newTaskBlockedReason !== undefined}
+            title={newTaskBlockedReason}
             onClick={onNewTask}
             type="button"
           >

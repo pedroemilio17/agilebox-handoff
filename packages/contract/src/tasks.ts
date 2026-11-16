@@ -72,6 +72,8 @@ export const getTaskOutputSchema = taskDtoSchema
     total: visibleRateSchema,
     canEdit: z.boolean(),
     readOnly: z.boolean(),
+    /** Arquivar ou desarquivar (participante ou gestor), inclusive tarefa arquivada. Ausente em respostas antigas: tratar como falso. */
+    canArchive: z.boolean().optional(),
   })
   .refine((task) => task.canEdit !== task.readOnly, {
     message: 'Detalhe deve ser editável ou somente leitura',

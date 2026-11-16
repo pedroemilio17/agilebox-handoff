@@ -295,6 +295,9 @@ describe('casos de uso de tarefas', () => {
     )
     expect(editable).toMatchObject({ canEdit: true, readOnly: false, total: null })
     expect(readOnly).toMatchObject({ canEdit: false, readOnly: true })
+    // Arquivar segue a participação: quem só vê a tarefa pelo projeto não arquiva.
+    expect(editable).toMatchObject({ canArchive: true })
+    expect(readOnly).toMatchObject({ canArchive: false })
   })
 
   it('edita campos, grava eventos com marca de gestor e notifica', async () => {

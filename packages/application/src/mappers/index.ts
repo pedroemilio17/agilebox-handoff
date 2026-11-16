@@ -1,4 +1,5 @@
 import {
+  canChangeTaskArchive,
   canEditComment,
   canRemoveComment,
   canSeeRate,
@@ -197,6 +198,7 @@ export function toTaskDetailDto(
       : null,
     canEdit,
     readOnly: isReadOnlyFor(actor, task, isMember),
+    canArchive: canChangeTaskArchive(actor, task),
   }
 }
 

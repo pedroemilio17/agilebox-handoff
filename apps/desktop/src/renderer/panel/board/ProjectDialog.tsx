@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Button, Modal } from '@agilebox/ui'
 import type { ProjectDto } from '@agilebox/contract'
 import { useCreateProject } from '../hooks/use-create-project'
+import { useArchiveProject, useUnarchiveProject } from '../hooks/use-archive-project'
+import { SaveError } from '../task-detail/SaveError'
 import { DefinitionOfDoneEditor } from './DefinitionOfDoneEditor'
 import { panelCopy } from '../copy'
 import styles from './ProjectDialog.module.css'
@@ -16,6 +18,11 @@ export interface ProjectDialogProps {
   readonly onManageMembers?: (project: ProjectDto) => void
   /** Quem edita a definição de pronto (mesma regra do botão Membros). */
   readonly canEditDefinition?: (project: ProjectDto) => boolean
+  /** Quem arquiva e desarquiva o projeto: gestor e quem criou (mesma regra do botão Membros). */
+  readonly canArchiveProject?: (project: ProjectDto) => boolean
+  /** Mostra projetos arquivados (desligado por padrão). A consulta é feita pelo pai. */
+  readonly showArchived?: boolean
+  readonly onShowArchivedChange?: (show: boolean) => void
 }
 
 function projectNameKey(name: string): string {
@@ -36,11 +43,20 @@ export function ProjectDialog({
   canManageMembers,
   onManageMembers,
   canEditDefinition,
+  canArchiveProject,
+  showArchived = false,
+  onShowArchivedChange,
 }: ProjectDialogProps) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
+  const [confirmingArchive, setConfirmingArchive] = useState(false)
   const createProject = useCreateProject()
+  const archiveProject = useArchiveProject()
+  const unarchiveProject = useUnarchiveProject()
   const selectedProject = projects.find((project) => project.id === selectedProjectId)
+  const archiveAllowed =
+    selectedProject !== undefined && canArchiveProject?.(selectedProject) === true
+  const selectedArchived = selectedProject?.archivedAt != null
   const membersAllowed =
     selectedProject !== undefined &&
     onManageMembers !== undefined &&
@@ -51,6 +67,7 @@ export function ProjectDialog({
   function close() {
     setCreating(false)
     setName('')
+    setConfirmingArchive(false)
     createProject.reset()
     onClose()
   }
@@ -81,6 +98,16 @@ export function ProjectDialog({
             ×
           </Button>
         </header>
+        {onShowArchivedChange ? (
+          <Button
+            aria-pressed={showArchived}
+            className={styles.newProject}
+            onClick={() => onShowArchivedChange(!showArchived)}
+            type="button"
+          >
+            {panelCopy.showArchived}
+          </Button>
+        ) : null}
         <div aria-label={panelCopy.projectOptions} className={styles.projectList} role="listbox">
           <button
             aria-selected={selectedProjectId === null}
@@ -108,6 +135,9 @@ export function ProjectDialog({
               type="button"
             >
               <span>{project.name}</span>
+              {project.archivedAt != null ? (
+                <span className={styles.archivedTag}>{panelCopy.archivedProject}</span>
+              ) : null}
               {selectedProjectId === project.id ? <span aria-hidden="true">✓</span> : null}
             </button>
           ))}
@@ -123,6 +153,43 @@ export function ProjectDialog({
           >
             {panelCopy.members}
           </Button>
+        ) : null}
+        {archiveAllowed && selectedProject ? (
+          <div className={styles.archiveRow}>
+            {selectedArchived ? (
+              <Button
+                disabled={unarchiveProject.isPending}
+                onClick={() => unarchiveProject.mutate(selectedProject.id)}
+                type="button"
+              >
+                {panelCopy.unarchiveProjectAction}
+              </Button>
+            ) : confirmingArchive ? (
+              <div role="group" aria-label={panelCopy.archiveProjectAction}>
+                <p>{panelCopy.archiveConfirmProject}</p>
+                <Button
+                  disabled={archiveProject.isPending}
+                  onClick={() =>
+                    archiveProject.mutate(selectedProject.id, {
+                      onSuccess: () => setConfirmingArchive(false),
+                    })
+                  }
+                  type="button"
+                  variant="primary"
+                >
+                  {panelCopy.blockConfirm}
+                </Button>
+                <Button onClick={() => setConfirmingArchive(false)} type="button">
+                  {panelCopy.blockCancel}
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setConfirmingArchive(true)} type="button">
+                {panelCopy.archiveProjectAction}
+              </Button>
+            )}
+            <SaveError error={archiveProject.error ?? unarchiveProject.error} />
+          </div>
         ) : null}
         {definitionVisible ? (
           <DefinitionOfDoneEditor

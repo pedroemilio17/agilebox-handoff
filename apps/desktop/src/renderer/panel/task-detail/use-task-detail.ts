@@ -166,3 +166,28 @@ export function useRemoveComment(taskId: string) {
     onSettled: () => refreshAfterChecklist(queryClient, taskId),
   })
 }
+
+/** Arquivar e desarquivar mudam o quadro, o detalhe, a linha do tempo e o painel do gestor. */
+function refreshAfterArchive(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+}
+
+export function useArchiveTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.tasks.archive({ taskId }),
+    onSettled: () => refreshAfterArchive(queryClient, taskId),
+  })
+}
+
+export function useUnarchiveTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.tasks.unarchive({ taskId }),
+    onSettled: () => refreshAfterArchive(queryClient, taskId),
+  })
+}

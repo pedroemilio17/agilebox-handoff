@@ -15,6 +15,7 @@ import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { useBlurSave } from './use-blur-save'
 import { BlockControl } from './BlockControl'
+import { ArchiveControl } from './ArchiveControl'
 import { ChecklistCard } from './ChecklistCard'
 import { CommentsCard } from './CommentsCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
@@ -180,6 +181,7 @@ export function TaskDetailView({
       />
       {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
       <BlockControl task={task!} readOnly={readOnly} />
+      <ArchiveControl task={task!} canArchive={task!.canArchive === true && !readOnlyScope} />
       {isAgingTask(task!) && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
           <p>

@@ -46,7 +46,7 @@ import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
-import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
+import { isAgingTask, isArchivedTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
 import { isWipStatus, type WipStatus } from './wip-limit'
 import { WipLimitEditor } from './WipLimitEditor'
@@ -84,6 +84,11 @@ export interface BoardViewProps {
   readonly readOnlyScope?: boolean
   /** Tenta carregar de novo quando a visão Equipe falha. */
   readonly onRetry?: () => void
+  /** Mostra tarefas arquivadas (desligado por padrão). A consulta é feita pelo pai. */
+  readonly showArchived?: boolean
+  readonly onShowArchivedChange?: (show: boolean) => void
+  /** Motivo para desabilitar "+" e "Nova tarefa" (ex.: projeto arquivado). */
+  readonly newTaskBlockedReason?: string | undefined
 }
 
 export function BoardView({
@@ -105,6 +110,9 @@ export function BoardView({
   onSetWipLimit,
   readOnlyScope = false,
   onRetry,
+  showArchived = false,
+  onShowArchivedChange,
+  newTaskBlockedReason,
 }: BoardViewProps) {
   const api = useApi()
   const [exception, setException] = useState<BoardException | null>(initialException)
@@ -185,20 +193,25 @@ export function BoardView({
         : null
   }
 
-  const agingCount = (tasks ?? []).filter(isAgingTask).length
-  const overdueCount = (tasks ?? []).filter((task) => task.overdue).length
-  const highPriorityCount = (tasks ?? []).filter((task) => task.priority === 'high').length
-  const blockedCount = (tasks ?? []).filter(isBlockedTask).length
+  // Arquivadas ficam fora das contagens e dos filtros de exceção: são só para consulta.
+  const activeTasks = (tasks ?? []).filter((task) => !isArchivedTask(task))
+  const agingCount = activeTasks.filter(isAgingTask).length
+  const overdueCount = activeTasks.filter((task) => task.overdue).length
+  const highPriorityCount = activeTasks.filter((task) => task.priority === 'high').length
+  const blockedCount = activeTasks.filter(isBlockedTask).length
   const visibleTasks = (tasks ?? []).filter((task) =>
-    exception === 'aging'
-      ? isAgingTask(task)
-      : exception === 'overdue'
-        ? task.overdue
-        : exception === 'high'
-          ? task.priority === 'high'
-          : exception === 'blocked'
-            ? isBlockedTask(task)
-            : true,
+    exception === null
+      ? true
+      : !isArchivedTask(task) &&
+        (exception === 'aging'
+          ? isAgingTask(task)
+          : exception === 'overdue'
+            ? task.overdue
+            : exception === 'high'
+              ? task.priority === 'high'
+              : exception === 'blocked'
+                ? isBlockedTask(task)
+                : true),
   )
   const columns = () =>
     TASK_STATUSES.map((status) => (
@@ -210,6 +223,7 @@ export function BoardView({
         onCreateTask={readOnlyScope ? undefined : onCreateTask}
         onOpenTask={onOpenTask}
         onMoveTask={onMoveTask}
+        newTaskBlockedReason={newTaskBlockedReason}
         wip={wipColumns.find((column) => column.status === status)}
         canEditWipLimits={canEditWipLimits && !readOnlyScope}
         onSetWipLimit={onSetWipLimit}
@@ -254,6 +268,15 @@ export function BoardView({
         >
           Bloqueadas · {blockedCount}
         </button>
+        {onShowArchivedChange ? (
+          <button
+            type="button"
+            aria-pressed={showArchived}
+            onClick={() => onShowArchivedChange(!showArchived)}
+          >
+            {panelCopy.showArchived}
+          </button>
+        ) : null}
         <span>
           {formatTaskCount(visibleTasks.length)} ·{' '}
           {refreshing
@@ -274,7 +297,13 @@ export function BoardView({
               })}
           action={
             !readOnlyScope && onNewTask ? (
-              <Button variant="primary" shortcut="N" onClick={onNewTask}>
+              <Button
+                variant="primary"
+                shortcut="N"
+                onClick={onNewTask}
+                disabled={newTaskBlockedReason !== undefined}
+                title={newTaskBlockedReason}
+              >
                 Nova tarefa
               </Button>
             ) : null
@@ -427,6 +456,7 @@ interface KanbanColumnProps {
   readonly canEditWipLimits: boolean
   readonly onSetWipLimit: BoardViewProps['onSetWipLimit']
   readonly readOnlyScope: boolean
+  readonly newTaskBlockedReason: string | undefined
 }
 
 function KanbanColumn({
@@ -443,6 +473,7 @@ function KanbanColumn({
   canEditWipLimits,
   onSetWipLimit,
   readOnlyScope,
+  newTaskBlockedReason,
 }: KanbanColumnProps) {
   const title = TASK_STATUS_LABELS[status]
   // Só Desenvolvendo e Revisar têm limite; nas outras colunas o cabeçalho segue só com a contagem.
@@ -486,6 +517,8 @@ function KanbanColumn({
             type="button"
             className={styles.addTask}
             aria-label={`Nova tarefa em ${title}`}
+            disabled={newTaskBlockedReason !== undefined}
+            title={newTaskBlockedReason}
             onClick={() => onCreateTask(status)}
           >
             +
@@ -498,8 +531,13 @@ function KanbanColumn({
             <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
           ) : (
             sortedTasks.map((task) => (
-              <li className={styles.card} data-task-id={task.id} key={task.id}>
+              <li
+                className={`${styles.card} ${isArchivedTask(task) ? styles.cardArchived : ''}`}
+                data-task-id={task.id}
+                key={task.id}
+              >
                 <TaskCard
+                  archived={isArchivedTask(task)}
                   readOnly
                   selected={selectedTaskId === task.id}
                   onOpen={() => onOpenTask(task.id)}
@@ -512,23 +550,40 @@ function KanbanColumn({
         </ul>
       ) : (
         <SortableContext
-          items={sortedTasks.map((task) => task.id)}
+          items={sortedTasks.filter((task) => !isArchivedTask(task)).map((task) => task.id)}
           strategy={verticalListSortingStrategy}
         >
           <ul className={styles.cards}>
             {sortedTasks.length === 0 ? (
               <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
             ) : (
-              sortedTasks.map((task) => (
-                <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
-                  <TaskCard
-                    selected={selectedTaskId === task.id}
-                    onOpen={() => onOpenTask(task.id)}
-                    responsibleName={responsibleNames.get(task.id)}
-                    task={task}
-                  />
-                </SortableTaskCard>
-              ))
+              sortedTasks.map((task) =>
+                isArchivedTask(task) ? (
+                  // Arquivada: sem arrastar nem trocar de estado; abre só para leitura.
+                  <li
+                    className={`${styles.card} ${styles.cardArchived}`}
+                    data-task-id={task.id}
+                    key={task.id}
+                  >
+                    <TaskCard
+                      archived
+                      selected={selectedTaskId === task.id}
+                      onOpen={() => onOpenTask(task.id)}
+                      responsibleName={responsibleNames.get(task.id)}
+                      task={task}
+                    />
+                  </li>
+                ) : (
+                  <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
+                    <TaskCard
+                      selected={selectedTaskId === task.id}
+                      onOpen={() => onOpenTask(task.id)}
+                      responsibleName={responsibleNames.get(task.id)}
+                      task={task}
+                    />
+                  </SortableTaskCard>
+                ),
+              )
             )}
           </ul>
         </SortableContext>
@@ -602,6 +657,8 @@ type BoardException = 'aging' | 'overdue' | 'high' | 'blocked'
 
 interface TaskCardProps {
   readonly selected?: boolean
+  /** Arquivada: atenuada, com marcador "Arquivada" e nome acessível com o aviso. */
+  readonly archived?: boolean
   /** Visão Equipe: sem comentários no cartão e nome acessível com o estado e o responsável. */
   readonly readOnly?: boolean
   readonly task: TaskDto
@@ -615,6 +672,7 @@ function TaskCard({
   onOpen,
   selected = false,
   readOnly = false,
+  archived = false,
 }: TaskCardProps) {
   const deadline = describeDeadline(task)
   const blocked = isBlockedTask(task)
@@ -629,7 +687,7 @@ function TaskCard({
         TASK_STATUS_LABELS[task.status],
         responsibleName ?? panelCopy.noResponsible.toLowerCase(),
       )
-    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}${commentLabel}`
+    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${archived ? ', arquivada' : ''}${checklistLabel}${commentLabel}`
 
   return (
     <button
@@ -643,6 +701,9 @@ function TaskCard({
     >
       <span className={styles.cardTop}>
         <TaskKey value={task.key} />
+        {archived ? (
+          <span className={styles.archivedMarker}>{panelCopy.archivedMarker}</span>
+        ) : null}
         {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
         <span className={styles.projectName} id={`${task.id}-project`}>
           {task.projectName}

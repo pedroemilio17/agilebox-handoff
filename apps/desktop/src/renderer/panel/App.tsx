@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Drawer, ScopeBanner, Toast } from '@agilebox/ui'
 import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
@@ -55,6 +55,9 @@ export function App() {
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
+  const [showArchived, setShowArchived] = useState(false)
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false)
   const [notice, setNotice] = useState<{
     id: number
     message: string
@@ -62,20 +65,32 @@ export function App() {
   } | null>(null)
   const noticeSeq = useRef(0)
   const actor = useActor()
-  const projects = useProjects()
+  const projects = useProjects(showArchivedProjects)
+  // Projeto arquivado não recebe tarefa nova: a criação só oferece os ativos.
+  const activeProjects = useMemo(
+    () => (projects.data ?? []).filter((project) => project.archivedAt == null),
+    [projects.data],
+  )
+  const selectedProject = projects.data?.find((project) => project.id === selectedProjectId)
+  const selectedArchived = selectedProject?.archivedAt != null
+  const newTaskBlockedReason = selectedArchived ? panelCopy.archivedProjectNewTask : undefined
   const sessionUsers = useSessionUsers()
   const tasks = useQuery({
-    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id),
+    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, showArchived),
     queryFn: () =>
       api.tasks.listBoard({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
+        ...(showArchived ? { includeArchived: true } : {}),
       }),
   })
   const teamTasks = useQuery({
-    queryKey: queryKeys.tasks.team(selectedProjectId ?? undefined),
+    queryKey: queryKeys.tasks.team(selectedProjectId ?? undefined, showArchived),
     queryFn: () =>
-      api.tasks.listTeamBoard(selectedProjectId ? { projectId: selectedProjectId } : {}),
+      api.tasks.listTeamBoard({
+        ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
+        ...(showArchived ? { includeArchived: true } : {}),
+      }),
     enabled: view === 'projects' && taskScope === 'team',
   })
   const teamView = taskScope === 'team'
@@ -315,6 +330,7 @@ export function App() {
         isManager={isManager}
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
+        newTaskBlockedReason={newTaskBlockedReason}
         {...(projectCounts ? { projectCounts } : {})}
         onProjectSelect={(id) => {
           setSelectedProjectId(id)
@@ -407,6 +423,9 @@ export function App() {
                   onSetWipLimit={setBoardWipLimit}
                   readOnlyScope={teamView}
                   onRetry={() => void teamTasks.refetch()}
+                  showArchived={showArchived}
+                  onShowArchivedChange={setShowArchived}
+                  newTaskBlockedReason={newTaskBlockedReason}
                   updatedAt={
                     (teamView ? teamTasks.dataUpdatedAt : tasks.dataUpdatedAt) || undefined
                   }
@@ -438,7 +457,14 @@ export function App() {
               onClose={() => setProjectDialogOpen(false)}
               canManageMembers={canManageProject}
               canEditDefinition={canManageProject}
+              canArchiveProject={canManageProject}
               onManageMembers={setMembersProject}
+              showArchived={showArchivedProjects}
+              onShowArchivedChange={(show) => {
+                setShowArchivedProjects(show)
+                // Escondido o projeto selecionado, o quadro volta a todos os projetos.
+                if (!show && selectedArchived) setSelectedProjectId(null)
+              }}
             />
             <ProjectMembersDialog
               project={membersProject}
@@ -447,8 +473,8 @@ export function App() {
             <NewTaskDialog
               {...(newTaskStatus ? { initialStatus: newTaskStatus } : {})}
               open={newTaskDialogOpen}
-              projects={projects.data ?? []}
-              selectedProjectId={selectedProjectId}
+              projects={activeProjects}
+              selectedProjectId={selectedArchived ? null : selectedProjectId}
               onClose={() => setNewTaskDialogOpen(false)}
               onCreated={(createdTask) => openTask(createdTask.id)}
             />
@@ -459,7 +485,7 @@ export function App() {
       {definitionGate.dialog}
       {commandsOpen && (
         <PanelCommands
-          projects={projects.data ?? []}
+          projects={activeProjects}
           people={sessionUsers.data ?? []}
           selectedProjectId={selectedProjectId}
           isManager={isManager}
