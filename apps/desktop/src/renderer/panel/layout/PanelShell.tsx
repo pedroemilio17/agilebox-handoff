@@ -8,6 +8,7 @@ import {
   SegmentedControl,
 } from '@agilebox/ui'
 import type { SessionUserDto } from '@agilebox/contract'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import type { TaskScope } from '../board/task-scope'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
@@ -84,11 +85,15 @@ export function PanelShell({
   onTaskScopeChange,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
+  const capabilities = useCapabilities()
   const visibleView = view === 'dashboard' && !isManager ? 'projects' : view
   const items: readonly { id: PanelView; label: string; icon: string; soon?: boolean }[] = [
     ...(isManager ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: '▥' }] : []),
     { id: 'projects', label: 'Quadro', icon: '▦' },
-    { id: 'agenda', label: panelCopy.agenda, icon: '▣' },
+    // Agenda só com o módulo ligado e o nível da pessoa; sem "em breve" nem item desabilitado.
+    ...(capabilities.showScreen('agenda')
+      ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
+      : []),
     { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
   ]
 

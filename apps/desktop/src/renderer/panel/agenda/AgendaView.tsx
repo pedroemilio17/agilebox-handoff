@@ -14,6 +14,7 @@ import { Calendar } from './Calendar'
 import { MeetingForm, type MeetingDraft } from './MeetingForm'
 import { UpcomingList } from './UpcomingList'
 import { RetroActions } from './RetroActions'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { loadAgendaTasks } from './agenda-tasks'
 import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
@@ -36,6 +37,8 @@ export interface AgendaViewProps {
 }
 
 export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewProps) {
+  // Combinados da retro só com a ferramenta de review e retro; o restante da agenda segue.
+  const retroVisible = useCapabilities().can('reviewRetro:screen')
   const [mode, setMode] = useState<'day' | 'week' | 'month'>('week')
   const [showDeadlines, setShowDeadlines] = useState(true)
   const api = useApi()
@@ -222,7 +225,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
             onEdit={openMeeting}
           />
         )}
-        {retroCurrent ? (
+        {retroCurrent && retroVisible ? (
           <div className={styles.retroPanel}>
             {retroSiblings.length > 1 ? (
               <div

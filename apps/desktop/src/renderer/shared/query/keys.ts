@@ -30,4 +30,8 @@ export const queryKeys = {
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
+  teamTools: {
+    all: ['agilebox', 'teamTools'] as const,
+    view: ['agilebox', 'teamTools', 'view'] as const,
+  },
 } as const

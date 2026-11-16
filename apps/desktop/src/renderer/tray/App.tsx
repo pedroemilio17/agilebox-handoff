@@ -8,6 +8,8 @@ import {
 } from './auto-height'
 import { trayCopy } from './copy'
 import { useDailyToday } from './use-daily-today'
+import { CapabilitiesProvider } from '../shared/capabilities/CapabilitiesProvider'
+import { useCapabilities } from '../shared/capabilities/capabilities-context'
 import { DailyScreen } from './screens/DailyScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { NewTaskScreen } from './screens/NewTaskScreen'
@@ -17,17 +19,28 @@ import { initialTrayState, trayReducer } from './tray-machine'
 import styles from './Tray.module.css'
 
 export function App() {
+  return (
+    <CapabilitiesProvider>
+      <TrayContent />
+    </CapabilitiesProvider>
+  )
+}
+
+function TrayContent() {
   const [state, dispatch] = useReducer(trayReducer, initialTrayState)
   const [visibleTasks, setVisibleTasks] = useState(2)
   const [manualHeight, setManualHeight] = useState<number | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [dailyDismissed, setDailyDismissed] = useState(false)
-  const daily = useDailyToday()
+  // Cartão e passos da daily só com a ferramenta de check-ins; sem ela nada é pedido ao backend.
+  const capabilities = useCapabilities()
+  const dailyVisible = capabilities.can('checkins:screen')
+  const daily = useDailyToday(capabilities.canFetch('checkins:screen'))
   // Sair da daily (Voltar ou Esc) passa pela guarda da tela, que pede confirmação se houver texto.
   const dailyExit = useRef<(() => void) | null>(null)
   const { screen } = state
-  const inviteVisible = Boolean(daily.data?.due) && !dailyDismissed
+  const inviteVisible = dailyVisible && Boolean(daily.data?.due) && !dailyDismissed
 
   const automatic = autoHeight(screen.kind, visibleTasks, inviteVisible)
   const height = collapsed ? TRAY_COLLAPSED_HEIGHT : (manualHeight ?? automatic)
@@ -117,7 +130,7 @@ export function App() {
           {screen.kind === 'home' ? (
             <HomeScreen
               highlightTaskId={state.highlightTaskId}
-              daily={daily.data}
+              daily={dailyVisible ? daily.data : undefined}
               inviteVisible={inviteVisible}
               onStartDaily={() => dispatch({ type: 'openDaily' })}
               onDismissDaily={() => setDailyDismissed(true)}

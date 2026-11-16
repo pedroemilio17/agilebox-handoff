@@ -20,6 +20,7 @@ import { queryKeys } from '../../shared/query/keys'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { DailyDialog } from './DailyDialog'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { useNoticeOnError } from './use-notice-on-error'
 import type { CollaboratorStat } from './types'
 import styles from './Dashboard.module.css'
@@ -48,6 +49,11 @@ export function DashboardView({
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [dailyOf, setDailyOf] = useState<{ userId: string; name: string } | null>(null)
   const api = useApi()
+  const capabilities = useCapabilities()
+  const dailyVisible = capabilities.can('checkins:screen')
+  const dailyFetch = capabilities.canFetch('checkins:screen')
+  const blockedVisible = capabilities.can('impediments:passive')
+  const wipVisible = capabilities.can('wip:passive')
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
@@ -57,6 +63,8 @@ export function DashboardView({
   const dailyStatus = useQuery({
     queryKey: queryKeys.daily.forDate(today),
     queryFn: () => api.daily.listForDate({ date: today }),
+    // Sem a ferramenta de check-ins o backend recusa a consulta: não faz a chamada.
+    enabled: dailyFetch,
   })
   useNoticeOnError(dailyStatus.isError, panelCopy.dailyListError, onNotice)
   const saveSummary = useMutation({
@@ -150,7 +158,7 @@ export function DashboardView({
           </p>
         </section>
         <div className={styles.exceptions}>
-          {data.overWipColumns.length > 0 ? (
+          {wipVisible && data.overWipColumns.length > 0 ? (
             <ul className={styles.wipExceptions} aria-label="Colunas acima do limite">
               {data.overWipColumns.map((column) => (
                 <li key={column.status}>
@@ -165,13 +173,15 @@ export function DashboardView({
               ))}
             </ul>
           ) : null}
-          <MetricTile
-            label="Bloqueadas"
-            value={data.blockedCount}
-            caption="com motivo registrado"
-            signal="danger"
-            onClick={() => onOpenException?.('blocked')}
-          />
+          {blockedVisible ? (
+            <MetricTile
+              label="Bloqueadas"
+              value={data.blockedCount}
+              caption="com motivo registrado"
+              signal="danger"
+              onClick={() => onOpenException?.('blocked')}
+            />
+          ) : null}
           <MetricTile
             label="Paradas"
             value={data.agingCount}
@@ -245,17 +255,22 @@ export function DashboardView({
       <section className={styles.panel} aria-label="Equipe">
         <Eyebrow>Equipe</Eyebrow>
         <div className={styles.teamScroll}>
-          <div className={styles.teamHeader}>
+          <div className={`${styles.teamHeader} ${dailyVisible ? '' : styles.teamNoDaily}`}>
             <span>Pessoa</span>
             <span>Em andamento</span>
             <span>Sinais</span>
-            {dailyStatus.data ? (
-              <span role="group" aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}>
-                {panelCopy.dailyCount(teamDone, data.team.length)}
-              </span>
-            ) : (
-              <span>{panelCopy.dailyColumn}</span>
-            )}
+            {dailyVisible ? (
+              dailyStatus.data ? (
+                <span
+                  role="group"
+                  aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}
+                >
+                  {panelCopy.dailyCount(teamDone, data.team.length)}
+                </span>
+              ) : (
+                <span>{panelCopy.dailyColumn}</span>
+              )
+            ) : null}
             <span>Última atualização</span>
           </div>
           {data.team.length === 0 ? (
@@ -265,7 +280,10 @@ export function DashboardView({
               const name = person.user.name
               const done = dailyDone.get(person.user.id)
               return (
-                <div className={styles.teamRow} key={person.user.id}>
+                <div
+                  className={`${styles.teamRow} ${dailyVisible ? '' : styles.teamNoDaily}`}
+                  key={person.user.id}
+                >
                   <button
                     type="button"
                     className={styles.teamRowLink}
@@ -288,7 +306,7 @@ export function DashboardView({
                         {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
                       </SignalBadge>
                     )}
-                    {person.blockedCount > 0 && (
+                    {blockedVisible && person.blockedCount > 0 && (
                       <SignalBadge variant="blocked">
                         {person.blockedCount}{' '}
                         {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
@@ -296,30 +314,32 @@ export function DashboardView({
                     )}
                     {person.agingCount === 0 &&
                       person.overdueCount === 0 &&
-                      person.blockedCount === 0 &&
+                      (!blockedVisible || person.blockedCount === 0) &&
                       '—'}
                   </span>
-                  <span className={styles.dailyCell}>
-                    {dailyStatus.isPending ? (
-                      <span className={styles.muted}>{panelCopy.dailyLoading}</span>
-                    ) : done === undefined ? (
-                      <span className={styles.muted}>—</span>
-                    ) : (
-                      <>
-                        <DailyStatusBadge done={done} />
-                        {done && (
-                          <button
-                            type="button"
-                            className={styles.inlineButton}
-                            aria-label={panelCopy.dailyViewOf(name)}
-                            onClick={() => setDailyOf({ userId: person.user.id, name })}
-                          >
-                            {panelCopy.dailyView}
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </span>
+                  {dailyVisible ? (
+                    <span className={styles.dailyCell}>
+                      {dailyStatus.isPending ? (
+                        <span className={styles.muted}>{panelCopy.dailyLoading}</span>
+                      ) : done === undefined ? (
+                        <span className={styles.muted}>—</span>
+                      ) : (
+                        <>
+                          <DailyStatusBadge done={done} />
+                          {done && (
+                            <button
+                              type="button"
+                              className={styles.inlineButton}
+                              aria-label={panelCopy.dailyViewOf(name)}
+                              onClick={() => setDailyOf({ userId: person.user.id, name })}
+                            >
+                              {panelCopy.dailyView}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </span>
+                  ) : null}
                   <span
                     className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
                   >
@@ -345,7 +365,7 @@ export function DashboardView({
           </p>
         ) : null}
       </section>
-      {dailyOf ? (
+      {dailyOf && dailyVisible ? (
         <DailyDialog
           userId={dailyOf.userId}
           userName={dailyOf.name}

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import type { GetTaskDto } from '@agilebox/contract'
 import { Button, SignalBadge, TextArea } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { SaveError } from './SaveError'
 import { useBlockTask, useUnblockTask } from './use-task-detail'
 import styles from './TaskDetailView.module.css'
@@ -27,6 +28,10 @@ export function BlockControl({ task, readOnly }: BlockControlProps) {
   const taskId = task.id
   const block = useBlockTask(taskId)
   const unblock = useUnblockTask(taskId)
+  const capabilities = useCapabilities()
+  // Módulo desligado: nenhum efeito, nem o motivo. Só com a tela ligada há bloquear e desbloquear.
+  const showBlocked = capabilities.can('impediments:passive')
+  const showActions = capabilities.can('impediments:screen')
   const [formOpen, setFormOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -35,26 +40,32 @@ export function BlockControl({ task, readOnly }: BlockControlProps) {
   const countId = `${fieldId}-count`
 
   if (task.blockedReason !== null) {
+    if (!showBlocked) return null
+    // Sem a tela de impedimentos, o motivo aparece como informação, sem o botão Desbloquear.
     return (
       <section aria-label={panelCopy.blockedSection} className={styles.blockStrip}>
         <p>
           <SignalBadge variant="blocked">Bloqueada</SignalBadge>
           <span>{task.blockedReason}</span>
         </p>
-        <Button
-          type="button"
-          disabled={readOnly || unblock.isPending}
-          onClick={() => unblock.mutate()}
-        >
-          {panelCopy.unblockAction}
-        </Button>
-        <SaveError error={unblock.error} />
+        {showActions ? (
+          <>
+            <Button
+              type="button"
+              disabled={readOnly || unblock.isPending}
+              onClick={() => unblock.mutate()}
+            >
+              {panelCopy.unblockAction}
+            </Button>
+            <SaveError error={unblock.error} />
+          </>
+        ) : null}
       </section>
     )
   }
 
   // Concluída não bloqueia: o servidor também limpa o bloqueio ao concluir.
-  if (task.status === 'done') return null
+  if (!showActions || task.status === 'done') return null
 
   if (!formOpen) {
     return (

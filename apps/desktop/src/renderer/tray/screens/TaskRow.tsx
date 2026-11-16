@@ -1,5 +1,6 @@
 import type { TaskDto } from '@agilebox/contract'
 import { ChecklistProgress, CommentCount, StatusChip, SignalBadge, TaskKey } from '@agilebox/ui'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { formatRelativeDate } from '../../shared/lib/format-date'
 import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
 import styles from '../Tray.module.css'
@@ -12,6 +13,9 @@ export interface TaskRowProps {
 }
 
 export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
+  const capabilities = useCapabilities()
+  const showChecklist = capabilities.can('subtasks:passive')
+  const blocked = isBlockedTask(task) && capabilities.can('impediments:passive')
   return (
     <li>
       <button
@@ -24,12 +28,14 @@ export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
           <span className={styles.rowTitle}>{task.title}</span>
           <span className={styles.rowSignals}>
             {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
-            <ChecklistProgress
-              done={task.checklistProgress.done}
-              total={task.checklistProgress.total}
-            />
+            {showChecklist ? (
+              <ChecklistProgress
+                done={task.checklistProgress.done}
+                total={task.checklistProgress.total}
+              />
+            ) : null}
             <CommentCount count={task.commentCount} />
-            {isBlockedTask(task) ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
+            {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
             {isAgingTask(task) ? (
               <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
             ) : (

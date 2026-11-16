@@ -41,8 +41,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ### M2 · Interface adaptativa
 
-- [~] M2.1 Menu e campos avançados por nível (Básico oculta o que for avançado, dados continuam lá).
-- [ ] M2.2 Tela "Ferramentas da equipe": presets (Kanban simples, Scrum, Kanban com fluxo, Scrum completo), prévia de impacto, aplicação direta pelo gestor, aviso "Sprints aparece a partir do Intermediário. Subir o nível do projeto?".
+- [x] M2.1 Menu e campos avançados por nível (Básico oculta o que for avançado, dados continuam lá).
+- [~] M2.2 Tela "Ferramentas da equipe": presets (Kanban simples, Scrum, Kanban com fluxo, Scrum completo), prévia de impacto, aplicação direta pelo gestor, aviso "Sprints aparece a partir do Intermediário. Subir o nível do projeto?".
 - [ ] M2.3 Efeitos passivos por módulo (ex.: "Sprint 4" no card em qualquer nível) e o time Básico trabalhando sem saber Scrum.
 
 ### M3 · Backlog e critérios
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M2.1 (Haiku), lançado após o commit do M1.6b. Resultado chega por notificação.
+M2.2 (Haiku), lançado após o commit do M2.1. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -100,7 +100,11 @@ M2.1 (Haiku), lançado após o commit do M1.6b. Resultado chega por notificaçã
 
 - Casos de uso das ferramentas (M1.6b): desativar entra em `winding_down`; o gestor antecipa com `finalize` ou confirma com `completeWindDown` (a detecção automática de "acabou" por módulo não existe: o gestor confirma); aceite entre pessoas (ADR-05) fica para o M6b; as capacidades usam o nível da equipe (não há nível por pessoa, ADR-06); desligar um módulo cujo dependente está em `winding_down` é recusado. Pendente de decisão: `burndown` fica ativo se a alternativa (horas) entra em `winding_down` (o resolvedor considera que "existe"); a mensagem de `conflicting_request` por dependência é genérica; não há broadcast específico de ferramentas (usa o tipo `board`).
 
+- Interface adaptativa (M2.1): enquanto `teamTools.get` carrega ou falha, a tela mostra tudo (o backend segue recusando); o plano põe Agenda no preset Kanban simples, então a Agenda aparece no Básico (o briefing dizia "sem Agenda": segui o plano); nenhum campo avançado foi escondido (o candidato é o bloco Ticket, como `integrations:advanced_fields`; esconder mudaria o que aparece para times sem a ferramenta); no Básico o motivo do bloqueio aparece sem o botão Desbloquear (Desbloquear é `impediments:screen`); o filtro "Paradas" é tratado como filtro de fluxo e o tile "Paradas" do dashboard não tem gate; Plug-ins segue "em breve". Confirmar cada uma.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 85: M2.1 concluído (Haiku). `useTeamTools`/`useCapabilities` e o filtro por capacidade no painel, no dashboard e na bandeja (mapa elemento→capacidade no relatório do agente); com o padrão de código nada muda para quem usa hoje; +24 testes. `pnpm check` pelo orquestrador: 220 arquivos, 1921 testes, exit 0.
 
 - Ciclo 76: M1.6b concluído (Haiku). Seis casos de uso (`teamTools.get`, `previewChange`, `applyChange`, `completeWindDown`, `setLevel`, `applyPreset`), todos `core` e só o gestor muda; prévia de impacto com contagens reais; auditoria inclusive de preset; contrato, 6 canais IPC e cliente; +45 testes. `pnpm check` pelo orquestrador: 216 arquivos, 1897 testes, exit 0. **M1 completo.**
 

@@ -6,6 +6,7 @@ import { CommandPalette, Skeleton, type CommandAction } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { useCreateTask } from '../hooks/use-create-task'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 
 export interface PanelCommandsProps {
   readonly projects: readonly ProjectDto[]
@@ -30,6 +31,7 @@ export function PanelCommands({
   const [value, setValue] = useState('')
   const api = useApi()
   const create = useCreateTask()
+  const capabilities = useCapabilities()
   const parsed = parseQuickAdd(value, { today: todayDateOnly(), people, projects })
   const projectId = parsed.projectId ?? selectedProjectId ?? projects[0]?.id
   const results = useQuery({
@@ -85,7 +87,9 @@ export function PanelCommands({
     })
   const destinations = [
     ...(isManager ? [{ view: 'dashboard' as const, label: 'Dashboard', shortcut: 'G D' }] : []),
-    { view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' },
+    ...(capabilities.showScreen('agenda')
+      ? [{ view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' }]
+      : []),
     { view: 'projects' as const, label: 'Quadro', shortcut: 'G Q' },
   ]
   for (const destination of destinations)

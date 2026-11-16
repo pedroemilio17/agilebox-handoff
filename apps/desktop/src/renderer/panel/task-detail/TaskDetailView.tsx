@@ -3,6 +3,7 @@ import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { DateOnly, TaskStatus } from '@agilebox/core'
 import { Button, IconButton, ReadOnlyBadge, TaskKey, Toast } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { isAgingTask } from '../../shared/lib/task-signals'
@@ -46,6 +47,7 @@ export function TaskDetailView({
   const update = useUpdateTask(taskId)
   const move = useMoveTaskStatus(taskId)
   const definitionGate = useDefinitionOfDoneGate()
+  const capabilities = useCapabilities()
   const task = detail.data
   const [copyNotice, setCopyNotice] = useState<{ id: number; message: string } | null>(null)
   const title = useBlurSave(task?.title ?? '', (next) => {
@@ -244,7 +246,9 @@ export function TaskDetailView({
         readOnly={readOnly}
         onUpdate={(changes) => update.mutate(changes)}
       />
-      <ChecklistCard task={task!} readOnly={readOnly} />
+      {capabilities.can('subtasks:screen') ? (
+        <ChecklistCard task={task!} readOnly={readOnly} />
+      ) : null}
       <CommentsCard task={task!} readOnlyScope={readOnlyScope} />
       <TimelineCard taskId={taskId} />
       {definitionGate.dialog}

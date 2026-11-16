@@ -5,6 +5,8 @@ import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
 import type { SetWipLimitsInput, TaskDto, WipLimitsDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
+import { CapabilitiesProvider } from '../shared/capabilities/CapabilitiesProvider'
+import { useCapabilities } from '../shared/capabilities/capabilities-context'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
 import { panelCopy } from './copy'
@@ -30,8 +32,20 @@ import { PanelCommands } from './commands/PanelCommands'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
+  return (
+    <CapabilitiesProvider>
+      <PanelContent />
+    </CapabilitiesProvider>
+  )
+}
+
+function PanelContent() {
   const [commandsOpen, setCommandsOpen] = useState(false)
   const api = useApi()
+  const capabilities = useCapabilities()
+  // Agenda só aparece com o módulo ligado e o nível da pessoa; a view guardada cai no Quadro.
+  const agendaVisible = capabilities.showScreen('agenda')
+  const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
   const [view, setView] = useState<PanelView>(() => {
     // Depois de trocar Translúcido/Opaco as janelas são recriadas: o painel volta em Ajustes.
@@ -43,6 +57,7 @@ export function App() {
       return 'projects'
     }
   })
+  const currentView: PanelView = view === 'agenda' && !agendaVisible ? 'projects' : view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
@@ -91,7 +106,7 @@ export function App() {
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
         ...(showArchived ? { includeArchived: true } : {}),
       }),
-    enabled: view === 'projects' && taskScope === 'team',
+    enabled: currentView === 'projects' && taskScope === 'team',
   })
   const teamView = taskScope === 'team'
   const boardTasks = teamView ? teamTasks.data : tasks.data?.tasks
@@ -110,7 +125,8 @@ export function App() {
   }
   const boardFlow = useQuery({
     queryKey: [...queryKeys.tasks.all, 'flow', selectedProjectId, viewingUser?.id],
-    enabled: view === 'projects',
+    // Sem a ferramenta de métricas de fluxo o backend recusa a consulta: nem tenta.
+    enabled: currentView === 'projects' && flowFetch,
     queryFn: () =>
       api.tasks.getBoardFlow({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
@@ -278,7 +294,7 @@ export function App() {
       if (goTo) {
         goTo = false
         if (timer) clearTimeout(timer)
-        if (key === 'q' || key === 'a' || (key === 'd' && isManager)) {
+        if (key === 'q' || (key === 'a' && agendaVisible) || (key === 'd' && isManager)) {
           event.preventDefault()
           setView(key === 'q' ? 'projects' : key === 'a' ? 'agenda' : 'dashboard')
         }
@@ -302,7 +318,7 @@ export function App() {
       window.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [isManager])
+  }, [isManager, agendaVisible])
 
   return (
     <>
@@ -323,7 +339,7 @@ export function App() {
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
           ) : null
         }
-        view={view}
+        view={currentView}
         onViewChange={setView}
         taskScope={taskScope}
         onTaskScopeChange={changeTaskScope}
@@ -382,7 +398,7 @@ export function App() {
           setNewTaskDialogOpen(true)
         }}
       >
-        {view === 'projects' ? (
+        {currentView === 'projects' ? (
           <>
             {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
             {activeTaskId && taskFullScreen ? (
