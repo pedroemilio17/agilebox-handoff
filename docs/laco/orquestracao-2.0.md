@@ -42,8 +42,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M2 · Interface adaptativa
 
 - [x] M2.1 Menu e campos avançados por nível (Básico oculta o que for avançado, dados continuam lá).
-- [~] M2.2 Tela "Ferramentas da equipe": presets (Kanban simples, Scrum, Kanban com fluxo, Scrum completo), prévia de impacto, aplicação direta pelo gestor, aviso "Sprints aparece a partir do Intermediário. Subir o nível do projeto?".
-- [ ] M2.3 Efeitos passivos por módulo (ex.: "Sprint 4" no card em qualquer nível) e o time Básico trabalhando sem saber Scrum.
+- [x] M2.2 Tela "Ferramentas da equipe": presets (Kanban simples, Scrum, Kanban com fluxo, Scrum completo), prévia de impacto, aplicação direta pelo gestor, aviso "Sprints aparece a partir do Intermediário. Subir o nível do projeto?".
+- [~] M2.3 Time Básico trabalha sem saber Scrum: teste integrado de interface (preset Kanban simples, nível Básico) percorrendo criar, mover, editar, comentar, arquivar e reabrir tarefa sem nenhum termo ou tela de Scrum (backlog, sprint, critérios, estimativa, check-in, impedimento), mais a auditoria de textos/menus por preset. O efeito passivo "Sprint N" no card depende de Sprints e fica para o M4.3; os demais efeitos passivos já valem desde o M2.1.
 
 ### M3 · Backlog e critérios
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M2.2 (Haiku), lançado após o commit do M2.1. Resultado chega por notificação.
+M2.3 (Haiku), lançado após o commit do M2.2. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -102,7 +102,11 @@ M2.2 (Haiku), lançado após o commit do M2.1. Resultado chega por notificação
 
 - Interface adaptativa (M2.1): enquanto `teamTools.get` carrega ou falha, a tela mostra tudo (o backend segue recusando); o plano põe Agenda no preset Kanban simples, então a Agenda aparece no Básico (o briefing dizia "sem Agenda": segui o plano); nenhum campo avançado foi escondido (o candidato é o bloco Ticket, como `integrations:advanced_fields`; esconder mudaria o que aparece para times sem a ferramenta); no Básico o motivo do bloqueio aparece sem o botão Desbloquear (Desbloquear é `impediments:screen`); o filtro "Paradas" é tratado como filtro de fluxo e o tile "Paradas" do dashboard não tem gate; Plug-ins segue "em breve". Confirmar cada uma.
 
+- Tela de ferramentas (M2.2): Ajustes não tinha placeholder "Em breve" (já abria Aparência e Atualizações); a seção de ferramentas entrou no topo de Ajustes, então a decisão provisória 12.3 perdeu o objeto (confirmar); a lista "Em breve" (`estimates.points`, `integrations`) é fixa na UI, o DTO não tem marcador de indisponível; "Encerrando" tem três botões (Reativar, Antecipar, Concluir) em vez de interruptor; mudança de nível não tem prévia; o aviso diz "da equipe" (o plano diz "do projeto"); as descrições dos presets são texto do agente, para você revisar. A sincronização entre janelas usa o canal de mudanças existente e não foi testada de ponta a ponta; a tela não teve conferência visual (vidro, espaçamento, coluna estreita).
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 92: M2.2 concluído (Haiku). Tela "Ferramentas da equipe" no topo de Ajustes: nível, 4 presets, lista de ferramentas com prévia de impacto, dependentes, encerramento gradual e reativação; gestor edita e colaborador só lê; +23 testes. `pnpm check` pelo orquestrador: 223 arquivos, 1944 testes, exit 0.
 
 - Ciclo 85: M2.1 concluído (Haiku). `useTeamTools`/`useCapabilities` e o filtro por capacidade no painel, no dashboard e na bandeja (mapa elemento→capacidade no relatório do agente); com o padrão de código nada muda para quem usa hoje; +24 testes. `pnpm check` pelo orquestrador: 220 arquivos, 1921 testes, exit 0.
 

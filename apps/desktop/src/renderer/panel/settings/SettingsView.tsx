@@ -9,6 +9,7 @@ import {
   WINDOW_OPACITY_MIN,
 } from '../../shared/lib/window-opacity'
 import { panelCopy } from '../copy'
+import { TeamToolsSection } from '../team-tools/TeamToolsSection'
 import { UpdatesSection } from './UpdatesSection'
 import styles from './SettingsView.module.css'
 
@@ -28,6 +29,7 @@ export function SettingsView() {
 
   return (
     <div className={styles.view}>
+      <TeamToolsSection />
       <GlassSurface variant="group" className={styles.section} aria-label={panelCopy.appearance}>
         <h2 className={styles.sectionTitle}>{panelCopy.appearance}</h2>
         <span className={styles.label}>{panelCopy.windowBackground}</span>
