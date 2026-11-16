@@ -114,6 +114,14 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       listForDate: (input) => call('daily.listForDate', input),
       getForUser: (input) => call('daily.getForUser', input),
     },
+    teamTools: {
+      get: () => call('teamTools.get', undefined),
+      previewChange: (input) => call('teamTools.previewChange', input),
+      applyChange: (input) => call('teamTools.applyChange', input),
+      completeWindDown: (input) => call('teamTools.completeWindDown', input),
+      setLevel: (input) => call('teamTools.setLevel', input),
+      applyPreset: (input) => call('teamTools.applyPreset', input),
+    },
     onChanges: bridge.onChanges,
   }
 }

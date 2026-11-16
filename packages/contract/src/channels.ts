@@ -66,6 +66,12 @@ export const API_CHANNELS = [
   'daily.save',
   'daily.listForDate',
   'daily.getForUser',
+  'teamTools.get',
+  'teamTools.previewChange',
+  'teamTools.applyChange',
+  'teamTools.completeWindDown',
+  'teamTools.setLevel',
+  'teamTools.applyPreset',
 ] as const
 
 export type ApiChannel = (typeof API_CHANNELS)[number]

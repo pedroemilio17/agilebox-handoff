@@ -67,6 +67,8 @@ export interface TeamModuleUpdate {
 export interface TeamToolsUpdate {
   readonly level: ExperienceLevel
   readonly modules: readonly TeamModuleUpdate[]
+  /** Quando presente, a gravação é uma aplicação de preset e fica na auditoria como `preset`. */
+  readonly preset?: TeamPresetId
 }
 
 export const TEAM_TOOLS_AUDIT_KINDS = ['module_state', 'level', 'preset'] as const
@@ -74,11 +76,12 @@ export type TeamToolsAuditKind = (typeof TEAM_TOOLS_AUDIT_KINDS)[number]
 
 /**
  * Diferença entre dois ajustes. `before`/`after` são o estado efetivo: ferramenta sem linha
- * conta como `disabled`. A auditoria de `preset` fica para o M2, quando há aplicação de preset.
+ * conta como `disabled`. `preset` registra a aplicação de um preset (uma entrada por gravação).
  */
 export type TeamToolsChange =
   | { kind: 'module_state'; moduleId: ModuleId; before: ModuleState; after: ModuleState }
   | { kind: 'level'; before: ExperienceLevel; after: ExperienceLevel }
+  | { kind: 'preset'; presetId: TeamPresetId }
 
 /** Linha de `team_tools_audit` já com os dados de negócio; o id é atribuído pela persistência. */
 export interface TeamToolsAuditRecord {
@@ -290,6 +293,8 @@ export function applyTeamToolsUpdate(
   stamp: { readonly organizationId: OrganizationId; readonly actorId: UserId; readonly at: string },
 ): { settings: TeamToolsSettings; changes: TeamToolsChange[] } {
   toExperienceLevel(update.level)
+  if (update.preset !== undefined && !TEAM_PRESETS.some((preset) => preset.id === update.preset))
+    throw new ValidationError('Preset desconhecido')
   const requested = new Set<ModuleId>()
   for (const module of update.modules) {
     getModule(module.moduleId)
@@ -302,6 +307,9 @@ export function applyTeamToolsUpdate(
   const changes: TeamToolsChange[] = []
   if (update.level !== current.level) {
     changes.push({ kind: 'level', before: current.level, after: update.level })
+  }
+  if (update.preset !== undefined) {
+    changes.push({ kind: 'preset', presetId: update.preset })
   }
 
   const written: TeamModuleSetting[] = []
@@ -341,11 +349,12 @@ export function applyTeamToolsUpdate(
 }
 
 function orderChanges(changes: TeamToolsChange[]): TeamToolsChange[] {
+  const presets = changes.filter((change) => change.kind === 'preset')
   const levels = changes.filter((change) => change.kind === 'level')
   const modules = changes
     .filter((change) => change.kind === 'module_state')
     .sort((a, b) => MODULE_IDS.indexOf(a.moduleId) - MODULE_IDS.indexOf(b.moduleId))
-  return [...levels, ...modules]
+  return [...presets, ...levels, ...modules]
 }
 
 /**
@@ -356,25 +365,27 @@ export function auditRecordsFor(
   changes: readonly TeamToolsChange[],
   stamp: { readonly organizationId: OrganizationId; readonly actorId: UserId; readonly at: string },
 ): TeamToolsAuditRecord[] {
-  return changes.map((change) =>
-    change.kind === 'level'
-      ? {
-          organizationId: stamp.organizationId,
-          actorId: stamp.actorId,
+  const base = { organizationId: stamp.organizationId, actorId: stamp.actorId, createdAt: stamp.at }
+  return changes.map((change): TeamToolsAuditRecord => {
+    switch (change.kind) {
+      case 'level':
+        return {
+          ...base,
           kind: 'level',
           moduleId: null,
           before: change.before,
           after: change.after,
-          createdAt: stamp.at,
         }
-      : {
-          organizationId: stamp.organizationId,
-          actorId: stamp.actorId,
+      case 'preset':
+        return { ...base, kind: 'preset', moduleId: null, before: null, after: change.presetId }
+      case 'module_state':
+        return {
+          ...base,
           kind: 'module_state',
           moduleId: change.moduleId,
           before: change.before,
           after: change.after,
-          createdAt: stamp.at,
-        },
-  )
+        }
+    }
+  })
 }

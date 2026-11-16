@@ -31,6 +31,7 @@ export interface ModuleUsePolicy {
  *   que é regra do produto e não da ferramenta de estimativa (`estimates.hours`).
  * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto. O módulo
  *   `acceptance` não tem casos de uso próprios hoje.
+ * - `teamTools.*` fica em `core`: a gestão das ferramentas não pode ser desligada por ela mesma.
  */
 export const USE_CASE_MODULES = {
   'session.listUsers': { module: 'core' },
@@ -107,6 +108,14 @@ export const USE_CASE_MODULES = {
   'meetings.retroActions.update': { module: 'reviewRetro' },
   'meetings.retroActions.toggle': { module: 'reviewRetro' },
   'meetings.retroActions.remove': { module: 'reviewRetro' },
+
+  // A gestão das ferramentas nunca pode ser desligada: fica no núcleo (PLANO-2.0, regra 6).
+  'teamTools.get': { module: 'core' },
+  'teamTools.previewChange': { module: 'core' },
+  'teamTools.applyChange': { module: 'core' },
+  'teamTools.completeWindDown': { module: 'core' },
+  'teamTools.setLevel': { module: 'core' },
+  'teamTools.applyPreset': { module: 'core' },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */

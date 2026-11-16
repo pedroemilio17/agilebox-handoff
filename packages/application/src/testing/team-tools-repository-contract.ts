@@ -112,6 +112,29 @@ export function describeTeamToolsRepositoryContract(
       expect(await repository.listAudit(organizationA, 1)).toHaveLength(1)
     })
 
+    it('aplicação de preset grava a auditoria do tipo preset, com o id do preset em after', async () => {
+      const repository = await makeRepository()
+      await repository.saveSettings(
+        organizationA,
+        { level: 'basic', modules: [{ moduleId: 'wip', state: 'disabled' }], preset: 'kanban' },
+        managerA,
+        FIRST_CHANGE,
+      )
+
+      const audit = await repository.listAudit(organizationA, 10)
+      expect(audit.map((entry) => [entry.kind, entry.moduleId, entry.after])).toEqual(
+        expect.arrayContaining([
+          ['preset', null, 'kanban'],
+          ['level', null, 'basic'],
+          ['module_state', 'wip', 'disabled'],
+        ]),
+      )
+      expect(audit.find((entry) => entry.kind === 'preset')).toMatchObject({
+        actorId: managerA,
+        createdAt: FIRST_CHANGE,
+      })
+    })
+
     it('recusa conjunto inválido e não grava nada, nem auditoria', async () => {
       const repository = await makeRepository()
 

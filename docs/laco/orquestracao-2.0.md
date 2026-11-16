@@ -37,11 +37,11 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
 - [x] M1.5b Ajuste do padrão das ferramentas: o preset Scrum completo não inclui `wip`, `subtasks` nem `flowMetrics` (estão em Kanban com fluxo), então o backfill/seed não preserva o que já existe. Padrão passa a ser todos os módulos, exceto `estimates.points` (conflita com horas, ADR-07) e `integrations` (plug-ins fora do MVP), nível Avançado; ajustar `defaultTeamTools`, o backfill da migração 0012 (ainda não enviada ao remoto), o seed e os testes.
 - [x] M1.6a Guard de módulo no backend: cada caso de uso declara seu módulo e se cria itens; chamada a módulo `disabled` é recusada no backend (painel, chat ou MCP), e `winding_down` recusa só criação (o que já existe segue visível e editável). Mapear os casos de uso atuais (agenda→`agenda`, limite de WIP→`wip`, checklist/subtarefas→`subtasks`, retro→`reviewRetro`, daily→`checkins`, bloqueio→`impediments`, fluxo/insights→`flowMetrics`, demais→`core`). Leitura de dado do módulo desligado: esconde, nunca apaga.
-- [~] M1.6b Casos de uso das ferramentas da equipe: `GetTeamTools` (ferramentas, nível e `effectiveCapabilities` do ator), `PreviewTeamToolsChange` (prévia de impacto com contagens do que depende de cada módulo e quem depende), `ApplyTeamToolsChange` (só gestor; aplica via `resolveModuleSet`; ativar é imediato, desativar entra em `winding_down` e só vira `disabled` quando acaba, com destino opcional por tipo de item; auditoria), `ChangeTeamLevel` e `ApplyTeamPreset`; contrato e IPC; testes.
+- [x] M1.6b Casos de uso das ferramentas da equipe: `GetTeamTools` (ferramentas, nível e `effectiveCapabilities` do ator), `PreviewTeamToolsChange` (prévia de impacto com contagens do que depende de cada módulo e quem depende), `ApplyTeamToolsChange` (só gestor; aplica via `resolveModuleSet`; ativar é imediato, desativar entra em `winding_down` e só vira `disabled` quando acaba, com destino opcional por tipo de item; auditoria), `ChangeTeamLevel` e `ApplyTeamPreset`; contrato e IPC; testes.
 
 ### M2 · Interface adaptativa
 
-- [ ] M2.1 Menu e campos avançados por nível (Básico oculta o que for avançado, dados continuam lá).
+- [~] M2.1 Menu e campos avançados por nível (Básico oculta o que for avançado, dados continuam lá).
 - [ ] M2.2 Tela "Ferramentas da equipe": presets (Kanban simples, Scrum, Kanban com fluxo, Scrum completo), prévia de impacto, aplicação direta pelo gestor, aviso "Sprints aparece a partir do Intermediário. Subir o nível do projeto?".
 - [ ] M2.3 Efeitos passivos por módulo (ex.: "Sprint 4" no card em qualquer nível) e o time Básico trabalhando sem saber Scrum.
 
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.6b (Haiku), lançado após o commit do M1.6a. Resultado chega por notificação.
+M2.1 (Haiku), lançado após o commit do M1.6b. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -98,7 +98,11 @@ M1.6b (Haiku), lançado após o commit do M1.6a. Resultado chega por notificaç�
 
 - Guard (M1.6a): os insights de fluxo do dashboard (`dashboard.get`/`exportSummary`) ficaram em `core`, porque o caso de uso mistura estatística do núcleo com insight de fluxo; mapear para `flowMetrics` esconderia o painel do gestor inteiro. Efeito: com `flowMetrics` desligado, esses insights ainda saem pelo dashboard, o que contraria "zero chamada a módulo desativado" da tabela de segurança. Decidir: dividir em um caso de uso só de fluxo no M2 ou adaptar o DTO. Outros: `daily.save` recusa qualquer gravação durante o encerramento (inclusive editar a daily de hoje); `boardSettings.get` é recusado com WIP desligado (a interface precisa tratar); horas e valor/hora por participação ficam em `core` (alimentam o custo); o guard lê as configurações fora da transação do caso de uso (reavaliar no M6b, Postgres). DTOs que ainda expõem campos de módulos desligados, para o M2: `checklistProgress`, `blockedReason/blockedAt`, `wipLimits/wipColumns`, `checklist`, `insights`, `blockedCount`, eventos de checklist/bloqueio na linha do tempo e contagens de retro na agenda.
 
+- Casos de uso das ferramentas (M1.6b): desativar entra em `winding_down`; o gestor antecipa com `finalize` ou confirma com `completeWindDown` (a detecção automática de "acabou" por módulo não existe: o gestor confirma); aceite entre pessoas (ADR-05) fica para o M6b; as capacidades usam o nível da equipe (não há nível por pessoa, ADR-06); desligar um módulo cujo dependente está em `winding_down` é recusado. Pendente de decisão: `burndown` fica ativo se a alternativa (horas) entra em `winding_down` (o resolvedor considera que "existe"); a mensagem de `conflicting_request` por dependência é genérica; não há broadcast específico de ferramentas (usa o tipo `board`).
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 76: M1.6b concluído (Haiku). Seis casos de uso (`teamTools.get`, `previewChange`, `applyChange`, `completeWindDown`, `setLevel`, `applyPreset`), todos `core` e só o gestor muda; prévia de impacto com contagens reais; auditoria inclusive de preset; contrato, 6 canais IPC e cliente; +45 testes. `pnpm check` pelo orquestrador: 216 arquivos, 1897 testes, exit 0. **M1 completo.**
 
 - Ciclo 67: M1.6a concluído (Haiku). `USE_CASE_MODULES` mapeia as 64 folhas para módulos (40 em `core`); o guard roda dentro de `forTenant`: `disabled` recusa com FORBIDDEN, `winding_down` recusa só criação com CONFLICT, `core` nunca é bloqueado; um caso de uso novo sem declaração não compila. +25 testes. `pnpm check` pelo orquestrador: 212 arquivos, 1852 testes, exit 0.
 

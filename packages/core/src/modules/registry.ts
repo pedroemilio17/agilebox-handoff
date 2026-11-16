@@ -21,6 +21,25 @@ export const MODULE_IDS = [
 
 export type ModuleId = (typeof MODULE_IDS)[number]
 
+/** Nome de cada ferramenta na interface (pt-BR), como aparece nos presets do PLANO-2.0. */
+export const MODULE_LABELS: Readonly<Record<ModuleId, string>> = {
+  core: 'Núcleo',
+  agenda: 'Agenda',
+  backlog: 'Backlog',
+  sprints: 'Sprints',
+  checkins: 'Check-ins',
+  impediments: 'Impedimentos',
+  'estimates.hours': 'Estimativas em horas',
+  'estimates.points': 'Estimativas em pontos',
+  acceptance: 'Critérios de aceitação',
+  wip: 'Limites de WIP',
+  subtasks: 'Subtarefas e dependências',
+  integrations: 'Plug-ins',
+  flowMetrics: 'Métricas de fluxo',
+  reviewRetro: 'Review e retro',
+  burndown: 'Burndown e velocity',
+}
+
 export interface ModuleDefinition {
   id: ModuleId
   /** Dependências diretas: todas precisam estar ativas. */

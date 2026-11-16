@@ -199,4 +199,20 @@ export function registerHandlers(
   register('daily.getForUser', (context, input) =>
     useCases.daily.getForUser.execute(context, input),
   )
+  register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
+  register('teamTools.previewChange', (context, input) =>
+    useCases.teamTools.previewChange.execute(context, input),
+  )
+  register('teamTools.applyChange', (context, input) =>
+    useCases.teamTools.applyChange.execute(context, input),
+  )
+  register('teamTools.completeWindDown', (context, input) =>
+    useCases.teamTools.completeWindDown.execute(context, input),
+  )
+  register('teamTools.setLevel', (context, input) =>
+    useCases.teamTools.setLevel.execute(context, input),
+  )
+  register('teamTools.applyPreset', (context, input) =>
+    useCases.teamTools.applyPreset.execute(context, input),
+  )
 }

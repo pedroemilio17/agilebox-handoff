@@ -5,6 +5,14 @@ import type { ModuleUsePolicy, UseCasePath } from './module-guard'
 import type { TeamToolsRepository } from './ports'
 import { assertTenantContext } from './tenant-context'
 import type { TenantContext } from './tenant-context'
+import {
+  ApplyTeamPreset,
+  ApplyTeamToolsChange,
+  CompleteTeamWindDown,
+  GetTeamTools,
+  PreviewTeamToolsChange,
+  SetTeamLevel,
+} from './use-cases/team-tools/team-tools'
 import { CreateProject } from './use-cases/projects/create-project'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { RenameProject } from './use-cases/projects/rename-project'
@@ -213,6 +221,14 @@ export function createUseCases(deps: AppDeps) {
       save: forTenant('daily.save', new SaveDaily(deps)),
       listForDate: forTenant('daily.listForDate', new ListDailyForDate(deps)),
       getForUser: forTenant('daily.getForUser', new GetDailyForUser(deps)),
+    },
+    teamTools: {
+      get: forTenant('teamTools.get', new GetTeamTools(deps)),
+      previewChange: forTenant('teamTools.previewChange', new PreviewTeamToolsChange(deps)),
+      applyChange: forTenant('teamTools.applyChange', new ApplyTeamToolsChange(deps)),
+      completeWindDown: forTenant('teamTools.completeWindDown', new CompleteTeamWindDown(deps)),
+      setLevel: forTenant('teamTools.setLevel', new SetTeamLevel(deps)),
+      applyPreset: forTenant('teamTools.applyPreset', new ApplyTeamPreset(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

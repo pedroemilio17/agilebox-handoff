@@ -93,6 +93,10 @@ export function canToggleRetroAction(actor: Actor, action: RetroAction): boolean
 /** Combinados seguem a agenda: quem vê o agendamento vê os combinados dele. */
 export const canSeeRetroActions = canSeeMeeting
 export const canSeeDashboard = canSeeTaskTotal
+/** Ver as ferramentas da equipe é para qualquer membro (`tools:view`); mudá-las é só do gestor (`tools:manage`). */
+export function canManageTeamTools(actor: Actor): boolean {
+  return actor.role === 'manager'
+}
 /** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */
 export function canViewBoardSettings(actor: Actor, organizationId: OrganizationId): boolean {
   return actor.organizationId === organizationId

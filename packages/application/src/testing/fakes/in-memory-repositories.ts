@@ -324,6 +324,10 @@ export class InMemoryDailyEntryRepository implements DailyEntryRepository {
     if (bucket(this.state.users, org).has(value.userId))
       bucket(this.state.dailyEntries, org).set(value.id, value)
   }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    return bucket(this.state.dailyEntries, org).size
+  }
 }
 
 export class InMemoryRetroActionRepository implements RetroActionRepository {

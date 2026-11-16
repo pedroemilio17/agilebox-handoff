@@ -132,6 +132,17 @@ import {
 } from './daily'
 import { setDefaultRateInputSchema, setDefaultRateOutputSchema } from './users'
 import {
+  applyTeamPresetInputSchema,
+  completeTeamWindDownInputSchema,
+  getTeamToolsInputSchema,
+  previewTeamToolsChangeInputSchema,
+  setTeamLevelInputSchema,
+  teamToolsChangeInputSchema,
+  teamToolsChangeResultDtoSchema,
+  teamToolsPreviewDtoSchema,
+  teamToolsViewDtoSchema,
+} from './team-tools'
+import {
   addDefinitionOfDoneItemInputSchema,
   definitionOfDoneChangeOutputSchema,
   listDefinitionOfDoneInputSchema,
@@ -322,6 +333,24 @@ export const API_SCHEMA_REGISTRY = {
   'daily.save': { input: saveDailyInputSchema, output: saveDailyOutputSchema },
   'daily.listForDate': { input: listDailyForDateInputSchema, output: listDailyForDateOutputSchema },
   'daily.getForUser': { input: getDailyForUserInputSchema, output: getDailyForUserOutputSchema },
+  'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
+  'teamTools.previewChange': {
+    input: previewTeamToolsChangeInputSchema,
+    output: teamToolsPreviewDtoSchema,
+  },
+  'teamTools.applyChange': {
+    input: teamToolsChangeInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.completeWindDown': {
+    input: completeTeamWindDownInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.setLevel': { input: setTeamLevelInputSchema, output: teamToolsChangeResultDtoSchema },
+  'teamTools.applyPreset': {
+    input: applyTeamPresetInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
@@ -428,6 +457,14 @@ export interface AgileBoxApi {
     save: Method<'daily.save'>
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
+  }
+  teamTools: {
+    get: Method<'teamTools.get'>
+    previewChange: Method<'teamTools.previewChange'>
+    applyChange: Method<'teamTools.applyChange'>
+    completeWindDown: Method<'teamTools.completeWindDown'>
+    setLevel: Method<'teamTools.setLevel'>
+    applyPreset: Method<'teamTools.applyPreset'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }
