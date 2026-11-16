@@ -127,6 +127,13 @@ export function registerHandlers(
   register('tasks.recordOpen', (context, input) =>
     useCases.tasks.recordOpen.execute(context, input),
   )
+  register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
+  register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))
+  register('backlog.reorder', (context, input) => useCases.backlog.reorder.execute(context, input))
+  register('backlog.pull', (context, input) => useCases.backlog.pull.execute(context, input))
+  register('backlog.sendBack', (context, input) =>
+    useCases.backlog.sendBack.execute(context, input),
+  )
   register('participations.add', (context, input) =>
     useCases.participations.add.execute(context, input),
   )

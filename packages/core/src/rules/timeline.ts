@@ -138,6 +138,14 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return 'arquivou a tarefa'
     case 'task_unarchived':
       return 'desarquivou a tarefa'
+    case 'task_added_to_backlog':
+      return 'adicionou a tarefa ao backlog'
+    case 'task_sent_to_backlog':
+      return 'devolveu a tarefa ao backlog'
+    case 'task_pulled_from_backlog':
+      return `puxou a tarefa do backlog para ${TASK_STATUS_LABELS[event.payload.status]}`
+    case 'task_reordered':
+      return `reordenou a tarefa no backlog (posição ${event.payload.position})`
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':

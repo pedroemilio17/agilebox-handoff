@@ -47,8 +47,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ### M3 · Backlog e critérios
 
-- [~] M3.1 Backlog (core, persistência, aplicação, contrato): itens futuros ordenados, separado da coluna Planejamento; reordenar persiste.
-- [ ] M3.2 Critérios de aceitação por tarefa (reaproveitar o padrão da definição de pronto) e estimativa em horas ligada ao custo por hora.
+- [x] M3.1 Backlog (core, persistência, aplicação, contrato): itens futuros ordenados, separado da coluna Planejamento; reordenar persiste.
+- [~] M3.2 Critérios de aceitação por tarefa (reaproveitar o padrão da definição de pronto) e estimativa em horas ligada ao custo por hora.
 - [ ] M3.3 Telas de backlog (nível Intermediário) com reordenar, critérios e estimativa.
 
 ### M4 · Sprints
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M3.1 (Haiku), lançado após o commit do M2.3. Resultado chega por notificação.
+M3.2 (Haiku), lançado após o commit do M3.1. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -107,7 +107,11 @@ M3.1 (Haiku), lançado após o commit do M2.3. Resultado chega por notificação
 - Time Básico (M2.3), achados da auditoria preset × nível: (1) corrigido: o dashboard do gestor mostrava o bloco "Fluxo · 6 semanas" no Kanban simples; agora exige `flowMetrics:screen`. Para decidir: (2) "parada" (selo "parada Xd" no card, alerta "Tarefa parada" com "Segue em andamento" e tile "Paradas" do dashboard) não tem capacidade; só o filtro "Paradas" do quadro está atrás de `flowMetrics`; o MVP trata parada como sinal do núcleo, o plano 2.0 não tem módulo de parada: ou é do núcleo (então o filtro sai de `flowMetrics`) ou é métrica de fluxo (então tudo some no Kanban simples); (3) Ajustes do colaborador lista o catálogo inteiro (Backlog, Sprints etc. como "Desativada"); (4) com o módulo "Encerrando" a interface ainda mostra os controles de criar (o servidor recusa); precisa de uma capacidade de criação; (5) `dashboard.get` ainda devolve os insights de fluxo com o módulo desligado; (6) Definição de pronto aparece no Kanban simples (é núcleo) e fica perto do termo "Critérios de aceitação".
 - Backlog (M3.1), suposições do orquestrador para o agente: um item de backlog é uma tarefa com posição de backlog (nulo = está no quadro), para manter linha do tempo, permissões, arquivamento e custo; o backlog de um projeto é visível a todos os membros do projeto e ao gestor; reordenar é permitido ao gestor e aos membros do projeto (planejar é coletivo); puxar para o quadro e devolver ao backlog geram evento na linha do tempo; o item de backlog não aparece no quadro nem na bandeja; o módulo é `backlog` (guard). Confirmar.
 
+- Backlog (M3.1), implementado: rank inteiro com espaçamento de 1024 (renumera quando não cabe); `backlog.list/add/reorder/pull/sendBack`; `tasks.move` em item de backlog só aceita Planejamento; pull leva a A fazer por padrão. Para decidir: (1) módulo `backlog` em `disabled` deixa os itens escondidos (reativar devolve) e não há passo que os puxe para o quadro no encerramento (o plano prevê o gestor escolher o destino: tarefas da sprint voltando ao Kanban como estão); (2) em projeto arquivado só criar item é recusado (reordenar, puxar e devolver continuam); (3) devolver ao backlog usa a mesma política de puxar (membro ou gestor); (4) o pull gera dois eventos na linha do tempo (`task_pulled_from_backlog` e `status_changed`); (5) `sendBack` calcula o rank fora da transação (corrida rara, ordem de desempate estável); (6) `team-tools.countUsage` conta itens de backlog como tarefas nas contagens de impacto.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 117: M3.1 concluído (Haiku). Backlog como tarefa com posição (`backlogRank`, migração 0013): domínio, persistência, cinco casos de uso `backlog.*` com guard, contrato e IPC; itens de backlog saem do quadro, da busca, dos recentes e do dashboard; +65 testes. `pnpm check` pelo orquestrador: 236 arquivos, 2032 testes, exit 0.
 
 - Ciclo 103: M2.3 concluído (Haiku). Auditoria de 4 presets × 3 níveis (diff de teste), fluxo diário do time Básico sem termos de Scrum, troca de nível sem perda de dados; uma correção real no dashboard; +23 testes. `pnpm check` pelo orquestrador: 229 arquivos, 1967 testes, exit 0. **M2 completo.**
 

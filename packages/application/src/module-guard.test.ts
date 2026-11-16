@@ -477,7 +477,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(70)
+    expect(registered).toHaveLength(75)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -491,6 +491,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .map(([path]) => path)
       .sort()
     expect(creates).toEqual([
+      'backlog.add',
       'daily.save',
       'meetings.create',
       'meetings.retroActions.add',

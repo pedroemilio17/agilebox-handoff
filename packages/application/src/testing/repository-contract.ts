@@ -229,5 +229,59 @@ export function describeRepositoryContract(
         repositories.participations.findById(organizationId, participation.id),
       ).resolves.toBeNull()
     })
+    it('lista só os itens de backlog do projeto e grava as posições pedidas, por organização', async () => {
+      const repositories = makeAdapters()
+      const user = aUser().with({ id: userId, organizationId }).build()
+      const project = aProject().with({ id: projectId, organizationId }).build()
+      const backlogTask = (suffix: string, backlogRank: number | null, createdAt = timestamp) => ({
+        ...aTask()
+          .with({
+            id: toTaskId(`01ARZ3NDEKTSV4RRFFQ69G${suffix}`),
+            number: 900 + (suffix.charCodeAt(3) - 48),
+            responsibleParticipationId: toParticipationId(
+              `01ARZ3NDEKTSV4RRFFQ69G${suffix.replace(/^./u, 'D')}`,
+            ),
+            organizationId,
+            projectId,
+            createdBy: userId,
+            createdAt,
+          })
+          .build(),
+        backlogRank,
+      })
+      const first = backlogTask('5CA1', 2048)
+      const second = backlogTask('5CA2', 1024)
+      const onBoard = backlogTask('5CA3', null)
+      await repositories.users.save(organizationId, user)
+      await repositories.projects.save(organizationId, project)
+      await repositories.tasks.save(organizationId, first)
+      await repositories.tasks.save(organizationId, second)
+      await repositories.tasks.save(organizationId, onBoard)
+
+      await expect(repositories.tasks.findById(organizationId, first.id)).resolves.toEqual(first)
+      const backlog = await repositories.tasks.listBacklog(organizationId, projectId)
+      expect(backlog.map((task) => task.id).sort()).toEqual([first.id, second.id].sort())
+
+      await repositories.tasks.updateBacklogRanks(organizationId, [
+        { taskId: second.id, backlogRank: 4096 },
+      ])
+      await expect(repositories.tasks.findById(organizationId, second.id)).resolves.toEqual({
+        ...second,
+        backlogRank: 4096,
+      })
+      await expect(repositories.tasks.findById(organizationId, first.id)).resolves.toEqual(first)
+      await expect(repositories.tasks.findById(organizationId, onBoard.id)).resolves.toEqual(
+        onBoard,
+      )
+
+      // Outra organização não vê o backlog daqui nem consegue regravar a posição.
+      await expect(repositories.tasks.listBacklog(otherOrganizationId, projectId)).resolves.toEqual(
+        [],
+      )
+      await repositories.tasks.updateBacklogRanks(otherOrganizationId, [
+        { taskId: first.id, backlogRank: 1 },
+      ])
+      await expect(repositories.tasks.findById(organizationId, first.id)).resolves.toEqual(first)
+    })
   })
 }

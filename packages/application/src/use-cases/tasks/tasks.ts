@@ -1,8 +1,12 @@
 import {
   addParticipant,
+  addToBacklog,
   archiveTask,
   blockTask,
   canChangeTaskArchive,
+  canPullFromBacklog,
+  isInBacklog,
+  rankAtEnd,
   unarchiveTask,
   unblockTask,
   ConflictError,
@@ -50,11 +54,22 @@ import { loadCommentCounts } from './comment-loader'
 import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
+import { assertBacklogAccess } from '../backlog/backlog-access'
+import type { BacklogPolicy } from '../backlog/backlog-access'
+
+export interface CreateTaskOptions {
+  /** Cria o item direto no backlog do projeto (M3.1): fora do quadro, em Planejamento. */
+  readonly backlog?: boolean
+}
 
 export class CreateTask {
   constructor(private readonly deps: AppDeps) {}
 
-  async execute(actor: Actor, input: CreateTaskInput): Promise<TaskDto> {
+  async execute(
+    actor: Actor,
+    input: CreateTaskInput,
+    options: CreateTaskOptions = {},
+  ): Promise<TaskDto> {
     const projectId = toProjectId(input.projectId)
     const project = await this.deps.projects.findById(actor.organizationId, projectId)
     if (!project) throw new NotFoundError('Projeto não encontrado')
@@ -104,6 +119,14 @@ export class CreateTask {
           created,
           input.deadline === null ? null : parseDateOnly(input.deadline),
         )
+      const backlogDrafts: TimelineEventDraft[] = []
+      if (options.backlog === true) {
+        created = addToBacklog(
+          created,
+          rankAtEnd(await repositories.tasks.listBacklog(actor.organizationId, projectId)),
+        )
+        backlogDrafts.push({ type: 'task_added_to_backlog', payload: {} })
+      }
       if (input.responsibleId !== undefined && input.responsibleId !== actor.userId) {
         const responsibleId = toUserId(input.responsibleId)
         const responsible = await this.deps.users.findById(actor.organizationId, responsibleId)
@@ -132,15 +155,16 @@ export class CreateTask {
         payload: {},
       })
       const initialEvents = await Promise.all(
-        [...diffTask(initialTask, created), ...definitionEvents].map(async (draft) =>
-          createTimelineEvent({
-            ...draft,
-            id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
-            taskId: created.id,
-            at: now,
-            actorUserId: actor.userId,
-            asManager: isManagerEdit(actor),
-          }),
+        [...diffTask(initialTask, created), ...definitionEvents, ...backlogDrafts].map(
+          async (draft) =>
+            createTimelineEvent({
+              ...draft,
+              id: toEventId(await this.deps.idGenerator.generate(actor.organizationId)),
+              taskId: created.id,
+              at: now,
+              actorUserId: actor.userId,
+              asManager: isManagerEdit(actor),
+            }),
         ),
       )
       await repositories.tasks.save(actor.organizationId, created)
@@ -227,17 +251,21 @@ export class GetTaskDetail {
   }
 }
 
-abstract class ChangeTask {
+export abstract class ChangeTask {
   constructor(protected readonly deps: AppDeps) {}
 
-  /** `archive`: só arquivar/desarquivar, que vale também para tarefa arquivada. */
+  /**
+   * `archive`: só arquivar/desarquivar, que vale também para tarefa arquivada.
+   * `backlog`: puxar/devolver ao backlog; vale para o membro do projeto e o gestor (não só quem participa).
+   */
   protected async change(
     actor: Actor,
     rawTaskId: string,
     transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
     confirmedDefinitionItemIds: readonly string[] = [],
-    access: 'edit' | 'archive' = 'edit',
+    access: 'edit' | 'archive' | 'backlog' = 'edit',
+    backlogPolicy: BacklogPolicy = canPullFromBacklog,
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -245,6 +273,8 @@ abstract class ChangeTask {
     if (access === 'archive') {
       if (!canChangeTaskArchive(actor, task))
         throw new PermissionDeniedError('Sem permissão para arquivar ou desarquivar esta tarefa')
+    } else if (access === 'backlog') {
+      await assertBacklogAccess(this.deps, actor, task, backlogPolicy)
     } else assertTaskEditable(actor, task)
     const now = await this.deps.clock.now(actor.organizationId)
     const changed = transform(task, now)
@@ -383,7 +413,12 @@ export class MoveTask extends ChangeTask {
     return this.change(
       actor,
       input.taskId,
-      (task) => setStatus(task, input.status),
+      (task) => {
+        // Item de backlog não tem coluna: fica em Planejamento até ser puxado para o quadro.
+        if (isInBacklog(task) && input.status !== 'planning')
+          throw new ConflictError('Item do backlog não muda de coluna: puxe-o para o quadro antes')
+        return setStatus(task, input.status)
+      },
       [],
       input.confirmedDefinitionItemIds ?? [],
     )

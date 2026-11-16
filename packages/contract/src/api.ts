@@ -153,6 +153,18 @@ import {
 } from './definition-of-done'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
+  addToBacklogInputSchema,
+  addToBacklogOutputSchema,
+  listBacklogInputSchema,
+  listBacklogOutputSchema,
+  pullFromBacklogInputSchema,
+  pullFromBacklogOutputSchema,
+  reorderBacklogInputSchema,
+  reorderBacklogOutputSchema,
+  sendToBacklogInputSchema,
+  sendToBacklogOutputSchema,
+} from './backlog'
+import {
   getCurrentSessionInputSchema,
   getCurrentSessionOutputSchema,
   listSessionUsersInputSchema,
@@ -261,6 +273,11 @@ export const API_SCHEMA_REGISTRY = {
   },
   'tasks.search': { input: searchTasksInputSchema, output: searchTasksOutputSchema },
   'tasks.recordOpen': { input: recordTaskOpenInputSchema, output: recordTaskOpenOutputSchema },
+  'backlog.list': { input: listBacklogInputSchema, output: listBacklogOutputSchema },
+  'backlog.add': { input: addToBacklogInputSchema, output: addToBacklogOutputSchema },
+  'backlog.reorder': { input: reorderBacklogInputSchema, output: reorderBacklogOutputSchema },
+  'backlog.pull': { input: pullFromBacklogInputSchema, output: pullFromBacklogOutputSchema },
+  'backlog.sendBack': { input: sendToBacklogInputSchema, output: sendToBacklogOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -457,6 +474,13 @@ export interface AgileBoxApi {
     save: Method<'daily.save'>
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
+  }
+  backlog: {
+    list: Method<'backlog.list'>
+    add: Method<'backlog.add'>
+    reorder: Method<'backlog.reorder'>
+    pull: Method<'backlog.pull'>
+    sendBack: Method<'backlog.sendBack'>
   }
   teamTools: {
     get: Method<'teamTools.get'>

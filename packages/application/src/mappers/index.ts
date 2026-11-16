@@ -1,4 +1,5 @@
 import {
+  isInBacklog,
   canChangeTaskArchive,
   canEditComment,
   canRemoveComment,
@@ -164,6 +165,8 @@ export function toTaskDto(
     blockedReason: task.blockedReason,
     blockedAt: task.blockedAt,
     archivedAt: task.archivedAt,
+    backlogRank: task.backlogRank,
+    inBacklog: isInBacklog(task),
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,

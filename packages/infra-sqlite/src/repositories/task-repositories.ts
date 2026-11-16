@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
-import { toTaskId } from '@agilebox/core'
+import { sortBacklog, toTaskId } from '@agilebox/core'
 import type {
   ChecklistRepository,
   ParticipationRepository,
@@ -222,6 +222,21 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       )
       return task ?? null
     },
+    async listBacklog(organizationId, projectId) {
+      const result = await findTaskRows(
+        organizationId,
+        and(eq(tasks.projectId, projectId), isNotNull(tasks.backlogRank)),
+      )
+      return sortBacklog(result)
+    },
+    async updateBacklogRanks(organizationId, changes) {
+      for (const change of changes) {
+        await database
+          .update(tasks)
+          .set({ backlogRank: change.backlogRank })
+          .where(and(eq(tasks.id, change.taskId), eq(tasks.organizationId, organizationId)))
+      }
+    },
     async nextNumber(organizationId) {
       const [row] = await database
         .select({ current: sql<number>`coalesce(max(${tasks.number}), 0)` })
@@ -267,6 +282,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         blockedAt: task.blockedAt,
         archivedAt: task.archivedAt,
         archivedBy: task.archivedBy,
+        backlogRank: task.backlogRank,
         deadline: task.deadline,
         ticketId: task.ticket === null ? null : String(task.ticket.id),
         ticketUrl: task.ticket?.url ?? null,

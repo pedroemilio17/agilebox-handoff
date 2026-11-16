@@ -49,6 +49,25 @@ export function canSeeProject(actor: Actor, project: Project, isMember: boolean)
 export function canCreateTask(actor: Actor, project: Project, isMember: boolean): boolean {
   return canSeeProject(actor, project, isMember)
 }
+/**
+ * Backlog do projeto (M3.1): visível a todos os membros e ao gestor, porque planejar é coletivo.
+ * Reordenar e puxar/devolver ao quadro seguem a mesma regra. Editar o conteúdo do item continua
+ * sendo de quem participa (canEditTask).
+ */
+export function canViewBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canReorderBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canPullFromBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canSendToBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+/** Adicionar item ao backlog é criar tarefa no projeto (membro ou gestor). */
+export const canAddToBacklog = canCreateTask
 /** Arquivar e desarquivar projeto: só o gestor e quem criou o projeto (mesma regra do botão Membros). */
 export function canArchiveProject(actor: Actor, project: Project): boolean {
   return canManageMembers(actor, project)

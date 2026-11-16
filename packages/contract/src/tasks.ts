@@ -26,6 +26,10 @@ export const taskDtoSchema = z.object({
   blockedAt: isoDateTimeSchema.nullable(),
   /** Nulo quando ativa. Ausente em respostas antigas: tratar como ativa. */
   archivedAt: isoDateTimeSchema.nullable().optional(),
+  /** Posição no backlog do projeto (inteiro); nulo = a tarefa está no quadro. Ausente em respostas antigas. */
+  backlogRank: z.number().int().safe().nullable().optional(),
+  /** Item de backlog: fora do quadro e das listas padrão. Ausente em respostas antigas: tratar como falso. */
+  inBacklog: z.boolean().optional(),
   deadline: taskDeadlineSchema,
   ticketId: z.number().int().positive().safe().nullable(),
   ticketUrl: z.url().nullable(),

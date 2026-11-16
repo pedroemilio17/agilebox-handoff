@@ -80,6 +80,13 @@ export const USE_CASE_MODULES = {
   'tasks.search': { module: 'core' },
   'tasks.recordOpen': { module: 'core' },
 
+  // Backlog (M3.1): o módulo `backlog` guarda os itens fora do quadro. Encerrando, não aceita item novo.
+  'backlog.list': { module: 'backlog' },
+  'backlog.add': { module: 'backlog', creates: true },
+  'backlog.reorder': { module: 'backlog' },
+  'backlog.pull': { module: 'backlog' },
+  'backlog.sendBack': { module: 'backlog' },
+
   'participations.add': { module: 'core' },
   'participations.remove': { module: 'core' },
   'participations.setHours': { module: 'core' },

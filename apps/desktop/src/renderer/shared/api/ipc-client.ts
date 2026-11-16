@@ -73,6 +73,13 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       search: (input) => call('tasks.search', input),
       recordOpen: (input) => call('tasks.recordOpen', input),
     },
+    backlog: {
+      list: (input) => call('backlog.list', input),
+      add: (input) => call('backlog.add', input),
+      reorder: (input) => call('backlog.reorder', input),
+      pull: (input) => call('backlog.pull', input),
+      sendBack: (input) => call('backlog.sendBack', input),
+    },
     participations: {
       add: (input) => call('participations.add', input),
       remove: (input) => call('participations.remove', input),

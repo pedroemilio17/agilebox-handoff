@@ -30,6 +30,8 @@ export const tasks = sqliteTable(
     blockedAt: text('blocked_at'),
     archivedAt: text('archived_at'),
     archivedBy: text('archived_by').references(() => users.id),
+    /** Posição no backlog do projeto (M3.1). Nulo = a tarefa está no quadro. */
+    backlogRank: integer('backlog_rank'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),
@@ -50,5 +52,10 @@ export const tasks = sqliteTable(
     uniqueIndex('tasks_organization_number_unique').on(table.organizationId, table.number),
     index('tasks_organization_project_index').on(table.organizationId, table.projectId),
     index('tasks_organization_updated_at_index').on(table.organizationId, table.updatedAt),
+    index('tasks_organization_project_backlog_index').on(
+      table.organizationId,
+      table.projectId,
+      table.backlogRank,
+    ),
   ],
 )

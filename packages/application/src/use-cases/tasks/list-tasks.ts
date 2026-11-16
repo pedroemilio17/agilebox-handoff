@@ -46,7 +46,7 @@ async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
     deps,
     actor.organizationId,
     await deps.tasks.listBoard(actor.organizationId, query),
-    input.includeArchived,
+    { includeArchived: input.includeArchived === true },
   )
 }
 
@@ -149,7 +149,7 @@ export class ListTeamBoard {
           (actor.role === 'manager' || !participates(actor, task)),
       ),
       archivedProjectIds(projects),
-      input.includeArchived,
+      { includeArchived: input.includeArchived === true },
     )
     const checklists = await loadChecklists(
       this.deps,
@@ -177,7 +177,7 @@ export class ListTeamBoard {
   }
 }
 
-async function toTaskDtos(
+export async function toTaskDtos(
   deps: AppDeps,
   actor: Actor,
   tasks: readonly Task[],

@@ -72,6 +72,11 @@ export const API_CHANNELS = [
   'teamTools.completeWindDown',
   'teamTools.setLevel',
   'teamTools.applyPreset',
+  'backlog.list',
+  'backlog.add',
+  'backlog.reorder',
+  'backlog.pull',
+  'backlog.sendBack',
 ] as const
 
 export type ApiChannel = (typeof API_CHANNELS)[number]

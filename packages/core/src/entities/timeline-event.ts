@@ -43,6 +43,15 @@ export type TimelineEvent = EventBase &
         readonly type: 'task_archived' | 'task_unarchived'
         readonly payload: Record<string, never>
       }
+    | {
+        readonly type: 'task_added_to_backlog' | 'task_sent_to_backlog'
+        readonly payload: Record<string, never>
+      }
+    | {
+        readonly type: 'task_pulled_from_backlog'
+        readonly payload: { readonly status: TaskStatus }
+      }
+    | { readonly type: 'task_reordered'; readonly payload: { readonly position: number } }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }

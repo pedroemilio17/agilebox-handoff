@@ -56,6 +56,13 @@ import {
   UpdateTask,
 } from './use-cases/tasks/tasks'
 import {
+  AddToBacklog,
+  ListBacklog,
+  PullFromBacklog,
+  ReorderBacklogItem,
+  SendToBacklog,
+} from './use-cases/backlog/backlog'
+import {
   GetBoardFlow,
   ListBoard,
   ListFrequentTasks,
@@ -221,6 +228,13 @@ export function createUseCases(deps: AppDeps) {
       save: forTenant('daily.save', new SaveDaily(deps)),
       listForDate: forTenant('daily.listForDate', new ListDailyForDate(deps)),
       getForUser: forTenant('daily.getForUser', new GetDailyForUser(deps)),
+    },
+    backlog: {
+      list: forTenant('backlog.list', new ListBacklog(deps)),
+      add: forTenant('backlog.add', new AddToBacklog(deps)),
+      reorder: forTenant('backlog.reorder', new ReorderBacklogItem(deps)),
+      pull: forTenant('backlog.pull', new PullFromBacklog(deps)),
+      sendBack: forTenant('backlog.sendBack', new SendToBacklog(deps)),
     },
     teamTools: {
       get: forTenant('teamTools.get', new GetTeamTools(deps)),

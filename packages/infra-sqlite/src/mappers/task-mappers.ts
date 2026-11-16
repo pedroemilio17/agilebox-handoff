@@ -72,6 +72,7 @@ export function mapTaskRow(
     archivedAt: row.archivedAt ?? null,
     archivedBy:
       row.archivedBy === null || row.archivedBy === undefined ? null : toUserId(row.archivedBy),
+    backlogRank: row.backlogRank ?? null,
     deadline: row.deadline === null ? null : parseDateOnly(row.deadline),
     ticket:
       row.ticketId === null ? null : createTicket(Number(row.ticketId), row.ticketUrl ?? undefined),

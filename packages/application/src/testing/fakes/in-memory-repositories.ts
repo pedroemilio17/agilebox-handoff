@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from '@agilebox/core'
 import type {
+  BacklogRankChange,
   BoardSettings,
   ExperienceLevel,
   TeamModuleSetting,
@@ -516,6 +517,20 @@ export class InMemoryTaskRepository implements TaskRepository {
   async findByNumber(org: OrganizationId, number: number, userId: User['id']) {
     await Promise.resolve()
     return this.forUser(org, userId).find((item) => item.number === number) ?? null
+  }
+  async listBacklog(org: OrganizationId, projectId: Task['projectId']) {
+    await Promise.resolve()
+    return [...bucket(this.state.tasks, org).values()].filter(
+      (item) => item.projectId === projectId && item.backlogRank !== null,
+    )
+  }
+  async updateBacklogRanks(org: OrganizationId, changes: readonly BacklogRankChange[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.tasks, org)
+    for (const change of changes) {
+      const task = values.get(change.taskId)
+      if (task) values.set(task.id, { ...task, backlogRank: change.backlogRank })
+    }
   }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
