@@ -139,6 +139,8 @@ import {
   listDailyForDateOutputSchema,
   saveDailyInputSchema,
   saveDailyOutputSchema,
+  suggestDailySummaryInputSchema,
+  suggestDailySummaryOutputSchema,
 } from './daily'
 import { setDefaultRateInputSchema, setDefaultRateOutputSchema } from './users'
 import {
@@ -417,6 +419,10 @@ export const API_SCHEMA_REGISTRY = {
   'daily.save': { input: saveDailyInputSchema, output: saveDailyOutputSchema },
   'daily.listForDate': { input: listDailyForDateInputSchema, output: listDailyForDateOutputSchema },
   'daily.getForUser': { input: getDailyForUserInputSchema, output: getDailyForUserOutputSchema },
+  'daily.suggestSummary': {
+    input: suggestDailySummaryInputSchema,
+    output: suggestDailySummaryOutputSchema,
+  },
   'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
   'teamTools.previewChange': {
     input: previewTeamToolsChangeInputSchema,
@@ -553,6 +559,7 @@ export interface AgileBoxApi {
     save: Method<'daily.save'>
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
+    suggestSummary: Method<'daily.suggestSummary'>
   }
   sprints: {
     list: Method<'sprints.list'>

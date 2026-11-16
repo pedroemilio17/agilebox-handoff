@@ -480,7 +480,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(91)
+    expect(registered).toHaveLength(92)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 

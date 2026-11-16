@@ -113,6 +113,8 @@ export const USE_CASE_MODULES = {
   'daily.save': { module: 'checkins', creates: true },
   'daily.listForDate': { module: 'checkins' },
   'daily.getForUser': { module: 'checkins' },
+  // Sugestão do check-in (M5.1): só leitura, então segue no encerramento (winding_down).
+  'daily.suggestSummary': { module: 'checkins' },
 
   'meetings.listRange': { module: 'agenda' },
   'meetings.listUpcoming': { module: 'agenda' },

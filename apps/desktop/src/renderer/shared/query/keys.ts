@@ -35,6 +35,9 @@ export const queryKeys = {
     today: (date: string) => ['agilebox', 'daily', 'today', date] as const,
     forDate: (date: string) => ['agilebox', 'daily', 'forDate', date] as const,
     entry: (userId: string, date: string) => ['agilebox', 'daily', 'entry', userId, date] as const,
+    /** Sugestão do check-in para a data e o fuso do cliente (M5.1). */
+    suggestion: (date: string, timeZone: string) =>
+      ['agilebox', 'daily', 'suggestion', date, timeZone] as const,
   },
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },

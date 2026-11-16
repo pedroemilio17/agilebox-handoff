@@ -68,3 +68,24 @@ export type DailyEntryDto = z.infer<typeof dailyEntryDtoSchema>
 export type DailyAnswersDto = z.infer<typeof dailyAnswersSchema>
 export type DailyStatusDto = z.infer<typeof dailyStatusDtoSchema>
 export type DailyTodayDto = z.infer<typeof getTodayDailyOutputSchema>
+
+/**
+ * Sugestão do check-in (M5.1). O cliente manda a data e o fuso dele; o servidor não lê relógio para
+ * isso. Campos extras do pedido (como `userId`) são descartados pelo schema: o ator vem da sessão.
+ */
+export const suggestDailySummaryInputSchema = z.object({
+  date: dateSchema,
+  timeZone: z.string().min(1).max(64),
+})
+
+/** Texto pt-BR de uma linha da sugestão (uma por tarefa). */
+const suggestionLineSchema = z.string()
+
+export const dailySummarySuggestionSchema = z.object({
+  advanced: z.array(suggestionLineSchema),
+  nextCandidates: z.array(suggestionLineSchema),
+  blockers: z.array(suggestionLineSchema),
+})
+export const suggestDailySummaryOutputSchema = dailySummarySuggestionSchema
+
+export type DailySummarySuggestionDto = z.infer<typeof dailySummarySuggestionSchema>

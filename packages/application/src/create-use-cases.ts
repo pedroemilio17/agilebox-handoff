@@ -113,6 +113,7 @@ import {
   ListDailyForDate,
   SaveDaily,
 } from './use-cases/daily/daily'
+import { SuggestDailySummary } from './use-cases/daily/suggest-summary'
 import {
   AddRetroAction,
   ListRetroActions,
@@ -256,6 +257,7 @@ export function createUseCases(deps: AppDeps) {
       save: forTenant('daily.save', new SaveDaily(deps)),
       listForDate: forTenant('daily.listForDate', new ListDailyForDate(deps)),
       getForUser: forTenant('daily.getForUser', new GetDailyForUser(deps)),
+      suggestSummary: forTenant('daily.suggestSummary', new SuggestDailySummary(deps)),
     },
     sprints: {
       list: forTenant('sprints.list', new ListSprints(deps)),

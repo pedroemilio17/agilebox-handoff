@@ -78,5 +78,17 @@ export const trayCopy = {
   dailySaveError: 'Não foi possível registrar a daily. Seu texto continua aqui.',
   dailyDiscardQuestion: 'Descartar o que foi escrito?',
   dailyDiscard: 'Descartar',
+  dailySuggestionTitle: 'Sugestão a partir do que você moveu hoje',
+  dailySuggestionAdvanced: 'Movidas hoje',
+  dailySuggestionNext: 'Abertas com comentário seu',
+  dailySuggestionBlockers: 'Tarefas que travaram ou destravaram',
+  dailySuggestionLoading: 'Montando a sugestão…',
+  dailySuggestionError: 'Não foi possível montar a sugestão agora. Você pode escrever normalmente.',
+  dailySuggestionEmpty: 'Nada movido hoje',
+  dailySuggestionHint:
+    'O texto só entra no campo se você usar a sugestão. Nada é salvo antes de concluir.',
+  dailySuggestionUse: 'Usar sugestão',
+  dailySuggestionIgnore: 'Ignorar sugestão',
+  dailySuggestionUsed: 'Sugestão colocada no primeiro passo. Edite o texto se quiser.',
   dailyKeepWriting: 'Continuar',
 } as const

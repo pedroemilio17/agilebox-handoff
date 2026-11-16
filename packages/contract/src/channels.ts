@@ -72,6 +72,7 @@ export const API_CHANNELS = [
   'daily.save',
   'daily.listForDate',
   'daily.getForUser',
+  'daily.suggestSummary',
   'teamTools.get',
   'teamTools.previewChange',
   'teamTools.applyChange',

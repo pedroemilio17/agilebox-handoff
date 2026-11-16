@@ -108,6 +108,12 @@ function setup({
     .mockImplementation(({ date }) =>
       Promise.resolve({ date, due: stored === null, entry: stored }),
     )
+  // Sugestão do check-in (M5.1): sem movimento no dia, para não interferir nos passos.
+  vi.spyOn(api.daily, 'suggestSummary').mockResolvedValue({
+    advanced: [],
+    nextCandidates: [],
+    blockers: [],
+  })
   const save = vi.spyOn(api.daily, 'save').mockImplementation((input) => {
     stored = entry({
       answers: input.answers,

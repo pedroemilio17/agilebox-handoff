@@ -6,6 +6,9 @@ import { useApi } from '../../shared/api/ApiProvider'
 import { useActor } from '../../shared/session/useActor'
 import { queryKeys } from '../../shared/query/keys'
 import { useDailyToday } from '../use-daily-today'
+import { useDailySuggestion } from '../use-daily-suggestion'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { DailySuggestionPanel } from './DailySuggestionPanel'
 import {
   DAILY_ANSWER_LIMIT,
   EMPTY_DAILY_ANSWERS,
@@ -107,8 +110,15 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   const [noNews, setNoNews] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
+  const [suggestionHidden, setSuggestionHidden] = useState(false)
+  const [suggestionUsed, setSuggestionUsed] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const discardRef = useRef<HTMLDivElement>(null)
+
+  // Sugestão do check-in: só com a ferramenta de check-ins ativa, e só depois de saber a data.
+  const capabilities = useCapabilities()
+  const suggestionAllowed = capabilities.canFetch('checkins:screen')
+  const suggestion = useDailySuggestion(daily.data?.date ?? '', suggestionAllowed && loaded)
 
   // Uma vez: preenche com a daily de hoje, se já existir, para editar.
   useEffect(() => {
@@ -251,6 +261,29 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
     save.mutate({ date, answers, noNews: true, taskRefs })
   }
 
+  // Usar a sugestão só escreve no campo de avanço, que a pessoa edita. Não grava a daily.
+  const useSuggestion = () => {
+    const lines = suggestion.data?.advanced ?? []
+    if (lines.length === 0) return
+    const text = lines.join('\n')
+    setAnswers((current) => {
+      if (current.progress.includes(text)) return current
+      const progress =
+        current.progress.trim() === '' ? text : `${current.progress.trimEnd()}\n${text}`
+      return { ...current, progress }
+    })
+    setNoNews(false)
+    setFeedback(null)
+    setSuggestionUsed(true)
+    document.getElementById('daily-progress')?.focus()
+  }
+
+  const ignoreSuggestion = () => {
+    setSuggestionHidden(true)
+    setSuggestionUsed(false)
+    document.getElementById('daily-progress')?.focus()
+  }
+
   const message = feedback ?? (save.isError ? trayCopy.dailySaveError : null)
   const stepNumber = step === 'review' ? 3 : step
   const busy = save.isPending
@@ -298,6 +331,15 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
               disabled={busy}
             />
           )}
+          {suggestionAllowed && !suggestionHidden ? (
+            <DailySuggestionPanel
+              status={suggestion.isError ? 'error' : suggestion.isPending ? 'loading' : 'ready'}
+              suggestion={suggestion.data}
+              usedNotice={suggestionUsed}
+              onUse={useSuggestion}
+              onIgnore={ignoreSuggestion}
+            />
+          ) : null}
           <AnswerField
             id="daily-progress"
             label={trayCopy.dailyProgressLabel}

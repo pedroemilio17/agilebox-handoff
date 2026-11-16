@@ -59,13 +59,14 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ### M5 · Check-ins e impedimentos
 
-- [~] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
-- [ ] M5.2 Impedimento com estado e responsável (reaproveitar o bloqueio); resolvido sai da lista.
+- [x] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
+- [~] M5.2a Impedimento com estado e responsável, backend: entidade `Impediment` por tarefa (motivo, estado `open`/`resolved`, responsável por resolver (usuário que participa da tarefa), aberto por/em, resolvido por/em, nota de resolução), com histórico (uma tarefa pode ter vários ao longo do tempo, no máximo um aberto); `tasks.block`/`tasks.unblock` existentes passam a abrir/resolver o impedimento e mantêm os campos de bloqueio da tarefa em sincronia (compatibilidade); casos de uso `impediments.list` (abertos por padrão; resolvido sai da lista; escopo como o quadro/Equipe), `impediments.assign`, `impediments.resolve`; migração com backfill dos bloqueios atuais; guard no módulo `impediments`; linha do tempo; contrato e IPC.
+- [ ] M5.2b Impedimento, interface: tela/lista de impedimentos (`impediments:screen`), responsável por resolver no formulário de bloqueio e no detalhe, estado e histórico no detalhe, resolvido sai da lista, passo 3 do check-in da bandeja usando os impedimentos abertos, testes e auditoria de presets.
 - [ ] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
 
 ## Agente em andamento
 
-M5.1 (Haiku), lançado após o commit do M4.3. Resultado chega por notificação.
+M5.2a (Haiku), lançado após o commit do M5.1. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -120,7 +121,11 @@ M5.1 (Haiku), lançado após o commit do M4.3. Resultado chega por notificação
 
 - Telas de Sprints (M4.3): o "Replanejar" cria um rascunho com a mesma duração da sprint encerrada, começando hoje (o plano não define datas); criar e editar sprint vale para qualquer membro do projeto, como no backend; o filtro "Sprint ativa" aparece no quadro também para o colaborador (só com a tela de Sprints, do Intermediário em diante); "Levar para a próxima" leva todos os itens abertos, inclusive os já iniciados; a aba Ativa lista todas as sprints ativas do projeto (até 5, ADR-08); a atualização da bandeja usa o evento de mudança existente e não foi testada em janela real; a tela não teve conferência visual (o mini-quadro de cinco colunas rola na horizontal em telas estreitas).
 
+- Check-in com sugestão (M5.1): a sugestão vem da linha do tempo das tarefas de que a pessoa participa e é texto editável, nunca gravado sem confirmar (só o "Concluir" grava); movimento de estado feito por qualquer pessoa aparece nas tarefas dela, e horas e comentários só os dela; `nextCandidates` é restrito a tarefas com comentário próprio no dia; "Usar sugestão" só preenche o primeiro passo (nada no segundo); o rótulo "Sprint N" opcional no item não foi feito; sem limite de linhas; o título do grupo é "Tarefas que travaram ou destravaram" (a palavra "Bloqueio" é reprovada pela auditoria no perfil Kanban simples); a data futura não é recusada na leitura; há uma leitura de timeline por tarefa (N+1). Não conferido em janela real (altura da tela do passo 1 na bandeja). Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 183: M5.1 concluído (Haiku). `daily.suggestSummary` (regra pura `suggestDailySummary`, caso de uso, contrato, IPC) e painel "Usar sugestão" no passo 1 da bandeja, sem sprint nem backlog; +49 testes. `pnpm check` pelo orquestrador: 272 arquivos, 2410 testes, exit 0. M5.2 dividido em backend (M5.2a) e interface (M5.2b).
 
 - Ciclo 172: M4.3 concluído (Haiku). Tela Sprints (planejar, iniciar, acompanhar com progresso e mini-quadro, encerrar com as duas políticas, histórico e Replanejar), marcador "Sprint N" no card, no backlog, no detalhe e na bandeja, filtro "Sprint ativa" e campo do limite de sprints ativas na tela de ferramentas; +43 testes. `pnpm check` pelo orquestrador: 267 arquivos, 2361 testes, exit 0. **M4 completo.**
 

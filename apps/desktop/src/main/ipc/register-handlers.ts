@@ -235,6 +235,9 @@ export function registerHandlers(
   register('daily.getForUser', (context, input) =>
     useCases.daily.getForUser.execute(context, input),
   )
+  register('daily.suggestSummary', (context, input) =>
+    useCases.daily.suggestSummary.execute(context, input),
+  )
   register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
   register('teamTools.previewChange', (context, input) =>
     useCases.teamTools.previewChange.execute(context, input),

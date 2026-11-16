@@ -139,6 +139,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       save: (input) => call('daily.save', input),
       listForDate: (input) => call('daily.listForDate', input),
       getForUser: (input) => call('daily.getForUser', input),
+      suggestSummary: (input) => call('daily.suggestSummary', input),
     },
     teamTools: {
       get: () => call('teamTools.get', undefined),
