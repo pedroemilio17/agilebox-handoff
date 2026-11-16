@@ -23,8 +23,9 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M0 · Estabilizar o MVP
 
 - [x] M0.1 Semântica de "Minhas tarefas" do gestor: `listTeamBoard` hoje exclui as tarefas do gestor; "Minhas tarefas" deve mostrar as dele e Equipe todas (PLANO 6.1; relatório final, seção f). Corrigir no `core`/`application` com testes.
-- [~] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
-- [ ] M0.3 Arquivar tarefa e arquivar projeto (esconde, nunca apaga; linha do tempo registra; só quem edita pode; desfazer arquivamento).
+- [x] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
+- [~] M0.3a Arquivar tarefa e projeto, backend: campo `archived_at`/`archived_by` em tarefa e projeto (core, migração Drizzle, repositórios, casos de uso `ArchiveTask`/`UnarchiveTask`/`ArchiveProject`/`UnarchiveProject`, contrato, IPC). Esconde, nunca apaga; linha do tempo registra (tarefa); só quem edita a tarefa pode arquivá-la; projeto só o gestor e quem o criou; arquivados saem das listas e do quadro por padrão; desfazer arquivamento. Testes de regra de acesso e de isolamento por organização.
+- [ ] M0.3b Arquivar tarefa e projeto, interface: ação "Arquivar"/"Desarquivar" no detalhe da tarefa e no diálogo/seletor de projetos, filtro "Mostrar arquivados", textos em pt-BR, testes de interface.
 - [ ] M0.4 Renomear projeto (permissão como a de gerenciar membros; entrada na linha do tempo se aplicável).
 
 ### M1 · Motor de capacidades
@@ -62,7 +63,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M0.2 (Haiku), lançado após o commit do M0.1. Resultado chega por notificação.
+M0.3a (Haiku), lançado após o commit do M0.2. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -71,7 +72,11 @@ M0.2 (Haiku), lançado após o commit do M0.1. Resultado chega por notificação
 - WIP no quadro pessoal do gestor agora conta só as tarefas dele; o limite continua da organização. Confirmar.
 - Um agente criou por engano o arquivo `/x` na raiz do sistema (cópia de `list-tasks.ts`; ficou fora do projeto). Remoção manual: `rm /x`.
 
+- A semana da agenda começa na segunda-feira (`agendaDays`), mas o PLANO cita domingo em um ponto. Mantido como está; confirmar a intenção.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 8: M0.2 concluído (Haiku). Agenda do gestor volta a mostrar todos os prazos (`listTeamBoard` + `listBoard`, sem duplicar); seletor Equipe já estava ligado a dados reais nos dois perfis. `pnpm check` pelo orquestrador: 188 arquivos, 1577 testes, exit 0. M0.3 dividido em M0.3a (backend) e M0.3b (interface).
 
 - Ciclo 3: M0.1 concluído (Haiku). `pnpm check` conferido pelo orquestrador: 188 arquivos, 1575 testes, exit 0. Conexão com o GitHub restabelecida; push feito.
 

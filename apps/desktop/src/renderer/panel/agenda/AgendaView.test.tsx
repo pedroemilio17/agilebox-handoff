@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { MeetingOccurrenceDto, SessionUserDto } from '@agilebox/contract'
+import type { MeetingOccurrenceDto, SessionUserDto, TaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { boardResponse, createFakeApi } from '../../shared/testing/fake-api'
@@ -72,10 +72,18 @@ type Source =
   | readonly MeetingOccurrenceDto[]
   | ((rangeStart: string, rangeEnd: string) => MeetingOccurrenceDto[])
 
+interface BoardSource {
+  /** Tarefas em que a pessoa participa (listBoard). */
+  readonly own?: readonly TaskDto[]
+  /** Tarefas da organização para o gestor (listTeamBoard). */
+  readonly team?: readonly TaskDto[]
+}
+
 function setup(
   role: 'manager' | 'collaborator',
   source: Source = [M1],
   upcoming: readonly MeetingOccurrenceDto[] = Array.isArray(source) ? source : [],
+  board: BoardSource = {},
 ) {
   const api = createFakeApi()
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
@@ -90,6 +98,12 @@ function setup(
       Promise.resolve(typeof source === 'function' ? source(rangeStart, rangeEnd) : [...source]),
     )
   vi.spyOn(api.meetings, 'listUpcoming').mockResolvedValue([...upcoming])
+  const listBoard = vi
+    .spyOn(api.tasks, 'listBoard')
+    .mockResolvedValue(boardResponse([...(board.own ?? [])]))
+  const listTeamBoard = vi
+    .spyOn(api.tasks, 'listTeamBoard')
+    .mockResolvedValue([...(board.team ?? [])])
   render(
     <ApiProvider api={api}>
       <QueryProvider>
@@ -97,7 +111,7 @@ function setup(
       </QueryProvider>
     </ApiProvider>,
   )
-  return { api, list, user: userEvent.setup() }
+  return { api, list, listBoard, listTeamBoard, user: userEvent.setup() }
 }
 
 describe('Agenda: calendário', () => {
@@ -373,5 +387,59 @@ describe('Agenda: colaborador', () => {
       name: 'Alinhamento, Reunião, 09:00 às 10:00, repete toda semana',
     })
     expect(item.disabled).toBe(true)
+  })
+})
+
+describe('Agenda: prazos de tarefas por perfil', () => {
+  const PROJECT = '01J8Y4G2XK8Z1S6M3Q9W0A5BC1'
+  const MINE_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5K01'
+  const TEAM_ID = '01J8Y4G2XK8Z1S6M3Q9W0A5K02'
+
+  const makeDeadlineTask = (id: string, key: string, title: string, deadline: string): TaskDto => ({
+    id,
+    number: Number(key.slice(3)),
+    key,
+    projectId: PROJECT,
+    projectName: 'Projeto Aurora',
+    title,
+    description: '',
+    status: 'in_progress',
+    priority: 'normal',
+    blockedReason: null,
+    blockedAt: null,
+    deadline,
+    ticketId: null,
+    ticketUrl: null,
+    createdAt: '2026-10-31T12:00:00.000Z',
+    updatedAt: '2026-10-31T12:00:00.000Z',
+    checklistProgress: { done: 0, total: 0, percent: 0 },
+    commentCount: 0,
+  })
+
+  const mine = makeDeadlineTask(MINE_ID, 'AB-118', 'Minha tarefa', '2026-10-30')
+  const others = makeDeadlineTask(TEAM_ID, 'AB-119', 'Relatório mensal', '2026-10-28')
+
+  it('o gestor vê prazos de tarefas de outras pessoas e não repete as próprias', async () => {
+    const { listBoard, listTeamBoard } = setup('manager', [], [], {
+      own: [mine],
+      team: [mine, others],
+    })
+    expect(
+      await screen.findByRole('button', { name: 'Abrir tarefa: Relatório mensal' }),
+    ).toBeTruthy()
+    expect(listBoard).toHaveBeenCalledWith({})
+    expect(listTeamBoard).toHaveBeenCalledWith({})
+    expect(screen.getAllByRole('button', { name: 'Abrir tarefa: Minha tarefa' })).toHaveLength(1)
+  })
+
+  it('o colaborador vê só os prazos das tarefas de que participa', async () => {
+    const { listBoard, listTeamBoard } = setup('collaborator', [], [], {
+      own: [mine],
+      team: [mine, others],
+    })
+    expect(await screen.findByRole('button', { name: 'Abrir tarefa: Minha tarefa' })).toBeTruthy()
+    expect(listBoard).toHaveBeenCalledWith({})
+    expect(listTeamBoard).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Abrir tarefa: Relatório mensal' })).toBeNull()
   })
 })
