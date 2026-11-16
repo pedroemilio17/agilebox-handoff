@@ -10,6 +10,8 @@ import { isAgingTask } from '../../shared/lib/task-signals'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
 import { PriorityProperty, StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
+import { sprintMarker } from '../sprints/sprint-rules'
+import { sprintCopy } from '../sprints/sprint-copy'
 import { PropertyRow } from './PropertyRow'
 import { ParticipantsCard } from './ParticipantsCard'
 import { SaveError } from './SaveError'
@@ -238,6 +240,9 @@ export function TaskDetailView({
           readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
+        {capabilities.can('sprints:passive') && sprintMarker(task!) ? (
+          <PropertyRow label={sprintCopy.sprintProperty}>{sprintMarker(task!)}</PropertyRow>
+        ) : null}
         <TicketProperty
           task={task!}
           readOnly={readOnly}

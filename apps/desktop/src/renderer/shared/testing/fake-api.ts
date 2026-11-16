@@ -49,5 +49,7 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     boardSettings: { ...api.boardSettings, ...overrides.boardSettings },
     meetings: { ...api.meetings, ...overrides.meetings },
     backlog: { ...api.backlog, ...overrides.backlog },
+    sprints: { ...api.sprints, ...overrides.sprints },
+    teamTools: { ...api.teamTools, ...overrides.teamTools },
   }
 }

@@ -55,17 +55,17 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 - [x] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
 - [x] M4.2 Persistência, migração, casos de uso e contrato.
-- [~] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
+- [x] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
 
 ### M5 · Check-ins e impedimentos
 
-- [ ] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
+- [~] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
 - [ ] M5.2 Impedimento com estado e responsável (reaproveitar o bloqueio); resolvido sai da lista.
 - [ ] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
 
 ## Agente em andamento
 
-M4.3 (Haiku), lançado após o commit do M4.2. Resultado chega por notificação.
+M5.1 (Haiku), lançado após o commit do M4.3. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -118,7 +118,11 @@ M4.3 (Haiku), lançado após o commit do M4.2. Resultado chega por notificação
 
 - Sprints no backend (M4.2): as decisões (A) a (D) foram aplicadas; o descarte também deixa no quadro, como `left_on_board`, o item já iniciado; `carry_over` é recusado com o módulo em "Encerrando" (cria linhas na próxima sprint); "Sprint N" no card continua visível durante o encerramento do módulo e some só com o módulo desligado; a faixa 1 a 5 do limite de sprints ativas é validada na aplicação (`teamTools.setModuleConfig`, só gestor; só `sprints.maxActiveSprints` é configurável); eventos de "sprint iniciada/encerrada" não são gravados (o histórico vem de `sprint_tasks` e da linha do tempo das tarefas); a chave de `sprint_tasks` é (sprint, tarefa, `added_at` em ms), então a mesma tarefa na mesma sprint no mesmo milissegundo colidiria (alternativa: id ULID); adicionar item a sprint de projeto arquivado não é recusado de forma explícita. Lacuna aberta: mudança só de `config` do módulo NÃO é auditada (o CHECK de `team_tools_audit.kind` exigiria recriar a tabela), contra a regra 7 do plano.
 
+- Telas de Sprints (M4.3): o "Replanejar" cria um rascunho com a mesma duração da sprint encerrada, começando hoje (o plano não define datas); criar e editar sprint vale para qualquer membro do projeto, como no backend; o filtro "Sprint ativa" aparece no quadro também para o colaborador (só com a tela de Sprints, do Intermediário em diante); "Levar para a próxima" leva todos os itens abertos, inclusive os já iniciados; a aba Ativa lista todas as sprints ativas do projeto (até 5, ADR-08); a atualização da bandeja usa o evento de mudança existente e não foi testada em janela real; a tela não teve conferência visual (o mini-quadro de cinco colunas rola na horizontal em telas estreitas).
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 172: M4.3 concluído (Haiku). Tela Sprints (planejar, iniciar, acompanhar com progresso e mini-quadro, encerrar com as duas políticas, histórico e Replanejar), marcador "Sprint N" no card, no backlog, no detalhe e na bandeja, filtro "Sprint ativa" e campo do limite de sprints ativas na tela de ferramentas; +43 testes. `pnpm check` pelo orquestrador: 267 arquivos, 2361 testes, exit 0. **M4 completo.**
 
 - Ciclo 159: M4.2 concluído (Haiku). Tabelas `sprints` e `sprint_tasks` (migração 0015, índice parcial único de linha aberta por tarefa), 9 casos de uso `sprints.*` e `teamTools.setModuleConfig`, campo `sprint` no DTO da tarefa, contagem de impacto; encerramento atômico; +47 testes. `pnpm check` pelo orquestrador: 263 arquivos, 2318 testes, exit 0.
 

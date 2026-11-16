@@ -72,7 +72,9 @@ async function openTaskDetail(user: ReturnType<typeof userEvent.setup>) {
 
 /** Linha da ferramenta em Ajustes, pelo nome que aparece no texto da linha. */
 function toolRow(name: string) {
-  return screen.getByText(name, { selector: 'span' }).closest('li') as HTMLElement
+  // Escopo em Ajustes: o nome também aparece no menu (ex.: "Sprints").
+  const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
+  return within(team).getByText(name, { selector: 'span' }).closest('li') as HTMLElement
 }
 
 describe('Trocar nível não perde dados', () => {

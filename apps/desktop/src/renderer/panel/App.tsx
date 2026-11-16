@@ -15,6 +15,7 @@ import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
+import { SprintsView } from './sprints/SprintsView'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -48,6 +49,8 @@ function PanelContent() {
   const agendaVisible = capabilities.showScreen('agenda')
   // Backlog segue o mesmo caminho: módulo ligado e nível da pessoa; senão a view cai no Quadro.
   const backlogVisible = capabilities.showScreen('backlog')
+  // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
+  const sprintsVisible = capabilities.showScreen('sprints')
   const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
   const [view, setView] = useState<PanelView>(() => {
@@ -61,7 +64,9 @@ function PanelContent() {
     }
   })
   const currentView: PanelView =
-    (view === 'agenda' && !agendaVisible) || (view === 'backlog' && !backlogVisible)
+    (view === 'agenda' && !agendaVisible) ||
+    (view === 'backlog' && !backlogVisible) ||
+    (view === 'sprints' && !sprintsVisible)
       ? 'projects'
       : view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
@@ -303,6 +308,7 @@ function PanelContent() {
         if (
           key === 'q' ||
           (key === 'b' && backlogVisible) ||
+          (key === 's' && sprintsVisible) ||
           (key === 'a' && agendaVisible) ||
           (key === 'd' && isManager)
         ) {
@@ -312,9 +318,11 @@ function PanelContent() {
               ? 'projects'
               : key === 'b'
                 ? 'backlog'
-                : key === 'a'
-                  ? 'agenda'
-                  : 'dashboard',
+                : key === 's'
+                  ? 'sprints'
+                  : key === 'a'
+                    ? 'agenda'
+                    : 'dashboard',
           )
         }
         return
@@ -337,7 +345,7 @@ function PanelContent() {
       window.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [isManager, agendaVisible, backlogVisible])
+  }, [isManager, agendaVisible, backlogVisible, sprintsVisible])
 
   return (
     <>
@@ -383,6 +391,17 @@ function PanelContent() {
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+          />
+        }
+        sprints={
+          <SprintsView
+            initialProjectId={selectedProjectId}
+            projects={activeProjects}
+            isManager={isManager}
+            onOpenTask={(id) => {
+              openTask(id)
+              setView('projects')
+            }}
           />
         }
         agenda={

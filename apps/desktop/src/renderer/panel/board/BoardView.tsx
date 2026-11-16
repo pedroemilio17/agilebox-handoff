@@ -50,6 +50,7 @@ import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { isAgingTask, isArchivedTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
+import { sprintMarker } from '../sprints/sprint-rules'
 import { isWipStatus, type WipStatus } from './wip-limit'
 import { WipLimitEditor } from './WipLimitEditor'
 import styles from './BoardView.module.css'
@@ -123,6 +124,8 @@ export function BoardView({
   const activeException =
     exception !== null && exceptionVisible(exception, capabilities) ? exception : null
   const blockedVisible = capabilities.can('impediments:passive')
+  // Filtro de sprint ativa só com a tela de Sprints (Intermediário em diante).
+  const sprintFilterVisible = capabilities.can('sprints:screen')
   const flowVisible = capabilities.can('flowMetrics:screen')
   // Relógio do indicador "atualizado há N min": recalcula a cada 30 s, sem refazer a busca.
   const [now, setNow] = useState(() => Date.now())
@@ -207,6 +210,7 @@ export function BoardView({
   const overdueCount = activeTasks.filter((task) => task.overdue).length
   const highPriorityCount = activeTasks.filter((task) => task.priority === 'high').length
   const blockedCount = activeTasks.filter(isBlockedTask).length
+  const activeSprintCount = activeTasks.filter((task) => task.sprint?.status === 'active').length
   const visibleTasks = (tasks ?? []).filter((task) =>
     activeException === null
       ? true
@@ -219,7 +223,9 @@ export function BoardView({
               ? task.priority === 'high'
               : activeException === 'blocked'
                 ? isBlockedTask(task)
-                : true),
+                : activeException === 'activeSprint'
+                  ? task.sprint?.status === 'active'
+                  : true),
   )
   const columns = () =>
     TASK_STATUSES.map((status) => (
@@ -278,6 +284,15 @@ export function BoardView({
             onClick={() => setException(activeException === 'blocked' ? null : 'blocked')}
           >
             Bloqueadas · {blockedCount}
+          </button>
+        ) : null}
+        {sprintFilterVisible ? (
+          <button
+            type="button"
+            aria-pressed={activeException === 'activeSprint'}
+            onClick={() => setException(activeException === 'activeSprint' ? null : 'activeSprint')}
+          >
+            Sprint ativa · {activeSprintCount}
           </button>
         ) : null}
         {onShowArchivedChange ? (
@@ -672,12 +687,13 @@ function SortableTaskCard({
   )
 }
 
-type BoardException = 'aging' | 'overdue' | 'high' | 'blocked'
+type BoardException = 'aging' | 'overdue' | 'high' | 'blocked' | 'activeSprint'
 
 /** "Paradas" depende da ferramenta de fluxo; "Bloqueadas" é efeito passivo do impedimento. */
 function exceptionVisible(value: BoardException, capabilities: Capabilities): boolean {
   if (value === 'aging') return capabilities.can('flowMetrics:screen')
   if (value === 'blocked') return capabilities.can('impediments:passive')
+  if (value === 'activeSprint') return capabilities.can('sprints:screen')
   return true
 }
 
@@ -719,7 +735,9 @@ function TaskCard({
     capabilities.can('estimates.hours:passive') && task.estimatedHours != null
       ? panelCopy.backlogEstimate(formatHours(Math.round(task.estimatedHours * 100)))
       : null
-  const passiveLabel = [criteriaText, estimateText]
+  // Sprint atual (M4.2): marcador passivo em qualquer nível, com o módulo ligado ou encerrando.
+  const sprintText = capabilities.can('sprints:passive') ? sprintMarker(task) : null
+  const passiveLabel = [criteriaText, estimateText, sprintText]
     .filter(Boolean)
     .map((text) => `, ${text}`)
     .join('')
@@ -776,6 +794,7 @@ function TaskCard({
         {showChecklist ? <ChecklistProgress done={done} total={total} /> : null}
         {criteriaText ? <span className={styles.passiveMark}>{criteriaText}</span> : null}
         {estimateText ? <span className={styles.passiveMark}>{estimateText}</span> : null}
+        {sprintText ? <span className={styles.passiveMark}>{sprintText}</span> : null}
         {readOnly ? null : <CommentCount count={task.commentCount} />}
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}

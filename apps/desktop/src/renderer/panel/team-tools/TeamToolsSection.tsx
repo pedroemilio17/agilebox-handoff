@@ -12,6 +12,7 @@ import type { SegmentedOption } from '@agilebox/ui'
 import { useTeamTools } from '../../shared/capabilities/use-team-tools'
 import { panelCopy } from '../copy'
 import { ToolsImpactDialog, type PendingChange } from './ToolsImpactDialog'
+import { SprintLimitField, sprintLimitOf } from './SprintLimitField'
 import { useTeamToolsActions } from './use-team-tools-actions'
 import { COMING_SOON_TOOLS, highestLevel, joinPt, levelLabel, uniqueIds } from './team-tools-rules'
 import styles from './TeamToolsSection.module.css'
@@ -416,6 +417,9 @@ function ToolRow({
           </button>
         )}
       </div>
+      {tool.id === 'sprints' && tool.state === 'active' ? (
+        <SprintLimitField value={sprintLimitOf(tool.config)} canManage={canManage} />
+      ) : null}
       {windDown ? (
         <WindDownConfirm
           text={

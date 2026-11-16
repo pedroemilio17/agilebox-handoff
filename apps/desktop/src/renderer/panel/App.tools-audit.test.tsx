@@ -86,6 +86,7 @@ async function auditCollaborator(user: ReturnType<typeof userEvent.setup>): Prom
       ['filtro Bloqueadas', screen.queryByRole('button', { name: /^Bloqueadas/ }) !== null],
       ['filtro Paradas', screen.queryByRole('button', { name: /^Paradas/ }) !== null],
       ['badge parada no card', screen.queryByText(/^parada \d+d$/) !== null],
+      ['filtro Sprint ativa', screen.queryByRole('button', { name: /^Sprint ativa/ }) !== null],
       ['medidor WIP', screen.queryByRole('img', { name: /: \d+ de \d+/ }) !== null],
       ['ciclo médio', screen.queryByText(/Ciclo médio desta semana/) !== null],
       ['marcador de bloqueio no card', cardLabel.includes('bloqueada')],
@@ -247,8 +248,8 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Intermediário
         colaborador
-        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
@@ -258,8 +259,8 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Avançado
         colaborador
-        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
@@ -313,8 +314,8 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Intermediário
         colaborador
-        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
@@ -324,8 +325,8 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Avançado
         colaborador
-        menu: Quadro, Backlog, Agenda, Plug-ins (em breve), Ajustes
-        quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
+        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta

@@ -10,6 +10,7 @@ import { panelCopy } from '../copy'
 import { TaskDetailView } from '../task-detail/TaskDetailView'
 import { moveRequest, type BacklogMove } from './backlog-order'
 import { refusalMessage } from './refusal-message'
+import { sprintMarker } from '../sprints/sprint-rules'
 import {
   useAddToBacklog,
   useBacklogList,
@@ -266,6 +267,9 @@ export function BacklogView({ initialProjectId = null, projects, isManager }: Ba
                             formatHours(Math.round(task.estimatedHours * 100)),
                           )}
                         </span>
+                      ) : null}
+                      {capabilities.can('sprints:passive') && sprintMarker(task) ? (
+                        <span>{sprintMarker(task)}</span>
                       ) : null}
                       {showCriteria && task.criteriaProgress && task.criteriaProgress.total > 0 ? (
                         <span>

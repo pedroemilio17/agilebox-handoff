@@ -139,6 +139,8 @@ export function toTaskDto(detail: GetTaskDto): TaskDto {
     updatedAt: detail.updatedAt,
     archivedAt: detail.archivedAt ?? null,
     agingDays: (detail as { agingDays?: number }).agingDays ?? null,
+    // Sprint aberta (M4.2): nula sem sprint ou sem o módulo ativo.
+    sprint: detail.sprint ?? null,
   }
 }
 

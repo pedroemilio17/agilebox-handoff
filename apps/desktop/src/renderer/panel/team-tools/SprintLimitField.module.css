@@ -1,0 +1,20 @@
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.readOnly {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

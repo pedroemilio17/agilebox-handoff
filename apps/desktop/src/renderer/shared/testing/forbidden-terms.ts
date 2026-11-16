@@ -55,6 +55,11 @@ export const FORBIDDEN_TERMS: readonly RegExp[] = [
   // Nomes de ferramentas (catálogo de MODULE_LABELS) e as palavras-raiz deles.
   startsWord('Backlog'),
   startsWord('Sprint'),
+  // Vocabulário das telas de sprint (M4.3): só onde `sprints:screen` existe.
+  startsWord('Replanejar'),
+  startsWord('Planejamento da sprint'),
+  startsWord('Encerrar sprint'),
+  startsWord('Sprint ativa'),
   startsWord(MODULE_LABELS.acceptance),
   startsWord('Estimativa'),
   startsWord('Check-in'),
