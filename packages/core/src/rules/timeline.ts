@@ -1,6 +1,7 @@
 import type { Participant } from '../entities/participation'
 import type { Task } from '../entities/task'
-import type { TimelineEvent } from '../entities/timeline-event'
+import type { TaskSprintTimelineEvent, TimelineEvent } from '../entities/timeline-event'
+import { sprintLabel } from '../entities/sprint'
 import { canSeeRate } from '../policies/access-policy'
 import type { Actor } from '../policies/actor'
 import type { ContributorId, OrganizationId, UserId } from '../shared/ids'
@@ -12,6 +13,8 @@ import type { Ticket } from '../values/ticket'
 
 type Draft<T> = T extends TimelineEvent ? Pick<T, 'type' | 'payload'> : never
 export type TimelineEventDraft = Draft<TimelineEvent>
+/** Rascunho de entrada/saída de sprint (ver TaskSprintTimelineEvent). */
+export type TaskSprintEventDraft = Pick<TaskSprintTimelineEvent, 'type' | 'payload'>
 export interface TimelineNames {
   readonly organizationId: OrganizationId
   readonly user: (id: UserId) => string
@@ -116,7 +119,11 @@ function estimateText(hundredths: number | null): string {
   return hundredths === null ? 'sem estimativa' : formatHours(hundredths)
 }
 
-export function describeEvent(event: TimelineEvent, viewer: Actor, names: TimelineNames): string {
+export function describeEvent(
+  event: TimelineEvent | TaskSprintTimelineEvent,
+  viewer: Actor,
+  names: TimelineNames,
+): string {
   const name = (p: Participant) =>
     p.kind === 'user' ? names.user(p.userId) : names.contributor(p.contributorId)
   const ticket = (value: Ticket | null) =>
@@ -170,6 +177,10 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `puxou a tarefa do backlog para ${TASK_STATUS_LABELS[event.payload.status]}`
     case 'task_reordered':
       return `reordenou a tarefa no backlog (posição ${event.payload.position})`
+    case 'task_added_to_sprint':
+      return `adicionou a tarefa à ${sprintLabel(event.payload.sprintNumber)}`
+    case 'task_removed_from_sprint':
+      return `removeu a tarefa da ${sprintLabel(event.payload.sprintNumber)}`
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':

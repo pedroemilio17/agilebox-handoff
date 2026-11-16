@@ -53,8 +53,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ### M4 · Sprints
 
-- [~] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
-- [ ] M4.2 Persistência, migração, casos de uso e contrato.
+- [x] M4.1 Sprint no domínio (`draft`, `active`, `closed`), `sprint_tasks` com histórico, limite de sprints ativas configurável (ADR-08), encerramento com política para itens abertos. Testes de todas as transições.
+- [~] M4.2 Persistência, migração, casos de uso e contrato.
 - [ ] M4.3 Telas: planejar, iniciar, acompanhar, encerrar e replanejar; "Sprint N" no card.
 
 ### M5 · Check-ins e impedimentos
@@ -65,7 +65,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M4.1 (Haiku), lançado após o commit do M3.3. Resultado chega por notificação.
+M4.2 (Haiku), lançado após o commit do M4.1. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -114,7 +114,11 @@ M4.1 (Haiku), lançado após o commit do M3.3. Resultado chega por notificação
 - Telas de Backlog (M3.3): o DTO de tarefa ganhou `criteriaProgress {done,total}` (opcional), mudança no contrato do M3.2 para mostrar o x/y; puxar para Concluído passa pela conferência da definição de pronto; estimativa vazia remove a estimativa; reordenar usa arrastar HTML5 nativo (o quadro usa dnd-kit) e botões Subir/Descer com `aria-live`, sem setas com modificador; o seletor de projetos do colaborador consulta os membros de cada projeto (N consultas; alternativa: o backend filtrar em `projects.list`); em "Encerrando" somem criar item e criar critério. Confirmar.
 - Sprints (M4), suposições do orquestrador para o agente: o plano só diz "Sprint com `draft`, `active`, `closed`; `sprint_tasks` com histórico; limite de sprints ativas configurável (ADR-08); encerramento com política para itens abertos". Assumi: uma tarefa está em no máximo uma sprint ativa por vez; quem planeja, inicia, encerra e mexe nos itens da sprint é o gestor e os membros do projeto (como o backlog; o plano não define); política de encerramento: itens abertos voltam ao backlog (padrão) ou seguem para a próxima sprint em planejamento; itens concluídos ficam na sprint como resultado. Confirmar.
 
+- Sprint no domínio (M4.1): `maxActiveSprints` (padrão 1, ADR-08) como chave de configuração do módulo; qualquer tarefa não arquivada do mesmo projeto e fora de outra sprint aberta pode entrar (backlog ou quadro, inclusive concluída); sprint vazia pode iniciar e encerrar; o encerramento gera eventos de saída e, no `carry_over`, de entrada na linha do tempo; itens arquivados e abertos saem como `removed`; o número da sprint é máximo+1 (descartar pode reaproveitar número se a linha for apagada). Decisões do orquestrador para o M4.2, a confirmar: (A) o `return_to_backlog` conflita com a regra do backlog (item já iniciado, em Desenvolvendo ou Revisar, não volta ao backlog): itens ainda não iniciados (Planejamento, A fazer) voltam ao backlog, os iniciados ficam no quadro sem sprint com um novo desfecho `left_on_board`; (B) descartar rascunho é exclusão lógica (`discarded_at`), a linha nunca é apagada e o número não se reaproveita; (C) adicionar um item de backlog a uma sprint não o move; iniciar a sprint puxa os itens de backlog para o quadro (A fazer), e item de backlog adicionado a sprint ativa é puxado na hora; (D) iniciar uma sprint conta como criar para o módulo "Encerrando".
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 148: M4.1 concluído (Haiku). `Sprint` (rascunho, ativa, encerrada), `SprintTask` com histórico, limite de sprints ativas, `planSprintClose` com as duas políticas, políticas de acesso e eventos pt-BR, tudo puro em `packages/core` (+59 testes). `pnpm check` pelo orquestrador: 258 arquivos, 2271 testes, exit 0.
 
 - Ciclo 141: M3.3 concluído (Haiku). Tela Backlog (item na barra lateral, atalho G B, lista por projeto, criação rápida, reordenar por arrastar e por teclado, puxar para o quadro, devolver ao backlog), seção Critérios de aceitação e campo Estimativa no detalhe, marcadores passivos; `countUsage` das ferramentas agora conta backlog, critérios e estimativas; +59 testes. `pnpm check` pelo orquestrador: 252 arquivos, 2212 testes, exit 0. **M3 completo.**
 

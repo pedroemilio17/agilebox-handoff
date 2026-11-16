@@ -66,6 +66,20 @@ export function canPullFromBacklog(actor: Actor, project: Project, isMember: boo
 export function canSendToBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
   return canSeeProject(actor, project, isMember)
 }
+/**
+ * Sprints (M4.1): ver, planejar, iniciar e encerrar seguem o backlog, porque planejar é coletivo.
+ * Suposição registrada: o plano não separa quem planeja de quem inicia/encerra; por isso as três
+ * usam a mesma regra (gestor ou membro do projeto). Nada cruza organizações.
+ */
+export function canViewSprints(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canPlanSprint(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canStartOrCloseSprint(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
 /** Adicionar item ao backlog é criar tarefa no projeto (membro ou gestor). */
 export const canAddToBacklog = canCreateTask
 /** Arquivar e desarquivar projeto: só o gestor e quem criou o projeto (mesma regra do botão Membros). */
