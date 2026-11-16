@@ -27,16 +27,17 @@ export interface ListBoardInput {
   readonly forUserId?: string
 }
 
+/**
+ * Quadro de "Minhas tarefas": só as tarefas em que a pessoa participa (criou, é Responsável ou Apoio).
+ * Vale para colaborador e gestor (PLANO 6.1). O gestor vê o quadro de outra pessoa só com `forUserId`
+ * ("Abrir projetos"), e somente ele pode pedir isso.
+ */
 async function scopedBoard(deps: AppDeps, actor: Actor, input: ListBoardInput) {
   if (input.forUserId !== undefined && actor.role !== 'manager')
     throw new PermissionDeniedError('Somente o gestor pode filtrar por usuário')
   const query = {
     ...(input.projectId === undefined ? {} : { projectId: toProjectId(input.projectId) }),
-    ...(input.forUserId !== undefined
-      ? { userId: toUserId(input.forUserId) }
-      : actor.role === 'manager'
-        ? {}
-        : { userId: actor.userId }),
+    userId: toUserId(input.forUserId ?? actor.userId),
   }
   return deps.tasks.listBoard(actor.organizationId, query)
 }
@@ -65,8 +66,8 @@ export class ListBoard {
   constructor(private readonly deps: AppDeps) {}
 
   /**
-   * Quadro do usuário. As tarefas e a contagem de WIP vêm do mesmo conjunto autorizado:
-   * um colaborador conta só as tarefas de que participa, não as da organização.
+   * Quadro do usuário. As tarefas e a contagem de WIP vêm do mesmo conjunto: as de que a pessoa
+   * participa, inclusive para o gestor no próprio quadro.
    */
   async execute(actor: Actor, input: ListBoardInput): Promise<ListBoardDto> {
     const tasks = await scopedBoard(this.deps, actor, input)
@@ -128,8 +129,12 @@ export class ListTeamBoard {
           }),
       ),
     )
+    // Colaborador: as demais tarefas dos seus projetos (as próprias ficam em "Minhas tarefas").
+    // Gestor: todas da organização, inclusive as em que participa (PLANO 6.1).
     const visible = tasks.filter(
-      (task) => eligibleProjectIds.has(task.projectId) && !participates(actor, task),
+      (task) =>
+        eligibleProjectIds.has(task.projectId) &&
+        (actor.role === 'manager' || !participates(actor, task)),
     )
     const checklists = await loadChecklists(
       this.deps,

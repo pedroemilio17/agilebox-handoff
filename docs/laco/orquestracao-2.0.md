@@ -22,7 +22,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ### M0 · Estabilizar o MVP
 
-- [~] M0.1 Semântica de "Minhas tarefas" do gestor: `listTeamBoard` hoje exclui as tarefas do gestor; "Minhas tarefas" deve mostrar as dele e Equipe todas (PLANO 6.1; relatório final, seção f). Corrigir no `core`/`application` com testes.
+- [x] M0.1 Semântica de "Minhas tarefas" do gestor: `listTeamBoard` hoje exclui as tarefas do gestor; "Minhas tarefas" deve mostrar as dele e Equipe todas (PLANO 6.1; relatório final, seção f). Corrigir no `core`/`application` com testes.
 - [ ] M0.2 Conferir que o seletor Equipe está conectado de ponta a ponta e sem tela estática; corrigir o que for estático.
 - [ ] M0.3 Arquivar tarefa e arquivar projeto (esconde, nunca apaga; linha do tempo registra; só quem edita pode; desfazer arquivamento).
 - [ ] M0.4 Renomear projeto (permissão como a de gerenciar membros; entrada na linha do tempo se aplicável).
@@ -62,9 +62,18 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M0.1 (Haiku, id `a468570919cc4f95a`, iniciado no primeiro ciclo). Resultado chega por notificação.
+M0.2 (Haiku), lançado após o commit do M0.1. Resultado chega por notificação.
+
+## Pontos para o Pedro decidir
+
+- Agenda do gestor: `AgendaView` usa `listBoard({})`; após o M0.1 o gestor veria só os prazos das próprias tarefas. O M0.2 restaura o comportamento anterior (todos os prazos) por `listTeamBoard`, sem mudar a regra. Confirmar.
+- Colaborador não vê as próprias tarefas na Equipe (PLANO 6.1 e 2.5: "demais tarefas"). Mantido.
+- WIP no quadro pessoal do gestor agora conta só as tarefas dele; o limite continua da organização. Confirmar.
+- Um agente criou por engano o arquivo `/x` na raiz do sistema (cópia de `list-tasks.ts`; ficou fora do projeto). Remoção manual: `rm /x`.
 
 ## Diário (mais recente primeiro)
+
+- Ciclo 3: M0.1 concluído (Haiku). `pnpm check` conferido pelo orquestrador: 188 arquivos, 1575 testes, exit 0. Conexão com o GitHub restabelecida; push feito.
 
 - Ciclo 1: agente Haiku lançado para M0.1. Agendamento `*/3 * * * *` criado (id `90ddacab`).
 

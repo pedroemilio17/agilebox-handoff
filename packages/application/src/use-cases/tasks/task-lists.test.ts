@@ -7,7 +7,7 @@ import {
   parseDateOnly,
   toEventId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
+import type { Actor, Task } from '@agilebox/core'
 import { aProject, aTask } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
@@ -21,6 +21,21 @@ const userId = toUserId('00000000000000000000000002')
 const otherUserId = toUserId('00000000000000000000000003')
 const managerId = toUserId('00000000000000000000000004')
 const actor: Actor = { userId, organizationId, role: 'collaborator' }
+const manager: Actor = { userId: managerId, organizationId, role: 'manager' }
+const foreignOrganizationId = toOrganizationId('00000000000000000000000009')
+
+/** Mesma tarefa, com o participante trocado: a pessoa passa a ser Responsável ou Apoio dela. */
+function involving(task: Task, participantUserId: typeof managerId): Task {
+  return {
+    ...task,
+    participations: task.participations.map((participation) => ({
+      ...participation,
+      participant: { kind: 'user' as const, userId: participantUserId },
+    })),
+  }
+}
+
+const idsOf = (tasks: readonly { readonly id: string }[]) => tasks.map(({ id }) => id).sort()
 
 function setup() {
   const unitOfWork = new InMemoryUnitOfWork()
@@ -223,6 +238,90 @@ describe('listas de tarefas', () => {
     const result = await useCases.tasks.listTeamBoard.execute(actor, {})
 
     expect(result.map(({ id }) => id)).toEqual([team.id])
+  })
+
+  it('Minhas tarefas do gestor mostra só as tarefas de que ele participa', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const created = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000030'),
+      createdBy: managerId,
+      participations: [],
+    }
+    const assigned = {
+      ...involving(aTask().inProject(project).build(), managerId),
+      id: toTaskId('00000000000000000000000031'),
+      createdBy: otherUserId,
+    }
+    const others = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000032'),
+      createdBy: otherUserId,
+      participations: [],
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    for (const task of [created, assigned, others])
+      await unitOfWork.repositories.tasks.save(organizationId, task)
+
+    const { tasks: result } = await useCases.tasks.listBoard.execute(manager, {})
+
+    expect(idsOf(result)).toEqual(idsOf([created, assigned]))
+  })
+
+  it('Equipe do gestor mostra todas as tarefas da organização, inclusive as em que ele participa', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const created = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000033'),
+      createdBy: managerId,
+      participations: [],
+    }
+    const assigned = {
+      ...involving(aTask().inProject(project).build(), managerId),
+      id: toTaskId('00000000000000000000000034'),
+      createdBy: otherUserId,
+    }
+    const others = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000035'),
+      createdBy: otherUserId,
+      participations: [],
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    for (const task of [created, assigned, others])
+      await unitOfWork.repositories.tasks.save(organizationId, task)
+
+    const result = await useCases.tasks.listTeamBoard.execute(manager, {})
+
+    expect(idsOf(result)).toEqual(idsOf([created, assigned, others]))
+  })
+
+  it('nenhuma visão mostra tarefas de outra organização, mesmo com o mesmo projeto e o mesmo criador', async () => {
+    const { useCases, unitOfWork } = setup()
+    const project = aProject().build()
+    const mine = {
+      ...aTask().inProject(project).build(),
+      id: toTaskId('00000000000000000000000036'),
+      createdBy: managerId,
+      participations: [],
+    }
+    const foreign = {
+      ...mine,
+      id: toTaskId('00000000000000000000000037'),
+      organizationId: foreignOrganizationId,
+    }
+    await unitOfWork.repositories.projects.save(organizationId, project)
+    await addProjectMember(unitOfWork, project.id, userId)
+    await unitOfWork.repositories.tasks.save(organizationId, mine)
+    await unitOfWork.repositories.tasks.save(foreignOrganizationId, foreign)
+
+    expect(idsOf((await useCases.tasks.listBoard.execute(manager, {})).tasks)).toEqual([mine.id])
+    expect(idsOf(await useCases.tasks.listTeamBoard.execute(manager, {}))).toEqual([mine.id])
+    // Colaborador: a tarefa do gestor aparece na Equipe do projeto dele, não no próprio quadro.
+    expect((await useCases.tasks.listBoard.execute(actor, {})).tasks).toEqual([])
+    expect(idsOf(await useCases.tasks.listTeamBoard.execute(actor, {}))).toEqual([mine.id])
   })
 
   it('traz na Equipe os sinais de parada e de prazo, como o quadro', async () => {

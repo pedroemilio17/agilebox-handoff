@@ -210,7 +210,7 @@ describe('limites de WIP: casos de uso', () => {
     })
   })
 
-  it('o colaborador conta só as tarefas de que participa; o gestor conta todas', async () => {
+  it('cada quadro conta só as tarefas de que a pessoa participa; o gestor vê a contagem de outra pessoa com forUserId', async () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     const project = await seedUsers(unitOfWork)
@@ -230,8 +230,13 @@ describe('limites de WIP: casos de uso', () => {
     const mine = await asAna.tasks.listBoard.execute(collaborator, {})
     expect(mine.wipColumns[0]).toMatchObject({ count: 1, limit: 2, state: 'ok' })
 
-    const all = await useCases.tasks.listBoard.execute(manager, {})
-    expect(all.wipColumns[0]).toMatchObject({ count: 2, limit: 2, state: 'at_limit' })
+    // "Minhas tarefas" do gestor: ele não participa de nenhuma das duas (PLANO 6.1).
+    const own = await useCases.tasks.listBoard.execute(manager, {})
+    expect(own.wipColumns[0]).toMatchObject({ count: 0, limit: 2, state: 'ok' })
+
+    // Quadro de Ana aberto pelo gestor ("Abrir projetos"): mesma contagem do lado dela.
+    const anaBoard = await useCases.tasks.listBoard.execute(manager, { forUserId: userId })
+    expect(anaBoard.wipColumns[0]).toMatchObject({ count: 1, limit: 2, state: 'ok' })
   })
 
   it('a configuração de uma organização não aparece na outra', async () => {
