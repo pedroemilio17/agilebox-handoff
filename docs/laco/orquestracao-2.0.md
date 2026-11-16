@@ -62,11 +62,12 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
 - [x] M5.2a Impedimento com estado e responsável, backend: entidade `Impediment` por tarefa (motivo, estado `open`/`resolved`, responsável por resolver (usuário que participa da tarefa), aberto por/em, resolvido por/em, nota de resolução), com histórico (uma tarefa pode ter vários ao longo do tempo, no máximo um aberto); `tasks.block`/`tasks.unblock` existentes passam a abrir/resolver o impedimento e mantêm os campos de bloqueio da tarefa em sincronia (compatibilidade); casos de uso `impediments.list` (abertos por padrão; resolvido sai da lista; escopo como o quadro/Equipe), `impediments.assign`, `impediments.resolve`; migração com backfill dos bloqueios atuais; guard no módulo `impediments`; linha do tempo; contrato e IPC.
 - [x] M5.2b Impedimento, interface: tela/lista de impedimentos (`impediments:screen`), responsável por resolver no formulário de bloqueio e no detalhe, estado e histórico no detalhe, resolvido sai da lista, passo 3 do check-in da bandeja usando os impedimentos abertos, testes e auditoria de presets.
-- [~] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
+- [x] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
+- [~] M5.4 Correções da auditoria (decididas pelo orquestrador por contrariarem o plano de forma inequívoca; o que depende de decisão do Pedro fica no relatório): (1) `dashboard.get` e `exportSummary` não devolvem os insights de fluxo com `flowMetrics` desligado e a tela não pede nem mostra; (2) o check-in da bandeja respeita o módulo "Encerrando" (esconde criar) e `daily.save` passa a permitir editar a daily que já existe no encerramento; (3) auditoria das mudanças de `config` do módulo (novo `kind` na auditoria, migração que recria só a tabela pequena `team_tools_audit`); (4) teste com SQLite real de criar, editar, mover e reabrir tarefa; (5) teste do caminho completo "desativar Sprints com sprint ativa entra em encerramento sem órfãos e reativar devolve os dados".
 
 ## Agente em andamento
 
-M5.3 (Haiku), lançado após o commit do M5.2b. Resultado chega por notificação.
+M5.4 (Haiku), lançado após o commit do M5.3. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -127,7 +128,11 @@ M5.3 (Haiku), lançado após o commit do M5.2b. Resultado chega por notificaçã
 
 - Interface do impedimento (M5.2b): "Meus" na bandeja significa responsável por resolver (`ownerId`), então um impedimento sem responsável em tarefa própria não aparece no check-in; o criador da tarefa que não participa não aparece em "Quem resolve" (o DTO da tarefa não traz `createdBy`); o marcador "Bloqueada" no item do backlog é novo; o painel "Seus impedimentos abertos" da bandeja depende de `impediments:passive` (módulo ativo), não de `:screen`; os botões "Usar" da bandeja têm o mesmo nome em todas as linhas (convém um `aria-label` com o texto da linha); a tela de impedimentos e o detalhe usam invalidação, sem atualização otimista; o botão "Desbloquear" do detalhe virou "Resolver impedimento" (com nota opcional). Confirmar.
 
+- Auditoria da Onda 1 (M5.3): ver `docs/laco/relatorio-2.0-onda1.md` (marco a marco, regressões, lista priorizada de decisões, o que fica para depois, métricas e roteiro de uso). Principais achados: critérios provados em M1, M3, M4 e M5 e em boa parte do M2 (com backend simulado); dos sete casos de teste da camada de ferramentas, cinco têm teste direto e dois são parciais (chat/MCP ainda não existem; o caminho completo "Sprints desativada com sprint ativa" não tem teste único); lacunas de risco alto: insights de fluxo no `dashboard.get` com o módulo desligado, "parada" sem módulo, check-in que não respeita o encerramento, `daily.save` que recusa editar no encerramento (o plano diz que o que existe segue editável), `config` sem auditoria e Backlog desligado sem destino para os itens; M0 sem teste SQLite específico de criar, editar e mover. Não verificado: conferência visual, janela real, ponta a ponta, Windows.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 212: M5.3 concluído (Haiku). Relatório `docs/laco/relatorio-2.0-onda1.md` (formatado pelo orquestrador com Prettier). `pnpm check` pelo orquestrador: 285 arquivos, 2515 testes, exit 0. Criado o M5.4 com as correções inequívocas da auditoria; o restante fica para decisão do Pedro. Obs.: o arquivo `/x` (cópia solta de `list-tasks.ts`, criada por engano por um agente) continua na raiz do sistema; remoção manual com `rm /x`.
 
 - Ciclo 207: M5.2b concluído (Haiku, retomado após reinício do contêiner). Tela Impedimentos (lista de abertos, filtros, resolvidos, atribuir, resolver com nota), "Quem resolve" no bloqueio, estado, responsável e histórico no detalhe, painel "Seus impedimentos abertos" no check-in, marcador com responsável, atalho G I; +48 testes. `pnpm check` pelo orquestrador: 285 arquivos, 2515 testes, exit 0.
 
