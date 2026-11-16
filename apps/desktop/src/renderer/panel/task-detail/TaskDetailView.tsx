@@ -18,6 +18,7 @@ import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { useBlurSave } from './use-blur-save'
 import { BlockControl } from './BlockControl'
+import { ImpedimentHistoryCard } from './ImpedimentHistoryCard'
 import { ArchiveControl } from './ArchiveControl'
 import { ChecklistCard } from './ChecklistCard'
 import { CriteriaCard } from './CriteriaCard'
@@ -268,6 +269,7 @@ export function TaskDetailView({
           windingDown={capabilities.isWindingDown('acceptance')}
         />
       ) : null}
+      {capabilities.showScreen('impediments') ? <ImpedimentHistoryCard task={task!} /> : null}
       <CommentsCard task={task!} readOnlyScope={readOnlyScope} />
       <TimelineCard taskId={taskId} />
       {definitionGate.dialog}

@@ -89,7 +89,7 @@ describe('Trocar nível não perde dados', () => {
     expect(screen.getByRole('img', { name: /: 1 de 3/ })).toBeTruthy()
     let dialog = await openTaskDetail(user)
     expect(within(dialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(within(dialog).getByRole('button', { name: 'Desbloquear' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
     await user.keyboard('{Escape}')
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })).toBeNull(),
@@ -112,7 +112,7 @@ describe('Trocar nível não perde dados', () => {
     expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
     dialog = await openTaskDetail(user)
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
-    expect(within(dialog).queryByRole('button', { name: 'Desbloquear' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(dialog).getByText('Aguardando API')).toBeTruthy()
     await user.keyboard('{Escape}')
     await waitFor(() =>
@@ -142,7 +142,7 @@ describe('Trocar nível não perde dados', () => {
     dialog = await openTaskDetail(user)
     expect(within(dialog).getByText('Mapear rotas')).toBeTruthy()
     expect(within(dialog).getByText('Testar com o sandbox')).toBeTruthy()
-    expect(within(dialog).getByRole('button', { name: 'Desbloquear' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
     expect(backend.get(TASK_ID)).toEqual(before)
   })
 })
@@ -185,7 +185,7 @@ describe('Aplicar preset que desliga módulos não apaga nada', () => {
     expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
     const dialog2 = await openTaskDetail(user)
     expect(within(dialog2).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(within(dialog2).getByRole('button', { name: 'Desbloquear' })).toBeTruthy()
+    expect(within(dialog2).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
     expect(backend.get(TASK_ID)).toEqual(before)
     await user.keyboard('{Escape}')
     await waitFor(() =>

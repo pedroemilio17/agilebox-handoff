@@ -65,6 +65,12 @@ export const FORBIDDEN_TERMS: readonly RegExp[] = [
   startsWord('Check-in'),
   startsWord('Daily'),
   startsWord('Impedimento'),
+  // Vocabulário novo de impedimentos (M5.2b): tela, resolver, quem resolve e a bandeja.
+  startsWord('Impedimentos'),
+  startsWord('Resolver impedimento'),
+  startsWord('Quem resolve'),
+  startsWord('Seus impedimentos abertos'),
+  startsWord('Histórico de impedimentos'),
   startsWord('Subtarefa'),
   startsWord('Retro'),
   startsWord('Combinado'),

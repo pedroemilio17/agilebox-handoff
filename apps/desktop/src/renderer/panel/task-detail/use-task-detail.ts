@@ -49,28 +49,38 @@ export function useMoveTaskStatus(taskId: string) {
   })
 }
 
+/** Bloquear abre o impedimento; `ownerId` é o responsável por resolver (opcional). */
 export function useBlockTask(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (reason: string) => api.tasks.block({ taskId, reason }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
-    },
+    mutationFn: (input: { readonly reason: string; readonly ownerId?: string }) =>
+      api.tasks.block({
+        taskId,
+        reason: input.reason,
+        ...(input.ownerId ? { ownerId: input.ownerId } : {}),
+      }),
+    onSuccess: () => refreshAfterBlock(queryClient, taskId),
   })
 }
 
+/** Resolver é o desbloqueio com nota opcional; a tarefa sai do estado bloqueado. */
 export function useUnblockTask(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api.tasks.unblock({ taskId }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
-    },
+    mutationFn: (resolution?: string | null) =>
+      api.tasks.unblock({ taskId, ...(resolution ? { resolution } : {}) }),
+    onSuccess: () => refreshAfterBlock(queryClient, taskId),
   })
+}
+
+/** Bloqueio e desbloqueio mexem no impedimento: a lista, o quadro, o dashboard e a linha do tempo. */
+function refreshAfterBlock(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.impediments.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
 }
 
 /** Atualiza a tarefa e a linha do tempo depois de subtarefas e comentários. */

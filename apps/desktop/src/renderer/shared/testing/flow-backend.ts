@@ -141,6 +141,8 @@ export function toTaskDto(detail: GetTaskDto): TaskDto {
     agingDays: (detail as { agingDays?: number }).agingDays ?? null,
     // Sprint aberta (M4.2): nula sem sprint ou sem o módulo ativo.
     sprint: detail.sprint ?? null,
+    // Impedimento aberto (M5.2a): nulo sem impedimento ou com o módulo desligado.
+    impediment: detail.impediment ?? null,
   }
 }
 

@@ -29,7 +29,27 @@ export const queryKeys = {
     list: (projectId: string) => ['agilebox', 'sprints', 'list', projectId] as const,
     detail: (sprintId: string) => ['agilebox', 'sprints', 'detail', sprintId] as const,
   },
-  timeline: { list: (taskId: string) => ['agilebox', 'timeline', taskId] as const },
+  impediments: {
+    all: ['agilebox', 'impediments'] as const,
+    /** Lista com os filtros da tela (projeto, responsável, resolvidos). */
+    list: (filters: {
+      readonly projectId?: string | undefined
+      readonly ownerId?: string | undefined
+      readonly includeResolved?: boolean | undefined
+    }) =>
+      [
+        'agilebox',
+        'impediments',
+        'list',
+        filters.projectId ?? null,
+        filters.ownerId ?? null,
+        filters.includeResolved === true,
+      ] as const,
+  },
+  timeline: {
+    all: ['agilebox', 'timeline'] as const,
+    list: (taskId: string) => ['agilebox', 'timeline', taskId] as const,
+  },
   daily: {
     all: ['agilebox', 'daily'] as const,
     today: (date: string) => ['agilebox', 'daily', 'today', date] as const,

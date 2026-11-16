@@ -144,7 +144,7 @@ describe('Painel adaptativo (M2.1)', () => {
 
     await expectEverythingVisible()
     const dialog = await openTask(user, BLOCKED)
-    expect(within(dialog).getByRole('button', { name: 'Desbloquear' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
     expect(within(dialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
   })
 
@@ -170,7 +170,7 @@ describe('Painel adaptativo (M2.1)', () => {
     const dialog = await openTask(user, BLOCKED)
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
     expect(within(dialog).queryByRole('button', { name: 'Bloquear' })).toBeNull()
-    expect(within(dialog).queryByRole('button', { name: 'Desbloquear' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(dialog).queryByText('Aguardando API')).toBeNull()
   })
 
@@ -197,7 +197,7 @@ describe('Painel adaptativo (M2.1)', () => {
 
     const blockedDialog = await openTask(user, BLOCKED)
     expect(within(blockedDialog).getByText('Aguardando API')).toBeTruthy()
-    expect(within(blockedDialog).queryByRole('button', { name: 'Desbloquear' })).toBeNull()
+    expect(within(blockedDialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(blockedDialog).queryByRole('button', { name: 'Bloquear' })).toBeNull()
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog', { name: BLOCKED.title })).toBeNull())
@@ -274,7 +274,7 @@ describe('Painel adaptativo (M2.1)', () => {
     expect(screen.queryByText(/Ciclo médio desta semana/)).toBeNull()
     const basicDialog = await openTask(user, BLOCKED)
     expect(within(basicDialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
-    expect(within(basicDialog).queryByRole('button', { name: 'Desbloquear' })).toBeNull()
+    expect(within(basicDialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(basicDialog).getByText('Aguardando API')).toBeTruthy()
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog', { name: BLOCKED.title })).toBeNull())
@@ -295,6 +295,8 @@ describe('Painel adaptativo (M2.1)', () => {
     expect(cardButton(BLOCKED).getAttribute('aria-label')).toContain('1 de 3 subtarefas concluídas')
     const advancedDialog = await openTask(user, BLOCKED)
     expect(within(advancedDialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(within(advancedDialog).getByRole('button', { name: 'Desbloquear' })).toBeTruthy()
+    expect(
+      within(advancedDialog).getByRole('button', { name: 'Resolver impedimento' }),
+    ).toBeTruthy()
   })
 })

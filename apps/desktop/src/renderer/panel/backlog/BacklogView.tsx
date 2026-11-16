@@ -2,7 +2,16 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { formatHours } from '@agilebox/core'
 import type { ProjectDto, TaskDto } from '@agilebox/contract'
-import { Button, Drawer, EmptyState, IconButton, TaskKey, TextField, Toast } from '@agilebox/ui'
+import {
+  Button,
+  Drawer,
+  EmptyState,
+  IconButton,
+  SignalBadge,
+  TaskKey,
+  TextField,
+  Toast,
+} from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { useDefinitionOfDoneGate } from '../../shared/definition-of-done/use-definition-of-done-gate'
 import { useActor } from '../../shared/session/useActor'
@@ -11,6 +20,8 @@ import { TaskDetailView } from '../task-detail/TaskDetailView'
 import { moveRequest, type BacklogMove } from './backlog-order'
 import { refusalMessage } from './refusal-message'
 import { sprintMarker } from '../sprints/sprint-rules'
+import { blockedMarkerLabel } from '../impediments/impediment-copy'
+import { isBlockedTask } from '../../shared/lib/task-signals'
 import {
   useAddToBacklog,
   useBacklogList,
@@ -270,6 +281,16 @@ export function BacklogView({ initialProjectId = null, projects, isManager }: Ba
                       ) : null}
                       {capabilities.can('sprints:passive') && sprintMarker(task) ? (
                         <span>{sprintMarker(task)}</span>
+                      ) : null}
+                      {capabilities.can('impediments:passive') && isBlockedTask(task) ? (
+                        <span
+                          title={blockedMarkerLabel(
+                            task.blockedReason,
+                            task.impediment?.ownerName ?? null,
+                          )}
+                        >
+                          <SignalBadge variant="blocked">Bloqueada</SignalBadge>
+                        </span>
                       ) : null}
                       {showCriteria && task.criteriaProgress && task.criteriaProgress.total > 0 ? (
                         <span>

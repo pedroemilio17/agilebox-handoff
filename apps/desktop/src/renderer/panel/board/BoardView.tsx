@@ -49,6 +49,7 @@ import { formatDate } from '../../shared/lib/format-date'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { isAgingTask, isArchivedTask, isBlockedTask } from '../../shared/lib/task-signals'
+import { blockedMarkerLabel } from '../impediments/impediment-copy'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
 import { sprintMarker } from '../sprints/sprint-rules'
 import { isWipStatus, type WipStatus } from './wip-limit'
@@ -719,6 +720,11 @@ function TaskCard({
   const deadline = describeDeadline(task)
   const capabilities = useCapabilities()
   const blocked = isBlockedTask(task) && capabilities.can('impediments:passive')
+  // Responsável do impedimento aberto (efeito passivo): só aparece no rótulo e no title.
+  const blockedOwner = blocked ? (task.impediment?.ownerName ?? null) : null
+  const blockedAria = blocked
+    ? `, bloqueada${blockedOwner ? `, responsável ${blockedOwner}` : ''}`
+    : ''
   const showChecklist = capabilities.can('subtasks:passive')
   const { done, total } = task.checklistProgress
   const checklistLabel =
@@ -744,11 +750,11 @@ function TaskCard({
   const ariaLabel = readOnly
     ? panelCopy.teamCardLabel(
         task.key,
-        `${task.title}${task.priority === 'high' ? ', prioridade alta' : ''}${blocked ? ', bloqueada' : ''}`,
+        `${task.title}${task.priority === 'high' ? ', prioridade alta' : ''}${blockedAria}`,
         TASK_STATUS_LABELS[task.status],
         responsibleName ?? panelCopy.noResponsible.toLowerCase(),
       )
-    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${archived ? ', arquivada' : ''}${checklistLabel}${passiveLabel}${commentLabel}`
+    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blockedAria}${archived ? ', arquivada' : ''}${checklistLabel}${passiveLabel}${commentLabel}`
 
   return (
     <button
@@ -757,7 +763,7 @@ function TaskCard({
       aria-label={ariaLabel}
       className={styles.cardButton}
       onClick={onOpen}
-      title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
+      title={blocked ? blockedMarkerLabel(task.blockedReason, blockedOwner) : undefined}
       type="button"
     >
       <span className={styles.cardTop}>

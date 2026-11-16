@@ -14,10 +14,18 @@ import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
 import { sprintCopy } from '../sprints/sprint-copy'
+import { impedimentCopy } from '../impediments/impediment-copy'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
-  'dashboard' | 'projects' | 'backlog' | 'sprints' | 'agenda' | 'plugins' | 'settings'
+  | 'dashboard'
+  | 'projects'
+  | 'backlog'
+  | 'sprints'
+  | 'impediments'
+  | 'agenda'
+  | 'plugins'
+  | 'settings'
 
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
@@ -50,6 +58,7 @@ export interface PanelShellProps {
   readonly agenda?: ReactNode
   readonly backlog?: ReactNode
   readonly sprints?: ReactNode
+  readonly impediments?: ReactNode
   readonly children?: ReactNode
   /** Escopo do quadro: "Minhas tarefas" ou "Equipe". Só aparece com o quadro aberto. */
   readonly taskScope?: TaskScope
@@ -61,6 +70,7 @@ const viewTitles: Record<PanelView, string> = {
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
   sprints: sprintCopy.title,
+  impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
@@ -88,6 +98,7 @@ export function PanelShell({
   agenda,
   backlog,
   sprints,
+  impediments,
   children,
   taskScope = 'mine',
   onTaskScopeChange,
@@ -107,6 +118,10 @@ export function PanelShell({
       ? [{ id: 'sprints' as const, label: sprintCopy.title, icon: '◷' }]
       : []),
     // Agenda só com o módulo ligado e o nível da pessoa; sem "em breve" nem item desabilitado.
+    // Impedimentos: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
+    ...(capabilities.showScreen('impediments')
+      ? [{ id: 'impediments' as const, label: impedimentCopy.title, icon: '⚑' }]
+      : []),
     ...(capabilities.showScreen('agenda')
       ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
       : []),
@@ -152,6 +167,8 @@ export function PanelShell({
             backlog
           ) : visibleView === 'sprints' && sprints ? (
             sprints
+          ) : visibleView === 'impediments' && impediments ? (
+            impediments
           ) : visibleView === 'agenda' && agenda ? (
             agenda
           ) : visibleView === 'settings' ? (
@@ -390,6 +407,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     agenda: 'M4 5h16v16H4ZM4 10h16M8 2v6m8-6v6',
     backlog: 'M4 6h10M4 12h10M4 18h6M16 16l3 3 3-3M19 19V9',
     sprints: 'M12 3a9 9 0 1 0 9 9M12 7v5l3 2',
+    impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
   }

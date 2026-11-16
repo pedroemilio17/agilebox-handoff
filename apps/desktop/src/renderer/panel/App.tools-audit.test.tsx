@@ -102,7 +102,14 @@ async function auditCollaborator(user: ReturnType<typeof userEvent.setup>): Prom
     `  detalhe: ${present([
       ['motivo do bloqueio', within(dialog).queryByText('Aguardando API') !== null],
       ['Bloquear', within(dialog).queryByRole('button', { name: 'Bloquear' }) !== null],
-      ['Desbloquear', within(dialog).queryByRole('button', { name: 'Desbloquear' }) !== null],
+      [
+        'Resolver impedimento',
+        within(dialog).queryByRole('button', { name: 'Resolver impedimento' }) !== null,
+      ],
+      [
+        'Histórico de impedimentos',
+        within(dialog).queryByRole('region', { name: 'Histórico de impedimentos' }) !== null,
+      ],
       ['Subtarefas', within(dialog).queryByRole('region', { name: 'Subtarefas' }) !== null],
       [
         'Critérios de aceitação',
@@ -248,9 +255,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Intermediário
         colaborador
-        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
@@ -259,9 +266,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Avançado
         colaborador
-        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
@@ -314,9 +321,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Intermediário
         colaborador
-        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Review e retro, Burndown e velocity
@@ -325,9 +332,9 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Avançado
         colaborador
-        menu: Quadro, Backlog, Sprints, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio, Desbloquear, Critérios de aceitação, Estimativa (h)
+        detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum

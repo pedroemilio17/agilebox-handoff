@@ -9,6 +9,7 @@ import { useDailyToday } from '../use-daily-today'
 import { useDailySuggestion } from '../use-daily-suggestion'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { DailySuggestionPanel } from './DailySuggestionPanel'
+import { DailyImpedimentsPanel } from './DailyImpedimentsPanel'
 import {
   DAILY_ANSWER_LIMIT,
   EMPTY_DAILY_ANSWERS,
@@ -119,6 +120,8 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   const capabilities = useCapabilities()
   const suggestionAllowed = capabilities.canFetch('checkins:screen')
   const suggestion = useDailySuggestion(daily.data?.date ?? '', suggestionAllowed && loaded)
+  // Impedimentos abertos da pessoa (passo 3): só com o módulo ativo; sem ele, nada é pedido.
+  const impedimentsAllowed = capabilities.canFetch('impediments:passive')
 
   // Uma vez: preenche com a daily de hoje, se já existir, para editar.
   useEffect(() => {
@@ -262,6 +265,18 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   }
 
   // Usar a sugestão só escreve no campo de avanço, que a pessoa edita. Não grava a daily.
+  // Usar um impedimento só escreve no campo de bloqueio, que a pessoa edita. Não grava a daily.
+  const useImpediment = (text: string) => {
+    setAnswers((current) => {
+      if (current.blocker.includes(text)) return current
+      const blocker = current.blocker.trim() === '' ? text : `${current.blocker.trimEnd()}\n${text}`
+      return { ...current, blocker }
+    })
+    setNoNews(false)
+    setFeedback(null)
+    document.getElementById('daily-blocker')?.focus()
+  }
+
   const useSuggestion = () => {
     const lines = suggestion.data?.advanced ?? []
     if (lines.length === 0) return
@@ -374,6 +389,13 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
           <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
             {trayCopy.dailyStep3Title}
           </h3>
+          {impedimentsAllowed ? (
+            <DailyImpedimentsPanel
+              userId={actor.actor?.userId}
+              disabled={busy}
+              onUse={useImpediment}
+            />
+          ) : null}
           <AnswerField
             id="daily-blocker"
             label={trayCopy.dailyBlockerLabel}

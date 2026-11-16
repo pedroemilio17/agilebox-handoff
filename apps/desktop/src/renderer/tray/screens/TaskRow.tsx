@@ -4,6 +4,7 @@ import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { formatRelativeDate } from '../../shared/lib/format-date'
 import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { sprintMarker } from '../../panel/sprints/sprint-rules'
+import { blockedMarkerLabel } from '../../panel/impediments/impediment-copy'
 import styles from '../Tray.module.css'
 
 export interface TaskRowProps {
@@ -38,7 +39,13 @@ export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
               />
             ) : null}
             <CommentCount count={task.commentCount} />
-            {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
+            {blocked ? (
+              <span
+                title={blockedMarkerLabel(task.blockedReason, task.impediment?.ownerName ?? null)}
+              >
+                <SignalBadge variant="blocked">Bloqueada</SignalBadge>
+              </span>
+            ) : null}
             {isAgingTask(task) ? (
               <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
             ) : (

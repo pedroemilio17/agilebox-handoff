@@ -83,7 +83,7 @@ describe('Scrum no Básico · efeitos passivos sem a tela', () => {
     const dialog = await screen.findByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })
     expect(within(dialog).getByText('Aguardando API')).toBeTruthy()
     expect(within(dialog).queryByRole('button', { name: 'Bloquear' })).toBeNull()
-    expect(within(dialog).queryByRole('button', { name: 'Desbloquear' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
     // Critérios e estimativa: o marcador no card é passivo, mas a tela não existe no Básico.
     expect(within(dialog).queryByRole('region', { name: 'Critérios de aceitação' })).toBeNull()

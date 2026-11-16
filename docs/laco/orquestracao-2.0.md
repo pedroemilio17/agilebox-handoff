@@ -61,12 +61,12 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 - [x] M5.1 Check-in assíncrono pela bandeja funcionando sem sprint, com resumo sugerido a partir das tarefas movidas (reaproveitar a daily).
 - [x] M5.2a Impedimento com estado e responsável, backend: entidade `Impediment` por tarefa (motivo, estado `open`/`resolved`, responsável por resolver (usuário que participa da tarefa), aberto por/em, resolvido por/em, nota de resolução), com histórico (uma tarefa pode ter vários ao longo do tempo, no máximo um aberto); `tasks.block`/`tasks.unblock` existentes passam a abrir/resolver o impedimento e mantêm os campos de bloqueio da tarefa em sincronia (compatibilidade); casos de uso `impediments.list` (abertos por padrão; resolvido sai da lista; escopo como o quadro/Equipe), `impediments.assign`, `impediments.resolve`; migração com backfill dos bloqueios atuais; guard no módulo `impediments`; linha do tempo; contrato e IPC.
-- [~] M5.2b Impedimento, interface: tela/lista de impedimentos (`impediments:screen`), responsável por resolver no formulário de bloqueio e no detalhe, estado e histórico no detalhe, resolvido sai da lista, passo 3 do check-in da bandeja usando os impedimentos abertos, testes e auditoria de presets.
-- [ ] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
+- [x] M5.2b Impedimento, interface: tela/lista de impedimentos (`impediments:screen`), responsável por resolver no formulário de bloqueio e no detalhe, estado e histórico no detalhe, resolvido sai da lista, passo 3 do check-in da bandeja usando os impedimentos abertos, testes e auditoria de presets.
+- [~] M5.3 Auditoria final da Onda 1: `pnpm check` completo, revisão dos critérios "Pronto quando" de M0 a M5 e relatório `docs/laco/relatorio-2.0-onda1.md`.
 
 ## Agente em andamento
 
-M5.2b (Haiku), lançado após o commit do M5.2a. Resultado chega por notificação.
+M5.3 (Haiku), lançado após o commit do M5.2b. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -125,7 +125,11 @@ M5.2b (Haiku), lançado após o commit do M5.2a. Resultado chega por notificaç�
 
 - Impedimento no backend (M5.2a): bloquear tarefa já bloqueada não é recusado (o código atual já aceitava: mesmo motivo é no-op e motivo diferente atualiza o impedimento aberto; o briefing dizia "recusado como hoje", mantive o comportamento real); concluir ou desbloquear resolve o impedimento aberto sem nota; quem sai da tarefa mantém o direito de resolver como responsável mas some da lista (o escopo segue a participação); `tasks.unblock` exige poder editar a tarefa (só `impediments.resolve` aceita o responsável sem participação); a lista não inclui membros do projeto que não participam (o PLANO 6.1 dá a visão Equipe em somente leitura a membros do projeto); o backfill usa o id da tarefa como id do impedimento (ULID válido e único); `impediments.assign` e `resolve` devolvem o `ImpedimentDto`; cada `change()` de tarefa consulta o impedimento aberto (uma consulta indexada). Confirmar.
 
+- Interface do impedimento (M5.2b): "Meus" na bandeja significa responsável por resolver (`ownerId`), então um impedimento sem responsável em tarefa própria não aparece no check-in; o criador da tarefa que não participa não aparece em "Quem resolve" (o DTO da tarefa não traz `createdBy`); o marcador "Bloqueada" no item do backlog é novo; o painel "Seus impedimentos abertos" da bandeja depende de `impediments:passive` (módulo ativo), não de `:screen`; os botões "Usar" da bandeja têm o mesmo nome em todas as linhas (convém um `aria-label` com o texto da linha); a tela de impedimentos e o detalhe usam invalidação, sem atualização otimista; o botão "Desbloquear" do detalhe virou "Resolver impedimento" (com nota opcional). Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 207: M5.2b concluído (Haiku, retomado após reinício do contêiner). Tela Impedimentos (lista de abertos, filtros, resolvidos, atribuir, resolver com nota), "Quem resolve" no bloqueio, estado, responsável e histórico no detalhe, painel "Seus impedimentos abertos" no check-in, marcador com responsável, atalho G I; +48 testes. `pnpm check` pelo orquestrador: 285 arquivos, 2515 testes, exit 0.
 
 - Ciclo 195: M5.2a concluído (Haiku). `Impediment` (aberto/resolvido, responsável, histórico, um aberto por tarefa), tabela `task_impediments` com backfill dos bloqueios atuais (migração 0016, sem recriar `tasks`), `impediments.list|assign|resolve`, `tasks.block|unblock` sincronizados na mesma transação, DTO com `impediment` e histórico no detalhe, contagem de impacto; +57 testes e 82 arquivos tocados. `pnpm check` pelo orquestrador: 280 arquivos, 2467 testes, exit 0.
 

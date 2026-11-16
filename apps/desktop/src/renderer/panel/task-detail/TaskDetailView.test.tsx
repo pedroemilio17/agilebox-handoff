@@ -520,7 +520,9 @@ describe('Bloqueio no detalhe', () => {
     const unblock = vi.spyOn(api.tasks, 'unblock').mockResolvedValue(makeDetail())
     expect(await screen.findByRole('region', { name: 'Bloqueio' })).toBeTruthy()
     expect(screen.getByText(REASON)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Desbloquear' }))
+    // Resolver abre a nota (opcional); confirmar é que desbloqueia.
+    await user.click(screen.getByRole('button', { name: 'Resolver impedimento' }))
+    await user.click(screen.getByRole('button', { name: 'Resolver' }))
     expect(unblock).toHaveBeenCalledWith({ taskId: TASK_ID })
   })
 
@@ -541,7 +543,9 @@ describe('Bloqueio no detalhe', () => {
       }),
     })
     expect(
-      (await screen.findByRole('button', { name: 'Desbloquear' })).hasAttribute('disabled'),
+      (await screen.findByRole('button', { name: 'Resolver impedimento' })).hasAttribute(
+        'disabled',
+      ),
     ).toBe(true)
   })
 
