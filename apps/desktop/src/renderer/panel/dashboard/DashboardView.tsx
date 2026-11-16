@@ -54,6 +54,7 @@ export function DashboardView({
   const dailyFetch = capabilities.canFetch('checkins:screen')
   const blockedVisible = capabilities.can('impediments:passive')
   const wipVisible = capabilities.can('wip:passive')
+  const flowVisible = capabilities.can('flowMetrics:screen')
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
@@ -198,31 +199,34 @@ export function DashboardView({
         </div>
       </div>
       <div className={styles.overview}>
-        <section className={styles.panel} aria-label="Fluxo de seis semanas">
-          <Eyebrow>Fluxo · 6 semanas</Eyebrow>
-          <div className={styles.flowMetrics}>
-            <p>
-              <strong>{days(cycle)}</strong>
-              <span>tempo de ciclo médio</span>
-            </p>
-            <p>
-              <strong>{days(lead)}</strong>
-              <span>do pedido à entrega</span>
-            </p>
-            <p>
-              <strong>{throughput === 0 ? '—' : throughput}</strong>
-              <span>concluídas nesta semana</span>
-            </p>
-          </div>
-          {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
-          <BarChart
-            label="Concluídas por semana"
-            data={data.weeks.map((item) => ({
-              label: `S${getISOWeek(parseISO(item.start))}`,
-              value: item.throughput,
-            }))}
-          />
-        </section>
+        {/* Métricas de fluxo (ciclo, pedido à entrega, vazão): só com a ferramenta ligada, como no quadro. */}
+        {flowVisible ? (
+          <section className={styles.panel} aria-label="Fluxo de seis semanas">
+            <Eyebrow>Fluxo · 6 semanas</Eyebrow>
+            <div className={styles.flowMetrics}>
+              <p>
+                <strong>{days(cycle)}</strong>
+                <span>tempo de ciclo médio</span>
+              </p>
+              <p>
+                <strong>{days(lead)}</strong>
+                <span>do pedido à entrega</span>
+              </p>
+              <p>
+                <strong>{throughput === 0 ? '—' : throughput}</strong>
+                <span>concluídas nesta semana</span>
+              </p>
+            </div>
+            {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
+            <BarChart
+              label="Concluídas por semana"
+              data={data.weeks.map((item) => ({
+                label: `S${getISOWeek(parseISO(item.start))}`,
+                value: item.throughput,
+              }))}
+            />
+          </section>
+        ) : null}
         <section className={styles.panel} aria-label="Mudou desde ontem">
           <Eyebrow>Mudou desde ontem</Eyebrow>
           {data.recentChanges.length === 0 ? (
