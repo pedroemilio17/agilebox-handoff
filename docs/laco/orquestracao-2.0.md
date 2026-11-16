@@ -31,8 +31,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 ### M1 · Motor de capacidades
 
 - [x] M1.1 `ExperienceLevel` (`basic`, `intermediate`, `advanced`) e `ModuleId`/`ModuleDefinition` com `packages/core/src/modules/registry.ts` (catálogo dos 15 módulos do plano, com `requires`, `requiresAnyOf`, `conflicts`, `minLevel`, `core`). Teste que falha se houver ciclo.
-- [~] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
-- [ ] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
+- [x] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
+- [~] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
 - [ ] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
 - [ ] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
 - [ ] M1.6 Guard de módulo no backend: cada caso de uso declara seu módulo; chamada a módulo desligado é recusada. Estados `active`, `winding_down`, `disabled` e prévia de impacto.
@@ -63,7 +63,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.2 (Haiku), lançado após o commit do M1.1. Resultado chega por notificação.
+M1.3 (Haiku), lançado após o commit do M1.2. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -85,7 +85,11 @@ M1.2 (Haiku), lançado após o commit do M1.1. Resultado chega por notificação
 
 - Catálogo de módulos (M1.1): `requiresAnyOf` é "alternativas, cada uma com um conjunto de módulos" (burndown exige horas OU pontos). `estimates.points` está no catálogo só como caso de teste do conflito (ADR-07: só horas existe hoje). `integrations` está no catálogo só como definição, sem tela nem lógica (plug-ins seguem fora do MVP). A tabela de dependências e de nível mínimo por módulo é proposta minha, a refinar por você.
 
+- Resolvedor (M1.2): `dependentsOf` é direto (não transitivo); `core` não aparece em `autoEnabled`; não existe `autoDisabled` (a interface pede "desligar os dois" chamando o resolvedor de novo com os dois em `disable`); `burndown` puxa `estimates.hours` (ADR-07). Confirmar.
+
 ## Diário (mais recente primeiro)
+
+- Ciclo 36: M1.2 concluído (Haiku). `resolveModuleSet` e `dependentsOf` em `core/modules/resolve.ts`, 44 testes (cada preset aplicado sobre `core` dá exatamente o conjunto do preset). `pnpm check` pelo orquestrador: 205 arquivos, 1747 testes, exit 0.
 
 - Ciclo 30: M1.1 concluído (Haiku). `packages/core/src/modules/` com níveis, catálogo dos 15 módulos, 4 presets e detector de ciclo, com testes. `pnpm check` pelo orquestrador: 204 arquivos, 1703 testes, exit 0.
 
