@@ -61,6 +61,7 @@ function setup(actor: Actor = manager) {
     projects: unitOfWork.repositories.projects,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
     taskOpens: unitOfWork.repositories.taskOpens,
     tasks: unitOfWork.repositories.tasks,
     timeline: unitOfWork.repositories.timeline,

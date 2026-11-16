@@ -12,6 +12,7 @@ import type { ProjectRepository } from './project-repository'
 import type { RetroActionRepository } from './retro-action-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
+import type { TeamToolsRepository } from './team-tools-repository'
 import type { TimelineRepository } from './timeline-repository'
 import type { UserRepository } from './user-repository'
 
@@ -29,6 +30,7 @@ export interface UnitOfWorkRepositories {
   readonly retroActions: RetroActionRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
+  readonly teamTools: TeamToolsRepository
   readonly timeline: TimelineRepository
   readonly users: UserRepository
 }

@@ -27,6 +27,7 @@ function setup() {
       checklist: unitOfWork.repositories.checklist,
       retroActions: unitOfWork.repositories.retroActions,
       dailyEntries: unitOfWork.repositories.dailyEntries,
+      teamTools: unitOfWork.repositories.teamTools,
       definitionOfDone: unitOfWork.repositories.definitionOfDone,
       comments: unitOfWork.repositories.comments,
       boardSettings: unitOfWork.repositories.boardSettings,

@@ -9,5 +9,6 @@ export { createSqliteCoreRepositories } from './repositories/core-repositories.j
 export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 export { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 export { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
+export { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 export { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 export { createSqliteUnitOfWork, SqliteUnitOfWork } from './unit-of-work.js'

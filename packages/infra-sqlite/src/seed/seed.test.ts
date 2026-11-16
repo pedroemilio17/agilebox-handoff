@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { expandMeetingOccurrences, parseDateOnly, toOrganizationId } from '@agilebox/core'
+import {
+  expandMeetingOccurrences,
+  parseDateOnly,
+  toOrganizationId,
+  toActiveModuleIds,
+} from '@agilebox/core'
 import { InMemoryUnitOfWork, RecordingNotifier } from '@agilebox/application/testing'
 import { seedDemo } from './seed.js'
 
@@ -183,6 +188,39 @@ describe('seed de demonstração', () => {
     const timeline = await unitOfWork.repositories.timeline.listByTask(organizationId, published.id)
     expect(timeline.filter((event) => event.type === 'definition_confirmed')).toEqual([
       expect.objectContaining({ payload: { count: 3 } }),
+    ])
+  })
+})
+
+describe('seed de demonstração: ferramentas da equipe', () => {
+  it('grava o preset Scrum completo no nível Avançado, como o padrão atual', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const organizationId = toOrganizationId('00000000000000000000000001')
+
+    await seedDemo({
+      ...unitOfWork.repositories,
+      unitOfWork,
+      changeNotifier: new RecordingNotifier(),
+      saveOrganization: async (organization) => {
+        await Promise.resolve()
+        expect(organization.id).toBe(organizationId)
+      },
+      now: () => '2026-11-01T12:00:00.000Z',
+    })
+
+    const settings = await unitOfWork.repositories.teamTools.getSettings(organizationId)
+    expect(settings.level).toBe('advanced')
+    expect(toActiveModuleIds(settings.modules)).toEqual([
+      'core',
+      'agenda',
+      'backlog',
+      'sprints',
+      'checkins',
+      'impediments',
+      'estimates.hours',
+      'acceptance',
+      'reviewRetro',
+      'burndown',
     ])
   })
 })

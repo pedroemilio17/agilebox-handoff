@@ -8,8 +8,9 @@ const journal = JSON.parse(readFileSync(`${migrationsDirectory}/meta/_journal.js
   entries: { tag: string }[]
 }
 const tags = journal.entries.map((entry) => entry.tag)
-const archiveMigration = tags[tags.length - 1]!
-const previous = tags.slice(0, -1)
+// Localiza a migração pelo nome: novas migrações entram depois dela e não devem quebrar este teste.
+const archiveMigration = '0011_task_project_archive'
+const previous = tags.slice(0, tags.indexOf(archiveMigration))
 
 function statementsOf(tag: string): string[] {
   return readFileSync(`${migrationsDirectory}/${tag}.sql`, 'utf8')
@@ -23,8 +24,8 @@ function applyAll(client: BetterSqlite3.Database, list: readonly string[]) {
 }
 
 describe('migração de arquivamento de tarefa e projeto', () => {
-  it('é a última do diário e só adiciona colunas (não recria tabelas)', () => {
-    expect(archiveMigration).toBe('0011_task_project_archive')
+  it('existe no diário e só adiciona colunas (não recria tabelas)', () => {
+    expect(tags).toContain(archiveMigration)
     const sql = statementsOf(archiveMigration).join('\n')
     expect(sql).not.toMatch(/CREATE TABLE|DROP TABLE|DELETE FROM/iu)
     expect(sql).toMatch(/ALTER TABLE `tasks` ADD `archived_at` text/u)

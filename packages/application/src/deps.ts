@@ -16,6 +16,7 @@ import type {
   RetroActionRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamToolsRepository,
   TimelineRepository,
   UnitOfWork,
   UserRepository,
@@ -39,6 +40,7 @@ export interface AppDeps {
   readonly retroActions: RetroActionRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
+  readonly teamTools: TeamToolsRepository
   readonly timeline: TimelineRepository
   readonly unitOfWork: UnitOfWork
   readonly users: UserRepository

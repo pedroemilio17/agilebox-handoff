@@ -15,6 +15,7 @@ import {
   InMemoryRetroActionRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
+  InMemoryTeamToolsRepository,
   InMemoryTimelineRepository,
   InMemoryUserRepository,
 } from './in-memory-repositories'
@@ -45,6 +46,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       retroActions: new InMemoryRetroActionRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
       tasks: new InMemoryTaskRepository(state),
+      teamTools: new InMemoryTeamToolsRepository(state),
       timeline: new InMemoryTimelineRepository(state),
       users: new InMemoryUserRepository(state),
     }
@@ -71,6 +73,9 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       organizations: new Map(this.state.organizations),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
+      teamPreferences: new Map(this.state.teamPreferences),
+      teamModules: copyMap(this.state.teamModules),
+      teamToolsAudit: copyMap(this.state.teamToolsAudit),
       timeline: copyMap(this.state.timeline),
       users: copyMap(this.state.users),
     }

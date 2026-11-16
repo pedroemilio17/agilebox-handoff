@@ -5,7 +5,7 @@ describe('createSqliteClient', () => {
   it('aplica as migrações e cria todas as tabelas num banco vazio', () => {
     const database = createSqliteClient(':memory:')
     const rows = database.$client
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
       .all() as { name: string }[]
 
     expect(rows.map((row) => row.name).sort()).toEqual(
@@ -29,6 +29,9 @@ describe('createSqliteClient', () => {
         'meeting_participants',
         'local_settings',
         'board_settings',
+        'team_modules',
+        'team_preferences',
+        'team_tools_audit',
       ].sort(),
     )
 

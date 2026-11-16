@@ -1,6 +1,20 @@
-import { createOrganization, toOrganizationId } from '@agilebox/core'
+import {
+  applyTeamToolsUpdate,
+  auditRecordsFor,
+  createOrganization,
+  createTeamToolsSettings,
+  defaultTeamTools,
+  toOrganizationId,
+  ValidationError,
+} from '@agilebox/core'
 import type {
   BoardSettings,
+  ExperienceLevel,
+  TeamModuleSetting,
+  TeamToolsAuditEntry,
+  TeamToolsSettings,
+  TeamToolsUpdate,
+  UserId,
   ChecklistItem,
   DefinitionOfDoneItem,
   DailyEntry,
@@ -34,6 +48,7 @@ import type {
   RetroActionRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamToolsRepository,
   TimelineRepository,
   UserRepository,
 } from '../../ports'
@@ -55,6 +70,13 @@ export interface InMemoryState {
   organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
+  teamPreferences: Map<OrganizationId, TeamPreferenceRow>
+  /** Linhas de `team_modules`, por módulo, dentro da organização. */
+  teamModules: Map<OrganizationId, Map<string, TeamModuleSetting>>
+  /** Auditoria por id (texto do id numérico). */
+  teamToolsAudit: Map<OrganizationId, Map<string, TeamToolsAuditEntry>>
+  teamToolsAuditNextId: number
   timeline: Map<OrganizationId, Map<string, TimelineEvent>>
   users: Map<OrganizationId, Map<string, User>>
 }
@@ -81,9 +103,19 @@ export function createInMemoryState(): InMemoryState {
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
     tasks: new Map(),
+    teamPreferences: new Map(),
+    teamModules: new Map(),
+    teamToolsAudit: new Map(),
+    teamToolsAuditNextId: 1,
     timeline: new Map(),
     users: new Map(),
   }
+}
+
+export interface TeamPreferenceRow {
+  readonly experienceLevel: ExperienceLevel
+  readonly changedBy: UserId | null
+  readonly changedAt: string | null
 }
 
 function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: OrganizationId) {
@@ -527,5 +559,67 @@ export class InMemoryUserRepository implements UserRepository {
     await Promise.resolve()
     if (usedByOtherOrganization(this.state.users, org, value.id)) return
     bucket(this.state.users, org).set(value.id, { ...value, organizationId: org })
+  }
+}
+
+export class InMemoryTeamToolsRepository implements TeamToolsRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private read(organizationId: OrganizationId): TeamToolsSettings {
+    const preference = this.state.teamPreferences.get(organizationId)
+    if (!preference) return defaultTeamTools(organizationId)
+    return createTeamToolsSettings({
+      level: preference.experienceLevel,
+      modules: [...bucket(this.state.teamModules, organizationId).values()],
+    })
+  }
+
+  async getSettings(organizationId: OrganizationId) {
+    await Promise.resolve()
+    return this.read(organizationId)
+  }
+
+  async saveSettings(
+    organizationId: OrganizationId,
+    update: TeamToolsUpdate,
+    actorId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    if (this.state.users.get(organizationId)?.has(actorId) !== true)
+      throw new ValidationError('Ator de outra organização')
+
+    // Valida tudo antes de escrever: um conjunto inválido não deixa nada gravado.
+    const { settings, changes } = applyTeamToolsUpdate(this.read(organizationId), update, {
+      organizationId,
+      actorId,
+      at,
+    })
+
+    const modules = bucket(this.state.teamModules, organizationId)
+    for (const module of settings.modules) modules.set(module.moduleId, module)
+
+    const previous = this.state.teamPreferences.get(organizationId)
+    const levelChanged = changes.some((change) => change.kind === 'level')
+    this.state.teamPreferences.set(organizationId, {
+      experienceLevel: settings.level,
+      changedBy: levelChanged ? actorId : (previous?.changedBy ?? null),
+      changedAt: levelChanged ? at : (previous?.changedAt ?? null),
+    })
+
+    const audit = bucket(this.state.teamToolsAudit, organizationId)
+    for (const record of auditRecordsFor(changes, { organizationId, actorId, at })) {
+      const id = this.state.teamToolsAuditNextId++
+      audit.set(String(id), { ...record, id })
+    }
+  }
+
+  async listAudit(organizationId: OrganizationId, limit: number) {
+    await Promise.resolve()
+    if (!Number.isInteger(limit) || limit < 1)
+      throw new ValidationError('Limite de auditoria inválido')
+    return [...bucket(this.state.teamToolsAudit, organizationId).values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+      .slice(0, limit)
   }
 }

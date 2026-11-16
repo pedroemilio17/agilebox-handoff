@@ -57,6 +57,7 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,

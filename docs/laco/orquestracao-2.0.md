@@ -34,7 +34,8 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 - [x] M1.2 `resolveModuleSet` (puro): ativar puxa dependências, desativar bloqueado por dependentes, conflitos exclusivos. Testes de todas as regras do plano (seção Regras e casos de teste).
 - [x] M1.3 `effectiveCapabilities({modules, level, role})` (puro) e testes.
 - [x] M1.4 `TenantContext` obrigatório nos casos de uso (`organization_id` como tenant) e nos repositórios; nenhum caso de uso roda sem ele.
-- [~] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
+- [x] M1.5 Persistência: tabelas `team_modules` e preferência de nível da equipe, migração Drizzle, repositório atrás de porta, seed com preset Kanban simples. Auditoria de quem mudou e quando.
+- [~] M1.5b Ajuste do padrão das ferramentas: o preset Scrum completo não inclui `wip`, `subtasks` nem `flowMetrics` (estão em Kanban com fluxo), então o backfill/seed não preserva o que já existe. Padrão passa a ser todos os módulos, exceto `estimates.points` (conflita com horas, ADR-07) e `integrations` (plug-ins fora do MVP), nível Avançado; ajustar `defaultTeamTools`, o backfill da migração 0012 (ainda não enviada ao remoto), o seed e os testes.
 - [ ] M1.6 Guard de módulo no backend: cada caso de uso declara seu módulo; chamada a módulo desligado é recusada. Estados `active`, `winding_down`, `disabled` e prévia de impacto.
 
 ### M2 · Interface adaptativa
@@ -63,7 +64,7 @@ Estado: `[ ]` pendente · `[~]` em andamento · `[x]` feito e `pnpm check` passo
 
 ## Agente em andamento
 
-M1.5 (Haiku), lançado após o commit do M1.4. Resultado chega por notificação.
+M1.5b (Haiku), lançado após o M1.5 passar no check. Resultado chega por notificação.
 
 ## Pontos para o Pedro decidir
 
@@ -90,9 +91,13 @@ M1.5 (Haiku), lançado após o commit do M1.4. Resultado chega por notificação
 - Capacidades (M1.3): `effectiveCapabilities` não resolve dependências (quem chama usa `resolveModuleSet` antes); o efeito passivo (`:passive`) vale para todo módulo ativo, inclusive `core` e `agenda`; `tools:view` para todos e `tools:manage` só para o gestor. Confirmar.
 
 - TenantContext (M1.4): `TenantContext = { tenantId, actor }` com `tenantId = organizationId`; `createUseCases` envolve as 64 folhas e exige o contexto (ator cru não compila nem roda); o IPC monta o contexto da sessão e ignora `userId`/`tenantId` do payload. Fechou uma lacuna real: os `upsert` de users, contributors, projects e tasks agora não regravam id de outra organização. Decidir: (1) o tipo é estrutural, não nominal (aceitável ou quer tipo "branded"?); (2) gravação com id de outra organização é no-op silencioso (ou erro NOT_FOUND/CONFLICT?); (3) as classes de caso de uso continuam exportadas e instanciáveis fora da fronteira. Para o M6a: RLS no Postgres e coluna de organização em `task_participations`.
-- Default das ferramentas (M1.5): para preservar o comportamento atual (WIP, subtarefas, retro, daily e bloqueio já aparecem para todos), o backfill da migração e o seed deixam a equipe em "Scrum completo, nível Avançado". O plano pede o seed em "Kanban simples"; mudar isso esconderia funções que hoje existem. Confirmar.
+- Default das ferramentas (M1.5/M1.5b): para preservar o comportamento atual (WIP, subtarefas, retro, daily e bloqueio já aparecem para todos), o backfill da migração e o seed deixam a equipe em "Scrum completo, nível Avançado". O plano pede o seed em "Kanban simples"; mudar isso esconderia funções que hoje existem. Confirmar.
+
+- Persistência (M1.5): linha ausente em `team_modules` conta como desligada (o padrão em código só vale quando a equipe nunca gravou); ator de outra organização em `saveSettings` lança ValidationError (diferente do no-op silencioso do M1.4); mudança só de `config` não é auditada (o `kind` da auditoria não tem esse valor; regra 7 do plano pede auditoria de toda mudança, tratar no M2); id da auditoria é autoincrement. Confirmar.
 
 ## Diário (mais recente primeiro)
+
+- Ciclo 57: M1.5 concluído (Haiku). Tabelas `team_modules`, `team_preferences` e `team_tools_audit` (migração 0012 com backfill), porta e repositório SQLite/fake atômicos com auditoria, seed, 25 testes de core e contrato nos dois lados. `pnpm check` pelo orquestrador: 211 arquivos, 1823 testes, exit 0. O agente apontou que o backfill "Scrum completo" não preserva WIP/subtarefas/métricas de fluxo: criado o M1.5b para corrigir o padrão antes do guard.
 
 - Ciclo 49: M1.4 concluído (Haiku). `TenantContext` obrigatório na fronteira dos casos de uso, IPC monta o contexto da sessão, guardas de organização nos repositórios SQLite e nos fakes; testes estruturais (64 casos de uso recusam ator cru ou contexto de outra organização). `pnpm check` pelo orquestrador: 207 arquivos, 1779 testes, exit 0.
 

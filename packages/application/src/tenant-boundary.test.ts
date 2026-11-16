@@ -70,6 +70,7 @@ async function setup() {
     comments: repositories.comments,
     contributors: repositories.contributors,
     dailyEntries: repositories.dailyEntries,
+    teamTools: repositories.teamTools,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: repositories.meetings,

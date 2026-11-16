@@ -8,6 +8,7 @@ import { createSqliteMeetingRepository } from './repositories/meeting-repository
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
+import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
@@ -27,6 +28,7 @@ describe('SqliteUnitOfWork', () => {
       ...createSqliteCoreRepositories(database),
       ...createSqliteTaskRepositories(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
+      teamTools: createSqliteTeamToolsRepository(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
@@ -60,6 +62,7 @@ describe('SqliteUnitOfWork', () => {
       ...core,
       ...createSqliteTaskRepositories(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
+      teamTools: createSqliteTeamToolsRepository(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
