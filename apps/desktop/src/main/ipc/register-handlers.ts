@@ -95,6 +95,15 @@ export function registerHandlers(
   register('tasks.move', (context, input) => useCases.tasks.move.execute(context, input))
   register('tasks.block', (context, input) => useCases.tasks.block.execute(context, input))
   register('tasks.unblock', (context, input) => useCases.tasks.unblock.execute(context, input))
+  register('impediments.list', (context, input) =>
+    useCases.impediments.list.execute(context, input),
+  )
+  register('impediments.assign', (context, input) =>
+    useCases.impediments.assign.execute(context, input),
+  )
+  register('impediments.resolve', (context, input) =>
+    useCases.impediments.resolve.execute(context, input),
+  )
   register('tasks.archive', (context, input) => useCases.tasks.archive.execute(context, input))
   register('tasks.unarchive', (context, input) => useCases.tasks.unarchive.execute(context, input))
   register('tasks.checklist.add', (context, input) =>

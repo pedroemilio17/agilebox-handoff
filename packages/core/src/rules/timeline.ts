@@ -35,7 +35,15 @@ function sameTicket(a: Ticket | null, b: Ticket | null): boolean {
   return a === null || b === null ? a === b : a.id === b.id && a.url === b.url
 }
 
-export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
+/**
+ * Eventos das mudanças da tarefa. `resolution` é a nota de resolução quando a mudança desbloqueia
+ * (M5.2a): vai no evento `unblocked`.
+ */
+export function diffTask(
+  before: Task,
+  after: Task,
+  resolution: string | null = null,
+): TimelineEventDraft[] {
   const events: TimelineEventDraft[] = []
   if (before.status !== after.status)
     events.push({ type: 'status_changed', payload: { before: before.status, after: after.status } })
@@ -48,7 +56,13 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
     if (after.blockedReason !== null)
       events.push({ type: 'blocked', payload: { reason: after.blockedReason } })
     else if (before.blockedReason !== null)
-      events.push({ type: 'unblocked', payload: { reason: before.blockedReason } })
+      events.push({
+        type: 'unblocked',
+        payload:
+          resolution === null
+            ? { reason: before.blockedReason }
+            : { reason: before.blockedReason, resolution },
+      })
   }
   if (before.deadline !== after.deadline)
     events.push({
@@ -180,7 +194,15 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':
-      return 'desbloqueou a tarefa'
+      return event.payload.resolution
+        ? `desbloqueou a tarefa: ${event.payload.resolution}`
+        : 'desbloqueou a tarefa'
+    case 'impediment_assigned': {
+      const { before, after } = event.payload
+      if (after === null) return 'removeu o responsável pelo impedimento'
+      if (before === null) return `definiu ${names.user(after)} como responsável pelo impedimento`
+      return `alterou o responsável pelo impedimento de ${names.user(before)} para ${names.user(after)}`
+    }
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`
     case 'renamed':

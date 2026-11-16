@@ -112,10 +112,16 @@ async function countUsage(deps: AppDeps, organizationId: OrganizationId): Promis
         )
   const wipLimits = [board?.wipLimits.in_progress, board?.wipLimits.review]
   const openSprints = await deps.sprints.countNotClosed(organizationId)
+  // Impedimentos abertos de tarefas não arquivadas (a contagem segue a da lista de tarefas).
+  const activeTaskIds = new Set(tasks.map((task) => task.id))
+  const openImpediments = (
+    await deps.impediments.listByOrganization(organizationId, { includeResolved: false })
+  ).filter((impediment) => activeTaskIds.has(impediment.taskId))
   const sprintItems = await deps.sprintTasks.countOpenInNotClosed(organizationId)
   return {
     subtasks: items.length,
-    blockedTasks: tasks.filter((task) => task.blockedReason !== null).length,
+    openImpediments: openImpediments.length,
+    impediments: await deps.impediments.countByOrganization(organizationId),
     wipLimits: wipLimits.filter((limit) => limit !== undefined).length,
     retroActions: actions.length,
     checkins: await deps.dailyEntries.countByOrganization(organizationId),

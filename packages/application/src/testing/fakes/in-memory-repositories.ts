@@ -39,6 +39,8 @@ import type {
   TaskId,
   TimelineEvent,
   User,
+  Impediment,
+  ImpedimentId,
 } from '@agilebox/core'
 import type {
   AcceptanceRepository,
@@ -52,6 +54,8 @@ import type {
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
+  ImpedimentRepository,
+  ImpedimentListFilter,
   ProjectRepository,
   RetroActionRepository,
   SprintRepository,
@@ -79,6 +83,8 @@ export interface InMemoryState {
   sprints: Map<OrganizationId, Map<string, InMemorySprintRow>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
+  /** Impedimentos por id (abertos e resolvidos; o histórico não some). */
+  impediments: Map<OrganizationId, Map<string, Impediment>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
@@ -115,6 +121,7 @@ export function createInMemoryState(): InMemoryState {
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
+    impediments: new Map(),
     participations: new Map(),
     projects: new Map(),
     members: new Map(),
@@ -518,6 +525,14 @@ export class InMemoryTaskRepository implements TaskRepository {
       ) ?? null
     )
   }
+  async findManyById(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.tasks, org)
+    return taskIds.flatMap((id) => {
+      const task = values.get(id)
+      return task ? [task] : []
+    })
+  }
   async listByProject(org: OrganizationId, projectId: Task['projectId']) {
     await Promise.resolve()
     return [...bucket(this.state.tasks, org).values()]
@@ -812,5 +827,56 @@ export class InMemorySprintTaskRepository implements SprintTaskRepository {
     if ([...openPerTask.values()].some((count) => count > 1))
       throw new ConflictError('Tarefa já tem uma sprint aberta')
     for (const row of rows) values.set(sprintRowKey(row), row)
+  }
+}
+
+/** Impedimentos no fake: um mapa por organização, sem nada apagado. */
+export class InMemoryImpedimentRepository implements ImpedimentRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private rows(org: OrganizationId): Impediment[] {
+    return [...bucket(this.state.impediments, org).values()]
+  }
+  async findById(org: OrganizationId, impedimentId: ImpedimentId) {
+    await Promise.resolve()
+    return bucket(this.state.impediments, org).get(impedimentId) ?? null
+  }
+  async findOpenByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org).find((row) => row.taskId === taskId && row.status === 'open') ?? null
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.taskId === taskId)
+      .sort((a, b) => a.openedAt.localeCompare(b.openedAt) || a.id.localeCompare(b.id))
+  }
+  async listOpenByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const wanted = new Set(taskIds)
+    return this.rows(org).filter((row) => row.status === 'open' && wanted.has(row.taskId))
+  }
+  async listByOrganization(org: OrganizationId, filter: ImpedimentListFilter) {
+    await Promise.resolve()
+    return this.rows(org).filter(
+      (row) =>
+        (filter.includeResolved || row.status === 'open') &&
+        (filter.ownerId === undefined || row.ownerId === filter.ownerId),
+    )
+  }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    return this.rows(org).length
+  }
+  async save(org: OrganizationId, impediment: Impediment) {
+    await Promise.resolve()
+    const values = bucket(this.state.impediments, org)
+    const open = this.rows(org).find(
+      (row) =>
+        row.taskId === impediment.taskId && row.status === 'open' && row.id !== impediment.id,
+    )
+    if (impediment.status === 'open' && open)
+      throw new ConflictError('Tarefa já tem um impedimento aberto')
+    values.set(impediment.id, impediment)
   }
 }

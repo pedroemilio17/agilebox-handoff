@@ -44,6 +44,7 @@ function setup(actor: Actor = owner) {
     teamTools: unitOfWork.repositories.teamTools,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,

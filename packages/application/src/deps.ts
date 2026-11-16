@@ -6,6 +6,7 @@ import type {
   ChecklistRepository,
   Clock,
   DailyEntryRepository,
+  ImpedimentRepository,
   TaskCommentRepository,
   ContributorRepository,
   DefinitionOfDoneRepository,
@@ -37,6 +38,7 @@ export interface AppDeps {
   readonly dailyEntries: DailyEntryRepository
   readonly definitionOfDone: DefinitionOfDoneRepository
   readonly idGenerator: IdGenerator
+  readonly impediments: ImpedimentRepository
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository

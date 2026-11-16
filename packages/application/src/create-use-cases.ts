@@ -76,6 +76,11 @@ import {
   UpdateTask,
 } from './use-cases/tasks/tasks'
 import {
+  AssignImpediment,
+  ListImpediments,
+  ResolveImpediment,
+} from './use-cases/impediments/impediments'
+import {
   AddToBacklog,
   ListBacklog,
   PullFromBacklog,
@@ -258,6 +263,11 @@ export function createUseCases(deps: AppDeps) {
       listForDate: forTenant('daily.listForDate', new ListDailyForDate(deps)),
       getForUser: forTenant('daily.getForUser', new GetDailyForUser(deps)),
       suggestSummary: forTenant('daily.suggestSummary', new SuggestDailySummary(deps)),
+    },
+    impediments: {
+      list: forTenant('impediments.list', new ListImpediments(deps)),
+      assign: forTenant('impediments.assign', new AssignImpediment(deps)),
+      resolve: forTenant('impediments.resolve', new ResolveImpediment(deps)),
     },
     sprints: {
       list: forTenant('sprints.list', new ListSprints(deps)),

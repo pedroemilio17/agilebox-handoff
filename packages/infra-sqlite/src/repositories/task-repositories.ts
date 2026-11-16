@@ -93,6 +93,10 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       const [task] = await findTaskRows(organizationId, eq(tasks.id, taskId))
       return task ?? null
     },
+    async findManyById(organizationId, taskIds) {
+      if (taskIds.length === 0) return []
+      return findTaskRows(organizationId, inArray(tasks.id, [...taskIds]))
+    },
     async findByProjectNameKey(organizationId, projectId, nameKey) {
       const project = await database
         .select({ name: projects.name })

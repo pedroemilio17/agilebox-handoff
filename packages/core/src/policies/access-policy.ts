@@ -1,4 +1,5 @@
 import type { DailyEntry } from '../entities/daily-entry'
+import type { Impediment } from '../entities/impediment'
 import type { Meeting } from '../entities/meeting'
 import type { RetroAction } from '../entities/retro-action'
 import type { Participant } from '../entities/participation'
@@ -167,6 +168,31 @@ export function canRemoveComment(actor: Actor, task: Task, comment: TaskComment)
     comment.organizationId === actor.organizationId &&
     comment.taskId === task.id &&
     (comment.authorId === actor.userId || actor.role === 'manager')
+  )
+}
+/**
+ * Impedimentos (M5.2a): o gestor vê todos da organização; quem participa da tarefa vê os impedimentos
+ * dela. Quem só é membro do projeto não vê (o escopo segue o de participação, como em `impediments.list`).
+ */
+export function canSeeImpediment(actor: Actor, task: Task): boolean {
+  return (
+    actor.organizationId === task.organizationId &&
+    (actor.role === 'manager' || participates(actor, task))
+  )
+}
+/** Atribuir responsável segue a edição da tarefa: quem participa ou o gestor, e não arquivada. */
+export const canAssignImpediment = canEditTask
+/**
+ * Resolver: quem edita a tarefa, ou o próprio responsável por resolver (mesmo sem participar).
+ * Tarefa arquivada não altera impedimento.
+ */
+export function canResolveImpediment(actor: Actor, task: Task, impediment: Impediment): boolean {
+  if (task.archivedAt !== null) return false
+  return (
+    canEditTask(actor, task) ||
+    (actor.organizationId === task.organizationId &&
+      impediment.ownerId !== null &&
+      impediment.ownerId === actor.userId)
   )
 }
 export function isManagerEdit(actor: Actor): boolean {

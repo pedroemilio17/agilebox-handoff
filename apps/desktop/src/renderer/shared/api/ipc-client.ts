@@ -81,6 +81,11 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       search: (input) => call('tasks.search', input),
       recordOpen: (input) => call('tasks.recordOpen', input),
     },
+    impediments: {
+      list: (input) => call('impediments.list', input),
+      assign: (input) => call('impediments.assign', input),
+      resolve: (input) => call('impediments.resolve', input),
+    },
     sprints: {
       list: (input) => call('sprints.list', input),
       get: (input) => call('sprints.get', input),

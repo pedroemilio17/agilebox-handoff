@@ -1,6 +1,9 @@
 import {
   addParticipant,
   addToBacklog,
+  planImpedimentSync,
+  validateImpedimentResolution,
+  toImpedimentId,
   setEstimatedHours,
   archiveTask,
   blockTask,
@@ -41,6 +44,7 @@ import {
 import type {
   Actor,
   ContributorId,
+  ImpedimentOwnerCandidate,
   Task,
   TaskId,
   TimelineNames,
@@ -57,6 +61,11 @@ import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
 import { assertBacklogAccess } from '../backlog/backlog-access'
+import {
+  loadImpedimentRefs,
+  loadImpedimentHistory,
+  loadImpedimentOwner,
+} from '../impediments/impediment-refs'
 import type { BacklogPolicy } from '../backlog/backlog-access'
 
 export interface CreateTaskOptions {
@@ -175,7 +184,16 @@ export class CreateTask {
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
     // Tarefa recém-criada não está em sprint: nulo sem consultar.
-    return toTaskDto(task, await findTaskPrefix(this.deps, actor.organizationId), [], 0, [], null)
+    // Tarefa recém-criada não está bloqueada: nulo sem consultar.
+    return toTaskDto(
+      task,
+      await findTaskPrefix(this.deps, actor.organizationId),
+      [],
+      0,
+      [],
+      null,
+      null,
+    )
   }
 }
 
@@ -206,6 +224,10 @@ export class GetTaskDetail {
         ? await this.deps.users.findById(actor.organizationId, responsible.participant.userId)
         : null
     const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
+    const impediment = (await loadImpedimentRefs(this.deps, actor.organizationId, [task.id])).get(
+      task.id,
+    )
+    const impedimentHistory = await loadImpedimentHistory(this.deps, actor.organizationId, task.id)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
@@ -223,6 +245,8 @@ export class GetTaskDetail {
         criteria,
         responsibleUser?.defaultRateCents ?? 0,
         sprint ?? null,
+        impediment ?? null,
+        impedimentHistory,
       ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
@@ -265,12 +289,24 @@ export class GetTaskDetail {
   }
 }
 
+/** Regra de acesso de uma mudança: a própria, ou uma função que recusa (lança) quando não pode. */
+export type ChangeAccess = 'edit' | 'archive' | 'backlog' | ((actor: Actor, task: Task) => void)
+
+/** O que muda no impedimento junto com a tarefa (M5.2a). `owner` undefined mantém o atual. */
+export interface ImpedimentChange {
+  readonly owner?: ImpedimentOwnerCandidate | null
+  readonly resolution?: string | null
+}
+
 export abstract class ChangeTask {
   constructor(protected readonly deps: AppDeps) {}
 
   /**
    * `archive`: só arquivar/desarquivar, que vale também para tarefa arquivada.
    * `backlog`: puxar/devolver ao backlog; vale para o membro do projeto e o gestor (não só quem participa).
+   * Função: regra de acesso própria (o impedimento resolvido por quem é responsável, por exemplo).
+   * `impediment`: responsável e nota de resolução, que o impedimento aberto da tarefa leva junto
+   * (M5.2a). O impedimento é gravado na mesma transação da tarefa, com a linha do tempo.
    */
   protected async change(
     actor: Actor,
@@ -278,13 +314,15 @@ export abstract class ChangeTask {
     transform: (task: Task, now: string) => Task,
     extraEvents: readonly TimelineEventDraft[] = [],
     confirmedDefinitionItemIds: readonly string[] = [],
-    access: 'edit' | 'archive' | 'backlog' = 'edit',
+    access: ChangeAccess = 'edit',
     backlogPolicy: BacklogPolicy = canPullFromBacklog,
+    impediment: ImpedimentChange = {},
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (access === 'archive') {
+    if (typeof access === 'function') access(actor, task)
+    else if (access === 'archive') {
       if (!canChangeTaskArchive(actor, task))
         throw new PermissionDeniedError('Sem permissão para arquivar ou desarquivar esta tarefa')
     } else if (access === 'backlog') {
@@ -301,7 +339,28 @@ export abstract class ChangeTask {
       updated.status,
       confirmedDefinitionItemIds,
     )
-    const drafts = [...diffTask(task, updated), ...extraEvents, ...definitionEvents]
+    // Impedimento aberto (M5.2a): a marca de bloqueio da tarefa e o registro andam juntos.
+    const resolution = validateImpedimentResolution(impediment.resolution ?? null)
+    const open = await this.deps.impediments.findOpenByTask(actor.organizationId, task.id)
+    const newId =
+      updated.blockedReason !== null && open === null
+        ? toImpedimentId(await this.deps.idGenerator.generate(actor.organizationId))
+        : null
+    const sync = planImpedimentSync({
+      after: updated,
+      open,
+      newId,
+      actor: actor.userId,
+      at: now,
+      owner: impediment.owner,
+      resolution,
+    })
+    const drafts = [
+      ...diffTask(task, updated, resolution),
+      ...extraEvents,
+      ...definitionEvents,
+      ...sync.drafts,
+    ]
     const events = await Promise.all(
       drafts.map(async (draft) =>
         createTimelineEvent({
@@ -316,6 +375,7 @@ export abstract class ChangeTask {
     )
     await this.deps.unitOfWork.run(actor.organizationId, async (repositories) => {
       await repositories.tasks.save(actor.organizationId, updated)
+      for (const row of sync.saves) await repositories.impediments.save(actor.organizationId, row)
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     if (events.length > 0)
@@ -324,6 +384,9 @@ export abstract class ChangeTask {
     const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     const counts = await loadCommentCounts(this.deps, actor, [updated])
     const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
+    const impedimentRef = (
+      await loadImpedimentRefs(this.deps, actor.organizationId, [task.id])
+    ).get(task.id)
     return toTaskDto(
       updated,
       await findTaskPrefix(this.deps, actor.organizationId),
@@ -331,6 +394,7 @@ export abstract class ChangeTask {
       counts.get(task.id) ?? 0,
       criteria,
       sprint ?? null,
+      impedimentRef ?? null,
     )
   }
 }
@@ -393,15 +457,57 @@ export class SetTaskEstimate extends ChangeTask {
   }
 }
 
+/**
+ * Bloqueia (abre o impedimento). Bloquear de novo com outro motivo atualiza o aberto: nunca há dois
+ * abertos. Responsável é opcional; `ownerId: null` limpa, e omitido mantém o atual.
+ */
 export class BlockTask extends ChangeTask {
-  async execute(actor: Actor, input: { readonly taskId: string; readonly reason: string }) {
-    return this.change(actor, input.taskId, (task, now) => blockTask(task, input.reason, now))
+  async execute(
+    actor: Actor,
+    input: {
+      readonly taskId: string
+      readonly reason: string
+      readonly ownerId?: string | null | undefined
+    },
+  ) {
+    const impediment: ImpedimentChange =
+      input.ownerId === undefined
+        ? {}
+        : {
+            owner:
+              input.ownerId === null
+                ? null
+                : await loadImpedimentOwner(this.deps, actor.organizationId, input.ownerId),
+          }
+    return this.change(
+      actor,
+      input.taskId,
+      (task, now) => blockTask(task, input.reason, now),
+      [],
+      [],
+      'edit',
+      undefined,
+      impediment,
+    )
   }
 }
 
+/** Desbloqueia: resolve o impedimento aberto, com a nota de resolução opcional. */
 export class UnblockTask extends ChangeTask {
-  async execute(actor: Actor, input: { readonly taskId: string }) {
-    return this.change(actor, input.taskId, (task) => unblockTask(task))
+  async execute(
+    actor: Actor,
+    input: { readonly taskId: string; readonly resolution?: string | null | undefined },
+  ) {
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => unblockTask(task),
+      [],
+      [],
+      'edit',
+      undefined,
+      { resolution: input.resolution ?? null },
+    )
   }
 }
 

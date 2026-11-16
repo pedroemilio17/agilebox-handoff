@@ -61,6 +61,7 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     teamTools: unitOfWork.repositories.teamTools,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,

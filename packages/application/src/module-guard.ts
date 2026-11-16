@@ -64,6 +64,11 @@ export const USE_CASE_MODULES = {
   'tasks.move': { module: 'core' },
   'tasks.block': { module: 'impediments', creates: true },
   'tasks.unblock': { module: 'impediments' },
+  // Impedimentos (M5.2a): abrir é `tasks.block` (creates, recusado no encerramento). Listar, atribuir e
+  // resolver seguem no encerramento, como o que já existe.
+  'impediments.list': { module: 'impediments' },
+  'impediments.assign': { module: 'impediments' },
+  'impediments.resolve': { module: 'impediments' },
   'tasks.archive': { module: 'core' },
   'tasks.unarchive': { module: 'core' },
   // Critérios de aceitação (M3.2): o módulo `acceptance` guarda a lista; adicionar é criar (encerrando, recusa).

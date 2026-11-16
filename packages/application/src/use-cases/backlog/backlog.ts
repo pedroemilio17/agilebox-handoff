@@ -31,6 +31,7 @@ import { loadCommentCounts } from '../tasks/comment-loader'
 import { archivedProjectIds, filterVisibleTasks } from '../tasks/task-visibility'
 import { toTaskDtos } from '../tasks/list-tasks'
 import { assertBacklogAccess } from './backlog-access'
+import { loadImpedimentRefs } from '../impediments/impediment-refs'
 
 export interface ListBacklogInput {
   readonly projectId: string
@@ -148,6 +149,8 @@ export class ReorderBacklogItem {
     const criteria = await loadCriteria(this.deps, actor.organizationId, [task.id])
     const counts = await loadCommentCounts(this.deps, actor, [task])
     const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
+    const impedimentRef =
+      (await loadImpedimentRefs(this.deps, actor.organizationId, [task.id])).get(task.id) ?? null
     return toTaskDto(
       task,
       await findTaskPrefix(this.deps, actor.organizationId),
@@ -155,6 +158,7 @@ export class ReorderBacklogItem {
       counts.get(task.id) ?? 0,
       criteria.get(task.id) ?? [],
       sprint ?? null,
+      impedimentRef,
     )
   }
 }

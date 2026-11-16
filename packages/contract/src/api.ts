@@ -198,6 +198,14 @@ import {
   updateSprintOutputSchema,
 } from './sprints'
 import {
+  assignImpedimentInputSchema,
+  assignImpedimentOutputSchema,
+  listImpedimentsInputSchema,
+  listImpedimentsOutputSchema,
+  resolveImpedimentInputSchema,
+  resolveImpedimentOutputSchema,
+} from './impediments'
+import {
   getCurrentSessionInputSchema,
   getCurrentSessionOutputSchema,
   listSessionUsersInputSchema,
@@ -265,6 +273,15 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
   'tasks.block': { input: blockTaskInputSchema, output: blockTaskOutputSchema },
   'tasks.unblock': { input: unblockTaskInputSchema, output: unblockTaskOutputSchema },
+  'impediments.list': { input: listImpedimentsInputSchema, output: listImpedimentsOutputSchema },
+  'impediments.assign': {
+    input: assignImpedimentInputSchema,
+    output: assignImpedimentOutputSchema,
+  },
+  'impediments.resolve': {
+    input: resolveImpedimentInputSchema,
+    output: resolveImpedimentOutputSchema,
+  },
   'tasks.archive': { input: archiveTaskInputSchema, output: archiveTaskOutputSchema },
   'tasks.unarchive': { input: unarchiveTaskInputSchema, output: unarchiveTaskOutputSchema },
   'tasks.checklist.add': {
@@ -560,6 +577,11 @@ export interface AgileBoxApi {
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
     suggestSummary: Method<'daily.suggestSummary'>
+  }
+  impediments: {
+    list: Method<'impediments.list'>
+    assign: Method<'impediments.assign'>
+    resolve: Method<'impediments.resolve'>
   }
   sprints: {
     list: Method<'sprints.list'>

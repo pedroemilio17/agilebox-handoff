@@ -82,6 +82,7 @@ async function setup() {
     teamTools: repositories.teamTools,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
+    impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: repositories.meetings,

@@ -22,6 +22,7 @@ describe('createSqliteClient', () => {
         'task_checklist_items',
         'task_comments',
         'task_events',
+        'task_impediments',
         'task_opens',
         'definition_of_done_items',
         'retro_actions',

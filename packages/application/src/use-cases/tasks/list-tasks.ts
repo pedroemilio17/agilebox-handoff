@@ -24,6 +24,7 @@ import { loadCriteria } from './criteria-loader'
 import { loadSprintRefs } from '../sprints/sprint-refs'
 import { loadCommentCounts } from './comment-loader'
 import { archivedProjectIds, filterVisibleTasks, visibleTasks } from './task-visibility'
+import { loadImpedimentRefs } from '../impediments/impediment-refs'
 
 export interface ListBoardInput {
   readonly projectId?: string
@@ -100,6 +101,12 @@ export class ListBoard {
       actor.organizationId,
       tasks.map((task) => task.id),
     )
+
+    const impediments = await loadImpedimentRefs(
+      this.deps,
+      actor.organizationId,
+      tasks.map((task) => task.id),
+    )
     const counts = await loadCommentCounts(this.deps, actor, tasks)
     const settings = await this.deps.boardSettings.findByOrganization(actor.organizationId)
     const wipLimits = settings?.wipLimits ?? {}
@@ -117,6 +124,7 @@ export class ListBoard {
             counts.get(task.id) ?? 0,
             criteria.get(task.id) ?? [],
             sprints.get(task.id) ?? null,
+            impediments.get(task.id) ?? null,
           ),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
@@ -185,6 +193,12 @@ export class ListTeamBoard {
       actor.organizationId,
       visible.map((task) => task.id),
     )
+
+    const impediments = await loadImpedimentRefs(
+      this.deps,
+      actor.organizationId,
+      visible.map((task) => task.id),
+    )
     const counts = await loadCommentCounts(this.deps, actor, visible)
     // Sinais de parada e de prazo calculados como no quadro, para os filtros da visão Equipe.
     const now = await this.deps.clock.now(actor.organizationId)
@@ -204,6 +218,7 @@ export class ListTeamBoard {
             counts.get(task.id) ?? 0,
             criteria.get(task.id) ?? [],
             sprints.get(task.id) ?? null,
+            impediments.get(task.id) ?? null,
           ),
           agingDays: staleDays(task, events, today, timeZone),
           overdue: isOverdueTask(task, today),
@@ -234,6 +249,12 @@ export async function toTaskDtos(
     actor.organizationId,
     tasks.map((task) => task.id),
   )
+
+  const impediments = await loadImpedimentRefs(
+    deps,
+    actor.organizationId,
+    tasks.map((task) => task.id),
+  )
   const counts = await loadCommentCounts(deps, actor, tasks)
   return tasks.map((task) =>
     toTaskDto(
@@ -243,6 +264,7 @@ export async function toTaskDtos(
       counts.get(task.id) ?? 0,
       criteria.get(task.id) ?? [],
       sprints.get(task.id) ?? null,
+      impediments.get(task.id) ?? null,
     ),
   )
 }

@@ -4,6 +4,12 @@ import { acceptanceCriterionDtoSchema, acceptanceProgressDtoSchema } from './acc
 import { taskCommentDtoSchema } from './comments'
 import { wipColumnDtoSchema, wipLimitsSchema } from './board-settings'
 import { definitionOfDoneItemDtoSchema } from './definition-of-done'
+import {
+  impedimentDtoSchema,
+  impedimentRefDtoSchema,
+  impedimentReasonSchema,
+  impedimentResolutionSchema,
+} from './impediments'
 import { isoDateTimeSchema, nameSchema, ulidSchema, visibleRateSchema } from './shared-schemas'
 
 export const taskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'review', 'done'])
@@ -11,7 +17,7 @@ export const taskPrioritySchema = z.enum(['normal', 'high'])
 /** Teto de uma estimativa em horas (M3.2). */
 export const ESTIMATE_MAX_HOURS = 9999
 export const taskDeadlineSchema = z.iso.date().nullable()
-export const taskBlockReasonSchema = z.string().trim().min(1).max(280)
+export const taskBlockReasonSchema = impedimentReasonSchema
 
 export const taskKeySchema = z.string().regex(/^[A-Z]{2,5}-[1-9]\d*$/u)
 
@@ -56,6 +62,8 @@ export const taskDtoSchema = z.object({
   criteriaProgress: acceptanceProgressDtoSchema.optional(),
   /** Sprint aberta da tarefa (M4.2). Ausente em respostas antigas: tratar como nulo. */
   sprint: sprintRefDtoSchema.nullable().optional(),
+  /** Impedimento aberto (M5.2a). Nulo sem impedimento ou com o módulo `impediments` desligado. Ausente em respostas antigas. */
+  impediment: impedimentRefDtoSchema.nullable().optional(),
   commentCount: z.number().int().nonnegative().safe(),
   agingDays: z.number().int().nonnegative().nullable().optional(),
   overdue: z.boolean().optional(),
@@ -102,6 +110,8 @@ export const getTaskOutputSchema = taskDtoSchema
     readOnly: z.boolean(),
     /** Arquivar ou desarquivar (participante ou gestor), inclusive tarefa arquivada. Ausente em respostas antigas: tratar como falso. */
     canArchive: z.boolean().optional(),
+    /** Histórico de impedimentos da tarefa, resolvidos incluídos (mais antigo primeiro). Ausente: tratar como vazio. */
+    impedimentHistory: z.array(impedimentDtoSchema).optional(),
   })
   .refine((task) => task.canEdit !== task.readOnly, {
     message: 'Detalhe deve ser editável ou somente leitura',
@@ -141,9 +151,18 @@ export const moveTaskInputSchema = z.object({
   confirmedDefinitionItemIds: confirmedDefinitionItemIdsSchema.optional(),
 })
 export const moveTaskOutputSchema = taskDtoSchema
-export const blockTaskInputSchema = z.object({ taskId: ulidSchema, reason: taskBlockReasonSchema })
+/** Bloquear abre o impedimento; `ownerId` (opcional) é o responsável por resolver. */
+export const blockTaskInputSchema = z.object({
+  taskId: ulidSchema,
+  reason: taskBlockReasonSchema,
+  ownerId: ulidSchema.nullable().optional(),
+})
 export const blockTaskOutputSchema = taskDtoSchema
-export const unblockTaskInputSchema = z.object({ taskId: ulidSchema })
+/** Desbloquear resolve o impedimento aberto; `resolution` é a nota opcional. */
+export const unblockTaskInputSchema = z.object({
+  taskId: ulidSchema,
+  resolution: impedimentResolutionSchema.nullable().optional(),
+})
 export const unblockTaskOutputSchema = taskDtoSchema
 export const archiveTaskInputSchema = z.object({ taskId: ulidSchema })
 export const archiveTaskOutputSchema = taskDtoSchema

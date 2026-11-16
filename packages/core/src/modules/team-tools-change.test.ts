@@ -166,7 +166,8 @@ describe('presets', () => {
 describe('contagem de impacto', () => {
   const usage: TeamToolsUsage = {
     subtasks: 3,
-    blockedTasks: 1,
+    openImpediments: 1,
+    impediments: 2,
     wipLimits: 2,
     retroActions: 0,
     checkins: 1,
@@ -181,6 +182,9 @@ describe('contagem de impacto', () => {
   it('usa o que o código consegue contar e zero para o que ainda não tem dados', () => {
     expect(moduleImpact('subtasks', usage)).toMatchObject({ count: 3 })
     expect(moduleImpact('impediments', usage)).toMatchObject({ count: 1 })
+    expect(moduleImpact('impediments', usage).description).toBe(
+      '1 impedimento aberto e 2 impedimentos registrados',
+    )
     expect(moduleImpact('wip', usage)).toMatchObject({ count: 2 })
     expect(moduleImpact('reviewRetro', usage)).toMatchObject({ count: 0 })
     expect(moduleImpact('agenda', usage)).toMatchObject({ count: 4 })

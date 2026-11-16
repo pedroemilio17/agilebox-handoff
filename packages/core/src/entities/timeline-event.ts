@@ -2,6 +2,7 @@ import type {
   AcceptanceCriterionId,
   ChecklistItemId,
   EventId,
+  ImpedimentId,
   SprintId,
   TaskCommentId,
   TaskId,
@@ -81,7 +82,19 @@ export type TimelineEvent = EventBase &
       }
     | { readonly type: 'task_reordered'; readonly payload: { readonly position: number } }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
-    | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
+    | {
+        readonly type: 'unblocked'
+        /** Nota da resolução (M5.2a). Ausente em eventos antigos: tratar como nula. */
+        readonly payload: { readonly reason: string; readonly resolution?: string | null }
+      }
+    | {
+        readonly type: 'impediment_assigned'
+        readonly payload: {
+          readonly impedimentId: ImpedimentId
+          readonly before: UserId | null
+          readonly after: UserId | null
+        }
+      }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }
     | { readonly type: 'renamed' | 'description_edited'; readonly payload: Change<string> }
     | { readonly type: 'responsible_changed'; readonly payload: Change<UserId> }

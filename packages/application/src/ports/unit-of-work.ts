@@ -5,6 +5,7 @@ import type { ChecklistRepository } from './checklist-repository'
 import type { TaskCommentRepository } from './task-comment-repository'
 import type { ContributorRepository } from './contributor-repository'
 import type { DailyEntryRepository } from './daily-entry-repository'
+import type { ImpedimentRepository } from './impediment-repository'
 import type { DefinitionOfDoneRepository } from './definition-of-done-repository'
 import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
@@ -26,6 +27,7 @@ export interface UnitOfWorkRepositories {
   readonly contributors: ContributorRepository
   readonly dailyEntries: DailyEntryRepository
   readonly definitionOfDone: DefinitionOfDoneRepository
+  readonly impediments: ImpedimentRepository
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository

@@ -9,8 +9,10 @@ import type { ModuleId } from './registry'
 export interface TeamToolsUsage {
   /** Subtarefas de tarefas não arquivadas. */
   readonly subtasks: number
-  /** Tarefas não arquivadas com impedimento aberto. */
-  readonly blockedTasks: number
+  /** Impedimentos abertos de tarefas não arquivadas (M5.2a). */
+  readonly openImpediments: number
+  /** Impedimentos registrados na organização, abertos e resolvidos (histórico). */
+  readonly impediments: number
   /** Colunas de WIP com limite definido (0 a 2). */
   readonly wipLimits: number
   /** Combinados de retro de todas as reuniões. */
@@ -59,8 +61,8 @@ export function moduleImpact(module: ModuleId, usage: TeamToolsUsage): ModuleImp
     case 'impediments':
       return {
         module,
-        count: usage.blockedTasks,
-        description: countLabel(usage.blockedTasks, 'tarefa bloqueada', 'tarefas bloqueadas'),
+        count: usage.openImpediments,
+        description: `${countLabel(usage.openImpediments, 'impedimento aberto', 'impedimentos abertos')} e ${countLabel(usage.impediments, 'impedimento registrado', 'impedimentos registrados')}`,
       }
     case 'wip':
       return {

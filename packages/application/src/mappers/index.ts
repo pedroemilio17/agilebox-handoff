@@ -32,6 +32,7 @@ import type {
   Participation,
   Project,
   RetroAction,
+  Impediment,
   Sprint,
   SprintTask,
   Task,
@@ -42,6 +43,9 @@ import type {
 } from '@agilebox/core'
 import type {
   AcceptanceCriterionDto,
+  ImpedimentDto,
+  ImpedimentListItemDto,
+  ImpedimentRefDto,
   BoardSettingsDto,
   ChecklistItemDto,
   DailyEntryDto,
@@ -168,6 +172,7 @@ export function toTaskDto(
   commentCount: number,
   criteria: readonly AcceptanceCriterion[],
   sprint: SprintRefDto | null,
+  impediment: ImpedimentRefDto | null,
 ): TaskDto {
   return {
     id: task.id,
@@ -197,8 +202,61 @@ export function toTaskDto(
     },
     commentCount,
     sprint,
+    impediment,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
+  }
+}
+
+/** Impedimento como a interface o mostra. `ownerName` vem do usuário responsável (nulo sem responsável). */
+export function toImpedimentDto(impediment: Impediment, ownerName: string | null): ImpedimentDto {
+  return {
+    id: impediment.id,
+    taskId: impediment.taskId,
+    status: impediment.status,
+    reason: impediment.reason,
+    ownerId: impediment.ownerId,
+    ownerName: impediment.ownerId === null ? null : ownerName,
+    openedBy: impediment.openedBy,
+    openedAt: impediment.openedAt,
+    resolvedBy: impediment.resolvedBy,
+    resolvedAt: impediment.resolvedAt,
+    resolution: impediment.resolution,
+  }
+}
+
+/** Resumo do impedimento aberto, para o cartão e o detalhe da tarefa. */
+export function toImpedimentRefDto(
+  impediment: Impediment,
+  ownerName: string | null,
+): ImpedimentRefDto {
+  return {
+    id: impediment.id,
+    status: impediment.status,
+    reason: impediment.reason,
+    ownerId: impediment.ownerId,
+    ownerName: impediment.ownerId === null ? null : ownerName,
+    openedAt: impediment.openedAt,
+  }
+}
+
+/** Item da lista de impedimentos: o impedimento e a tarefa dele. */
+export function toImpedimentListItemDto(
+  impediment: Impediment,
+  ownerName: string | null,
+  task: {
+    readonly key: string
+    readonly title: string
+    readonly projectId: string
+    readonly projectName: string
+  },
+): ImpedimentListItemDto {
+  return {
+    ...toImpedimentDto(impediment, ownerName),
+    taskKey: task.key,
+    taskTitle: task.title,
+    projectId: task.projectId,
+    projectName: task.projectName,
   }
 }
 
@@ -271,13 +329,16 @@ export function toTaskDetailDto(
   criteria: readonly AcceptanceCriterion[],
   responsibleDefaultRateCents: number,
   sprint: SprintRefDto | null,
+  impediment: ImpedimentRefDto | null,
+  impedimentHistory: readonly ImpedimentDto[],
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
   const cost = canSeeEstimatedCost(actor, task)
     ? estimatedCostOf(task, responsibleDefaultRateCents)
     : null
   return {
-    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint),
+    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint, impediment),
+    impedimentHistory: [...impedimentHistory],
     checklist: checklist.map(toChecklistItemDto),
     criteria: criteria.map(toAcceptanceCriterionDto),
     estimatedCost: cost === null ? null : rateInReais(cost),

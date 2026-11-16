@@ -43,6 +43,7 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     teamTools: unitOfWork.repositories.teamTools,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

@@ -65,6 +65,7 @@ function setup(actor: Actor = manager) {
     teamTools: unitOfWork.repositories.teamTools,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     taskOpens: unitOfWork.repositories.taskOpens,
     tasks: unitOfWork.repositories.tasks,
     timeline: unitOfWork.repositories.timeline,

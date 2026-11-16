@@ -46,6 +46,7 @@ function setup(actor: Actor = owner) {
     teamTools: unitOfWork.repositories.teamTools,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,

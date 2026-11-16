@@ -15,6 +15,8 @@ export interface TaskRepository {
     nameKey: string,
   ): Promise<Task | null>
   listByProject(organizationId: OrganizationId, projectId: ProjectId): Promise<readonly Task[]>
+  /** Tarefas pelos ids, em lote (só as que existem na organização). Sem ordem garantida. */
+  findManyById(organizationId: OrganizationId, taskIds: readonly TaskId[]): Promise<readonly Task[]>
   listBoard(organizationId: OrganizationId, query: TaskListQuery): Promise<readonly Task[]>
   listRecent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>
   listFrequent(organizationId: OrganizationId, userId: UserId): Promise<readonly Task[]>

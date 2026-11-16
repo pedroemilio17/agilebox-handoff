@@ -90,6 +90,7 @@ function setup(actorOf: Actor = collaborator) {
     teamTools: repos.teamTools,
     sprints: repos.sprints,
     sprintTasks: repos.sprintTasks,
+    impediments: repos.impediments,
     definitionOfDone: repos.definitionOfDone,
     comments: repos.comments,
     boardSettings: repos.boardSettings,
