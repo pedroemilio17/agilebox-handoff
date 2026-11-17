@@ -256,6 +256,9 @@ export function registerHandlers(
   register('projectModules.change', (context, input) =>
     useCases.projectModules.change.execute(context, input),
   )
+  register('projectModules.setConfig', (context, input) =>
+    useCases.projectModules.setConfig.execute(context, input),
+  )
   register('projectModules.getOrganization', (context) =>
     useCases.projectModules.getOrganization.execute(context),
   )

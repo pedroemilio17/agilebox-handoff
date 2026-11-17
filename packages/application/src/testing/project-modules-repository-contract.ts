@@ -190,6 +190,89 @@ export function describeProjectModulesRepositoryContract(
       expect(row?.config).toEqual(novo)
     })
 
+    it('save com config null apaga a configuração gravada e grava o estado do pedido', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'agenda', state: 'active', config }],
+        managerA,
+        FIRST_CHANGE,
+      )
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'agenda', state: 'active', config: null }],
+        managerA,
+        SECOND_CHANGE,
+      )
+
+      expect(await repository.list(organizationA, projectA)).toEqual([
+        {
+          moduleId: 'agenda',
+          state: 'active',
+          config: null,
+          changedBy: managerA,
+          changedAt: SECOND_CHANGE,
+        },
+      ])
+    })
+
+    it('save com config null em linha ainda sem configuração não grava erro e mantém o estado', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'sprints', state: 'active', config: null }],
+        managerA,
+        FIRST_CHANGE,
+      )
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'sprints', state: 'disabled', config: null }],
+        managerA,
+        SECOND_CHANGE,
+      )
+
+      expect(await repository.list(organizationA, projectA)).toEqual([
+        {
+          moduleId: 'sprints',
+          state: 'disabled',
+          config: null,
+          changedBy: managerA,
+          changedAt: SECOND_CHANGE,
+        },
+      ])
+    })
+
+    it('save com config null não altera a configuração de outro módulo do mesmo projeto', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationA,
+        projectA,
+        [
+          { moduleId: 'agenda', state: 'active', config },
+          { moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 2 } },
+        ],
+        managerA,
+        FIRST_CHANGE,
+      )
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'agenda', state: 'active', config: null }],
+        managerA,
+        SECOND_CHANGE,
+      )
+
+      const rows = await repository.list(organizationA, projectA)
+      expect(rows.map((row) => [row.moduleId, row.config])).toEqual([
+        ['agenda', null],
+        ['sprints', { maxActiveSprints: 2 }],
+      ])
+    })
+
     it('list devolve as linhas em ordem do catálogo, não na ordem do pedido', async () => {
       const repository = await makeRepository()
       await repository.save(

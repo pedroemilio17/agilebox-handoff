@@ -15,6 +15,7 @@ import {
 } from './use-cases/team-tools/team-tools'
 import {
   ChangeProjectModules,
+  SetProjectModuleConfig,
   GetOrganizationModules,
   GetProjectModules,
 } from './use-cases/project-modules/project-modules'
@@ -308,6 +309,7 @@ export function createUseCases(deps: AppDeps) {
     projectModules: {
       get: forTenant('projectModules.get', new GetProjectModules(deps)),
       change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
+      setConfig: forTenant('projectModules.setConfig', new SetProjectModuleConfig(deps)),
       getOrganization: forTenant(
         'projectModules.getOrganization',
         new GetOrganizationModules(deps),

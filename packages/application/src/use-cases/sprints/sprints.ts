@@ -53,7 +53,7 @@ import type {
 } from '@agilebox/contract'
 import { toSprintDto, toSprintHistoryRowDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
-import type { UnitOfWorkRepositories } from '../../ports'
+import type { ProjectModuleSetting, UnitOfWorkRepositories } from '../../ports'
 import { findTaskPrefix } from '../tasks/task-prefix'
 import { toTaskDtos } from '../tasks/list-tasks'
 import { recordGuideEvent } from '../guide/record-guide-event'
@@ -110,10 +110,21 @@ async function sprintScope(
   return sprint
 }
 
-function sprintConfigOf(settings: TeamToolsSettings): number {
-  return readSprintsMaxActive(
-    settings.modules.find((module) => module.moduleId === 'sprints')?.config,
-  )
+/**
+ * Limite de sprints ativas do projeto da sprint (ADR-10): a configuração do módulo no projeto vale
+ * primeiro. Sem configuração gravada no projeto (linha sem config, ou objeto vazio), vale a da equipe.
+ */
+function sprintConfigOf(
+  settings: TeamToolsSettings,
+  projectRows: readonly ProjectModuleSetting[],
+): number {
+  const projectConfig = projectRows.find((row) => row.moduleId === 'sprints')?.config
+  const teamConfig = settings.modules.find((module) => module.moduleId === 'sprints')?.config
+  const config =
+    projectConfig !== null && projectConfig !== undefined && Object.keys(projectConfig).length > 0
+      ? projectConfig
+      : teamConfig
+  return readSprintsMaxActive(config)
 }
 
 function isOpen(row: Pick<SprintTask, 'removedAt'>): boolean {
@@ -339,11 +350,12 @@ export class StartSprint {
     const pulled = await this.deps.unitOfWork.run(organizationId, async (repos) => {
       const sprint = await requireSprint(repos, organizationId, input.sprintId)
       const settings = await repos.teamTools.getSettings(organizationId)
+      const projectRows = await repos.projectModules.list(organizationId, sprint.projectId)
       const started = startSprint(
         sprint,
         now,
         await repos.sprints.countActive(organizationId, sprint.projectId),
-        sprintConfigOf(settings),
+        sprintConfigOf(settings, projectRows),
       )
       const events: TimelineEvent[] = []
       const changed: TaskId[] = []

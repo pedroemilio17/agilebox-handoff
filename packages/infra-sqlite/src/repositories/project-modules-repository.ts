@@ -7,7 +7,7 @@ import {
   toTeamModuleConfig,
   ValidationError,
 } from '@agilebox/core'
-import type { ModuleId, OrganizationId, ProjectId, UserId } from '@agilebox/core'
+import type { ModuleId, OrganizationId, ProjectId, TeamModuleConfig, UserId } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
 import { mapProjectModuleRow } from '../mappers/project-modules-mappers.js'
 import { projectModules, projects, users } from '../schema/index.js'
@@ -15,6 +15,13 @@ import { projectModules, projects, users } from '../schema/index.js'
 type SqliteDatabase = ReturnType<typeof createSqliteClient>
 
 const SAVEPOINT = 'project_modules_save'
+
+/** `null` (apagar) e `undefined` (preservar) passam como estão; objeto é validado como configuração. */
+function parseConfigChange(
+  config: TeamModuleConfig | null | undefined,
+): TeamModuleConfig | null | undefined {
+  return config === undefined || config === null ? config : toTeamModuleConfig(config)
+}
 
 /**
  * Módulos do projeto em SQLite. Toda consulta filtra por `organization_id`. A gravação valida o
@@ -72,7 +79,7 @@ export function createSqliteProjectModulesRepository(
         return {
           moduleId,
           state: toModuleState(change.state),
-          config: change.config === undefined ? undefined : toTeamModuleConfig(change.config),
+          config: parseConfigChange(change.config),
         }
       })
 
@@ -80,7 +87,13 @@ export function createSqliteProjectModulesRepository(
       client.exec(`SAVEPOINT ${SAVEPOINT}`)
       try {
         for (const change of parsed) {
-          const config = change.config === undefined ? undefined : JSON.stringify(change.config)
+          // undefined: preserva a coluna; null: apaga; objeto: grava o JSON.
+          const config =
+            change.config === undefined
+              ? undefined
+              : change.config === null
+                ? null
+                : JSON.stringify(change.config)
           await database
             .insert(projectModules)
             .values({

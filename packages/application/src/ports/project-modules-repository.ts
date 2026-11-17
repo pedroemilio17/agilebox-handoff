@@ -19,11 +19,16 @@ export interface ProjectModuleSetting {
   readonly changedAt: string | null
 }
 
-/** Pedido de gravação de um módulo do projeto. Sem `config`, a configuração anterior é preservada. */
+/**
+ * Pedido de gravação de um módulo do projeto. Três casos para `config`:
+ * - ausente (`undefined`): a configuração anterior é preservada;
+ * - objeto: passa a ser a configuração gravada;
+ * - `null`: a configuração é apagada, e o projeto volta a herdar a da equipe.
+ */
 export interface ProjectModuleChange {
   readonly moduleId: ModuleId
   readonly state: ModuleState
-  readonly config?: TeamModuleConfig
+  readonly config?: TeamModuleConfig | null
 }
 
 /**

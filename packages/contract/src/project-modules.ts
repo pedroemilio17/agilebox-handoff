@@ -21,6 +21,16 @@ export const changeProjectModulesInputSchema = z.object({
   disable: moduleIdListSchema.optional(),
 })
 
+/**
+ * Configuração de um módulo neste projeto (ADR-10). O objeto é validado por módulo na aplicação,
+ * nunca aqui. `{}` apaga a configuração do projeto e volta a herdar a da equipe.
+ */
+export const setProjectModuleConfigInputSchema = z.object({
+  projectId: ulidSchema,
+  moduleId: teamModuleIdSchema,
+  config: z.record(z.string(), z.unknown()),
+})
+
 export const projectModuleLevelSchema = z.union([
   z.literal(1),
   z.literal(2),
@@ -67,6 +77,7 @@ export const organizationModulesViewDtoSchema = z.object({
 
 export type GetProjectModulesInput = z.infer<typeof getProjectModulesInputSchema>
 export type ChangeProjectModulesInput = z.infer<typeof changeProjectModulesInputSchema>
+export type SetProjectModuleConfigInput = z.infer<typeof setProjectModuleConfigInputSchema>
 export type ProjectModuleDto = z.infer<typeof projectModuleDtoSchema>
 export type ProjectModulesViewDto = z.infer<typeof projectModulesViewDtoSchema>
 export type ProjectModulesChangeResultDto = z.infer<typeof projectModulesChangeResultDtoSchema>

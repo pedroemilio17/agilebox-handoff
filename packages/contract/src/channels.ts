@@ -79,6 +79,7 @@ export const API_CHANNELS = [
   'daily.suggestSummary',
   'projectModules.get',
   'projectModules.change',
+  'projectModules.setConfig',
   'projectModules.getOrganization',
   'guide.get',
   'guide.dismissCard',

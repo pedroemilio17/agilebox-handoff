@@ -109,6 +109,8 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       // Sem mudança configurada, a gravação não altera nada: os testes da tela substituem o que precisam.
       change: () =>
         Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),
+      // Sem configuração de módulo por projeto, a gravação devolve a visão sem mudança.
+      setConfig: (input) => Promise.resolve(hiddenProjectModules(input.projectId)),
       ...overrides.projectModules,
     },
   }

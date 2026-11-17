@@ -44,6 +44,8 @@ function renderView({
     projectModules: {
       get: getMock,
       change: changeMock,
+      setConfig: (input) =>
+        Promise.resolve({ projectId: input.projectId, modules: [], canManage: true }),
       getOrganization: () => Promise.resolve({ modules: [], hasActiveProjects: false }),
     },
   })

@@ -9,7 +9,7 @@ import {
   ValidationError,
 } from '@agilebox/core'
 import type { Actor, ModuleState } from '@agilebox/core'
-import type { ChangeProjectModulesInput } from '@agilebox/contract'
+import type { ChangeProjectModulesInput, SetProjectModuleConfigInput } from '@agilebox/contract'
 import { createTenantContext } from '../../tenant-context'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
@@ -396,5 +396,149 @@ describe('módulos da organização (barra sem projeto selecionado)', () => {
     expect(mine.hasActiveProjects).toBe(false)
     expect(theirs.hasActiveProjects).toBe(true)
     expect(statesOf(theirs.modules).get('sprints')).toBe('active')
+  })
+})
+
+describe('módulos por projeto: configuração do projeto (ADR-10)', () => {
+  async function setConfig(
+    useCases: UseCases,
+    projectId: string,
+    moduleId: SetProjectModuleConfigInput['moduleId'],
+    config: SetProjectModuleConfigInput['config'],
+    actor = contextManagerA,
+  ) {
+    return useCases.projectModules.setConfig.execute(actor, { projectId, moduleId, config })
+  }
+
+  function configOf(
+    modules: readonly { id: string; config: Record<string, unknown> | null }[],
+    id: string,
+  ) {
+    return modules.find((module) => module.id === id)?.config
+  }
+
+  it('gestor grava a configuração no projeto e a leitura devolve o mesmo DTO', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const view = await setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 2 })
+
+    expect(view).toEqual(
+      await useCases.projectModules.get.execute(contextManagerA, { projectId: project.id }),
+    )
+    expect(view.canManage).toBe(true)
+    expect(configOf(view.modules, 'sprints')).toEqual({ maxActiveSprints: 2 })
+  })
+
+  it('gravar a configuração não muda o estado do módulo', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const view = await setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 4 })
+
+    expect(statesOf(view.modules).get('sprints')).toBe('active')
+    expect(statesOf(view.modules).get('backlog')).toBe('active')
+  })
+
+  it('objeto vazio apaga a configuração do projeto, que volta a herdar da equipe', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    await setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 3 })
+
+    const view = await setConfig(useCases, project.id, 'sprints', {})
+
+    expect(configOf(view.modules, 'sprints')).toBeNull()
+    expect(statesOf(view.modules).get('sprints')).toBe('active')
+  })
+
+  it('colaborador recusado com PermissionDeniedError', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const error = await rejectionOf(
+      setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 2 }, contextCollaboratorA),
+    )
+    expect(error).toBeInstanceOf(PermissionDeniedError)
+  })
+
+  it('módulo desligado no projeto recusado com a mensagem para ligar antes', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+
+    const error = await rejectionOf(
+      setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 2 }),
+    )
+    expect(error).toMatchObject({
+      name: 'ValidationError',
+      message: 'Ligue o módulo antes de configurá-lo',
+    })
+  })
+
+  it('módulo sem configuração (backlog) recusado com ValidationError', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['backlog'] })
+
+    const error = await rejectionOf(setConfig(useCases, project.id, 'backlog', {}))
+    expect(error).toBeInstanceOf(ValidationError)
+  })
+
+  it('valor fora da faixa (0, 6, fracionário) recusado com ValidationError', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    for (const value of [0, 6, 1.5]) {
+      expect(
+        await rejectionOf(setConfig(useCases, project.id, 'sprints', { maxActiveSprints: value })),
+      ).toBeInstanceOf(ValidationError)
+    }
+    const view = await useCases.projectModules.get.execute(contextManagerA, {
+      projectId: project.id,
+    })
+    expect(configOf(view.modules, 'sprints')).toBeNull()
+  })
+
+  it('projeto arquivado recusado com ValidationError', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    await useCases.projects.archive.execute(contextManagerA, { projectId: project.id })
+
+    const error = await rejectionOf(
+      setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 2 }),
+    )
+    expect(error).toBeInstanceOf(ValidationError)
+  })
+
+  it('projeto de outra organização recusado com NotFoundError', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const error = await rejectionOf(
+      setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 2 }, contextManagerB),
+    )
+    expect(error).toMatchObject({ name: 'NotFoundError' })
+  })
+
+  it('desligar e religar Sprints preserva a configuração do projeto', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    await setConfig(useCases, project.id, 'sprints', { maxActiveSprints: 3 })
+
+    await change(useCases, project.id, { disable: ['sprints'] })
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const view = await useCases.projectModules.get.execute(contextManagerA, {
+      projectId: project.id,
+    })
+    expect(configOf(view.modules, 'sprints')).toEqual({ maxActiveSprints: 3 })
+    expect(statesOf(view.modules).get('sprints')).toBe('active')
   })
 })

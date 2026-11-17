@@ -3,6 +3,7 @@ import {
   getManifest,
   MODULE_IDS,
   MODULE_LABELS,
+  moduleStateOf,
   NotFoundError,
   PermissionDeniedError,
   planDisableModules,
@@ -10,7 +11,15 @@ import {
   toProjectId,
   ValidationError,
 } from '@agilebox/core'
-import type { Actor, EnablePlan, ModuleId, ModuleState, Project, ProjectId } from '@agilebox/core'
+import type {
+  Actor,
+  EnablePlan,
+  ModuleId,
+  ModuleState,
+  Project,
+  ProjectId,
+  TeamModuleConfig,
+} from '@agilebox/core'
 import type {
   ChangeProjectModulesInput,
   GetProjectModulesInput,
@@ -18,10 +27,12 @@ import type {
   ProjectModuleDto,
   ProjectModulesChangeResultDto,
   ProjectModulesViewDto,
+  SetProjectModuleConfigInput,
 } from '@agilebox/contract'
 import type { AppDeps } from '../../deps'
 import { organizationModuleStateOf } from '../../module-guard'
 import type { ProjectModuleChange, ProjectModuleSetting } from '../../ports'
+import { validateModuleConfig } from '../team-tools/module-config'
 
 const CORE: ModuleId = 'core'
 
@@ -71,6 +82,19 @@ function toModuleDtos(rows: readonly ProjectModuleSetting[]): ProjectModuleDto[]
       config: row?.config ?? null,
     }
   })
+}
+
+/** Visão do projeto para a interface (o mesmo DTO de `projectModules.get`). */
+function toProjectView(
+  actor: Actor,
+  projectId: ProjectId,
+  rows: readonly ProjectModuleSetting[],
+): ProjectModulesViewDto {
+  return {
+    projectId,
+    modules: toModuleDtos(rows),
+    canManage: actor.role === 'manager',
+  }
 }
 
 /** Mensagem em pt-BR para um pedido de ligar módulos que o domínio recusou. */
@@ -124,11 +148,48 @@ export class GetProjectModules {
       throw new PermissionDeniedError('Sem acesso a este projeto')
 
     const rows = await this.deps.projectModules.list(actor.organizationId, projectId)
-    return {
-      projectId,
-      modules: toModuleDtos(rows),
-      canManage: actor.role === 'manager',
-    }
+    return toProjectView(actor, projectId, rows)
+  }
+}
+
+/**
+ * Grava a configuração de um módulo neste projeto (só o gestor, ADR-10). A config é validada pelo
+ * mesmo critério da equipe (`validateModuleConfig`). `{}` apaga a configuração do projeto e ele volta
+ * a herdar a da equipe. Só mexe na configuração: o estado do módulo fica como está, e o módulo
+ * precisa estar ligado. Projeto arquivado não muda.
+ */
+export class SetProjectModuleConfig {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(actor: Actor, input: SetProjectModuleConfigInput): Promise<ProjectModulesViewDto> {
+    requireManager(actor)
+    const projectId = toProjectId(input.projectId)
+    const moduleId = catalogId(input.moduleId)
+    const config = validateModuleConfig(moduleId, input.config)
+    // Objeto vazio quer dizer "sem configuração do projeto": grava null, que apaga a linha.
+    const stored: TeamModuleConfig | null = Object.keys(config).length === 0 ? null : config
+    const organizationId = actor.organizationId
+    const now = await this.deps.clock.now(organizationId)
+    return this.deps.unitOfWork.run(organizationId, async (repositories) => {
+      const project = await repositories.projects.findById(organizationId, projectId)
+      if (!project) throw new NotFoundError('Projeto não encontrado')
+      if (project.archivedAt !== null)
+        throw new ValidationError('Projeto arquivado: a configuração não pode ser alterada')
+
+      const rows = await repositories.projectModules.list(organizationId, projectId)
+      if (moduleStateOf(rows, moduleId) !== 'active')
+        throw new ValidationError('Ligue o módulo antes de configurá-lo')
+
+      await repositories.projectModules.save(
+        organizationId,
+        projectId,
+        [{ moduleId, state: 'active', config: stored }],
+        actor.userId,
+        now,
+      )
+      const saved = await repositories.projectModules.list(organizationId, projectId)
+      return toProjectView(actor, projectId, saved)
+    })
   }
 }
 

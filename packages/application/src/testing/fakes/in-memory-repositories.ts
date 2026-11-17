@@ -874,6 +874,13 @@ export class InMemoryGuideProgressRepository implements GuideProgressRepository 
   }
 }
 
+/** `null` (apagar) e `undefined` (preservar) passam como estão; objeto é validado como configuração. */
+function parseConfigChange(
+  config: TeamModuleConfig | null | undefined,
+): TeamModuleConfig | null | undefined {
+  return config === undefined || config === null ? config : toTeamModuleConfig(config)
+}
+
 export class InMemoryProjectModulesRepository implements ProjectModulesRepository {
   constructor(private readonly state: InMemoryState) {}
 
@@ -913,7 +920,7 @@ export class InMemoryProjectModulesRepository implements ProjectModulesRepositor
       return {
         moduleId,
         state: toModuleState(change.state),
-        config: change.config === undefined ? undefined : toTeamModuleConfig(change.config),
+        config: parseConfigChange(change.config),
       }
     })
 
@@ -921,6 +928,7 @@ export class InMemoryProjectModulesRepository implements ProjectModulesRepositor
     for (const change of parsed) {
       const key = `${projectId}|${change.moduleId}`
       const previous = rows.get(key)
+      // undefined: preserva; null: apaga; objeto: grava.
       const config: TeamModuleConfig | null =
         change.config !== undefined ? change.config : (previous?.config ?? null)
       rows.set(key, {
