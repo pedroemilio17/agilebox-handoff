@@ -25,6 +25,7 @@ import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
+import { GuideCard } from './guide/GuideCard'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
 import { teamWipColumns } from './board/team-board'
@@ -472,6 +473,8 @@ function PanelContent() {
               />
             ) : (
               <>
+                {/* Guia só com um projeto selecionado; em "Todos os projetos" não aparece. */}
+                <GuideCard projectId={selectedProjectId} onNavigate={setView} />
                 <ScopeAnnouncement message={scopeAnnouncement} />
                 {teamView ? <ScopeBanner>{panelCopy.teamViewBanner}</ScopeBanner> : null}
                 <BoardView

@@ -2,6 +2,7 @@ import {
   failureResult,
   type AgileBoxApi,
   type AgileBoxBridge,
+  type GuideViewDto,
   type ListBoardDto,
   type TaskDto,
 } from '@agilebox/contract'
@@ -33,6 +34,28 @@ export function boardResponse(tasks: readonly TaskDto[]): ListBoardDto {
   return { tasks: [...tasks], wipLimits: {}, wipColumns: [] }
 }
 
+/**
+ * Guia sem trilha e escondido: o padrão dos testes, para o cartão "Primeiros passos" não aparecer
+ * nas telas que não tratam dele. Testes do guia substituem `guide.get` pelo que precisam.
+ */
+export function hiddenGuide(projectId: string): GuideViewDto {
+  return {
+    projectId,
+    trail: [],
+    done: 0,
+    total: 0,
+    currentKey: null,
+    experience: 'never',
+    intensity: {
+      firstStepsCard: 'hidden',
+      emptyState: 'full',
+      firstTimeHints: false,
+      explainJargon: false,
+    },
+    cardDismissed: false,
+  }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -52,5 +75,10 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },
     teamTools: { ...api.teamTools, ...overrides.teamTools },
+    guide: {
+      get: (input) => Promise.resolve(hiddenGuide(input.projectId)),
+      dismissCard: () => Promise.resolve(undefined),
+      ...overrides.guide,
+    },
   }
 }

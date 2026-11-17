@@ -60,6 +60,10 @@ export const queryKeys = {
       ['agilebox', 'daily', 'suggestion', date, timeZone] as const,
   },
   meetings: { all: ['agilebox', 'meetings'] as const },
+  guide: {
+    all: ['agilebox', 'guide'] as const,
+    project: (projectId: string) => ['agilebox', 'guide', projectId] as const,
+  },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
   teamTools: {
