@@ -19,8 +19,8 @@ function definition(
 }
 
 describe('catálogo de módulos', () => {
-  it('tem os 15 ids do plano, sem duplicata', () => {
-    expect(MODULE_IDS).toHaveLength(15)
+  it('tem os 22 ids (15 de antes do ADR-10 e 7 novos), sem duplicata', () => {
+    expect(MODULE_IDS).toHaveLength(22)
     expect(new Set(MODULE_IDS).size).toBe(MODULE_IDS.length)
     expect(MODULE_REGISTRY.map((module) => module.id).sort()).toEqual([...MODULE_IDS].sort())
   })

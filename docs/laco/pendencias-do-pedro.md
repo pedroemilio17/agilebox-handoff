@@ -23,3 +23,11 @@
 
 - [ ] M10.2 · TESTAR-NO-WINDOWS: `pnpm --filter @agilebox/desktop dist:win`, instalar o `.exe`, abrir, trocar de perfil, fechar e reabrir (os dados persistem) e desinstalar.
 - [ ] M10.2 · DECIDIR: DECISÃO PROVISÓRIA: o app empacotado cria dados de demonstração na primeira execução até existir cadastro/login.
+
+## ADR-10 (organização por projeto)
+
+- [ ] ADR-10 · DECIDIR: Cerimônias (`reviewRetro`) hoje **exige** a Agenda no catálogo, mas o ADR a lista como dependência suave ("aproveita"). Mantido como está (módulo existente não muda sem combinar). Alternativa: trocar `requires` por `enhances` e ajustar os testes.
+- [ ] ADR-10 · DECIDIR: nomes na interface. O design usa "Atualização diária" e "Cerimônias"; o catálogo atual usa `MODULE_LABELS` "Check-ins" e "Review e retro". O manifesto já traz os nomes do design; `MODULE_LABELS` ficou igual até as telas de Módulos.
+- [ ] ADR-10 · DECIDIR: níveis do design (N1/N2/N3) valem, mas `minLevel` (básico/intermediário/avançado) ainda esconde telas em `capabilities.ts`. A troca do significado do nível entra na fase 4 (guia), junto com as telas.
+- [ ] ADR-10 · DECIDIR: textos de tutorial e estado vazio dos módulos sem trilha no ADR (Custo, WIP, Critério de pronto, Burndown, Métricas, Linha de base, Riscos e herdados) foram escritos a partir do ADR e do design; revisar a redação.
+- [ ] ADR-10 · CONFERIR: `DEFAULT_TEAM_MODULE_IDS` virou lista fixa (13 ids) para a migração 0012 continuar igual e os módulos novos nascerem desligados.
