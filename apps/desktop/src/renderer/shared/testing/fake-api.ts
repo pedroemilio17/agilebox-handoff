@@ -4,6 +4,7 @@ import {
   type AgileBoxBridge,
   type GuideViewDto,
   type ListBoardDto,
+  type ProjectModulesViewDto,
   type TaskDto,
 } from '@agilebox/contract'
 import { createIpcClient } from '../api/ipc-client'
@@ -56,6 +57,15 @@ export function hiddenGuide(projectId: string): GuideViewDto {
   }
 }
 
+/**
+ * Módulos do projeto sem nenhum módulo listado e sem permissão de gestor: o padrão dos testes, para
+ * o botão "Como funciona" não depender de estado de módulo. Testes do painel substituem
+ * `projectModules.get` pelo que precisam.
+ */
+export function hiddenProjectModules(projectId: string): ProjectModulesViewDto {
+  return { projectId, modules: [], canManage: false }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -79,6 +89,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       get: (input) => Promise.resolve(hiddenGuide(input.projectId)),
       dismissCard: () => Promise.resolve(undefined),
       ...overrides.guide,
+    },
+    projectModules: {
+      ...api.projectModules,
+      get: (input) => Promise.resolve(hiddenProjectModules(input.projectId)),
+      ...overrides.projectModules,
     },
   }
 }

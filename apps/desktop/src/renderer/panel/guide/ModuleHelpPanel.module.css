@@ -1,0 +1,230 @@
+/* Painel "Como funciona": vidro de popover à direita, sobre um véu. Sem animação com reduced motion. */
+
+.backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: var(--color-focus-overlay);
+}
+
+.panel {
+  position: fixed;
+  z-index: 1001;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  box-sizing: border-box;
+  width: min(480px, calc(100% - 24px));
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+  border-radius: var(--radius-drawer);
+  background: var(--glass-popover);
+  backdrop-filter: var(--glass-popover-backdrop);
+  box-shadow: var(--shadow-popover);
+  color: var(--color-text-primary);
+  animation: enter var(--motion-duration-drawer) var(--ease-ios) both;
+}
+
+.panel:focus {
+  outline: none;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-title);
+  font-weight: 640;
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
+.level {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+}
+
+.objective {
+  margin: 0;
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+}
+
+.close {
+  flex: none;
+  min-height: 44px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+.text {
+  margin: 0;
+  font-size: var(--font-size-body);
+  line-height: 1.55;
+  color: var(--color-text-body);
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flowStep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-button);
+  background: var(--surface-sunken);
+}
+
+.flowNumber {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-accent-text);
+}
+
+.flowText {
+  font-size: var(--font-size-body-small);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-button);
+  background: var(--surface-sunken);
+  font-size: var(--font-size-body-small);
+}
+
+.linkKind {
+  width: 72px;
+  flex: none;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-text-placeholder);
+}
+
+.linkName {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.linkOn {
+  flex: none;
+  color: var(--color-status-concluido);
+}
+
+.linkOff {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.review {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.experience {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

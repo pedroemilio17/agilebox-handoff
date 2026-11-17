@@ -15,6 +15,8 @@ import { MeetingForm, type MeetingDraft } from './MeetingForm'
 import { UpcomingList } from './UpcomingList'
 import { RetroActions } from './RetroActions'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import type { PanelView } from '../layout/PanelShell'
 import { loadAgendaTasks } from './agenda-tasks'
 import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
@@ -34,9 +36,18 @@ function monthRange(month: string): { rangeStart: string; rangeEnd: string } {
 export interface AgendaViewProps {
   readonly onOpenTask?: (id: string) => void
   readonly today?: string
+  /** Projeto selecionado no painel: o botão "Como funciona" usa o estado dele. */
+  readonly selectedProjectId?: string | null
+  /** Leva ao quadro, pelo botão "Rever os primeiros passos". */
+  readonly onNavigate?: (view: PanelView) => void
 }
 
-export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewProps) {
+export function AgendaView({
+  today = todayDateOnly(),
+  onOpenTask,
+  selectedProjectId = null,
+  onNavigate,
+}: AgendaViewProps) {
   // Combinados da retro só com a ferramenta de review e retro; o restante da agenda segue.
   const retroVisible = useCapabilities().can('reviewRetro:screen')
   const [mode, setMode] = useState<'day' | 'week' | 'month'>('week')
@@ -143,6 +154,11 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
     >
       <div className={styles.calendarArea}>
         <div className={styles.viewControls}>
+          <ModuleHelpButton
+            moduleId="agenda"
+            projectId={selectedProjectId}
+            {...(onNavigate ? { onNavigate } : {})}
+          />
           <SegmentedControl
             aria-label="Visualização da agenda"
             options={[

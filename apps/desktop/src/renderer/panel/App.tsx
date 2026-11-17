@@ -399,6 +399,7 @@ function PanelContent() {
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+            onNavigate={setView}
           />
         }
         sprints={
@@ -406,6 +407,7 @@ function PanelContent() {
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
@@ -414,6 +416,8 @@ function PanelContent() {
         }
         impediments={
           <ImpedimentsView
+            selectedProjectId={selectedProjectId}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
@@ -422,6 +426,8 @@ function PanelContent() {
         }
         agenda={
           <AgendaView
+            selectedProjectId={selectedProjectId}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')

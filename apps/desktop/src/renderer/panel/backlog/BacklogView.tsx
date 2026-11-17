@@ -19,6 +19,8 @@ import { panelCopy } from '../copy'
 import { TaskDetailView } from '../task-detail/TaskDetailView'
 import { moveRequest, type BacklogMove } from './backlog-order'
 import { refusalMessage } from './refusal-message'
+import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import type { PanelView } from '../layout/PanelShell'
 import { sprintMarker } from '../sprints/sprint-rules'
 import { blockedMarkerLabel } from '../impediments/impediment-copy'
 import { isBlockedTask } from '../../shared/lib/task-signals'
@@ -41,6 +43,8 @@ const PULL_STATUS_OPTIONS: readonly { value: PullStatus; label: string }[] = [
 ]
 
 export interface BacklogViewProps {
+  /** Leva ao quadro, pelo botão "Rever os primeiros passos" do painel "Como funciona". */
+  readonly onNavigate?: (view: PanelView) => void
   /** Projeto que já estava selecionado no painel, se houver. */
   readonly initialProjectId?: string | null
   /** Projetos ativos (arquivados ficam de fora, como na criação de tarefa). */
@@ -48,7 +52,12 @@ export interface BacklogViewProps {
   readonly isManager: boolean
 }
 
-export function BacklogView({ initialProjectId = null, projects, isManager }: BacklogViewProps) {
+export function BacklogView({
+  initialProjectId = null,
+  projects,
+  isManager,
+  onNavigate,
+}: BacklogViewProps) {
   const capabilities = useCapabilities()
   const actor = useActor()
   const visible = useBacklogProjects(projects, isManager, actor.actor?.userId)
@@ -171,6 +180,11 @@ export function BacklogView({ initialProjectId = null, projects, isManager }: Ba
             ))}
           </select>
         </label>
+        <ModuleHelpButton
+          moduleId="backlog"
+          projectId={projectId}
+          {...(onNavigate ? { onNavigate } : {})}
+        />
       </div>
 
       {projectId === null ? (

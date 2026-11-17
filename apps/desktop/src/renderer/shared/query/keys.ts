@@ -64,6 +64,10 @@ export const queryKeys = {
     all: ['agilebox', 'guide'] as const,
     project: (projectId: string) => ['agilebox', 'guide', projectId] as const,
   },
+  projectModules: {
+    all: ['agilebox', 'projectModules'] as const,
+    project: (projectId: string) => ['agilebox', 'projectModules', projectId] as const,
+  },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
   teamTools: {
