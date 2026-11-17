@@ -26,6 +26,7 @@ import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
 import { GuideCard } from './guide/GuideCard'
+import { WelcomeDialog } from './guide/WelcomeDialog'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
 import { teamWipColumns } from './board/team-board'
@@ -86,6 +87,8 @@ function PanelContent() {
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  // Contador: cada "Ver a trilha" da janela de boas-vindas abre o cartão "Primeiros passos".
+  const [trailRequest, setTrailRequest] = useState(0)
   // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
   const [showArchived, setShowArchived] = useState(false)
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
@@ -106,6 +109,7 @@ function PanelContent() {
   const selectedArchived = selectedProject?.archivedAt != null
   const newTaskBlockedReason = selectedArchived ? panelCopy.archivedProjectNewTask : undefined
   const sessionUsers = useSessionUsers()
+  const personName = sessionUsers.data?.find((user) => user.id === actor.actor?.userId)?.name
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, showArchived),
     queryFn: () =>
@@ -480,7 +484,18 @@ function PanelContent() {
             ) : (
               <>
                 {/* Guia só com um projeto selecionado; em "Todos os projetos" não aparece. */}
-                <GuideCard projectId={selectedProjectId} onNavigate={setView} />
+                <GuideCard
+                  projectId={selectedProjectId}
+                  onNavigate={setView}
+                  openRequest={trailRequest}
+                />
+                {selectedProjectId ? (
+                  <WelcomeDialog
+                    projectId={selectedProjectId}
+                    personName={personName}
+                    onSeeTrail={() => setTrailRequest((count) => count + 1)}
+                  />
+                ) : null}
                 <ScopeAnnouncement message={scopeAnnouncement} />
                 {teamView ? <ScopeBanner>{panelCopy.teamViewBanner}</ScopeBanner> : null}
                 <BoardView

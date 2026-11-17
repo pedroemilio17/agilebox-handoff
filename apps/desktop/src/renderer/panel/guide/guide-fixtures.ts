@@ -1,4 +1,4 @@
-import type { GuideStepDto, GuideViewDto } from '@agilebox/contract'
+import type { GuideStepDto, GuideViewDto, GuideWelcomeDto } from '@agilebox/contract'
 
 export const GUIDE_PROJECT_ID = '01J8Y4G2XK8Z1S6M3Q9W0ABCDE'
 
@@ -76,6 +76,8 @@ export function makeGuide(
     readonly firstStepsCard?: GuideViewDto['intensity']['firstStepsCard']
     readonly cardDismissed?: boolean
     readonly projectId?: string
+    readonly showWelcome?: boolean
+    readonly welcome?: GuideWelcomeDto | null
   } = {},
 ): GuideViewDto {
   const doneCount = options.doneCount ?? 1
@@ -94,7 +96,15 @@ export function makeGuide(
       explainJargon: false,
     },
     cardDismissed: options.cardDismissed ?? false,
-    showWelcome: false,
-    welcome: null,
+    showWelcome: options.showWelcome ?? false,
+    welcome: options.welcome ?? null,
   }
+}
+
+/** Projeto criado pelo preset Ágil, com 5 módulos ligados. Exemplo para a janela de boas-vindas. */
+export const WELCOME_AGIL: GuideWelcomeDto = {
+  projectName: 'App de Chamados',
+  presetKey: 'agil',
+  presetLabel: 'Ágil',
+  moduleCount: 5,
 }

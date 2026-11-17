@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Button, ProgressBar } from '@agilebox/ui'
 import { useDismissGuideCard } from '../hooks/use-dismiss-guide-card'
 import { useGuide } from '../hooks/use-guide'
@@ -11,19 +11,30 @@ export interface GuideCardProps {
   readonly projectId: string | null
   /** Leva à tela do passo (backlog, sprints, agenda). A troca de tela fica com o App. */
   readonly onNavigate: (view: PanelView) => void
+  /**
+   * Contador de pedidos para abrir o cartão (ex.: "Ver a trilha" da janela de boas-vindas). Cada
+   * mudança abre o cartão, se ele estiver visível; não reabre um cartão dispensado.
+   */
+  readonly openRequest?: number
 }
 
 /**
  * Cartão "Primeiros passos" no topo do quadro de um projeto. Se a consulta do guia falhar ou não
  * houver nada a mostrar, não renderiza nada: o guia nunca atrapalha o trabalho.
  */
-export function GuideCard({ projectId, onNavigate }: GuideCardProps) {
+export function GuideCard({ projectId, onNavigate, openRequest }: GuideCardProps) {
   const guide = useGuide(projectId)
   const state = getGuideCardState(projectId, guide.data)
   if (!state.visible || projectId === null) return null
   // A chave por projeto reinicia o estado local (aberto, dispensado) ao trocar de projeto.
   return (
-    <GuideSection key={projectId} projectId={projectId} state={state} onNavigate={onNavigate} />
+    <GuideSection
+      key={projectId}
+      projectId={projectId}
+      state={state}
+      onNavigate={onNavigate}
+      openRequest={openRequest}
+    />
   )
 }
 
@@ -31,14 +42,23 @@ interface GuideSectionProps {
   readonly projectId: string
   readonly state: GuideCardState
   readonly onNavigate: (view: PanelView) => void
+  readonly openRequest: number | undefined
 }
 
-function GuideSection({ projectId, state, onNavigate }: GuideSectionProps) {
+function GuideSection({ projectId, state, onNavigate, openRequest }: GuideSectionProps) {
   const headingId = useId()
   const bodyId = useId()
   const [open, setOpen] = useState(state.initiallyOpen)
   const [dismissed, setDismissed] = useState(false)
   const dismiss = useDismissGuideCard()
+  // Só o que chega depois da montagem conta: um pedido antigo não reabre o cartão.
+  const handledRequest = useRef(openRequest)
+
+  useEffect(() => {
+    if (openRequest === undefined || openRequest === handledRequest.current) return
+    handledRequest.current = openRequest
+    setOpen(true)
+  }, [openRequest])
 
   // Esconde já ao dispensar; se a gravação falhar, o cartão volta.
   if (dismissed && !dismiss.isError) return null

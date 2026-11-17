@@ -1,0 +1,174 @@
+/* Janela de boas-vindas: diálogo de vidro sobre um véu, no padrão do assistente de novo projeto. */
+
+.backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-focus-overlay);
+}
+
+.backdrop[hidden] {
+  display: none;
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  box-sizing: border-box;
+  width: min(100%, 640px);
+  max-height: 100%;
+  padding: var(--space-6);
+  overflow-y: auto;
+  border-radius: var(--radius-window);
+  background: var(--glass-popover);
+  backdrop-filter: var(--glass-popover-backdrop);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-popover);
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.dialog button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-title);
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.intro {
+  margin: 0;
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-text-body);
+}
+
+.trail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.trailTitle {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-title-small);
+  font-weight: 620;
+  letter-spacing: -0.015em;
+}
+
+.count {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-text-muted);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--color-hairline-strong);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stepTitle {
+  font-size: var(--font-size-body-small);
+  overflow-wrap: anywhere;
+}
+
+.stepModule {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-text-placeholder);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-body);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.hint {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-placeholder);
+}
+
+.spacer {
+  flex: 1;
+}
+
+@media (max-width: 560px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
