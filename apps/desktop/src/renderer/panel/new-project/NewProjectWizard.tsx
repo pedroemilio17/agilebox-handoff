@@ -14,17 +14,22 @@ import {
   toWizardAnswers,
   totalSteps,
   withAnswer,
+  type QuestionId,
   type StepId,
   type WizardDraft,
 } from './wizard-steps'
 
 export interface NewProjectWizardProps {
   readonly initialName?: string
+  /** Rascunho anterior, para voltar da recomendação sem perder as respostas. */
+  readonly initialDraft?: WizardDraft
+  /** Pergunta em que o assistente abre (a última, ao voltar da recomendação). */
+  readonly resumeAt?: QuestionId
   readonly onCancel: () => void
   /** Cria o projeto no modo Simples, sem respostas. */
   readonly onSkip: (name: string) => void
-  /** Segue para a recomendação com as respostas dadas. */
-  readonly onFinishQuestions: (name: string, answers: WizardAnswers) => void
+  /** Segue para a recomendação com as respostas dadas e o rascunho completo. */
+  readonly onFinishQuestions: (name: string, answers: WizardAnswers, draft: WizardDraft) => void
 }
 
 const NAME_REQUIRED = 'Dê um nome ao projeto para continuar.'
@@ -35,14 +40,16 @@ const NAME_REQUIRED = 'Dê um nome ao projeto para continuar.'
  */
 export function NewProjectWizard({
   initialName = '',
+  initialDraft,
+  resumeAt,
   onCancel,
   onSkip,
   onFinishQuestions,
 }: NewProjectWizardProps) {
   const [name, setName] = useState(initialName)
   const [nameError, setNameError] = useState(false)
-  const [draft, setDraft] = useState<WizardDraft>({})
-  const [step, setStep] = useState<StepId>('name')
+  const [draft, setDraft] = useState<WizardDraft>(initialDraft ?? {})
+  const [step, setStep] = useState<StepId>(resumeAt ?? 'name')
   const dialogRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const groupName = useId()
@@ -82,7 +89,7 @@ export function NewProjectWizard({
     }
     const next = nextStep(draft, step)
     if (next === 'recommendation') {
-      onFinishQuestions(trimmedName, toWizardAnswers(draft))
+      onFinishQuestions(trimmedName, toWizardAnswers(draft), draft)
       return
     }
     setStep(next)

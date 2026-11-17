@@ -51,13 +51,17 @@ describe('NewProjectWizard: perguntas 1 a 5', () => {
     await user.click(radio('Não'))
     await user.click(continueButton())
 
-    expect(onFinishQuestions).toHaveBeenCalledWith('App de Chamados', {
-      workType: 'finite',
-      fixedDate: 'yes',
-      scope: 'defined',
-      outsiderFollows: 'yes',
-      controlsHoursAndCost: 'no',
-    })
+    expect(onFinishQuestions).toHaveBeenCalledWith(
+      'App de Chamados',
+      {
+        workType: 'finite',
+        fixedDate: 'yes',
+        scope: 'defined',
+        outsiderFollows: 'yes',
+        controlsHoursAndCost: 'no',
+      },
+      expect.any(Object),
+    )
   })
 
   it('trabalho contínuo pula data e escopo e o contador acompanha', async () => {
@@ -107,11 +111,15 @@ describe('NewProjectWizard: perguntas 1 a 5', () => {
     await user.click(radio('Não sei'))
     await user.click(continueButton())
 
-    expect(onFinishQuestions).toHaveBeenCalledWith('App de Chamados', {
-      workType: 'unknown',
-      fixedDate: 'unknown',
-      scope: 'unknown',
-    })
+    expect(onFinishQuestions).toHaveBeenCalledWith(
+      'App de Chamados',
+      {
+        workType: 'unknown',
+        fixedDate: 'unknown',
+        scope: 'unknown',
+      },
+      expect.any(Object),
+    )
   })
 
   it('o trilho mostra as respostas já dadas', async () => {
