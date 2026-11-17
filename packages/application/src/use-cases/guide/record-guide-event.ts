@@ -2,7 +2,7 @@ import { buildGuideTrail, completeStepsOnEvent } from '@agilebox/core'
 import type { Actor, GuideEventType, ModuleId, ProjectId } from '@agilebox/core'
 import type { ProjectModuleSetting, UnitOfWorkRepositories } from '../../ports'
 import type { GuideProgressEntry } from '../../ports/guide-progress-repository'
-import { GUIDE_CARD_KEY } from '../../ports/guide-progress-repository'
+import { isReservedGuideKey } from '../../ports/guide-progress-repository'
 
 /** Repositórios que o serviço do guia lê e grava. Batem com `AppDeps` e com a `UnitOfWork`. */
 export type GuideRecordPorts = Pick<
@@ -22,11 +22,14 @@ export function activeGuideModules(rows: readonly ProjectModuleSetting[]): Modul
   ]
 }
 
-/** Chaves dos passos concluídos (a linha da dispensa do cartão não é passo: `doneAt` é nulo). */
+/**
+ * Chaves dos passos concluídos. Linhas reservadas (dispensa do cartão, resposta à boas-vindas) não
+ * são passos: saem daqui mesmo que tenham `doneAt`, para nunca somar ao progresso.
+ */
 export function doneStepKeys(entries: readonly GuideProgressEntry[]): Set<string> {
   return new Set(
     entries
-      .filter((entry) => entry.doneAt !== null && entry.stepKey !== GUIDE_CARD_KEY)
+      .filter((entry) => entry.doneAt !== null && !isReservedGuideKey(entry.stepKey))
       .map((entry) => entry.stepKey),
   )
 }

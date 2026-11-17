@@ -168,6 +168,8 @@ import {
   dismissGuideCardOutputSchema,
   getGuideInputSchema,
   guideViewDtoSchema,
+  resolveGuideWelcomeInputSchema,
+  resolveGuideWelcomeOutputSchema,
 } from './guide'
 import {
   addDefinitionOfDoneItemInputSchema,
@@ -471,6 +473,10 @@ export const API_SCHEMA_REGISTRY = {
     input: dismissGuideCardInputSchema,
     output: dismissGuideCardOutputSchema,
   },
+  'guide.resolveWelcome': {
+    input: resolveGuideWelcomeInputSchema,
+    output: resolveGuideWelcomeOutputSchema,
+  },
   'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
   'teamTools.previewChange': {
     input: previewTeamToolsChangeInputSchema,
@@ -538,6 +544,7 @@ export interface AgileBoxApi {
   guide: {
     get: Method<'guide.get'>
     dismissCard: Method<'guide.dismissCard'>
+    resolveWelcome: Method<'guide.resolveWelcome'>
   }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>

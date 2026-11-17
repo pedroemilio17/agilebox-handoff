@@ -54,6 +54,8 @@ export function hiddenGuide(projectId: string): GuideViewDto {
       explainJargon: false,
     },
     cardDismissed: false,
+    showWelcome: false,
+    welcome: null,
   }
 }
 
@@ -88,6 +90,7 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     guide: {
       get: (input) => Promise.resolve(hiddenGuide(input.projectId)),
       dismissCard: () => Promise.resolve(undefined),
+      resolveWelcome: () => Promise.resolve(undefined),
       ...overrides.guide,
     },
     projectModules: {

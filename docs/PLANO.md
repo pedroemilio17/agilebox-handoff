@@ -631,3 +631,9 @@ Não bloqueiam os marcos M1 a M5.
 4. **Entidades do Azure AD**: importar funcionários como `contributors` com `source = azure`.
 5. **Plug-ins**: GLPI, Azure DevOps, webhooks de commit, caixa de pendências, aviso de atualização.
 6. **Aviso diário**.
+
+#### 3.8.1 Guia e janela de boas-vindas (ADR-10)
+
+- O guia é gerado dos manifestos (`core/src/modules/guide.ts`); o progresso é por **pessoa e por projeto** (`guide_progress`) e conclui sozinho por evento de domínio (`recordGuideEvent`, chamado dentro da transação dos casos de uso). Nenhum passo bloqueia ação alguma.
+- Chaves reservadas em `guide_progress`: `__card__` (card "Primeiros passos" dispensado) e `__welcome__` (janela de boas-vindas respondida). Não contam como passo.
+- A janela de boas-vindas (única exceção à regra de não usar modais) aparece quando a pessoa é membro, não criou o projeto, entrou depois da criação, a trilha não é vazia e ela ainda não respondeu (`isWelcomeDue`).

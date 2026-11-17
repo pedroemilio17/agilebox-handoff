@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { GUIDE_CARD_KEY } from '@agilebox/application'
+import { GUIDE_CARD_KEY, GUIDE_WELCOME_KEY, isReservedGuideKey } from '@agilebox/application'
 import type { GuideProgressRepository } from '@agilebox/application'
 import { ValidationError } from '@agilebox/core'
 import type { OrganizationId, ProjectId, UserId } from '@agilebox/core'
@@ -37,6 +37,26 @@ export function createSqliteGuideProgressRepository(
     if (!person) throw new ValidationError('Pessoa de outra organização')
   }
 
+  /** Upsert de uma chave reservada com `dismissed = 1` e sem `done_at`. Não toca em passos. */
+  async function dismissReserved(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    stepKey: string,
+    at: string,
+  ): Promise<void> {
+    await assertOwnership(organizationId, projectId, userId)
+    // O schema não guarda o instante da dispensa nem da resposta; `at` fica na assinatura da porta.
+    void at
+    await database
+      .insert(guideProgress)
+      .values({ organizationId, projectId, userId, stepKey, doneAt: null, dismissed: true })
+      .onConflictDoUpdate({
+        target: [guideProgress.projectId, guideProgress.userId, guideProgress.stepKey],
+        set: { dismissed: true },
+      })
+  }
+
   return {
     async listForUser(organizationId: OrganizationId, projectId: ProjectId, userId: UserId) {
       const rows = await database
@@ -60,8 +80,8 @@ export function createSqliteGuideProgressRepository(
       at: string,
     ) {
       await assertOwnership(organizationId, projectId, userId)
-      if (stepKeys.includes(GUIDE_CARD_KEY))
-        throw new ValidationError('A chave do cartão não é um passo do guia')
+      if (stepKeys.some(isReservedGuideKey))
+        throw new ValidationError('Chave reservada do guia não é um passo')
       if (stepKeys.length === 0) return
 
       // Um único INSERT: ou todos os passos entram, ou nenhum. Passo já gravado fica como está.
@@ -82,23 +102,16 @@ export function createSqliteGuideProgressRepository(
       userId: UserId,
       at: string,
     ) {
-      await assertOwnership(organizationId, projectId, userId)
-      // O schema não guarda o instante da dispensa; `at` fica na assinatura da porta, como no fake.
-      void at
-      await database
-        .insert(guideProgress)
-        .values({
-          organizationId,
-          projectId,
-          userId,
-          stepKey: GUIDE_CARD_KEY,
-          doneAt: null,
-          dismissed: true,
-        })
-        .onConflictDoUpdate({
-          target: [guideProgress.projectId, guideProgress.userId, guideProgress.stepKey],
-          set: { dismissed: true },
-        })
+      await dismissReserved(organizationId, projectId, userId, GUIDE_CARD_KEY, at)
+    },
+
+    async resolveWelcome(
+      organizationId: OrganizationId,
+      projectId: ProjectId,
+      userId: UserId,
+      at: string,
+    ) {
+      await dismissReserved(organizationId, projectId, userId, GUIDE_WELCOME_KEY, at)
     },
   }
 }

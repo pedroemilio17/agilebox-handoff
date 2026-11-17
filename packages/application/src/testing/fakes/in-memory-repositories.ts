@@ -80,7 +80,11 @@ import type {
   UserRepository,
 } from '../../ports'
 import { assertPlainAnswers } from '../../ports/project-setup-repository'
-import { GUIDE_CARD_KEY } from '../../ports/guide-progress-repository'
+import {
+  GUIDE_CARD_KEY,
+  GUIDE_WELCOME_KEY,
+  isReservedGuideKey,
+} from '../../ports/guide-progress-repository'
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
@@ -796,8 +800,8 @@ export class InMemoryGuideProgressRepository implements GuideProgressRepository 
   ) {
     await Promise.resolve()
     this.assertOwnership(organizationId, projectId, userId)
-    if (stepKeys.includes(GUIDE_CARD_KEY))
-      throw new ValidationError('A chave do cartão não é um passo do guia')
+    if (stepKeys.some(isReservedGuideKey))
+      throw new ValidationError('Chave reservada do guia não é um passo')
     const rows = bucket(this.state.guideProgress, organizationId)
     for (const stepKey of new Set(stepKeys)) {
       const key = `${projectId}|${userId}|${stepKey}`
@@ -833,6 +837,29 @@ export class InMemoryGuideProgressRepository implements GuideProgressRepository 
       projectId,
       userId,
       stepKey: GUIDE_CARD_KEY,
+      doneAt: previous?.doneAt ?? null,
+      dismissed: true,
+    })
+  }
+
+  async resolveWelcome(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    // Como a dispensa: a tabela não guarda o instante da resposta; `at` fica na assinatura da porta.
+    void at
+    const rows = bucket(this.state.guideProgress, organizationId)
+    const key = `${projectId}|${userId}|${GUIDE_WELCOME_KEY}`
+    const previous = rows.get(key)
+    rows.set(key, {
+      organizationId,
+      projectId,
+      userId,
+      stepKey: GUIDE_WELCOME_KEY,
       doneAt: previous?.doneAt ?? null,
       dismissed: true,
     })

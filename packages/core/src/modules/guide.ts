@@ -1,4 +1,5 @@
 import { ValidationError } from '../shared/errors'
+import type { UserId } from '../shared/ids'
 import { getManifest } from './manifest'
 import type { GuideEventType, GuideStep } from './manifest'
 import { getModule, MODULE_IDS } from './registry'
@@ -164,4 +165,29 @@ export function resolveGuideExperience(
   person: GuideExperience | null | undefined,
 ): GuideExperience {
   return project ?? person ?? 'never'
+}
+
+/**
+ * Janela de boas-vindas (ADR-10): a única exceção à regra de o guia não usar modais. Mostra-se para
+ * a pessoa quando TODAS as condições valem:
+ *  1. ela é membro do projeto (o gestor que não é membro nunca vê);
+ *  2. ela não criou o projeto;
+ *  3. ela entrou depois da criação (`addedAt` estritamente posterior a `createdAt`; quem entrou no
+ *     mesmo instante da criação, que é o criador, não vê);
+ *  4. a trilha do projeto não é vazia (projeto Simples não tem o que mostrar);
+ *  5. ela ainda não respondeu à janela (`answered`, guardado com a chave reservada).
+ */
+export function isWelcomeDue(input: {
+  readonly actorUserId: UserId
+  readonly project: { readonly createdBy: UserId; readonly createdAt: string }
+  readonly member: { readonly addedAt: string } | null
+  readonly trailSteps: number
+  readonly answered: boolean
+}): boolean {
+  const { actorUserId, project, member, trailSteps, answered } = input
+  if (member === null) return false
+  if (project.createdBy === actorUserId) return false
+  if (!(Date.parse(member.addedAt) > Date.parse(project.createdAt))) return false
+  if (trailSteps === 0) return false
+  return !answered
 }

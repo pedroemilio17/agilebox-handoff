@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
   createUser,
+  getProjectPreset,
   NotFoundError,
   PermissionDeniedError,
   toOrganizationId,
   toProjectId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, ProjectId } from '@agilebox/core'
+import type { Actor, ProjectId, UserId } from '@agilebox/core'
 import { createTenantContext } from '../../tenant-context'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
@@ -510,5 +511,243 @@ describe('eventos de alimentação nos casos de uso (ADR-10)', () => {
     expect(
       await unitOfWork.repositories.guideProgress.listForUser(orgA, projectId, collaboratorId),
     ).toEqual([])
+  })
+})
+
+describe('janela de boas-vindas (ADR-10)', () => {
+  const JOINED = '2026-11-16T12:30:00.000Z'
+  const collaboratorTwoId = toUserId('00000000000000000000000013')
+  const outsiderManagerId = toUserId('00000000000000000000000014')
+  const collaboratorTwo: Actor = {
+    userId: collaboratorTwoId,
+    organizationId: orgA,
+    role: 'collaborator',
+  }
+  const outsiderManager: Actor = {
+    userId: outsiderManagerId,
+    organizationId: orgA,
+    role: 'manager',
+  }
+
+  /** Acrescenta uma pessoa à organização A (além das já semeadas em `setup`). */
+  async function addPerson(
+    unitOfWork: InMemoryUnitOfWork,
+    id: UserId,
+    role: 'manager' | 'collaborator',
+    name: string,
+  ) {
+    await unitOfWork.repositories.users.save(
+      orgA,
+      createUser({
+        ...aUser().build(),
+        id,
+        organizationId: orgA,
+        name,
+        role,
+        email: `${id}@example.com`,
+      }),
+    )
+  }
+
+  /** Grava a entrada da pessoa no projeto com o instante dado (a porta, não o caso de uso). */
+  async function joinAt(
+    unitOfWork: InMemoryUnitOfWork,
+    projectId: ProjectId,
+    userId: UserId,
+    addedAt: string,
+  ) {
+    await unitOfWork.repositories.projects.addMember(orgA, {
+      projectId,
+      userId,
+      addedBy: managerAId,
+      addedAt,
+    })
+  }
+
+  /** Projeto da gestora (criado em NOW) com o preset Ágil ligado e começado do preset `agil`. */
+  async function agileProjectWithStart(useCases: UseCases, unitOfWork: InMemoryUnitOfWork) {
+    const project = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Projeto',
+    })
+    const projectId = toProjectId(project.id)
+    await unitOfWork.repositories.projectSetup.save(orgA, {
+      projectId,
+      answers: null,
+      recommendedPreset: 'agil',
+      startedFromPreset: 'agil',
+      guideLevel: null,
+    })
+    await enableAgil(useCases, projectId)
+    return projectId
+  }
+
+  it('membro que entrou depois da criação vê a janela, com o nome do projeto e o preset', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+
+    const view = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+    const modules = await unitOfWork.repositories.projectModules.list(orgA, projectId)
+
+    expect(view.showWelcome).toBe(true)
+    expect(view.welcome).toEqual({
+      projectName: 'Projeto',
+      presetKey: 'agil',
+      presetLabel: getProjectPreset('agil').label,
+      moduleCount: modules.filter((row) => row.state === 'active' && row.moduleId !== 'core')
+        .length,
+    })
+    expect(view.welcome?.moduleCount).toBeGreaterThan(0)
+  })
+
+  it('projeto sem assistente: presetKey e presetLabel são nulos', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const project = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Projeto',
+    })
+    const projectId = toProjectId(project.id)
+    await enableAgil(useCases, projectId)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+
+    const view = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+
+    expect(view.showWelcome).toBe(true)
+    expect(view.welcome).toMatchObject({ presetKey: null, presetLabel: null })
+  })
+
+  it('quem criou o projeto não vê a janela, mesmo com trilha', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+
+    const view = await useCases.guide.get.execute(contextManagerA, { projectId })
+
+    expect(view.showWelcome).toBe(false)
+    expect(view.welcome).toBeNull()
+  })
+
+  it('quem entrou no mesmo instante da criação não vê a janela', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+
+    const view = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+
+    expect(view.showWelcome).toBe(false)
+    expect(view.welcome).toBeNull()
+  })
+
+  it('gestor que não é membro nunca vê a janela, mesmo entrando num projeto com trilha', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await addPerson(unitOfWork, outsiderManagerId, 'manager', 'Gestor de fora')
+
+    const view = await useCases.guide.get.execute(createTenantContext(outsiderManager), {
+      projectId,
+    })
+
+    expect(view.showWelcome).toBe(false)
+    await expect(
+      useCases.guide.resolveWelcome.execute(createTenantContext(outsiderManager), { projectId }),
+    ).rejects.toThrow(PermissionDeniedError)
+  })
+
+  it('projeto Simples (trilha vazia) não mostra a janela', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const project = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Simples',
+    })
+    const projectId = toProjectId(project.id)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+
+    const view = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+
+    expect(view.trail).toEqual([])
+    expect(view.showWelcome).toBe(false)
+    expect(view.welcome).toBeNull()
+  })
+
+  it('depois de responder, some para quem respondeu; a outra pessoa que entrou depois ainda vê', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await addPerson(unitOfWork, collaboratorTwoId, 'collaborator', 'Bia')
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+    await joinAt(unitOfWork, projectId, collaboratorTwoId, JOINED)
+
+    await useCases.guide.resolveWelcome.execute(contextCollaboratorA, { projectId })
+
+    expect(
+      (await useCases.guide.get.execute(contextCollaboratorA, { projectId })).showWelcome,
+    ).toBe(false)
+    const outra = await useCases.guide.get.execute(createTenantContext(collaboratorTwo), {
+      projectId,
+    })
+    expect(outra.showWelcome).toBe(true)
+    expect(outra.welcome?.projectName).toBe('Projeto')
+  })
+
+  it('resolveWelcome é idempotente: repetir não muda nada nem falha', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+
+    await useCases.guide.resolveWelcome.execute(contextCollaboratorA, { projectId })
+    await useCases.guide.resolveWelcome.execute(contextCollaboratorA, { projectId })
+
+    const rows = await unitOfWork.repositories.guideProgress.listForUser(
+      orgA,
+      projectId,
+      collaboratorId,
+    )
+    expect(rows).toEqual([{ stepKey: '__welcome__', doneAt: null, dismissed: true }])
+    expect(
+      (await useCases.guide.get.execute(contextCollaboratorA, { projectId })).showWelcome,
+    ).toBe(false)
+  })
+
+  it('a chave da boas-vindas não conta como passo concluído nem como cartão dispensado', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+    const antes = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+
+    await useCases.guide.resolveWelcome.execute(contextCollaboratorA, { projectId })
+    const depois = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+
+    expect(depois.done).toBe(antes.done)
+    expect(depois.total).toBe(antes.total)
+    expect(depois.currentKey).toBe(antes.currentKey)
+    expect(depois.cardDismissed).toBe(false)
+    expect(depois.trail.every((step) => !step.done)).toBe(true)
+
+    // Dispensar o cartão não encerra a janela, e a janela não dispensa o cartão.
+    await useCases.guide.dismissCard.execute(contextCollaboratorA, { projectId })
+    await useCases.guide.dismissCard.execute(contextCollaboratorA, { projectId })
+    const cartao = await useCases.guide.get.execute(contextCollaboratorA, { projectId })
+    expect(cartao.cardDismissed).toBe(true)
+    expect(cartao.showWelcome).toBe(false)
+  })
+
+  it('a janela não tem efeito sobre passos: o evento de alimentação continua concluindo o passo', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+    await useCases.guide.resolveWelcome.execute(contextCollaboratorA, { projectId })
+
+    await useCases.tasks.create.execute(contextCollaboratorA, { projectId, title: 'Tarefa' })
+
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+  })
+
+  it('outro tenant não vê nem responde à janela de um projeto de outra organização', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await agileProjectWithStart(useCases, unitOfWork)
+    await joinAt(unitOfWork, projectId, collaboratorId, LATER)
+
+    await expect(
+      useCases.guide.resolveWelcome.execute(contextManagerB, { projectId }),
+    ).rejects.toThrow(NotFoundError)
+    expect(
+      (await useCases.guide.get.execute(contextCollaboratorA, { projectId })).showWelcome,
+    ).toBe(true)
   })
 })

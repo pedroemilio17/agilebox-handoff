@@ -9,7 +9,7 @@ import {
 } from '@agilebox/core'
 import type { OrganizationId, ProjectId, UserId } from '@agilebox/core'
 import type { GuideProgressRepository } from '../ports'
-import { GUIDE_CARD_KEY } from '../ports/guide-progress-repository'
+import { GUIDE_CARD_KEY, GUIDE_WELCOME_KEY } from '../ports/guide-progress-repository'
 
 /** Ids fixos do contrato. Quem roda o contrato cria, antes, o que `guideProgressSeed` descreve. */
 export const guideProgressFixtures = {
@@ -185,6 +185,84 @@ export function describeGuideProgressRepositoryContract(
 
       const rows = await repository.listForUser(organizationA, projectA, managerA)
       expect(rows.find((row) => row.stepKey === GUIDE_CARD_KEY)?.dismissed).toBe(true)
+    })
+
+    it('a chave reservada da boas-vindas não é um passo: markDone a recusa sem gravar nada', async () => {
+      const repository = await makeRepository()
+      await expect(
+        repository.markDone(
+          organizationA,
+          projectA,
+          managerA,
+          ['agil.backlog', GUIDE_WELCOME_KEY],
+          FIRST,
+        ),
+      ).rejects.toThrow(ValidationError)
+      expect(await repository.listForUser(organizationA, projectA, managerA)).toEqual([])
+    })
+
+    it('resolveWelcome grava a chave de boas-vindas com dispensa e sem done_at', async () => {
+      const repository = await makeRepository()
+      await repository.resolveWelcome(organizationA, projectA, collaboratorA, FIRST)
+
+      expect(await repository.listForUser(organizationA, projectA, collaboratorA)).toEqual([
+        { stepKey: GUIDE_WELCOME_KEY, doneAt: null, dismissed: true },
+      ])
+    })
+
+    it('resolveWelcome é idempotente e não mexe nos passos nem na dispensa do cartão', async () => {
+      const repository = await makeRepository()
+      await repository.markDone(organizationA, projectA, managerA, ['agil.backlog'], FIRST)
+      await repository.dismissCard(organizationA, projectA, managerA, FIRST)
+      await repository.resolveWelcome(organizationA, projectA, managerA, FIRST)
+      await repository.resolveWelcome(organizationA, projectA, managerA, LATER)
+
+      const rows = await repository.listForUser(organizationA, projectA, managerA)
+      expect(rows).toHaveLength(3)
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          { stepKey: 'agil.backlog', doneAt: FIRST, dismissed: false },
+          { stepKey: GUIDE_CARD_KEY, doneAt: null, dismissed: true },
+          { stepKey: GUIDE_WELCOME_KEY, doneAt: null, dismissed: true },
+        ]),
+      )
+    })
+
+    it('markDone depois da boas-vindas não apaga a resposta', async () => {
+      const repository = await makeRepository()
+      await repository.resolveWelcome(organizationA, projectA, managerA, FIRST)
+      await repository.markDone(organizationA, projectA, managerA, ['agil.backlog'], LATER)
+
+      const rows = await repository.listForUser(organizationA, projectA, managerA)
+      expect(rows.find((row) => row.stepKey === GUIDE_WELCOME_KEY)?.dismissed).toBe(true)
+    })
+
+    it('isolamento da boas-vindas: outra pessoa do projeto e outro projeto começam do zero', async () => {
+      const repository = await makeRepository()
+      await repository.resolveWelcome(organizationA, projectA, managerA, FIRST)
+
+      expect(await repository.listForUser(organizationA, projectA, collaboratorA)).toEqual([])
+      expect(await repository.listForUser(organizationA, projectA2, managerA)).toEqual([])
+      expect(await repository.listForUser(organizationB, projectA, managerA)).toEqual([])
+    })
+
+    it('resolveWelcome de projeto ou pessoa de outra organização, ou inexistente, é recusado', async () => {
+      const repository = await makeRepository()
+      const inexistente = toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FD9')
+
+      await expect(
+        repository.resolveWelcome(organizationA, projectB, managerA, FIRST),
+      ).rejects.toThrow(ValidationError)
+      await expect(
+        repository.resolveWelcome(organizationA, inexistente, managerA, FIRST),
+      ).rejects.toThrow(ValidationError)
+      await expect(
+        repository.resolveWelcome(organizationA, projectA, managerB, FIRST),
+      ).rejects.toThrow(ValidationError)
+      await expect(
+        repository.resolveWelcome(organizationB, projectA, managerB, FIRST),
+      ).rejects.toThrow(ValidationError)
+      expect(await repository.listForUser(organizationA, projectA, managerA)).toEqual([])
     })
 
     it('isolamento por projeto: o progresso de um projeto não aparece no outro', async () => {

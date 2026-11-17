@@ -94,5 +94,7 @@ export function makeGuide(
       explainJargon: false,
     },
     cardDismissed: options.cardDismissed ?? false,
+    showWelcome: false,
+    welcome: null,
   }
 }

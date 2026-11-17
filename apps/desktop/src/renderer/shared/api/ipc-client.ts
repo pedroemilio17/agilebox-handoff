@@ -154,6 +154,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     guide: {
       get: (input) => call('guide.get', input),
       dismissCard: (input) => call('guide.dismissCard', input),
+      resolveWelcome: (input) => call('guide.resolveWelcome', input),
     },
     teamTools: {
       get: () => call('teamTools.get', undefined),

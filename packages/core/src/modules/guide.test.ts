@@ -4,12 +4,14 @@ import {
   completeStepsOnEvent,
   guideIntensity,
   guideProgress,
+  isWelcomeDue,
   resolveGuideExperience,
 } from './guide'
 import type { GuideTrailStep } from './guide'
 import { GUIDE_EVENT_TYPES } from './manifest'
 import { PROJECT_PRESETS, projectPresetModules } from './project-presets'
 import { MODULE_IDS } from './registry'
+import type { UserId } from '../shared/ids'
 import type { ModuleId } from './registry'
 
 const agilTrail = () => buildGuideTrail(projectPresetModules('agil', { experienced: false }))
@@ -206,5 +208,44 @@ describe('presets de projeto geram trilhas válidas', () => {
     for (const step of trail) {
       expect(GUIDE_EVENT_TYPES).toContain(step.doneWhen)
     }
+  })
+})
+
+describe('isWelcomeDue (janela de boas-vindas, ADR-10)', () => {
+  const CREATOR = 'creator' as UserId
+  const PERSON = 'person' as UserId
+  const CREATED = '2026-11-16T10:00:00.000Z'
+  const LATER = '2026-11-16T11:00:00.000Z'
+  const base = {
+    actorUserId: PERSON,
+    project: { createdBy: CREATOR, createdAt: CREATED },
+    member: { addedAt: LATER },
+    trailSteps: 3,
+    answered: false,
+  }
+
+  it('vale quando todas as condições valem', () => {
+    expect(isWelcomeDue(base)).toBe(true)
+  })
+
+  it('não vale para quem não é membro', () => {
+    expect(isWelcomeDue({ ...base, member: null })).toBe(false)
+  })
+
+  it('não vale para quem criou o projeto', () => {
+    expect(isWelcomeDue({ ...base, actorUserId: CREATOR })).toBe(false)
+  })
+
+  it('não vale para quem entrou no mesmo instante da criação, nem antes', () => {
+    expect(isWelcomeDue({ ...base, member: { addedAt: CREATED } })).toBe(false)
+    expect(isWelcomeDue({ ...base, member: { addedAt: '2026-11-16T09:00:00.000Z' } })).toBe(false)
+  })
+
+  it('não vale com trilha vazia', () => {
+    expect(isWelcomeDue({ ...base, trailSteps: 0 })).toBe(false)
+  })
+
+  it('não vale depois de respondida', () => {
+    expect(isWelcomeDue({ ...base, answered: true })).toBe(false)
   })
 })

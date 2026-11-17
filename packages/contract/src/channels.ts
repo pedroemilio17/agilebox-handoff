@@ -81,6 +81,7 @@ export const API_CHANNELS = [
   'projectModules.change',
   'guide.get',
   'guide.dismissCard',
+  'guide.resolveWelcome',
   'teamTools.get',
   'teamTools.previewChange',
   'teamTools.applyChange',

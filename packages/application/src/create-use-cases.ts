@@ -17,7 +17,7 @@ import {
   ChangeProjectModules,
   GetProjectModules,
 } from './use-cases/project-modules/project-modules'
-import { DismissGuideCard, GetGuide } from './use-cases/guide/guide'
+import { DismissGuideCard, GetGuide, ResolveWelcome } from './use-cases/guide/guide'
 import {
   AddSprintTask,
   CloseSprint,
@@ -311,6 +311,7 @@ export function createUseCases(deps: AppDeps) {
     guide: {
       get: forTenant('guide.get', new GetGuide(deps)),
       dismissCard: forTenant('guide.dismissCard', new DismissGuideCard(deps)),
+      resolveWelcome: forTenant('guide.resolveWelcome', new ResolveWelcome(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

@@ -260,6 +260,9 @@ export function registerHandlers(
   register('guide.dismissCard', (context, input) =>
     useCases.guide.dismissCard.execute(context, input),
   )
+  register('guide.resolveWelcome', (context, input) =>
+    useCases.guide.resolveWelcome.execute(context, input),
+  )
   register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
   register('teamTools.previewChange', (context, input) =>
     useCases.teamTools.previewChange.execute(context, input),
