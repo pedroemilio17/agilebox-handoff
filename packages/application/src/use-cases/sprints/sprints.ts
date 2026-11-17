@@ -56,6 +56,7 @@ import type { AppDeps } from '../../deps'
 import type { UnitOfWorkRepositories } from '../../ports'
 import { findTaskPrefix } from '../tasks/task-prefix'
 import { toTaskDtos } from '../tasks/list-tasks'
+import { recordGuideEvent } from '../guide/record-guide-event'
 
 type Repositories = UnitOfWorkRepositories
 type ProjectPolicy = (actor: Actor, project: Project, isMember: boolean) => boolean
@@ -295,6 +296,7 @@ export class CreateSprint {
         createdAt: now,
       })
       await repos.sprints.save(organizationId, created)
+      await recordGuideEvent(repos, actor, projectId, 'sprint.created', now)
       return created
     })
     return detailOf(this.deps, actor, sprint)
@@ -559,6 +561,7 @@ export class AddSprintTask {
         changedTasks.push(task.id)
       }
       if (events.length > 0) await repos.timeline.saveMany(organizationId, events)
+      await recordGuideEvent(repos, actor, sprint.projectId, 'sprint.task_added', now)
       return changedTasks
     })
     if (changed.length > 0)

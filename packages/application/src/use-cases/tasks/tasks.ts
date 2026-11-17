@@ -44,6 +44,7 @@ import {
 import type {
   Actor,
   ContributorId,
+  GuideEventType,
   ImpedimentOwnerCandidate,
   Task,
   TaskId,
@@ -61,6 +62,7 @@ import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
 import { assertBacklogAccess } from '../backlog/backlog-access'
+import { recordGuideEvent } from '../guide/record-guide-event'
 import {
   loadImpedimentRefs,
   loadImpedimentHistory,
@@ -180,6 +182,7 @@ export class CreateTask {
       )
       await repositories.tasks.save(actor.organizationId, created)
       await repositories.timeline.saveMany(actor.organizationId, [event, ...initialEvents])
+      await recordGuideEvent(repositories, actor, projectId, 'task.created', now)
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
@@ -307,6 +310,8 @@ export abstract class ChangeTask {
    * Função: regra de acesso própria (o impedimento resolvido por quem é responsável, por exemplo).
    * `impediment`: responsável e nota de resolução, que o impedimento aberto da tarefa leva junto
    * (M5.2a). O impedimento é gravado na mesma transação da tarefa, com a linha do tempo.
+   * `guideEvent`: evento de alimentação do guia (ADR-10), gravado na mesma transação, depois das
+   * demais gravações, para a pessoa que fez a edição.
    */
   protected async change(
     actor: Actor,
@@ -317,6 +322,7 @@ export abstract class ChangeTask {
     access: ChangeAccess = 'edit',
     backlogPolicy: BacklogPolicy = canPullFromBacklog,
     impediment: ImpedimentChange = {},
+    guideEvent: GuideEventType | null = null,
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -377,6 +383,8 @@ export abstract class ChangeTask {
       await repositories.tasks.save(actor.organizationId, updated)
       for (const row of sync.saves) await repositories.impediments.save(actor.organizationId, row)
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
+      if (guideEvent !== null)
+        await recordGuideEvent(repositories, actor, task.projectId, guideEvent, now)
     })
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
@@ -453,7 +461,18 @@ export class SetTaskEstimate extends ChangeTask {
     actor: Actor,
     input: { readonly taskId: string; readonly estimatedHours: number | null },
   ): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => setEstimatedHours(task, input.estimatedHours))
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => setEstimatedHours(task, input.estimatedHours),
+      [],
+      [],
+      'edit',
+      canPullFromBacklog,
+      {},
+      // Limpar a estimativa (nulo) não é definir uma: o passo do guia só conclui ao estimar.
+      input.estimatedHours === null ? null : 'task.estimated',
+    )
   }
 }
 

@@ -32,6 +32,7 @@ import { archivedProjectIds, filterVisibleTasks } from '../tasks/task-visibility
 import { toTaskDtos } from '../tasks/list-tasks'
 import { assertBacklogAccess } from './backlog-access'
 import { loadImpedimentRefs } from '../impediments/impediment-refs'
+import { recordGuideEvent } from '../guide/record-guide-event'
 
 export interface ListBacklogInput {
   readonly projectId: string
@@ -129,6 +130,7 @@ export class ReorderBacklogItem {
           payload: { position: move.position },
         }),
       ])
+      await recordGuideEvent(repositories, actor, task.projectId, 'backlog.reordered', now)
       return true
     })
     if (changed)

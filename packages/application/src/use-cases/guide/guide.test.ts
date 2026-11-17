@@ -339,3 +339,176 @@ describe('acesso e isolamento', () => {
     expect(depois.trail.find((step) => step.key === 'daily.answer')?.done).toBe(true)
   })
 })
+
+/** Passos concluídos da pessoa, na trilha do projeto (lê pelo caso de uso, como a tela). */
+async function doneKeysOf(useCases: UseCases, context: TenantContext, projectId: ProjectId) {
+  const view = await useCases.guide.get.execute(context, { projectId })
+  return view.trail.filter((step) => step.done).map((step) => step.key)
+}
+
+describe('eventos de alimentação nos casos de uso (ADR-10)', () => {
+  it('criar tarefa conclui backlog.list para quem criou, e não para a outra pessoa', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+
+    await useCases.tasks.create.execute(contextCollaboratorA, { projectId, title: 'Tarefa' })
+
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+    expect(await doneKeysOf(useCases, contextManagerA, projectId)).toEqual([])
+  })
+
+  it('adicionar ao backlog conclui backlog.list (mesma criação de tasks.create)', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+
+    await useCases.backlog.add.execute(contextCollaboratorA, { projectId, title: 'Item' })
+
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+  })
+
+  it('reordenar o backlog conclui backlog.rank para quem reordenou', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+    await useCases.backlog.add.execute(contextCollaboratorA, { projectId, title: 'Primeiro' })
+    const segundo = await useCases.backlog.add.execute(contextCollaboratorA, {
+      projectId,
+      title: 'Segundo',
+    })
+
+    await useCases.backlog.reorder.execute(contextCollaboratorA, {
+      taskId: segundo.id,
+      position: 'top',
+    })
+
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual([
+      'backlog.list',
+      'backlog.rank',
+    ])
+    expect(await doneKeysOf(useCases, contextManagerA, projectId)).toEqual([])
+  })
+
+  it('reordenar sem mudar a posição não conclui backlog.rank', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+    const unico = await useCases.backlog.add.execute(contextCollaboratorA, {
+      projectId,
+      title: 'Único',
+    })
+
+    await useCases.backlog.reorder.execute(contextCollaboratorA, {
+      taskId: unico.id,
+      position: 'top',
+    })
+
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+  })
+
+  it('definir estimativa conclui estimate.first; limpar a estimativa não conclui', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+    const tarefa = await useCases.tasks.create.execute(contextCollaboratorA, {
+      projectId,
+      title: 'Estimar',
+    })
+
+    await useCases.tasks.setEstimate.execute(contextCollaboratorA, {
+      taskId: tarefa.id,
+      estimatedHours: null,
+    })
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+
+    await useCases.tasks.setEstimate.execute(contextCollaboratorA, {
+      taskId: tarefa.id,
+      estimatedHours: 3,
+    })
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual([
+      'backlog.list',
+      'estimate.first',
+    ])
+    expect(await doneKeysOf(useCases, contextManagerA, projectId)).toEqual([])
+  })
+
+  it('criar sprint conclui sprints.create e adicionar tarefa conclui sprints.add, para a gestora', async () => {
+    const { useCases } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+    const tarefa = await useCases.tasks.create.execute(contextCollaboratorA, {
+      projectId,
+      title: 'Para a sprint',
+    })
+    const sprint = await useCases.sprints.create.execute(contextManagerA, {
+      projectId,
+      plannedStart: '2026-11-16',
+      plannedEnd: '2026-11-27',
+    })
+
+    expect(await doneKeysOf(useCases, contextManagerA, projectId)).toEqual(['sprints.create'])
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+
+    await useCases.sprints.addTask.execute(contextManagerA, {
+      sprintId: sprint.sprint.id,
+      taskId: tarefa.id,
+    })
+
+    expect(await doneKeysOf(useCases, contextManagerA, projectId)).toEqual([
+      'sprints.create',
+      'sprints.add',
+    ])
+    expect(await doneKeysOf(useCases, contextCollaboratorA, projectId)).toEqual(['backlog.list'])
+  })
+
+  it('projeto Simples: criar tarefa não grava progresso e não falha', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const project = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Simples',
+    })
+    const projectId = toProjectId(project.id)
+
+    const tarefa = await useCases.tasks.create.execute(contextManagerA, {
+      projectId,
+      title: 'Sem guia',
+    })
+
+    expect(tarefa.title).toBe('Sem guia')
+    expect(
+      await unitOfWork.repositories.guideProgress.listForUser(orgA, projectId, managerAId),
+    ).toEqual([])
+  })
+
+  it('repetir a ação não duplica o passo', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+
+    await useCases.tasks.create.execute(contextCollaboratorA, { projectId, title: 'Uma' })
+    await useCases.tasks.create.execute(contextCollaboratorA, { projectId, title: 'Duas' })
+
+    const rows = await unitOfWork.repositories.guideProgress.listForUser(
+      orgA,
+      projectId,
+      collaboratorId,
+    )
+    expect(rows.filter((row) => row.stepKey === 'backlog.list')).toHaveLength(1)
+  })
+
+  it('falha do caso de uso continua igual e não grava progresso', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const projectId = await projectWithCollaborator(useCases)
+    await enableAgil(useCases, projectId)
+
+    await expect(
+      useCases.tasks.setEstimate.execute(contextCollaboratorA, {
+        taskId: '00000000000000000000000099',
+        estimatedHours: 2,
+      }),
+    ).rejects.toThrow(NotFoundError)
+    expect(
+      await unitOfWork.repositories.guideProgress.listForUser(orgA, projectId, collaboratorId),
+    ).toEqual([])
+  })
+})
