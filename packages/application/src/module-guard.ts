@@ -142,6 +142,10 @@ export const USE_CASE_MODULES = {
   'teamTools.applyPreset': { module: 'core' },
   'teamTools.setModuleConfig': { module: 'core' },
 
+  // Módulos por projeto (ADR-10): a gestão deles fica no núcleo, como a das ferramentas da equipe.
+  'projectModules.get': { module: 'core' },
+  'projectModules.change': { module: 'core' },
+
   // Sprints (M4.2): encerrando, não aceita sprint nova, item novo nem início (creates). Encerrar a
   // ativa, remover item, editar e consultar seguem; descartar rascunho não cria nada.
   'sprints.list': { module: 'sprints' },

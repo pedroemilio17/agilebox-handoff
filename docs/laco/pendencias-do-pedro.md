@@ -32,3 +32,7 @@
 - [ ] ADR-10 · DECIDIR: textos de tutorial e estado vazio dos módulos sem trilha no ADR (Custo, WIP, Critério de pronto, Burndown, Métricas, Linha de base, Riscos e herdados) foram escritos a partir do ADR e do design; revisar a redação.
 - [ ] ADR-10 · CONFERIR: `DEFAULT_TEAM_MODULE_IDS` virou lista fixa (13 ids) para a migração 0012 continuar igual e os módulos novos nascerem desligados.
 - [ ] ADR-10 · DECIDIR: `ProjectModulesRepository.save` não checa se o projeto está arquivado, e `list` de projeto inexistente devolve lista vazia. Decidir na fase 2 se arquivado recusa mudança de módulos.
+- [ ] ADR-10 · DECIDIR: a linha do tempo atual é por tarefa. Mudança de módulo do projeto ("entra na linha do tempo do projeto") não é registrada ainda. Criar um registro de eventos do projeto (nova tabela) ou reaproveitar `team_tools_audit` com `project_id`?
+- [ ] ADR-10 · DECIDIR: "gestor propõe, equipe aceita" ainda não existe. Hoje só o gestor muda os módulos do projeto, direto.
+- [ ] ADR-10 · LACUNA: `projectModules.*` ainda não tem canal IPC nem handler no desktop (o `api.test.ts` exige os dois juntos). Entra com as telas da fase 2.
+- [ ] ADR-10 · LACUNA: não há caso de uso para gravar a configuração de módulo do projeto (ex.: limites de WIP), só o da equipe. Módulo `winding_down` conta como desligado ao calcular o plano.

@@ -15,6 +15,10 @@ import {
   SetTeamModuleConfig,
 } from './use-cases/team-tools/team-tools'
 import {
+  ChangeProjectModules,
+  GetProjectModules,
+} from './use-cases/project-modules/project-modules'
+import {
   AddSprintTask,
   CloseSprint,
   CreateSprint,
@@ -295,6 +299,10 @@ export function createUseCases(deps: AppDeps) {
       setLevel: forTenant('teamTools.setLevel', new SetTeamLevel(deps)),
       applyPreset: forTenant('teamTools.applyPreset', new ApplyTeamPreset(deps)),
       setModuleConfig: forTenant('teamTools.setModuleConfig', new SetTeamModuleConfig(deps)),
+    },
+    projectModules: {
+      get: forTenant('projectModules.get', new GetProjectModules(deps)),
+      change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

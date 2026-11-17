@@ -517,7 +517,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(95)
+    expect(registered).toHaveLength(97)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
