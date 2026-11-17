@@ -40,6 +40,7 @@ describe('composição dos casos de uso', () => {
       teamTools: unitOfWork.repositories.teamTools,
       projectModules: unitOfWork.repositories.projectModules,
       projectSetup: unitOfWork.repositories.projectSetup,
+      guideProgress: unitOfWork.repositories.guideProgress,
       sprints: unitOfWork.repositories.sprints,
       sprintTasks: unitOfWork.repositories.sprintTasks,
       impediments: unitOfWork.repositories.impediments,

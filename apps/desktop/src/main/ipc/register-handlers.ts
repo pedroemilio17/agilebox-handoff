@@ -256,6 +256,10 @@ export function registerHandlers(
   register('projectModules.change', (context, input) =>
     useCases.projectModules.change.execute(context, input),
   )
+  register('guide.get', (context, input) => useCases.guide.get.execute(context, input))
+  register('guide.dismissCard', (context, input) =>
+    useCases.guide.dismissCard.execute(context, input),
+  )
   register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
   register('teamTools.previewChange', (context, input) =>
     useCases.teamTools.previewChange.execute(context, input),

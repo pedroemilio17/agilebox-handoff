@@ -55,6 +55,8 @@ import type {
   ContributorRepository,
   DailyEntryRepository,
   DefinitionOfDoneRepository,
+  GuideProgressEntry,
+  GuideProgressRepository,
   TaskCommentRepository,
   MeetingRepository,
   OrganizationRepository,
@@ -78,6 +80,7 @@ import type {
   UserRepository,
 } from '../../ports'
 import { assertPlainAnswers } from '../../ports/project-setup-repository'
+import { GUIDE_CARD_KEY } from '../../ports/guide-progress-repository'
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
@@ -112,6 +115,8 @@ export interface InMemoryState {
   tasks: Map<OrganizationId, Map<string, Task>>
   /** Módulos de cada projeto, por projeto e módulo (`projectId|moduleId`), dentro da organização. */
   projectModules: Map<OrganizationId, Map<string, InMemoryProjectModuleRow>>
+  /** Progresso do guia por pessoa e projeto (`projectId|userId|stepKey`), dentro da organização. */
+  guideProgress: Map<OrganizationId, Map<string, InMemoryGuideProgressRow>>
   /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
   teamPreferences: Map<OrganizationId, TeamPreferenceRow>
   /** Linhas de `team_modules`, por módulo, dentro da organização. */
@@ -138,6 +143,7 @@ export function createInMemoryState(): InMemoryState {
     contributors: new Map(),
     dailyEntries: new Map(),
     definitionOfDone: new Map(),
+    guideProgress: new Map(),
     meetings: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
@@ -158,6 +164,16 @@ export function createInMemoryState(): InMemoryState {
     timeline: new Map(),
     users: new Map(),
   }
+}
+
+/** Linha de `guide_progress` no fake: a chave composta e o estado da pessoa naquele passo. */
+export interface InMemoryGuideProgressRow {
+  readonly organizationId: OrganizationId
+  readonly projectId: ProjectId
+  readonly userId: UserId
+  readonly stepKey: string
+  readonly doneAt: string | null
+  readonly dismissed: boolean
 }
 
 /** Linha de sprint no fake: a sprint e o descarte lógico (nulos enquanto não descartada). */
@@ -754,6 +770,80 @@ export class InMemoryProjectSetupRepository implements ProjectSetupRepository {
       throw new ValidationError('Projeto não encontrado nesta organização')
     assertPlainAnswers(setup.answers)
     bucket(this.state.projectSetup, organizationId).set(setup.projectId, { ...setup })
+  }
+}
+
+export class InMemoryGuideProgressRepository implements GuideProgressRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listForUser(organizationId: OrganizationId, projectId: ProjectId, userId: UserId) {
+    await Promise.resolve()
+    return [...bucket(this.state.guideProgress, organizationId).values()]
+      .filter((row) => row.projectId === projectId && row.userId === userId)
+      .map((row): GuideProgressEntry => ({
+        stepKey: row.stepKey,
+        doneAt: row.doneAt,
+        dismissed: row.dismissed,
+      }))
+  }
+
+  async markDone(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    stepKeys: readonly string[],
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    if (stepKeys.includes(GUIDE_CARD_KEY))
+      throw new ValidationError('A chave do cartão não é um passo do guia')
+    const rows = bucket(this.state.guideProgress, organizationId)
+    for (const stepKey of new Set(stepKeys)) {
+      const key = `${projectId}|${userId}|${stepKey}`
+      const previous = rows.get(key)
+      // Como o SQLite: a regravação preserva o primeiro `done_at` e a dispensa já gravada.
+      rows.set(key, {
+        organizationId,
+        projectId,
+        userId,
+        stepKey,
+        doneAt: previous?.doneAt ?? at,
+        dismissed: previous?.dismissed ?? false,
+      })
+    }
+  }
+
+  async dismissCard(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    // A tabela não guarda o instante da dispensa (schema de `guide_progress`): o parâmetro é aceito
+    // para manter a porta igual à do SQLite, que também não o grava.
+    void at
+    const rows = bucket(this.state.guideProgress, organizationId)
+    const key = `${projectId}|${userId}|${GUIDE_CARD_KEY}`
+    const previous = rows.get(key)
+    rows.set(key, {
+      organizationId,
+      projectId,
+      userId,
+      stepKey: GUIDE_CARD_KEY,
+      doneAt: previous?.doneAt ?? null,
+      dismissed: true,
+    })
+  }
+
+  /** Projeto e pessoa precisam existir nesta organização (como as chaves estrangeiras do SQLite). */
+  private assertOwnership(organizationId: OrganizationId, projectId: ProjectId, userId: UserId) {
+    if (this.state.projects.get(organizationId)?.has(projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+    if (this.state.users.get(organizationId)?.has(userId) !== true)
+      throw new ValidationError('Pessoa de outra organização')
   }
 }
 

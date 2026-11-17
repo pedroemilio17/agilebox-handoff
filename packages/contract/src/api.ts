@@ -164,6 +164,12 @@ import {
   projectModulesViewDtoSchema,
 } from './project-modules'
 import {
+  dismissGuideCardInputSchema,
+  dismissGuideCardOutputSchema,
+  getGuideInputSchema,
+  guideViewDtoSchema,
+} from './guide'
+import {
   addDefinitionOfDoneItemInputSchema,
   definitionOfDoneChangeOutputSchema,
   listDefinitionOfDoneInputSchema,
@@ -460,6 +466,11 @@ export const API_SCHEMA_REGISTRY = {
     input: changeProjectModulesInputSchema,
     output: projectModulesChangeResultDtoSchema,
   },
+  'guide.get': { input: getGuideInputSchema, output: guideViewDtoSchema },
+  'guide.dismissCard': {
+    input: dismissGuideCardInputSchema,
+    output: dismissGuideCardOutputSchema,
+  },
   'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
   'teamTools.previewChange': {
     input: previewTeamToolsChangeInputSchema,
@@ -523,6 +534,10 @@ export interface AgileBoxApi {
   projectModules: {
     get: Method<'projectModules.get'>
     change: Method<'projectModules.change'>
+  }
+  guide: {
+    get: Method<'guide.get'>
+    dismissCard: Method<'guide.dismissCard'>
   }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>

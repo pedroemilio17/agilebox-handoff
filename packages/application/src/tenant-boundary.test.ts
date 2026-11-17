@@ -74,6 +74,7 @@ async function setup() {
     teamTools: repositories.teamTools,
     projectModules: repositories.projectModules,
     projectSetup: repositories.projectSetup,
+    guideProgress: repositories.guideProgress,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
     impediments: repositories.impediments,

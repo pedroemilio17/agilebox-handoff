@@ -181,6 +181,11 @@ export const USE_CASE_MODULES = {
   'projectModules.get': { module: 'core', project: 'none' },
   'projectModules.change': { module: 'core', project: 'none' },
 
+  // Guia de alimentação (ADR-10): leitura e dispensa do cartão. Sempre no núcleo: o guia nunca
+  // bloqueia nada, e a trilha já sai só dos módulos ativos do projeto.
+  'guide.get': { module: 'core', project: { from: 'projectId' } },
+  'guide.dismissCard': { module: 'core', project: { from: 'projectId' } },
+
   // Sprints (M4.2): encerrando, não aceita sprint nova, item novo nem início (creates). Encerrar a
   // ativa, remover item, editar e consultar seguem; descartar rascunho não cria nada.
   'sprints.list': { module: 'sprints', project: { from: 'projectId' } },

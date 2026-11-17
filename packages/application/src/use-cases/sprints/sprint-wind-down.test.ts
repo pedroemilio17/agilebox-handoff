@@ -109,6 +109,7 @@ async function setup() {
     teamTools: repos.teamTools,
     projectModules: repos.projectModules,
     projectSetup: repos.projectSetup,
+    guideProgress: repos.guideProgress,
     timeline: repos.timeline,
     unitOfWork,
     users: repos.users,

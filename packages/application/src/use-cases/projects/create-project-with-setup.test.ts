@@ -91,6 +91,7 @@ async function setup(options: Options = {}) {
     participations: repositories.participations,
     projectModules: repositories.projectModules,
     projectSetup: options.setupRepository ?? repositories.projectSetup,
+    guideProgress: repositories.guideProgress,
     projects: repositories.projects,
     retroActions: repositories.retroActions,
     sprints: repositories.sprints,

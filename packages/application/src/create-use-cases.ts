@@ -17,6 +17,7 @@ import {
   ChangeProjectModules,
   GetProjectModules,
 } from './use-cases/project-modules/project-modules'
+import { DismissGuideCard, GetGuide } from './use-cases/guide/guide'
 import {
   AddSprintTask,
   CloseSprint,
@@ -306,6 +307,10 @@ export function createUseCases(deps: AppDeps) {
     projectModules: {
       get: forTenant('projectModules.get', new GetProjectModules(deps)),
       change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
+    },
+    guide: {
+      get: forTenant('guide.get', new GetGuide(deps)),
+      dismissCard: forTenant('guide.dismissCard', new DismissGuideCard(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

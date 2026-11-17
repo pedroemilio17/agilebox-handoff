@@ -116,6 +116,7 @@ async function setup(): Promise<Setup> {
       teamTools: repos.teamTools,
       projectModules: repos.projectModules,
       projectSetup: repos.projectSetup,
+      guideProgress: repos.guideProgress,
       timeline: repos.timeline,
       unitOfWork: uow,
       users: repos.users,
