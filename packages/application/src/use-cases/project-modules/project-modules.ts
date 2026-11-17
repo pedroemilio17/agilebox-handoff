@@ -14,11 +14,13 @@ import type { Actor, EnablePlan, ModuleId, ModuleState, Project, ProjectId } fro
 import type {
   ChangeProjectModulesInput,
   GetProjectModulesInput,
+  OrganizationModulesViewDto,
   ProjectModuleDto,
   ProjectModulesChangeResultDto,
   ProjectModulesViewDto,
 } from '@agilebox/contract'
 import type { AppDeps } from '../../deps'
+import { organizationModuleStateOf } from '../../module-guard'
 import type { ProjectModuleChange, ProjectModuleSetting } from '../../ports'
 
 const CORE: ModuleId = 'core'
@@ -194,5 +196,29 @@ export class ChangeProjectModules {
         })),
       }
     })
+  }
+}
+
+/**
+ * Estado de cada módulo (exceto o núcleo) para a organização inteira: a regra de casos de uso sem
+ * projeto (ADR-10). Quem não tem projeto selecionado usa isto na barra lateral. Qualquer pessoa
+ * autenticada lê; devolve só o estado agregado, nunca os projetos. `hasActiveProjects` diz se a
+ * regra da organização vale; sem projeto ativo, o estado de cada módulo já vem das ferramentas da
+ * equipe (`organizationModuleStateOf`), e a interface segue essas ferramentas.
+ */
+export class GetOrganizationModules {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(actor: Actor): Promise<OrganizationModulesViewDto> {
+    const organizationId = actor.organizationId
+    const projects = await this.deps.projects.list(organizationId)
+    const hasActiveProjects = projects.some((project) => project.archivedAt === null)
+    const modules = await Promise.all(
+      MODULE_IDS.filter((id) => id !== CORE).map(async (id) => ({
+        id,
+        state: await organizationModuleStateOf(this.deps, organizationId, id),
+      })),
+    )
+    return { modules, hasActiveProjects }
   }
 }

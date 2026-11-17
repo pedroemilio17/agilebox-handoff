@@ -7,6 +7,10 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (name: string) => api.projects.create({ name }),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.list }),
+    onSuccess: async () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.list }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.projectModules.organization }),
+      ]),
   })
 }

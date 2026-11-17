@@ -97,17 +97,18 @@ describe('Impedimentos por time e nível', () => {
     expect(forbiddenTermsIn(visibleTextOf(document.body))).toEqual([])
   })
 
-  it('Scrum · Básico: sem a tela, mas o card mostra o marcador com o responsável', async () => {
+  it('Scrum · Básico: a tela aparece (o nível não esconde tela), e o card mostra o marcador com o responsável', async () => {
     const { user } = renderApp({ modules: SCRUM, level: 'basic' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(railNames()).not.toContain('Impedimentos')
-    await user.keyboard('gi')
-    expect(screen.queryByRole('region', { name: impedimentCopy.title })).toBeNull()
+    expect(railNames()).toContain('Impedimentos')
 
     const card = screen.getByRole('button', { name: /^AB-121 · / })
     expect(card.getAttribute('aria-label')).toContain('bloqueada, responsável Ana Souza')
     expect(card.getAttribute('title')).toBe('Bloqueada: Aguardando API · Responsável: Ana Souza')
     expect(within(card).getByText('Bloqueada')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Impedimentos' }))
+    expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
   })
 
   it('Scrum · Intermediário: item na barra lateral e atalho G I abrem a tela', async () => {

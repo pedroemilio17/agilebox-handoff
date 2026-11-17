@@ -159,7 +159,9 @@ import {
 } from './team-tools'
 import {
   changeProjectModulesInputSchema,
+  getOrganizationModulesInputSchema,
   getProjectModulesInputSchema,
+  organizationModulesViewDtoSchema,
   projectModulesChangeResultDtoSchema,
   projectModulesViewDtoSchema,
 } from './project-modules'
@@ -468,6 +470,10 @@ export const API_SCHEMA_REGISTRY = {
     input: changeProjectModulesInputSchema,
     output: projectModulesChangeResultDtoSchema,
   },
+  'projectModules.getOrganization': {
+    input: getOrganizationModulesInputSchema,
+    output: organizationModulesViewDtoSchema,
+  },
   'guide.get': { input: getGuideInputSchema, output: guideViewDtoSchema },
   'guide.dismissCard': {
     input: dismissGuideCardInputSchema,
@@ -540,6 +546,7 @@ export interface AgileBoxApi {
   projectModules: {
     get: Method<'projectModules.get'>
     change: Method<'projectModules.change'>
+    getOrganization: Method<'projectModules.getOrganization'>
   }
   guide: {
     get: Method<'guide.get'>

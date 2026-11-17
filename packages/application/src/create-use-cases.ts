@@ -15,6 +15,7 @@ import {
 } from './use-cases/team-tools/team-tools'
 import {
   ChangeProjectModules,
+  GetOrganizationModules,
   GetProjectModules,
 } from './use-cases/project-modules/project-modules'
 import { DismissGuideCard, GetGuide, ResolveWelcome } from './use-cases/guide/guide'
@@ -307,6 +308,10 @@ export function createUseCases(deps: AppDeps) {
     projectModules: {
       get: forTenant('projectModules.get', new GetProjectModules(deps)),
       change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
+      getOrganization: forTenant(
+        'projectModules.getOrganization',
+        new GetOrganizationModules(deps),
+      ),
     },
     guide: {
       get: forTenant('guide.get', new GetGuide(deps)),

@@ -38,14 +38,22 @@ import { PanelCommands } from './commands/PanelCommands'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
+  // O projeto selecionado fica aqui para o Provider decidir os módulos pelo projeto (ADR-10).
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   return (
-    <CapabilitiesProvider>
-      <PanelContent />
+    <CapabilitiesProvider selectedProjectId={selectedProjectId}>
+      <PanelContent selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} />
     </CapabilitiesProvider>
   )
 }
 
-function PanelContent() {
+function PanelContent({
+  selectedProjectId,
+  onSelectProject: setSelectedProjectId,
+}: {
+  readonly selectedProjectId: string | null
+  readonly onSelectProject: (projectId: string | null) => void
+}) {
   const [commandsOpen, setCommandsOpen] = useState(false)
   const api = useApi()
   const capabilities = useCapabilities()
@@ -69,7 +77,6 @@ function PanelContent() {
       return 'projects'
     }
   })
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   // Módulos existe só com projeto selecionado; sem ele, a view guardada cai no Quadro.
   const currentView: PanelView =
     (view === 'agenda' && !agendaVisible) ||

@@ -4,6 +4,7 @@ import {
   type AgileBoxBridge,
   type GuideViewDto,
   type ListBoardDto,
+  type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
 } from '@agilebox/contract'
@@ -68,6 +69,14 @@ export function hiddenProjectModules(projectId: string): ProjectModulesViewDto {
   return { projectId, modules: [], canManage: false }
 }
 
+/**
+ * Estado dos módulos da organização sem projeto ativo: a interface cai nas ferramentas da equipe,
+ * como antes. É o padrão dos testes; quem quer testar a regra por projeto substitui a leitura.
+ */
+export function hiddenOrganizationModules(): OrganizationModulesViewDto {
+  return { modules: [], hasActiveProjects: false }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -96,6 +105,7 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     projectModules: {
       ...api.projectModules,
       get: (input) => Promise.resolve(hiddenProjectModules(input.projectId)),
+      getOrganization: () => Promise.resolve(hiddenOrganizationModules()),
       // Sem mudança configurada, a gravação não altera nada: os testes da tela substituem o que precisam.
       change: () =>
         Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),

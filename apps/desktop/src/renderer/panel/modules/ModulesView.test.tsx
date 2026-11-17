@@ -41,7 +41,11 @@ function renderView({
   const getMock = vi.fn(get ?? (() => Promise.resolve(view)))
   const changeMock = vi.fn(change)
   const api = createFakeApi({
-    projectModules: { get: getMock, change: changeMock },
+    projectModules: {
+      get: getMock,
+      change: changeMock,
+      getOrganization: () => Promise.resolve({ modules: [], hasActiveProjects: false }),
+    },
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(

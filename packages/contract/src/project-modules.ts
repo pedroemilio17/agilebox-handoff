@@ -12,6 +12,9 @@ const moduleIdListSchema = z.array(teamModuleIdSchema).max(MAX_MODULES_PER_REQUE
 
 export const getProjectModulesInputSchema = z.object({ projectId: ulidSchema })
 
+/** Sem entrada: a leitura é da organização da pessoa que pede. */
+export const getOrganizationModulesInputSchema = z.undefined()
+
 export const changeProjectModulesInputSchema = z.object({
   projectId: ulidSchema,
   enable: moduleIdListSchema.optional(),
@@ -55,8 +58,16 @@ export const projectModulesChangeResultDtoSchema = z.object({
   scheduled: z.array(z.object({ moduleId: z.string(), reason: z.string() })),
 })
 
+/** Estado de um módulo na organização inteira (agregado dos projetos não arquivados). */
+export const organizationModulesViewDtoSchema = z.object({
+  modules: z.array(z.object({ id: teamModuleIdSchema, state: teamModuleStateSchema })),
+  /** Há projeto não arquivado. Sem nenhum, a interface segue as ferramentas da equipe. */
+  hasActiveProjects: z.boolean(),
+})
+
 export type GetProjectModulesInput = z.infer<typeof getProjectModulesInputSchema>
 export type ChangeProjectModulesInput = z.infer<typeof changeProjectModulesInputSchema>
 export type ProjectModuleDto = z.infer<typeof projectModuleDtoSchema>
 export type ProjectModulesViewDto = z.infer<typeof projectModulesViewDtoSchema>
 export type ProjectModulesChangeResultDto = z.infer<typeof projectModulesChangeResultDtoSchema>
+export type OrganizationModulesViewDto = z.infer<typeof organizationModulesViewDtoSchema>

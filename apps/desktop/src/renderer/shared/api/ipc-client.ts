@@ -150,6 +150,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     projectModules: {
       get: (input) => call('projectModules.get', input),
       change: (input) => call('projectModules.change', input),
+      getOrganization: () => call('projectModules.getOrganization', undefined),
     },
     guide: {
       get: (input) => call('guide.get', input),

@@ -306,3 +306,95 @@ describe('módulos por projeto: alteração', () => {
     expect(statesOf(result.modules).get('wip')).toBe('disabled')
   })
 })
+
+describe('módulos da organização (barra sem projeto selecionado)', () => {
+  it('módulo ligado em um projeto aparece como ativo para a organização, mesmo com outro projeto sem ele', async () => {
+    const { useCases } = await setup()
+    const withSprints = await projectWithCollaborator(useCases)
+    await change(useCases, withSprints.id, { enable: ['sprints'] })
+    await useCases.projects.createProject.execute(contextManagerA, { name: 'Sem Sprints' })
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(view.hasActiveProjects).toBe(true)
+    expect(statesOf(view.modules).get('sprints')).toBe('active')
+    expect(statesOf(view.modules).get('backlog')).toBe('active')
+  })
+
+  it('o núcleo não entra na lista da organização', async () => {
+    const { useCases } = await setup()
+    await projectWithCollaborator(useCases)
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(view.modules.some((module) => module.id === 'core')).toBe(false)
+    expect(view.modules.length).toBeGreaterThan(0)
+  })
+
+  it('sem nenhum projeto, hasActiveProjects é falso e a interface cai na equipe', async () => {
+    const { useCases } = await setup()
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(view.hasActiveProjects).toBe(false)
+  })
+
+  it('projeto arquivado não conta: o módulo que só ele ligava sai, e sem projeto ativo vale a equipe', async () => {
+    const { useCases } = await setup()
+    const archived = await projectWithCollaborator(useCases)
+    await change(useCases, archived.id, { enable: ['sprints'] })
+    await useCases.projects.archive.execute(contextManagerA, { projectId: archived.id })
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(view.hasActiveProjects).toBe(false)
+  })
+
+  it('projeto arquivado não conta quando há outro ativo: o módulo dele não aparece para a organização', async () => {
+    const { useCases } = await setup()
+    const archived = await projectWithCollaborator(useCases)
+    await change(useCases, archived.id, { enable: ['sprints'] })
+    await useCases.projects.archive.execute(contextManagerA, { projectId: archived.id })
+    await useCases.projects.createProject.execute(contextManagerA, { name: 'Vivo' })
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(view.hasActiveProjects).toBe(true)
+    expect(statesOf(view.modules).get('sprints')).toBe('disabled')
+  })
+
+  it('o estado encerrando de um projeto aparece como winding_down', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    await unitOfWork.repositories.projectModules.save(
+      orgA,
+      toProjectId(project.id),
+      [{ moduleId: 'sprints', state: 'winding_down' }],
+      managerAId,
+      NOW,
+    )
+
+    const view = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+
+    expect(statesOf(view.modules).get('sprints')).toBe('winding_down')
+  })
+
+  it('isolamento: projetos de outra organização não contam para a leitura desta', async () => {
+    const { useCases } = await setup()
+    const otherOrg = await useCases.projects.createProject.execute(contextManagerB, {
+      name: 'Projeto do outro time',
+    })
+    await useCases.projectModules.change.execute(contextManagerB, {
+      projectId: otherOrg.id,
+      enable: ['sprints'],
+    })
+
+    const mine = await useCases.projectModules.getOrganization.execute(contextCollaboratorA)
+    const theirs = await useCases.projectModules.getOrganization.execute(contextManagerB)
+
+    expect(mine.hasActiveProjects).toBe(false)
+    expect(theirs.hasActiveProjects).toBe(true)
+    expect(statesOf(theirs.modules).get('sprints')).toBe('active')
+  })
+})

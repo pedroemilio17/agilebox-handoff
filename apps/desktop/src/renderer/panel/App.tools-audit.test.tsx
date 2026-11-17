@@ -244,10 +244,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Básico
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio
-        backlog: fora do menu
+        detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação
         gestor
@@ -310,10 +310,10 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Básico
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
-        detalhe: motivo do bloqueio
-        backlog: fora do menu
+        detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
+        backlog: aberto
         agenda: aberta
         ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação, Review e retro, Burndown e velocity
         gestor

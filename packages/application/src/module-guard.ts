@@ -180,6 +180,8 @@ export const USE_CASE_MODULES = {
   // Módulos por projeto (ADR-10): a gestão deles fica no núcleo, como a das ferramentas da equipe.
   'projectModules.get': { module: 'core', project: 'none' },
   'projectModules.change': { module: 'core', project: 'none' },
+  // Estado dos módulos da organização (barra lateral sem projeto selecionado): só leitura agregada.
+  'projectModules.getOrganization': { module: 'core', project: 'none' },
 
   // Guia de alimentação (ADR-10): leitura e dispensa do cartão. Sempre no núcleo: o guia nunca
   // bloqueia nada, e a trilha já sai só dos módulos ativos do projeto.

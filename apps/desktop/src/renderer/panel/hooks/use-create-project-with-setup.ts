@@ -12,6 +12,10 @@ export function useCreateProjectWithSetup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateProjectWithSetupInput) => api.projects.createWithSetup(input),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.list }),
+    onSuccess: async () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.list }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.projectModules.organization }),
+      ]),
   })
 }

@@ -256,6 +256,9 @@ export function registerHandlers(
   register('projectModules.change', (context, input) =>
     useCases.projectModules.change.execute(context, input),
   )
+  register('projectModules.getOrganization', (context) =>
+    useCases.projectModules.getOrganization.execute(context),
+  )
   register('guide.get', (context, input) => useCases.guide.get.execute(context, input))
   register('guide.dismissCard', (context, input) =>
     useCases.guide.dismissCard.execute(context, input),

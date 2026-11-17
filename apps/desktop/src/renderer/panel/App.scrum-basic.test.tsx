@@ -9,6 +9,7 @@ import {
   forbiddenTermsIn,
   PASSIVE_IMPEDIMENT_TERMS,
   PASSIVE_TOOL_TERMS,
+  SCREEN_NAME_TERMS,
   visibleTextOf,
 } from '../shared/testing/forbidden-terms'
 import {
@@ -21,9 +22,10 @@ import { App } from './App'
 import { panelCopy } from './copy'
 
 /**
- * Preset Scrum no nível Básico: os módulos de Scrum estão ativos, mas acima do nível. Só os efeitos
- * passivos aparecem (marcador de bloqueio, filtro de bloqueadas), sem o botão de bloquear e sem as
- * telas de planejamento. Na tela de ferramentas, o aviso de nível aparece para cada módulo acima.
+ * Preset Scrum no nível Básico (ADR-10: o nível não esconde tela). As telas dos módulos ativos
+ * aparecem no menu e nos títulos; o que depende do nível segue escondido: ações (bloquear, resolver,
+ * subtarefas), medidores (WIP, fluxo) e a sprint ativa. Na tela de ferramentas, o aviso de nível
+ * aparece para cada módulo acima.
  */
 
 afterEach(() => {
@@ -35,6 +37,7 @@ const CARD = /^AB-118 · /
 const PASSIVE_SOURCES = [...PASSIVE_IMPEDIMENT_TERMS, ...PASSIVE_TOOL_TERMS].map(
   (term) => term.source,
 )
+const SCREEN_SOURCES = SCREEN_NAME_TERMS.map((term) => term.source)
 
 function renderScrumBasic(role: 'collaborator' | 'manager' = 'collaborator') {
   vi.stubGlobal('agilebox', stubDesktopBridge())
@@ -56,13 +59,18 @@ function renderScrumBasic(role: 'collaborator' | 'manager' = 'collaborator') {
   return { user: userEvent.setup(), ...flow }
 }
 
-/** Só os efeitos passivos (impedimento, critérios e estimativa) podem aparecer; o resto de Scrum é falha. */
+/**
+ * Só os efeitos passivos e os nomes de telas liberadas pelo nível podem aparecer; ações e medidores
+ * que dependem do nível são falha.
+ */
 function expectOnlyPassiveTerms(skip?: Element) {
   const found = forbiddenTermsIn(visibleTextOf(document.body, skip))
-  expect(found.filter((source) => !PASSIVE_SOURCES.includes(source))).toEqual([])
+  expect(
+    found.filter((source) => !PASSIVE_SOURCES.includes(source) && !SCREEN_SOURCES.includes(source)),
+  ).toEqual([])
 }
 
-describe('Scrum no Básico · efeitos passivos sem a tela', () => {
+describe('Scrum no Básico · telas aparecem, ações e medidores do nível ficam', () => {
   it('o quadro mostra o marcador e o filtro de bloqueio, sem o medidor de WIP nem fluxo', async () => {
     renderScrumBasic()
 
@@ -85,9 +93,9 @@ describe('Scrum no Básico · efeitos passivos sem a tela', () => {
     expect(within(dialog).queryByRole('button', { name: 'Bloquear' })).toBeNull()
     expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
-    // Critérios e estimativa: o marcador no card é passivo, mas a tela não existe no Básico.
-    expect(within(dialog).queryByRole('region', { name: 'Critérios de aceitação' })).toBeNull()
-    expect(within(dialog).queryByRole('group', { name: 'Estimativa (h)' })).toBeNull()
+    // Critérios e estimativa: a tela aparece no Básico (ADR-10); só o marcador no card é passivo.
+    expect(within(dialog).getByRole('region', { name: 'Critérios de aceitação' })).toBeTruthy()
+    expect(within(dialog).getByRole('group', { name: 'Estimativa (h)' })).toBeTruthy()
     expectOnlyPassiveTerms(dialog)
   })
 
