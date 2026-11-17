@@ -20,6 +20,7 @@ import { TaskDetailView } from '../task-detail/TaskDetailView'
 import { moveRequest, type BacklogMove } from './backlog-order'
 import { refusalMessage } from './refusal-message'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import { ModuleEmptyState } from '../guide/ModuleEmptyState'
 import type { PanelView } from '../layout/PanelShell'
 import { sprintMarker } from '../sprints/sprint-rules'
 import { blockedMarkerLabel } from '../impediments/impediment-copy'
@@ -240,7 +241,12 @@ export function BacklogView({
               </Button>
             </div>
           ) : items.length === 0 ? (
-            <EmptyState title={panelCopy.backlogEmpty} description={panelCopy.backlogEmptyHint} />
+            <ModuleEmptyState
+              moduleId="backlog"
+              projectId={projectId}
+              fallbackTitle={panelCopy.backlogEmpty}
+              fallbackDescription={panelCopy.backlogEmptyHint}
+            />
           ) : (
             <ol ref={listRef} aria-label={panelCopy.backlogList} className={styles.list}>
               {items.map((task, index) => (
