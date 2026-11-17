@@ -40,6 +40,36 @@ async function answerToRecommendation(user: ReturnType<typeof userEvent.setup>) 
   await user.click(continueButton())
 }
 
+describe('NewProjectFlow: criar pelo Pular', () => {
+  it('mostra o erro de criação no próprio assistente', () => {
+    render(
+      <NewProjectFlow
+        initialName="Portal"
+        error="Não foi possível criar o projeto."
+        onCancel={vi.fn()}
+        onCreate={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('alert').textContent).toContain('Não foi possível criar o projeto.')
+  })
+
+  it('bloqueia novo envio enquanto cria', async () => {
+    const user = userEvent.setup()
+    const onCreate = vi.fn()
+    render(
+      <NewProjectFlow initialName="Portal" submitting onCancel={vi.fn()} onCreate={onCreate} />,
+    )
+
+    const skip = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Pular e criar no modo Simples',
+    })
+    expect(skip.disabled).toBe(true)
+    await user.click(skip)
+    expect(onCreate).not.toHaveBeenCalled()
+  })
+})
+
 describe('NewProjectFlow', () => {
   it('pular cria o projeto Simples, sem respostas nem módulos', async () => {
     const { user, onCreate } = setup('Portal')

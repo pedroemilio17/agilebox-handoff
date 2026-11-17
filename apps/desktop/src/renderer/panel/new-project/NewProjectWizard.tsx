@@ -25,6 +25,10 @@ export interface NewProjectWizardProps {
   readonly initialDraft?: WizardDraft
   /** Pergunta em que o assistente abre (a última, ao voltar da recomendação). */
   readonly resumeAt?: QuestionId
+  /** Criação do projeto Simples em andamento (pelo Pular): bloqueia novo envio. */
+  readonly submitting?: boolean
+  /** Erro ao criar pelo Pular, mostrado no próprio assistente. */
+  readonly error?: string | null
   readonly onCancel: () => void
   /** Cria o projeto no modo Simples, sem respostas. */
   readonly onSkip: (name: string) => void
@@ -42,6 +46,8 @@ export function NewProjectWizard({
   initialName = '',
   initialDraft,
   resumeAt,
+  submitting = false,
+  error = null,
   onCancel,
   onSkip,
   onFinishQuestions,
@@ -100,6 +106,7 @@ export function NewProjectWizard({
   }
 
   function skip() {
+    if (submitting) return
     if (!trimmedName) {
       showNameError()
       return
@@ -177,10 +184,15 @@ export function NewProjectWizard({
               <div className={styles.progressFill} style={{ width: `${progress}%` }} />
             </div>
             <span className={styles.spacer} />
-            <button type="button" className={styles.skip} onClick={skip}>
+            <button type="button" className={styles.skip} onClick={skip} disabled={submitting}>
               Pular e criar no modo Simples
             </button>
           </div>
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
 
           <div className={styles.body}>
             {isNameStep ? (

@@ -62,6 +62,8 @@ export function NewProjectFlow({
       initialName={name}
       initialDraft={draft}
       {...(resumeAt === undefined ? {} : { resumeAt })}
+      submitting={submitting}
+      error={error}
       onCancel={onCancel}
       onSkip={(skippedName) => {
         void onCreate({ name: skippedName, startedFromPreset: 'simples' })
