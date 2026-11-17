@@ -81,6 +81,7 @@ export function mapTaskRow(
     backlogRank: row.backlogRank ?? null,
     estimatedHoursHundredths: row.estimatedHoursHundredths ?? null,
     deliverableId: row.deliverableId ? toDeliverableId(row.deliverableId) : null,
+    startsOn: row.startsOn ? parseDateOnly(row.startsOn) : null,
     deadline: row.deadline === null ? null : parseDateOnly(row.deadline),
     ticket:
       row.ticketId === null ? null : createTicket(Number(row.ticketId), row.ticketUrl ?? undefined),

@@ -305,6 +305,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         backlogRank: task.backlogRank,
         estimatedHoursHundredths: task.estimatedHoursHundredths,
         deliverableId: task.deliverableId,
+        startsOn: task.startsOn,
         deadline: task.deadline,
         ticketId: task.ticket === null ? null : String(task.ticket.id),
         ticketUrl: task.ticket?.url ?? null,

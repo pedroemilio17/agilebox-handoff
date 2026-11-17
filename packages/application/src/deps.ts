@@ -8,6 +8,7 @@ import type {
   DailyEntryRepository,
   ImpedimentRepository,
   TaskCommentRepository,
+  TaskDependencyRepository,
   ContributorRepository,
   DefinitionOfDoneRepository,
   DeliverableRepository,
@@ -56,6 +57,7 @@ export interface AppDeps {
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository
   readonly sprintTasks: SprintTaskRepository
+  readonly taskDependencies: TaskDependencyRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamTools: TeamToolsRepository

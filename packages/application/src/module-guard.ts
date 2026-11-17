@@ -39,6 +39,7 @@ export type ProjectResolution =
   | { readonly from: 'impedimentId' }
   | { readonly from: 'deliverableId' }
   | { readonly from: 'milestoneId' }
+  | { readonly from: 'successorId' }
 
 /** Módulo de um caso de uso, se ele cria itens novos desse módulo, e de onde sai o projeto. */
 export interface ModuleUsePolicy {
@@ -74,6 +75,8 @@ export interface ModuleUsePolicy {
  *   que leva à tarefa); sprints saem do `sprintId`; backlog e sprints.list/create, do `projectId`.
  *   EAP e marcos: entregas saem do `deliverableId` (e criar, do `projectId`); marcos saem do
  *   `milestoneId` (e criar, do `projectId`). `tasks.setDeliverable` segue a tarefa.
+ *   Cronograma (ADR-10): `tasks.setStart` sai do `taskId`; dependências saem da sucessora
+ *   (`successorId`, a tarefa que muda), e a leitura do cronograma, do `projectId`.
  *   Agenda, check-in, limites do quadro, impedimentos da organização e ações de retro não têm
  *   projeto: `'none'`, a regra da organização. `tasks.getBoardFlow` tem `projectId` opcional: sem ele,
  *   é o quadro inteiro e vale a regra da organização.
@@ -225,6 +228,13 @@ export const USE_CASE_MODULES = {
   'milestones.create': { module: 'milestones', creates: true, project: { from: 'projectId' } },
   'milestones.update': { module: 'milestones', project: { from: 'milestoneId' } },
   'milestones.remove': { module: 'milestones', project: { from: 'milestoneId' } },
+
+  // Cronograma (ADR-10): início da tarefa, dependências término→início e a leitura. Criar dependência é
+  // criar item do módulo (encerrando, recusa). Remover e ler seguem.
+  'tasks.setStart': { module: 'schedule', project: { from: 'taskId' } },
+  'schedule.get': { module: 'schedule', project: { from: 'projectId' } },
+  'schedule.addDependency': { module: 'schedule', creates: true, project: { from: 'successorId' } },
+  'schedule.removeDependency': { module: 'schedule', project: { from: 'successorId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */
@@ -334,6 +344,12 @@ async function targetOf(
       const milestone =
         milestoneId === null ? null : await ports.milestones.findById(organizationId, milestoneId)
       return milestone === null ? missing : project(milestone.projectId)
+    }
+    case 'successorId': {
+      const successorId = parseIdOrNull(toTaskId, raw)
+      const successor =
+        successorId === null ? null : await ports.tasks.findById(organizationId, successorId)
+      return successor === null ? missing : project(successor.projectId)
     }
   }
 }

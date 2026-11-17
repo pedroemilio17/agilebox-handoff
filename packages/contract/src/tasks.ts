@@ -50,6 +50,8 @@ export const taskDtoSchema = z.object({
   inBacklog: z.boolean().optional(),
   /** Entrega da EAP à qual a tarefa aponta (ADR-10). Nulo = sem entrega. Ausente em respostas antigas. */
   deliverableId: ulidSchema.nullable().optional(),
+  /** Início da tarefa (cronograma, módulo `schedule`). Nulo = sem início. Ausente em respostas antigas. */
+  startsOn: z.iso.date().nullable().optional(),
   /** Estimativa em horas (ADR-07, módulo `estimates.hours`). Nulo = sem estimativa. Ausente em respostas antigas. */
   estimatedHours: z.number().nonnegative().max(ESTIMATE_MAX_HOURS).nullable().optional(),
   /** Horas realizadas: soma das horas das participações. Ausente em respostas antigas: tratar como zero. */

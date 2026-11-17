@@ -41,6 +41,8 @@ export const tasks = sqliteTable(
     estimatedHoursHundredths: integer('estimated_hours_hundredths'),
     /** Entrega da EAP à qual a tarefa aponta (ADR-10). Nulo = sem entrega. */
     deliverableId: text('deliverable_id').references(() => deliverables.id),
+    /** Início da tarefa (ADR-10, cronograma). Nulo = sem início; o fim é `deadline`. */
+    startsOn: text('starts_on'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),

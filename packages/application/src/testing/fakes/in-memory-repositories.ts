@@ -45,6 +45,7 @@ import type {
   SprintStatus,
   SprintTask,
   Task,
+  TaskDependency,
   TaskId,
   TimelineEvent,
   User,
@@ -79,6 +80,7 @@ import type {
   RetroActionRepository,
   SprintRepository,
   SprintTaskRepository,
+  TaskDependencyRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamToolsRepository,
@@ -117,6 +119,8 @@ export interface InMemoryState {
   milestones: Map<OrganizationId, Map<string, Milestone>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
+  /** Dependências término→início por predecessora|sucessora, dentro da organização (ADR-10). */
+  taskDependencies: Map<OrganizationId, Map<string, TaskDependency>>
   /** Impedimentos por id (abertos e resolvidos; o histórico não some). */
   impediments: Map<OrganizationId, Map<string, Impediment>>
   participations: Map<OrganizationId, Map<string, Participation>>
@@ -165,6 +169,7 @@ export function createInMemoryState(): InMemoryState {
     sprints: new Map(),
     sprintTasks: new Map(),
     impediments: new Map(),
+    taskDependencies: new Map(),
     participations: new Map(),
     projects: new Map(),
     projectSetup: new Map(),
@@ -556,6 +561,42 @@ export class InMemoryTaskOpenRepository implements TaskOpenRepository {
     const key = `${userId}:${taskId}`
     const previous = values.get(key)
     values.set(key, { openedAt, count: (previous?.count ?? 0) + 1 })
+  }
+}
+
+/** Dependências no fake: chave `predecessorId|successorId`, por organização. */
+export class InMemoryTaskDependencyRepository implements TaskDependencyRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const tasksOfProject = new Set(
+      [...bucket(this.state.tasks, org).values()]
+        .filter((task) => task.projectId === projectId)
+        .map((task) => task.id),
+    )
+    return [...bucket(this.state.taskDependencies, org).values()].filter((dependency) =>
+      tasksOfProject.has(dependency.successorId),
+    )
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.taskDependencies, org).values()].filter(
+      (dependency) => dependency.predecessorId === taskId || dependency.successorId === taskId,
+    )
+  }
+  async add(org: OrganizationId, dependency: TaskDependency) {
+    await Promise.resolve()
+    const tasksOfOrg = bucket(this.state.tasks, org)
+    if (!tasksOfOrg.has(dependency.predecessorId) || !tasksOfOrg.has(dependency.successorId))
+      throw new ValidationError('Tarefa não encontrada nesta organização')
+    const values = bucket(this.state.taskDependencies, org)
+    const key = `${dependency.predecessorId}|${dependency.successorId}`
+    if (values.has(key)) throw new ConflictError('Esta dependência já existe')
+    values.set(key, dependency)
+  }
+  async remove(org: OrganizationId, predecessorId: TaskId, successorId: TaskId) {
+    await Promise.resolve()
+    bucket(this.state.taskDependencies, org).delete(`${predecessorId}|${successorId}`)
   }
 }
 

@@ -33,6 +33,7 @@ import {
   parseDateOnly,
   PermissionDeniedError,
   renameTask,
+  scheduleGuideEvent,
   setDeadline,
   setDescription,
   setPriority,
@@ -295,6 +296,10 @@ export class GetTaskDetail {
   }
 }
 
+/** Evento do guia de uma edição: fixo, ou calculado a partir de (antes, depois). Nulo não conta. */
+export type GuideEventFor =
+  GuideEventType | null | ((before: Task, after: Task) => GuideEventType | null)
+
 /** Regra de acesso de uma mudança: a própria, ou uma função que recusa (lança) quando não pode. */
 export type ChangeAccess = 'edit' | 'archive' | 'backlog' | ((actor: Actor, task: Task) => void)
 
@@ -314,7 +319,8 @@ export abstract class ChangeTask {
    * `impediment`: responsável e nota de resolução, que o impedimento aberto da tarefa leva junto
    * (M5.2a). O impedimento é gravado na mesma transação da tarefa, com a linha do tempo.
    * `guideEvent`: evento de alimentação do guia (ADR-10), gravado na mesma transação, depois das
-   * demais gravações, para a pessoa que fez a edição.
+   * demais gravações, para a pessoa que fez a edição. Pode ser uma função de (antes, depois), quando o
+   * evento depende do estado que a edição deixa (ex.: cronograma, início e prazo).
    */
   protected async change(
     actor: Actor,
@@ -325,7 +331,7 @@ export abstract class ChangeTask {
     access: ChangeAccess = 'edit',
     backlogPolicy: BacklogPolicy = canPullFromBacklog,
     impediment: ImpedimentChange = {},
-    guideEvent: GuideEventType | null = null,
+    guideEvent: GuideEventFor = null,
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -386,8 +392,8 @@ export abstract class ChangeTask {
       await repositories.tasks.save(actor.organizationId, updated)
       for (const row of sync.saves) await repositories.impediments.save(actor.organizationId, row)
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
-      if (guideEvent !== null)
-        await recordGuideEvent(repositories, actor, task.projectId, guideEvent, now)
+      const guide = typeof guideEvent === 'function' ? guideEvent(task, updated) : guideEvent
+      if (guide !== null) await recordGuideEvent(repositories, actor, task.projectId, guide, now)
     })
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
@@ -450,6 +456,12 @@ export class UpdateTask extends ChangeTask {
         return updated
       },
       input.changes.progressConfirmed ? [{ type: 'progress_confirmed', payload: {} }] : [],
+      [],
+      'edit',
+      undefined,
+      {},
+      // Prazo com início (ou início com prazo) pela edição conclui o passo "Dê início e fim" (cronograma).
+      scheduleGuideEvent,
     )
   }
 }

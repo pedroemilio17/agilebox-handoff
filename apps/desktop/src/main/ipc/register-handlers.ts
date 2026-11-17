@@ -127,6 +127,7 @@ export function registerHandlers(
   register('tasks.setDeliverable', (context, input) =>
     useCases.tasks.setDeliverable.execute(context, input),
   )
+  register('tasks.setStart', (context, input) => useCases.tasks.setStart.execute(context, input))
   register('tasks.setEstimate', (context, input) =>
     useCases.tasks.setEstimate.execute(context, input),
   )
@@ -193,6 +194,13 @@ export function registerHandlers(
   )
   register('milestones.remove', (context, input) =>
     useCases.milestones.remove.execute(context, input),
+  )
+  register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
+  register('schedule.addDependency', (context, input) =>
+    useCases.schedule.addDependency.execute(context, input),
+  )
+  register('schedule.removeDependency', (context, input) =>
+    useCases.schedule.removeDependency.execute(context, input),
   )
   register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
   register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))

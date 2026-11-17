@@ -192,6 +192,7 @@ export function toTaskDto(
     backlogRank: task.backlogRank,
     inBacklog: isInBacklog(task),
     deliverableId: task.deliverableId,
+    startsOn: task.startsOn,
     // Horas, não dinheiro: a comparação estimado × realizado é visível a quem vê a tarefa.
     estimatedHours: hundredthsToHours(task.estimatedHoursHundredths),
     actualHours: spentHundredths(task.participations) / 100,

@@ -105,6 +105,7 @@ export const API_CHANNELS = [
   'sprints.addTask',
   'sprints.removeTask',
   'tasks.setDeliverable',
+  'tasks.setStart',
   'wbs.get',
   'wbs.createDeliverable',
   'wbs.renameDeliverable',
@@ -114,6 +115,9 @@ export const API_CHANNELS = [
   'milestones.create',
   'milestones.update',
   'milestones.remove',
+  'schedule.get',
+  'schedule.addDependency',
+  'schedule.removeDependency',
   'teamTools.setModuleConfig',
 ] as const
 

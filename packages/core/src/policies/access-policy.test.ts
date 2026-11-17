@@ -42,6 +42,7 @@ const task: Task = {
   backlogRank: null,
   estimatedHoursHundredths: null,
   deliverableId: null,
+  startsOn: null,
   deadline: null,
   ticket: null,
   searchText: '',

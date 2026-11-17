@@ -13,6 +13,7 @@ import { createSqliteProjectSetupRepository } from './repositories/project-setup
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
 import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+import { createSqliteTaskDependencyRepository } from './repositories/task-dependency-repository.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
@@ -42,6 +43,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     projectModules: createSqliteProjectModulesRepository(database),
     projectSetup: createSqliteProjectSetupRepository(database),
     ...createSqliteDeliverableRepositories(database),
+    taskDependencies: createSqliteTaskDependencyRepository(database),
     ...createSqliteSprintRepositories(database),
   }
   return {

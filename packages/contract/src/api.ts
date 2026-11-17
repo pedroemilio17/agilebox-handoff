@@ -207,6 +207,16 @@ import {
   renameDeliverableInputSchema,
   renameDeliverableOutputSchema,
 } from './wbs'
+import {
+  addTaskDependencyInputSchema,
+  addTaskDependencyOutputSchema,
+  getScheduleInputSchema,
+  getScheduleOutputSchema,
+  removeTaskDependencyInputSchema,
+  removeTaskDependencyOutputSchema,
+  setTaskStartInputSchema,
+  setTaskStartOutputSchema,
+} from './schedule'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -410,6 +420,16 @@ export const API_SCHEMA_REGISTRY = {
   'sprints.removeTask': {
     input: removeSprintTaskInputSchema,
     output: removeSprintTaskOutputSchema,
+  },
+  'tasks.setStart': { input: setTaskStartInputSchema, output: setTaskStartOutputSchema },
+  'schedule.get': { input: getScheduleInputSchema, output: getScheduleOutputSchema },
+  'schedule.addDependency': {
+    input: addTaskDependencyInputSchema,
+    output: addTaskDependencyOutputSchema,
+  },
+  'schedule.removeDependency': {
+    input: removeTaskDependencyInputSchema,
+    output: removeTaskDependencyOutputSchema,
   },
   'tasks.setDeliverable': {
     input: setTaskDeliverableInputSchema,
@@ -619,6 +639,7 @@ export interface AgileBoxApi {
     unarchive: Method<'tasks.unarchive'>
     setEstimate: Method<'tasks.setEstimate'>
     setDeliverable: Method<'tasks.setDeliverable'>
+    setStart: Method<'tasks.setStart'>
     criteria: {
       add: Method<'tasks.criteria.add'>
       toggle: Method<'tasks.criteria.toggle'>
@@ -707,6 +728,11 @@ export interface AgileBoxApi {
     renameDeliverable: Method<'wbs.renameDeliverable'>
     moveDeliverable: Method<'wbs.moveDeliverable'>
     removeDeliverable: Method<'wbs.removeDeliverable'>
+  }
+  schedule: {
+    get: Method<'schedule.get'>
+    addDependency: Method<'schedule.addDependency'>
+    removeDependency: Method<'schedule.removeDependency'>
   }
   milestones: {
     list: Method<'milestones.list'>

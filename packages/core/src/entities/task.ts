@@ -7,7 +7,7 @@ import type {
   TaskId,
   UserId,
 } from '../shared/ids'
-import { parseDateOnly } from '../values/date-only'
+import { compareDateOnly, parseDateOnly } from '../values/date-only'
 import type { DateOnly } from '../values/date-only'
 import { estimateToHundredths } from '../values/hours'
 import { parseTaskPriority } from '../values/task-priority'
@@ -45,6 +45,8 @@ export interface Task {
   readonly estimatedHoursHundredths: number | null
   /** Entrega da EAP à qual a tarefa aponta (qualquer nível do projeto). Nulo = sem entrega. */
   readonly deliverableId: DeliverableId | null
+  /** Início da tarefa (ADR-10, módulo `schedule`). Nulo = sem início. O fim é o `deadline`. */
+  readonly startsOn: DateOnly | null
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -66,6 +68,8 @@ export interface CreateTaskInput {
   readonly responsibleRateCents: number
   /** Entrega de destino. Ausente = sem entrega. */
   readonly deliverableId?: DeliverableId | null
+  /** Início da tarefa. Ausente = sem início. */
+  readonly startsOn?: DateOnly | null
 }
 
 function searchText(title: string, projectName: string): string {
@@ -108,6 +112,7 @@ export function createTask(input: CreateTaskInput): Task {
     backlogRank: null,
     estimatedHoursHundredths: null,
     deliverableId: input.deliverableId ?? null,
+    startsOn: input.startsOn ?? null,
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -219,8 +224,27 @@ export function setTaskDeliverable(task: Task, deliverableId: DeliverableId | nu
 export function setPriority(task: Task, priority: TaskPriority): Task {
   return { ...task, priority: parseTaskPriority(priority) }
 }
+/**
+ * Define o prazo (fim). Com início definido, o prazo não pode ser antes dele (ADR-10, cronograma).
+ * Sem início, a regra não se aplica e o prazo segue como antes.
+ */
 export function setDeadline(task: Task, deadline: DateOnly | null): Task {
-  return { ...task, deadline: deadline === null ? null : parseDateOnly(deadline) }
+  const next = deadline === null ? null : parseDateOnly(deadline)
+  if (next !== null && task.startsOn !== null && compareDateOnly(next, task.startsOn) < 0)
+    throw new ValidationError('O prazo não pode ser antes do início')
+  return { ...task, deadline: next }
+}
+/**
+ * Define o início (nulo remove). Não pode ser depois do prazo, quando há prazo. Tarefa arquivada não
+ * muda, como nas demais alterações. Valor igual ao atual devolve a mesma tarefa (sem evento).
+ */
+export function setTaskStart(task: Task, startsOn: DateOnly | null): Task {
+  if (task.archivedAt !== null) throw new ConflictError('Tarefa arquivada não pode ser alterada')
+  const next = startsOn === null ? null : parseDateOnly(startsOn)
+  if (next === task.startsOn) return task
+  if (next !== null && task.deadline !== null && compareDateOnly(next, task.deadline) > 0)
+    throw new ValidationError('O início não pode ser depois do prazo')
+  return { ...task, startsOn: next }
 }
 export function setTicket(task: Task, ticket: Ticket | null): Task {
   return { ...task, ticket: ticket === null ? null : createTicket(ticket.id, ticket.url) }

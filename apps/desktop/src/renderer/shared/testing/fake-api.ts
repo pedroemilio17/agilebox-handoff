@@ -6,6 +6,7 @@ import {
   type GuideViewDto,
   type ListBoardDto,
   type MilestonesListDto,
+  type ScheduleViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
@@ -85,6 +86,19 @@ export function emptyMilestonesView(projectId: string): MilestonesListDto {
 }
 
 /** EAP vazia do projeto, sem edição: o padrão dos testes para a tela "Entregas" não aparecer preenchida. */
+/** Cronograma vazio e sem permissão de edição: o padrão neutro dos testes do renderer. */
+export function emptyScheduleView(projectId: string): ScheduleViewDto {
+  return {
+    projectId,
+    canEdit: false,
+    range: null,
+    tasks: [],
+    dependencies: [],
+    milestones: [],
+    today: '2026-01-01',
+  }
+}
+
 export function emptyWbsView(projectId: string): WbsViewDto {
   return {
     projectId,
@@ -122,6 +136,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.milestones,
       list: (input) => Promise.resolve(emptyMilestonesView(input.projectId)),
       ...overrides.milestones,
+    },
+    schedule: {
+      ...api.schedule,
+      get: (input) => Promise.resolve(emptyScheduleView(input.projectId)),
+      ...overrides.schedule,
     },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },

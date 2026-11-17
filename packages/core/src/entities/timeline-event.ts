@@ -105,6 +105,21 @@ export type TimelineEvent = EventBase &
         }
       }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }
+    /** Início da tarefa (ADR-10, cronograma). Mesma forma do prazo. */
+    | { readonly type: 'start_changed'; readonly payload: Change<DateOnly | null> }
+    | {
+        /**
+         * Dependência da tarefa sucessora (ADR-10, cronograma). Chave e título da predecessora ficam no
+         * evento: a predecessora pode ser renomeada ou arquivada depois.
+         */
+        readonly type: 'dependency_changed'
+        readonly payload: {
+          readonly action: 'added' | 'removed'
+          readonly predecessorId: TaskId
+          readonly predecessorKey: string
+          readonly predecessorTitle: string
+        }
+      }
     | { readonly type: 'renamed' | 'description_edited'; readonly payload: Change<string> }
     | { readonly type: 'responsible_changed'; readonly payload: Change<UserId> }
     | { readonly type: 'ticket_changed'; readonly payload: Change<Ticket | null> }

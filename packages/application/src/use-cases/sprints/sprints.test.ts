@@ -111,6 +111,7 @@ async function setup(): Promise<Setup> {
       sprints: repos.sprints,
       sprintTasks: repos.sprintTasks,
       deliverables: repos.deliverables,
+      taskDependencies: repos.taskDependencies,
       milestones: repos.milestones,
       impediments: repos.impediments,
       taskOpens: repos.taskOpens,

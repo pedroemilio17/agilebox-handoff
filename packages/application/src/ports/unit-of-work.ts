@@ -3,6 +3,7 @@ import type { AcceptanceRepository } from './acceptance-repository'
 import type { BoardSettingsRepository } from './board-settings-repository'
 import type { ChecklistRepository } from './checklist-repository'
 import type { TaskCommentRepository } from './task-comment-repository'
+import type { TaskDependencyRepository } from './task-dependency-repository'
 import type { ContributorRepository } from './contributor-repository'
 import type { DailyEntryRepository } from './daily-entry-repository'
 import type { ImpedimentRepository } from './impediment-repository'
@@ -44,6 +45,7 @@ export interface UnitOfWorkRepositories {
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository
   readonly sprintTasks: SprintTaskRepository
+  readonly taskDependencies: TaskDependencyRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamTools: TeamToolsRepository

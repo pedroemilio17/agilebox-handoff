@@ -34,6 +34,12 @@ import {
   UpdateMilestone,
 } from './use-cases/milestones/milestones'
 import {
+  AddTaskDependency,
+  GetSchedule,
+  RemoveTaskDependency,
+  SetTaskStart,
+} from './use-cases/schedule/schedule'
+import {
   AddSprintTask,
   CloseSprint,
   CreateSprint,
@@ -238,6 +244,7 @@ export function createUseCases(deps: AppDeps) {
       unarchive: forTenant('tasks.unarchive', new UnarchiveTask(deps)),
       setEstimate: forTenant('tasks.setEstimate', new SetTaskEstimate(deps)),
       setDeliverable: forTenant('tasks.setDeliverable', new SetTaskDeliverable(deps)),
+      setStart: forTenant('tasks.setStart', new SetTaskStart(deps)),
       criteria: {
         add: forTenant('tasks.criteria.add', new AddAcceptanceCriterion(deps)),
         toggle: forTenant('tasks.criteria.toggle', new ToggleAcceptanceCriterion(deps)),
@@ -311,6 +318,11 @@ export function createUseCases(deps: AppDeps) {
       renameDeliverable: forTenant('wbs.renameDeliverable', new RenameDeliverable(deps)),
       moveDeliverable: forTenant('wbs.moveDeliverable', new MoveDeliverable(deps)),
       removeDeliverable: forTenant('wbs.removeDeliverable', new RemoveDeliverable(deps)),
+    },
+    schedule: {
+      get: forTenant('schedule.get', new GetSchedule(deps)),
+      addDependency: forTenant('schedule.addDependency', new AddTaskDependency(deps)),
+      removeDependency: forTenant('schedule.removeDependency', new RemoveTaskDependency(deps)),
     },
     milestones: {
       list: forTenant('milestones.list', new ListMilestones(deps)),

@@ -69,6 +69,11 @@ export function diffTask(
       type: 'deadline_changed',
       payload: { before: before.deadline, after: after.deadline },
     })
+  if (before.startsOn !== after.startsOn)
+    events.push({
+      type: 'start_changed',
+      payload: { before: before.startsOn, after: after.startsOn },
+    })
   if (before.title !== after.title)
     events.push({ type: 'renamed', payload: { before: before.title, after: after.title } })
   if (before.description !== after.description)
@@ -229,6 +234,12 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       if (beforeTitle === null) return `ligou a tarefa à entrega "${afterTitle}"`
       return `mudou a tarefa da entrega "${beforeTitle}" para "${afterTitle}"`
     }
+    case 'start_changed':
+      return `alterou o início de ${event.payload.before ?? 'sem início'} para ${event.payload.after ?? 'sem início'}`
+    case 'dependency_changed':
+      return event.payload.action === 'added'
+        ? `passou a depender de ${event.payload.predecessorKey} "${event.payload.predecessorTitle}"`
+        : `deixou de depender de ${event.payload.predecessorKey} "${event.payload.predecessorTitle}"`
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`
     case 'renamed':

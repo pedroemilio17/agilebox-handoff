@@ -60,6 +60,7 @@ function setup(actor: Actor = ana, options: { sprints?: unknown } = {}) {
       unitOfWork.repositories.sprints) as typeof unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     deliverables: unitOfWork.repositories.deliverables,
+    taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,

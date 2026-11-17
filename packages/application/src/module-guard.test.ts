@@ -116,6 +116,7 @@ async function setup(options: SetupOptions = {}) {
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
     deliverables: repositories.deliverables,
+    taskDependencies: repositories.taskDependencies,
     milestones: repositories.milestones,
     impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
@@ -725,7 +726,9 @@ describe('mapa de módulos dos casos de uso', () => {
 
     // 103 + 9 da EAP e dos marcos (ADR-10, fase 3, A2): 5 de `wbs`, `tasks.setDeliverable` e 3 de `milestones`.
     // Mais 1: `milestones.list`, a leitura dos marcos (módulo `milestones`).
-    expect(registered).toHaveLength(113)
+    // Mais 4 do cronograma (ADR-10, fase 3, A4): `tasks.setStart`, `schedule.get`, `schedule.addDependency`
+    // e `schedule.removeDependency`.
+    expect(registered).toHaveLength(117)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -743,6 +746,7 @@ describe('mapa de módulos dos casos de uso', () => {
       'meetings.create',
       'meetings.retroActions.add',
       'milestones.create',
+      'schedule.addDependency',
       'sprints.addTask',
       'sprints.create',
       'sprints.start',

@@ -83,6 +83,7 @@ export function createTaskHarness(initial: Actor = ana) {
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     deliverables: unitOfWork.repositories.deliverables,
+    taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     timeline: unitOfWork.repositories.timeline,
