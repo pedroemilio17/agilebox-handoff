@@ -28,6 +28,16 @@ export const tasks = sqliteTable(
       .default('normal'),
     blockedReason: text('blocked_reason'),
     blockedAt: text('blocked_at'),
+    archivedAt: text('archived_at'),
+    archivedBy: text('archived_by').references(() => users.id),
+    /** Posição no backlog do projeto (M3.1). Nulo = a tarefa está no quadro. */
+    backlogRank: integer('backlog_rank'),
+    /**
+     * Estimativa em centésimos de hora (ADR-07, M3.2). Nulo = sem estimativa. Sem CHECK de faixa de propósito:
+     * adicionar CHECK exige reconstruir `tasks` (DROP + cópia), e o DROP dispara o cascade das filhas. A faixa
+     * (0 a 9999 h) é validada no domínio (`estimateToHundredths`) e no contrato.
+     */
+    estimatedHoursHundredths: integer('estimated_hours_hundredths'),
     deadline: text('deadline'),
     ticketId: text('ticket_id'),
     ticketUrl: text('ticket_url'),
@@ -48,5 +58,10 @@ export const tasks = sqliteTable(
     uniqueIndex('tasks_organization_number_unique').on(table.organizationId, table.number),
     index('tasks_organization_project_index').on(table.organizationId, table.projectId),
     index('tasks_organization_updated_at_index').on(table.organizationId, table.updatedAt),
+    index('tasks_organization_project_backlog_index').on(
+      table.organizationId,
+      table.projectId,
+      table.backlogRank,
+    ),
   ],
 )

@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   toOrganizationId,
@@ -36,8 +37,13 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     changeNotifier: new RecordingNotifier(),
     clock: new FixedClock('2026-01-20T12:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
@@ -113,12 +119,14 @@ describe('limites de WIP: casos de uso', () => {
     const useCases = useCasesAs(unitOfWork, manager)
     await seedUsers(unitOfWork)
 
-    await expect(useCases.boardSettings.get.execute(manager)).resolves.toEqual({
-      wipLimits: {},
-      updatedAt: null,
-      updatedBy: null,
-    })
-    const board = await useCases.tasks.listBoard.execute(manager, {})
+    await expect(useCases.boardSettings.get.execute(createTenantContext(manager))).resolves.toEqual(
+      {
+        wipLimits: {},
+        updatedAt: null,
+        updatedBy: null,
+      },
+    )
+    const board = await useCases.tasks.listBoard.execute(createTenantContext(manager), {})
     expect(board.wipLimits).toEqual({})
     expect(board.wipColumns).toEqual([
       { status: 'in_progress', count: 0, limit: null, state: 'none' },
@@ -131,11 +139,11 @@ describe('limites de WIP: casos de uso', () => {
     const useCases = useCasesAs(unitOfWork, manager)
     await seedUsers(unitOfWork)
 
-    await useCases.boardSettings.setWipLimits.execute(manager, {
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
       wipLimits: { in_progress: 3, review: 2 },
     })
 
-    const read = await useCases.boardSettings.get.execute(collaborator)
+    const read = await useCases.boardSettings.get.execute(createTenantContext(collaborator))
     expect(read).toMatchObject({
       wipLimits: { in_progress: 3, review: 2 },
       updatedBy: managerId,
@@ -147,15 +155,19 @@ describe('limites de WIP: casos de uso', () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     await seedUsers(unitOfWork)
-    await useCases.boardSettings.setWipLimits.execute(manager, { wipLimits: { review: 2 } })
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
+      wipLimits: { review: 2 },
+    })
 
     const asCollaborator = useCasesAs(unitOfWork, collaborator)
     await expect(
-      asCollaborator.boardSettings.setWipLimits.execute(collaborator, {
+      asCollaborator.boardSettings.setWipLimits.execute(createTenantContext(collaborator), {
         wipLimits: { review: 9 },
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
-    await expect(useCases.boardSettings.get.execute(manager)).resolves.toMatchObject({
+    await expect(
+      useCases.boardSettings.get.execute(createTenantContext(manager)),
+    ).resolves.toMatchObject({
       wipLimits: { review: 2 },
     })
   })
@@ -172,12 +184,14 @@ describe('limites de WIP: casos de uso', () => {
       { done: 1 },
     ] as const) {
       await expect(
-        useCases.boardSettings.setWipLimits.execute(manager, { wipLimits }),
+        useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), { wipLimits }),
       ).rejects.toMatchObject({
         code: 'VALIDATION',
       })
     }
-    await expect(useCases.boardSettings.get.execute(manager)).resolves.toMatchObject({
+    await expect(
+      useCases.boardSettings.get.execute(createTenantContext(manager)),
+    ).resolves.toMatchObject({
       wipLimits: {},
     })
   })
@@ -186,7 +200,7 @@ describe('limites de WIP: casos de uso', () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     const project = await seedUsers(unitOfWork)
-    await useCases.boardSettings.setWipLimits.execute(manager, {
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
       wipLimits: { in_progress: 1 },
     })
     const first = taskFor(1, userId, 'todo')
@@ -196,12 +210,18 @@ describe('limites de WIP: casos de uso', () => {
 
     const asAna: Actor = collaborator
     const planner = useCasesAs(unitOfWork, asAna)
-    await planner.tasks.move.execute(asAna, { taskId: first.id, status: 'in_progress' })
+    await planner.tasks.move.execute(createTenantContext(asAna), {
+      taskId: first.id,
+      status: 'in_progress',
+    })
     await expect(
-      planner.tasks.move.execute(asAna, { taskId: second.id, status: 'in_progress' }),
+      planner.tasks.move.execute(createTenantContext(asAna), {
+        taskId: second.id,
+        status: 'in_progress',
+      }),
     ).resolves.toMatchObject({ status: 'in_progress' })
 
-    const board = await planner.tasks.listBoard.execute(asAna, {})
+    const board = await planner.tasks.listBoard.execute(createTenantContext(asAna), {})
     expect(board.wipColumns[0]).toEqual({
       status: 'in_progress',
       count: 2,
@@ -210,11 +230,11 @@ describe('limites de WIP: casos de uso', () => {
     })
   })
 
-  it('o colaborador conta só as tarefas de que participa; o gestor conta todas', async () => {
+  it('cada quadro conta só as tarefas de que a pessoa participa; o gestor vê a contagem de outra pessoa com forUserId', async () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     const project = await seedUsers(unitOfWork)
-    await useCases.boardSettings.setWipLimits.execute(manager, {
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
       wipLimits: { in_progress: 2 },
     })
     await unitOfWork.repositories.tasks.save(organizationId, {
@@ -227,21 +247,32 @@ describe('limites de WIP: casos de uso', () => {
     })
 
     const asAna = useCasesAs(unitOfWork, collaborator)
-    const mine = await asAna.tasks.listBoard.execute(collaborator, {})
+    const mine = await asAna.tasks.listBoard.execute(createTenantContext(collaborator), {})
     expect(mine.wipColumns[0]).toMatchObject({ count: 1, limit: 2, state: 'ok' })
 
-    const all = await useCases.tasks.listBoard.execute(manager, {})
-    expect(all.wipColumns[0]).toMatchObject({ count: 2, limit: 2, state: 'at_limit' })
+    // "Minhas tarefas" do gestor: ele não participa de nenhuma das duas (PLANO 6.1).
+    const own = await useCases.tasks.listBoard.execute(createTenantContext(manager), {})
+    expect(own.wipColumns[0]).toMatchObject({ count: 0, limit: 2, state: 'ok' })
+
+    // Quadro de Ana aberto pelo gestor ("Abrir projetos"): mesma contagem do lado dela.
+    const anaBoard = await useCases.tasks.listBoard.execute(createTenantContext(manager), {
+      forUserId: userId,
+    })
+    expect(anaBoard.wipColumns[0]).toMatchObject({ count: 1, limit: 2, state: 'ok' })
   })
 
   it('a configuração de uma organização não aparece na outra', async () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     await seedUsers(unitOfWork)
-    await useCases.boardSettings.setWipLimits.execute(manager, { wipLimits: { review: 2 } })
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
+      wipLimits: { review: 2 },
+    })
 
     const otherOrg = useCasesAs(unitOfWork, otherManager)
-    await expect(otherOrg.boardSettings.get.execute(otherManager)).resolves.toMatchObject({
+    await expect(
+      otherOrg.boardSettings.get.execute(createTenantContext(otherManager)),
+    ).resolves.toMatchObject({
       wipLimits: {},
       updatedAt: null,
     })
@@ -251,7 +282,7 @@ describe('limites de WIP: casos de uso', () => {
     const unitOfWork = new InMemoryUnitOfWork()
     const useCases = useCasesAs(unitOfWork, manager)
     const project = await seedUsers(unitOfWork)
-    await useCases.boardSettings.setWipLimits.execute(manager, {
+    await useCases.boardSettings.setWipLimits.execute(createTenantContext(manager), {
       wipLimits: { in_progress: 3, review: 2 },
     })
     const tasks = [
@@ -266,13 +297,13 @@ describe('limites de WIP: casos de uso', () => {
     for (const task of tasks)
       await unitOfWork.repositories.tasks.save(organizationId, { ...task, projectId: project.id })
 
-    const dashboard = await useCases.dashboard.get.execute(manager)
+    const dashboard = await useCases.dashboard.get.execute(createTenantContext(manager))
     expect(dashboard.insights?.overWipColumns).toEqual([
       { status: 'in_progress', count: 5, limit: 3 },
     ])
 
-    await expect(useCases.dashboard.get.execute(collaborator)).rejects.toBeInstanceOf(
-      PermissionDeniedError,
-    )
+    await expect(
+      useCases.dashboard.get.execute(createTenantContext(collaborator)),
+    ).rejects.toBeInstanceOf(PermissionDeniedError)
   })
 })

@@ -1,6 +1,6 @@
-import type { Actor } from '@agilebox/core'
 import { DefinitionOfDoneNotConfirmedError, DomainError } from '@agilebox/core'
-import type { ActorSession } from '@agilebox/application'
+import type { ActorSession, TenantContext } from '@agilebox/application'
+import { createTenantContext } from '@agilebox/application'
 import type { ApiResult } from '@agilebox/contract'
 import { failureResult, successResult } from '@agilebox/contract'
 
@@ -21,7 +21,7 @@ function errorResult(error: unknown): ApiResult<never> {
 export function createIpcHandler<Input, Output>(
   schema: InputSchema<Input>,
   actorSession: ActorSession,
-  execute: (actor: Actor, input: Input) => Output | Promise<Output>,
+  execute: (context: TenantContext, input: Input) => Output | Promise<Output>,
 ): IpcHandler {
   return async (_event, rawInput) => {
     let input: Input
@@ -31,8 +31,10 @@ export function createIpcHandler<Input, Output>(
       return failureResult('VALIDATION', 'Entrada inválida')
     }
     try {
-      const actor = actorSession.get()
-      return successResult(await execute(actor, input))
+      // O contexto vem só da sessão. Campos extras do pedido (`userId`, `tenantId`) não chegam ao
+      // caso de uso: o schema os descarta ou recusa antes.
+      const context = createTenantContext(actorSession.get())
+      return successResult(await execute(context, input))
     } catch (error) {
       return errorResult(error)
     }

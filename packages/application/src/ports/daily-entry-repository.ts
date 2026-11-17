@@ -11,4 +11,6 @@ export interface DailyEntryRepository {
   listByDate(organizationId: OrganizationId, date: DateOnly): Promise<readonly DailyEntry[]>
   /** Insere ou atualiza pelo id. Ignora daily de pessoa de outra organização. */
   save(organizationId: OrganizationId, entry: DailyEntry): Promise<void>
+  /** Quantas dailies a organização tem gravadas, em todas as datas (prévia de impacto das ferramentas). */
+  countByOrganization(organizationId: OrganizationId): Promise<number>
 }

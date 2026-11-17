@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { expandMeetingOccurrences, parseDateOnly, toOrganizationId } from '@agilebox/core'
+import {
+  defaultTeamTools,
+  expandMeetingOccurrences,
+  parseDateOnly,
+  toOrganizationId,
+  toActiveModuleIds,
+} from '@agilebox/core'
 import { InMemoryUnitOfWork, RecordingNotifier } from '@agilebox/application/testing'
 import { seedDemo } from './seed.js'
 
@@ -184,5 +190,31 @@ describe('seed de demonstração', () => {
     expect(timeline.filter((event) => event.type === 'definition_confirmed')).toEqual([
       expect.objectContaining({ payload: { count: 3 } }),
     ])
+  })
+})
+
+describe('seed de demonstração: ferramentas da equipe', () => {
+  it('grava o padrão de defaultTeamTools (nível Avançado), sem estimates.points nem integrations', async () => {
+    const unitOfWork = new InMemoryUnitOfWork()
+    const organizationId = toOrganizationId('00000000000000000000000001')
+
+    await seedDemo({
+      ...unitOfWork.repositories,
+      unitOfWork,
+      changeNotifier: new RecordingNotifier(),
+      saveOrganization: async (organization) => {
+        await Promise.resolve()
+        expect(organization.id).toBe(organizationId)
+      },
+      now: () => '2026-11-01T12:00:00.000Z',
+    })
+
+    const settings = await unitOfWork.repositories.teamTools.getSettings(organizationId)
+    const expected = defaultTeamTools(organizationId)
+    expect(settings.level).toBe(expected.level)
+    expect(toActiveModuleIds(settings.modules)).toEqual(toActiveModuleIds(expected.modules))
+    expect(toActiveModuleIds(settings.modules)).toContain('wip')
+    expect(toActiveModuleIds(settings.modules)).not.toContain('estimates.points')
+    expect(toActiveModuleIds(settings.modules)).not.toContain('integrations')
   })
 })

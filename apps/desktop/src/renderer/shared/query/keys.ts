@@ -14,19 +14,56 @@ export const queryKeys = {
   },
   tasks: {
     all: ['agilebox', 'tasks'] as const,
-    board: (projectId?: string, forUserId?: string) =>
-      ['agilebox', 'tasks', 'board', projectId, forUserId] as const,
-    team: (projectId?: string) => ['agilebox', 'tasks', 'team', projectId] as const,
+    board: (projectId?: string, forUserId?: string, includeArchived = false) =>
+      ['agilebox', 'tasks', 'board', projectId, forUserId, includeArchived] as const,
+    team: (projectId?: string, includeArchived = false) =>
+      ['agilebox', 'tasks', 'team', projectId, includeArchived] as const,
     detail: (taskId: string) => ['agilebox', 'tasks', 'detail', taskId] as const,
   },
-  timeline: { list: (taskId: string) => ['agilebox', 'timeline', taskId] as const },
+  backlog: {
+    all: ['agilebox', 'backlog'] as const,
+    list: (projectId: string) => ['agilebox', 'backlog', 'list', projectId] as const,
+  },
+  sprints: {
+    all: ['agilebox', 'sprints'] as const,
+    list: (projectId: string) => ['agilebox', 'sprints', 'list', projectId] as const,
+    detail: (sprintId: string) => ['agilebox', 'sprints', 'detail', sprintId] as const,
+  },
+  impediments: {
+    all: ['agilebox', 'impediments'] as const,
+    /** Lista com os filtros da tela (projeto, responsável, resolvidos). */
+    list: (filters: {
+      readonly projectId?: string | undefined
+      readonly ownerId?: string | undefined
+      readonly includeResolved?: boolean | undefined
+    }) =>
+      [
+        'agilebox',
+        'impediments',
+        'list',
+        filters.projectId ?? null,
+        filters.ownerId ?? null,
+        filters.includeResolved === true,
+      ] as const,
+  },
+  timeline: {
+    all: ['agilebox', 'timeline'] as const,
+    list: (taskId: string) => ['agilebox', 'timeline', taskId] as const,
+  },
   daily: {
     all: ['agilebox', 'daily'] as const,
     today: (date: string) => ['agilebox', 'daily', 'today', date] as const,
     forDate: (date: string) => ['agilebox', 'daily', 'forDate', date] as const,
     entry: (userId: string, date: string) => ['agilebox', 'daily', 'entry', userId, date] as const,
+    /** Sugestão do check-in para a data e o fuso do cliente (M5.1). */
+    suggestion: (date: string, timeZone: string) =>
+      ['agilebox', 'daily', 'suggestion', date, timeZone] as const,
   },
   meetings: { all: ['agilebox', 'meetings'] as const },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
+  teamTools: {
+    all: ['agilebox', 'teamTools'] as const,
+    view: ['agilebox', 'teamTools', 'view'] as const,
+  },
 } as const

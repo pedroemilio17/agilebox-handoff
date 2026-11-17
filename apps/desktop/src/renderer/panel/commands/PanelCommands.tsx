@@ -6,6 +6,7 @@ import { CommandPalette, Skeleton, type CommandAction } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { useCreateTask } from '../hooks/use-create-task'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 
 export interface PanelCommandsProps {
   readonly projects: readonly ProjectDto[]
@@ -14,7 +15,9 @@ export interface PanelCommandsProps {
   readonly isManager: boolean
   readonly onClose: () => void
   readonly onOpenTask: (id: string) => void
-  readonly onNavigate: (view: 'projects' | 'dashboard' | 'agenda') => void
+  readonly onNavigate: (
+    view: 'projects' | 'dashboard' | 'backlog' | 'sprints' | 'impediments' | 'agenda',
+  ) => void
 }
 const fold = (text: string) =>
   text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR')
@@ -30,6 +33,7 @@ export function PanelCommands({
   const [value, setValue] = useState('')
   const api = useApi()
   const create = useCreateTask()
+  const capabilities = useCapabilities()
   const parsed = parseQuickAdd(value, { today: todayDateOnly(), people, projects })
   const projectId = parsed.projectId ?? selectedProjectId ?? projects[0]?.id
   const results = useQuery({
@@ -85,7 +89,18 @@ export function PanelCommands({
     })
   const destinations = [
     ...(isManager ? [{ view: 'dashboard' as const, label: 'Dashboard', shortcut: 'G D' }] : []),
-    { view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' },
+    ...(capabilities.showScreen('backlog')
+      ? [{ view: 'backlog' as const, label: 'Backlog', shortcut: 'G B' }]
+      : []),
+    ...(capabilities.showScreen('sprints')
+      ? [{ view: 'sprints' as const, label: 'Sprints', shortcut: 'G S' }]
+      : []),
+    ...(capabilities.showScreen('impediments')
+      ? [{ view: 'impediments' as const, label: 'Impedimentos', shortcut: 'G I' }]
+      : []),
+    ...(capabilities.showScreen('agenda')
+      ? [{ view: 'agenda' as const, label: 'Agenda', shortcut: 'G A' }]
+      : []),
     { view: 'projects' as const, label: 'Quadro', shortcut: 'G Q' },
   ]
   for (const destination of destinations)

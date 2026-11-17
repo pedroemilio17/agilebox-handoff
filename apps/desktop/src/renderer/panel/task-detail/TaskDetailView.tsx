@@ -3,19 +3,27 @@ import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { DateOnly, TaskStatus } from '@agilebox/core'
 import { Button, IconButton, ReadOnlyBadge, TaskKey, Toast } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { isAgingTask } from '../../shared/lib/task-signals'
 import { CostCard } from './CostCard'
 import { DeadlineCard } from './DeadlineCard'
 import { PriorityProperty, StatusProperty, TicketProperty, TaskDescription } from './DetailsCard'
+import { sprintMarker } from '../sprints/sprint-rules'
+import { sprintCopy } from '../sprints/sprint-copy'
 import { PropertyRow } from './PropertyRow'
 import { ParticipantsCard } from './ParticipantsCard'
 import { SaveError } from './SaveError'
 import { TimelineCard } from './TimelineCard'
 import { useBlurSave } from './use-blur-save'
 import { BlockControl } from './BlockControl'
+import { ImpedimentHistoryCard } from './ImpedimentHistoryCard'
+import { ArchiveControl } from './ArchiveControl'
 import { ChecklistCard } from './ChecklistCard'
+import { CriteriaCard } from './CriteriaCard'
+import { EstimateProperty } from './EstimateProperty'
+import { BacklogControl } from './BacklogControl'
 import { CommentsCard } from './CommentsCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
 import { useDefinitionOfDoneGate } from '../../shared/definition-of-done/use-definition-of-done-gate'
@@ -45,6 +53,7 @@ export function TaskDetailView({
   const update = useUpdateTask(taskId)
   const move = useMoveTaskStatus(taskId)
   const definitionGate = useDefinitionOfDoneGate()
+  const capabilities = useCapabilities()
   const task = detail.data
   const [copyNotice, setCopyNotice] = useState<{ id: number; message: string } | null>(null)
   const title = useBlurSave(task?.title ?? '', (next) => {
@@ -180,6 +189,8 @@ export function TaskDetailView({
       />
       {copyNotice ? <Toast key={copyNotice.id} message={copyNotice.message} /> : null}
       <BlockControl task={task!} readOnly={readOnly} />
+      <BacklogControl task={task!} readOnly={readOnly} onSent={onBack} />
+      <ArchiveControl task={task!} canArchive={task!.canArchive === true && !readOnlyScope} />
       {isAgingTask(task!) && (
         <aside className={styles.agingAlert} aria-label="Tarefa parada">
           <p>
@@ -230,19 +241,35 @@ export function TaskDetailView({
           readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
+        {capabilities.can('sprints:passive') && sprintMarker(task!) ? (
+          <PropertyRow label={sprintCopy.sprintProperty}>{sprintMarker(task!)}</PropertyRow>
+        ) : null}
         <TicketProperty
           task={task!}
           readOnly={readOnly}
           onUpdate={(changes) => update.mutate(changes)}
         />
         <CostCard task={task!} readOnly={readOnly} />
+        {capabilities.showScreen('estimates.hours') ? (
+          <EstimateProperty task={task!} readOnly={readOnly} />
+        ) : null}
       </dl>
       <TaskDescription
         task={task!}
         readOnly={readOnly}
         onUpdate={(changes) => update.mutate(changes)}
       />
-      <ChecklistCard task={task!} readOnly={readOnly} />
+      {capabilities.can('subtasks:screen') ? (
+        <ChecklistCard task={task!} readOnly={readOnly} />
+      ) : null}
+      {capabilities.showScreen('acceptance') ? (
+        <CriteriaCard
+          task={task!}
+          readOnly={readOnly}
+          windingDown={capabilities.isWindingDown('acceptance')}
+        />
+      ) : null}
+      {capabilities.showScreen('impediments') ? <ImpedimentHistoryCard task={task!} /> : null}
       <CommentsCard task={task!} readOnlyScope={readOnlyScope} />
       <TimelineCard taskId={taskId} />
       {definitionGate.dialog}

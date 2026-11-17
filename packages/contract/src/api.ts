@@ -1,6 +1,13 @@
 import type { z } from 'zod'
 import type { ChangeEvent } from './changes'
 import {
+  addAcceptanceCriterionInputSchema,
+  moveAcceptanceCriterionInputSchema,
+  removeAcceptanceCriterionInputSchema,
+  renameAcceptanceCriterionInputSchema,
+  toggleAcceptanceCriterionInputSchema,
+} from './acceptance'
+import {
   addProjectMemberInputSchema,
   addProjectMemberOutputSchema,
   createProjectInputSchema,
@@ -11,6 +18,12 @@ import {
   listProjectsOutputSchema,
   removeProjectMemberInputSchema,
   removeProjectMemberOutputSchema,
+  archiveProjectInputSchema,
+  archiveProjectOutputSchema,
+  unarchiveProjectInputSchema,
+  unarchiveProjectOutputSchema,
+  renameProjectInputSchema,
+  renameProjectOutputSchema,
 } from './projects'
 import {
   addParticipationInputSchema,
@@ -57,7 +70,14 @@ import {
   blockTaskOutputSchema,
   unblockTaskInputSchema,
   unblockTaskOutputSchema,
+  archiveTaskInputSchema,
+  archiveTaskOutputSchema,
+  unarchiveTaskInputSchema,
+  unarchiveTaskOutputSchema,
   checklistChangeOutputSchema,
+  criteriaChangeOutputSchema,
+  setTaskEstimateInputSchema,
+  setTaskEstimateOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -119,8 +139,22 @@ import {
   listDailyForDateOutputSchema,
   saveDailyInputSchema,
   saveDailyOutputSchema,
+  suggestDailySummaryInputSchema,
+  suggestDailySummaryOutputSchema,
 } from './daily'
 import { setDefaultRateInputSchema, setDefaultRateOutputSchema } from './users'
+import {
+  applyTeamPresetInputSchema,
+  completeTeamWindDownInputSchema,
+  getTeamToolsInputSchema,
+  previewTeamToolsChangeInputSchema,
+  setModuleConfigInputSchema,
+  setTeamLevelInputSchema,
+  teamToolsChangeInputSchema,
+  teamToolsChangeResultDtoSchema,
+  teamToolsPreviewDtoSchema,
+  teamToolsViewDtoSchema,
+} from './team-tools'
 import {
   addDefinitionOfDoneItemInputSchema,
   definitionOfDoneChangeOutputSchema,
@@ -131,6 +165,46 @@ import {
   renameDefinitionOfDoneItemInputSchema,
 } from './definition-of-done'
 import { API_CHANNELS, type ApiChannel } from './channels'
+import {
+  addToBacklogInputSchema,
+  addToBacklogOutputSchema,
+  listBacklogInputSchema,
+  listBacklogOutputSchema,
+  pullFromBacklogInputSchema,
+  pullFromBacklogOutputSchema,
+  reorderBacklogInputSchema,
+  reorderBacklogOutputSchema,
+  sendToBacklogInputSchema,
+  sendToBacklogOutputSchema,
+} from './backlog'
+import {
+  addSprintTaskInputSchema,
+  addSprintTaskOutputSchema,
+  closeSprintInputSchema,
+  closeSprintOutputSchema,
+  createSprintInputSchema,
+  createSprintOutputSchema,
+  discardSprintInputSchema,
+  discardSprintOutputSchema,
+  getSprintInputSchema,
+  getSprintOutputSchema,
+  listSprintsInputSchema,
+  listSprintsOutputSchema,
+  removeSprintTaskInputSchema,
+  removeSprintTaskOutputSchema,
+  startSprintInputSchema,
+  startSprintOutputSchema,
+  updateSprintInputSchema,
+  updateSprintOutputSchema,
+} from './sprints'
+import {
+  assignImpedimentInputSchema,
+  assignImpedimentOutputSchema,
+  listImpedimentsInputSchema,
+  listImpedimentsOutputSchema,
+  resolveImpedimentInputSchema,
+  resolveImpedimentOutputSchema,
+} from './impediments'
 import {
   getCurrentSessionInputSchema,
   getCurrentSessionOutputSchema,
@@ -164,6 +238,12 @@ export const API_SCHEMA_REGISTRY = {
     input: removeProjectMemberInputSchema,
     output: removeProjectMemberOutputSchema,
   },
+  'projects.archive': { input: archiveProjectInputSchema, output: archiveProjectOutputSchema },
+  'projects.unarchive': {
+    input: unarchiveProjectInputSchema,
+    output: unarchiveProjectOutputSchema,
+  },
+  'projects.rename': { input: renameProjectInputSchema, output: renameProjectOutputSchema },
   'projects.definitionOfDone.list': {
     input: listDefinitionOfDoneInputSchema,
     output: listDefinitionOfDoneOutputSchema,
@@ -193,6 +273,17 @@ export const API_SCHEMA_REGISTRY = {
   'tasks.move': { input: moveTaskInputSchema, output: moveTaskOutputSchema },
   'tasks.block': { input: blockTaskInputSchema, output: blockTaskOutputSchema },
   'tasks.unblock': { input: unblockTaskInputSchema, output: unblockTaskOutputSchema },
+  'impediments.list': { input: listImpedimentsInputSchema, output: listImpedimentsOutputSchema },
+  'impediments.assign': {
+    input: assignImpedimentInputSchema,
+    output: assignImpedimentOutputSchema,
+  },
+  'impediments.resolve': {
+    input: resolveImpedimentInputSchema,
+    output: resolveImpedimentOutputSchema,
+  },
+  'tasks.archive': { input: archiveTaskInputSchema, output: archiveTaskOutputSchema },
+  'tasks.unarchive': { input: unarchiveTaskInputSchema, output: unarchiveTaskOutputSchema },
   'tasks.checklist.add': {
     input: addChecklistItemInputSchema,
     output: checklistChangeOutputSchema,
@@ -213,6 +304,30 @@ export const API_SCHEMA_REGISTRY = {
     input: moveChecklistItemInputSchema,
     output: checklistChangeOutputSchema,
   },
+  'tasks.setEstimate': {
+    input: setTaskEstimateInputSchema,
+    output: setTaskEstimateOutputSchema,
+  },
+  'tasks.criteria.add': {
+    input: addAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.toggle': {
+    input: toggleAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.rename': {
+    input: renameAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.remove': {
+    input: removeAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
+  'tasks.criteria.move': {
+    input: moveAcceptanceCriterionInputSchema,
+    output: criteriaChangeOutputSchema,
+  },
   'tasks.comments.add': {
     input: addTaskCommentInputSchema,
     output: addTaskCommentOutputSchema,
@@ -232,6 +347,23 @@ export const API_SCHEMA_REGISTRY = {
   },
   'tasks.search': { input: searchTasksInputSchema, output: searchTasksOutputSchema },
   'tasks.recordOpen': { input: recordTaskOpenInputSchema, output: recordTaskOpenOutputSchema },
+  'backlog.list': { input: listBacklogInputSchema, output: listBacklogOutputSchema },
+  'backlog.add': { input: addToBacklogInputSchema, output: addToBacklogOutputSchema },
+  'backlog.reorder': { input: reorderBacklogInputSchema, output: reorderBacklogOutputSchema },
+  'backlog.pull': { input: pullFromBacklogInputSchema, output: pullFromBacklogOutputSchema },
+  'backlog.sendBack': { input: sendToBacklogInputSchema, output: sendToBacklogOutputSchema },
+  'sprints.list': { input: listSprintsInputSchema, output: listSprintsOutputSchema },
+  'sprints.get': { input: getSprintInputSchema, output: getSprintOutputSchema },
+  'sprints.create': { input: createSprintInputSchema, output: createSprintOutputSchema },
+  'sprints.update': { input: updateSprintInputSchema, output: updateSprintOutputSchema },
+  'sprints.start': { input: startSprintInputSchema, output: startSprintOutputSchema },
+  'sprints.close': { input: closeSprintInputSchema, output: closeSprintOutputSchema },
+  'sprints.discard': { input: discardSprintInputSchema, output: discardSprintOutputSchema },
+  'sprints.addTask': { input: addSprintTaskInputSchema, output: addSprintTaskOutputSchema },
+  'sprints.removeTask': {
+    input: removeSprintTaskInputSchema,
+    output: removeSprintTaskOutputSchema,
+  },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -304,14 +436,44 @@ export const API_SCHEMA_REGISTRY = {
   'daily.save': { input: saveDailyInputSchema, output: saveDailyOutputSchema },
   'daily.listForDate': { input: listDailyForDateInputSchema, output: listDailyForDateOutputSchema },
   'daily.getForUser': { input: getDailyForUserInputSchema, output: getDailyForUserOutputSchema },
+  'daily.suggestSummary': {
+    input: suggestDailySummaryInputSchema,
+    output: suggestDailySummaryOutputSchema,
+  },
+  'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
+  'teamTools.previewChange': {
+    input: previewTeamToolsChangeInputSchema,
+    output: teamToolsPreviewDtoSchema,
+  },
+  'teamTools.applyChange': {
+    input: teamToolsChangeInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.completeWindDown': {
+    input: completeTeamWindDownInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.setLevel': { input: setTeamLevelInputSchema, output: teamToolsChangeResultDtoSchema },
+  'teamTools.applyPreset': {
+    input: applyTeamPresetInputSchema,
+    output: teamToolsChangeResultDtoSchema,
+  },
+  'teamTools.setModuleConfig': {
+    input: setModuleConfigInputSchema,
+    output: teamToolsViewDtoSchema,
+  },
 } satisfies Record<ApiChannel, SchemaPair>
 
 type Method<Channel extends ApiChannel> =
   z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']> extends undefined
     ? () => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
-    : (
-        input: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
-      ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
+    : undefined extends z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>
+      ? (
+          input?: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
+        ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
+      : (
+          input: z.input<(typeof API_SCHEMA_REGISTRY)[Channel]['input']>,
+        ) => Promise<z.output<(typeof API_SCHEMA_REGISTRY)[Channel]['output']>>
 
 export interface AgileBoxApi {
   session: {
@@ -326,6 +488,9 @@ export interface AgileBoxApi {
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
+    archive: Method<'projects.archive'>
+    unarchive: Method<'projects.unarchive'>
+    rename: Method<'projects.rename'>
     definitionOfDone: {
       list: Method<'projects.definitionOfDone.list'>
       add: Method<'projects.definitionOfDone.add'>
@@ -344,6 +509,16 @@ export interface AgileBoxApi {
     move: Method<'tasks.move'>
     block: Method<'tasks.block'>
     unblock: Method<'tasks.unblock'>
+    archive: Method<'tasks.archive'>
+    unarchive: Method<'tasks.unarchive'>
+    setEstimate: Method<'tasks.setEstimate'>
+    criteria: {
+      add: Method<'tasks.criteria.add'>
+      toggle: Method<'tasks.criteria.toggle'>
+      rename: Method<'tasks.criteria.rename'>
+      remove: Method<'tasks.criteria.remove'>
+      move: Method<'tasks.criteria.move'>
+    }
     checklist: {
       add: Method<'tasks.checklist.add'>
       toggle: Method<'tasks.checklist.toggle'>
@@ -401,6 +576,39 @@ export interface AgileBoxApi {
     save: Method<'daily.save'>
     listForDate: Method<'daily.listForDate'>
     getForUser: Method<'daily.getForUser'>
+    suggestSummary: Method<'daily.suggestSummary'>
+  }
+  impediments: {
+    list: Method<'impediments.list'>
+    assign: Method<'impediments.assign'>
+    resolve: Method<'impediments.resolve'>
+  }
+  sprints: {
+    list: Method<'sprints.list'>
+    get: Method<'sprints.get'>
+    create: Method<'sprints.create'>
+    update: Method<'sprints.update'>
+    start: Method<'sprints.start'>
+    close: Method<'sprints.close'>
+    discard: Method<'sprints.discard'>
+    addTask: Method<'sprints.addTask'>
+    removeTask: Method<'sprints.removeTask'>
+  }
+  backlog: {
+    list: Method<'backlog.list'>
+    add: Method<'backlog.add'>
+    reorder: Method<'backlog.reorder'>
+    pull: Method<'backlog.pull'>
+    sendBack: Method<'backlog.sendBack'>
+  }
+  teamTools: {
+    get: Method<'teamTools.get'>
+    previewChange: Method<'teamTools.previewChange'>
+    applyChange: Method<'teamTools.applyChange'>
+    completeWindDown: Method<'teamTools.completeWindDown'>
+    setLevel: Method<'teamTools.setLevel'>
+    applyPreset: Method<'teamTools.applyPreset'>
+    setModuleConfig: Method<'teamTools.setModuleConfig'>
   }
   onChanges(callback: (change: ChangeEvent) => void): () => void
 }

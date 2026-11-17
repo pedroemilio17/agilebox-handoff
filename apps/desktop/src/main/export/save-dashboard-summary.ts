@@ -1,4 +1,4 @@
-import type { Actor } from '@agilebox/core'
+import type { TenantContext } from '@agilebox/application'
 import { ExportFailedError } from '@agilebox/core'
 import type {
   ExportDashboardSummaryInput,
@@ -15,7 +15,7 @@ export interface SaveDialogOptions {
 /** Portas do handler: o caso de uso, o diálogo nativo e a gravação. Injetadas para teste. */
 export interface SaveSummaryDeps {
   readonly exportSummary: (
-    actor: Actor,
+    context: TenantContext,
     input: ExportDashboardSummaryInput,
   ) => Promise<ExportDashboardSummaryOutput>
   readonly showSaveDialog: (
@@ -35,10 +35,10 @@ const FILTERS: Record<'md' | 'csv', { name: string; extensions: string[] }[]> = 
  */
 export function createSaveDashboardSummary(deps: SaveSummaryDeps) {
   return async (
-    actor: Actor,
+    context: TenantContext,
     input: ExportDashboardSummaryInput,
   ): Promise<SaveDashboardSummaryOutput> => {
-    const summary = await deps.exportSummary(actor, input)
+    const summary = await deps.exportSummary(context, input)
     const dialog = await deps.showSaveDialog({
       defaultPath: summary.filename,
       filters: FILTERS[input.format].map((filter) => ({

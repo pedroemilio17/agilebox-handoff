@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PermissionDeniedError, toOrganizationId, toUserId } from '@agilebox/core'
+import { createTenantContext } from '@agilebox/application'
 import type { Actor } from '@agilebox/core'
 import { createSaveDashboardSummary } from './save-dashboard-summary'
 
@@ -46,9 +47,9 @@ function setup(
 describe('dashboard.saveSummary (handler do processo principal)', () => {
   it('gera o resumo antes de abrir o diálogo e sugere o nome e o filtro do formato', async () => {
     const { save, exportSummary, showSaveDialog, calls } = setup()
-    await save(manager, input)
+    await save(createTenantContext(manager), input)
     expect(calls.slice(0, 2)).toEqual(['export', 'dialog'])
-    expect(exportSummary).toHaveBeenCalledWith(manager, input)
+    expect(exportSummary).toHaveBeenCalledWith(createTenantContext(manager), input)
     expect(showSaveDialog).toHaveBeenCalledWith({
       defaultPath: 'resumo-do-time-2026-11-04.md',
       filters: [{ name: 'Markdown', extensions: ['md'] }],
@@ -57,25 +58,25 @@ describe('dashboard.saveSummary (handler do processo principal)', () => {
 
   it('grava o conteúdo no local escolhido e devolve saved: true', async () => {
     const { save, writeFile } = setup()
-    await expect(save(manager, input)).resolves.toEqual({ saved: true })
+    await expect(save(createTenantContext(manager), input)).resolves.toEqual({ saved: true })
     expect(writeFile).toHaveBeenCalledWith('/home/ana/Documentos/resumo.md', '# Resumo do time\n')
   })
 
   it('completa a extensão quando o usuário digita o nome sem ela', async () => {
     const { save, writeFile } = setup({ dialog: { canceled: false, filePath: '/tmp/relatorio' } })
-    await save(manager, { period: '2026-11-02', format: 'csv' })
+    await save(createTenantContext(manager), { period: '2026-11-02', format: 'csv' })
     expect(writeFile).toHaveBeenCalledWith('/tmp/relatorio.csv', expect.any(String))
   })
 
   it('cancelar o diálogo devolve saved: false sem erro e sem gravar', async () => {
     const { save, writeFile } = setup({ dialog: { canceled: true } })
-    await expect(save(manager, input)).resolves.toEqual({ saved: false })
+    await expect(save(createTenantContext(manager), input)).resolves.toEqual({ saved: false })
     expect(writeFile).not.toHaveBeenCalled()
   })
 
   it('erro de escrita vira erro tipado EXPORT_FAILED com mensagem curta', async () => {
     const { save } = setup({ writeError: true })
-    await expect(save(manager, input)).rejects.toMatchObject({
+    await expect(save(createTenantContext(manager), input)).rejects.toMatchObject({
       code: 'EXPORT_FAILED',
       message: 'Não foi possível salvar o arquivo.',
     })
@@ -85,7 +86,9 @@ describe('dashboard.saveSummary (handler do processo principal)', () => {
     const { save, showSaveDialog, writeFile } = setup({
       exportError: new PermissionDeniedError('Somente o gestor pode acessar o dashboard'),
     })
-    await expect(save(manager, input)).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(save(createTenantContext(manager), input)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
     expect(showSaveDialog).not.toHaveBeenCalled()
     expect(writeFile).not.toHaveBeenCalled()
   })

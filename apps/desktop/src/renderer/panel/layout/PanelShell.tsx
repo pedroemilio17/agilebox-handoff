@@ -8,13 +8,24 @@ import {
   SegmentedControl,
 } from '@agilebox/ui'
 import type { SessionUserDto } from '@agilebox/contract'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import type { TaskScope } from '../board/task-scope'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
+import { sprintCopy } from '../sprints/sprint-copy'
+import { impedimentCopy } from '../impediments/impediment-copy'
 import styles from './PanelShell.module.css'
 
-export type PanelView = 'dashboard' | 'projects' | 'agenda' | 'plugins' | 'settings'
+export type PanelView =
+  | 'dashboard'
+  | 'projects'
+  | 'backlog'
+  | 'sprints'
+  | 'impediments'
+  | 'agenda'
+  | 'plugins'
+  | 'settings'
 
 export interface PanelShellProps {
   readonly projectSelector?: ReactNode
@@ -26,7 +37,13 @@ export interface PanelShellProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
-  readonly projects?: readonly { readonly id: string; readonly name: string }[]
+  /** Motivo para desabilitar "Nova tarefa" (ex.: projeto arquivado selecionado). */
+  readonly newTaskBlockedReason?: string | undefined
+  readonly projects?: readonly {
+    readonly id: string
+    readonly name: string
+    readonly archivedAt?: string | null | undefined
+  }[]
   readonly selectedProjectId?: string | null
   readonly projectCounts?: Readonly<Record<string, number>>
   readonly onProjectSelect?: (id: string | null) => void
@@ -39,6 +56,9 @@ export interface PanelShellProps {
   }
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
+  readonly backlog?: ReactNode
+  readonly sprints?: ReactNode
+  readonly impediments?: ReactNode
   readonly children?: ReactNode
   /** Escopo do quadro: "Minhas tarefas" ou "Equipe". Só aparece com o quadro aberto. */
   readonly taskScope?: TaskScope
@@ -48,6 +68,9 @@ export interface PanelShellProps {
 const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
   projects: 'Quadro',
+  backlog: panelCopy.backlogTitle,
+  sprints: sprintCopy.title,
+  impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
@@ -63,6 +86,7 @@ export function PanelShell({
   onToggleExpand,
   onClose,
   onNewTask,
+  newTaskBlockedReason,
   account,
   projects = [],
   selectedProjectId = null,
@@ -72,16 +96,35 @@ export function PanelShell({
   onSearch,
   dashboard,
   agenda,
+  backlog,
+  sprints,
+  impediments,
   children,
   taskScope = 'mine',
   onTaskScopeChange,
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
+  const capabilities = useCapabilities()
   const visibleView = view === 'dashboard' && !isManager ? 'projects' : view
   const items: readonly { id: PanelView; label: string; icon: string; soon?: boolean }[] = [
     ...(isManager ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: '▥' }] : []),
     { id: 'projects', label: 'Quadro', icon: '▦' },
-    { id: 'agenda', label: panelCopy.agenda, icon: '▣' },
+    // Backlog só com o módulo ligado e o nível da pessoa (Intermediário em diante).
+    ...(capabilities.showScreen('backlog')
+      ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
+      : []),
+    // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
+    ...(capabilities.showScreen('sprints')
+      ? [{ id: 'sprints' as const, label: sprintCopy.title, icon: '◷' }]
+      : []),
+    // Agenda só com o módulo ligado e o nível da pessoa; sem "em breve" nem item desabilitado.
+    // Impedimentos: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
+    ...(capabilities.showScreen('impediments')
+      ? [{ id: 'impediments' as const, label: impedimentCopy.title, icon: '⚑' }]
+      : []),
+    ...(capabilities.showScreen('agenda')
+      ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
+      : []),
     { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
   ]
 
@@ -111,6 +154,7 @@ export function PanelShell({
           onToggleExpand={onToggleExpand}
           onClose={onClose}
           onNewTask={onNewTask}
+          newTaskBlockedReason={newTaskBlockedReason}
           taskScope={taskScope}
           onTaskScopeChange={onTaskScopeChange}
         />
@@ -119,6 +163,12 @@ export function PanelShell({
             children
           ) : visibleView === 'dashboard' && dashboard ? (
             dashboard
+          ) : visibleView === 'backlog' && backlog ? (
+            backlog
+          ) : visibleView === 'sprints' && sprints ? (
+            sprints
+          ) : visibleView === 'impediments' && impediments ? (
+            impediments
           ) : visibleView === 'agenda' && agenda ? (
             agenda
           ) : visibleView === 'settings' ? (
@@ -246,6 +296,9 @@ function Rail({
               name={project.name}
             />
             <span className={styles.projectName}>{project.name}</span>
+            {project.archivedAt != null ? (
+              <span className={styles.archivedLabel}>{panelCopy.archivedProject}</span>
+            ) : null}
             <span className={styles.count}>{projectCounts?.[project.id] ?? '—'}</span>
           </button>
         ))}
@@ -283,6 +336,7 @@ interface TitleBarProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
+  readonly newTaskBlockedReason: string | undefined
   readonly taskScope: TaskScope
   readonly onTaskScopeChange: ((scope: TaskScope) => void) | undefined
 }
@@ -296,6 +350,7 @@ function TitleBar({
   onToggleExpand,
   onClose,
   onNewTask,
+  newTaskBlockedReason,
   taskScope,
   onTaskScopeChange,
 }: TitleBarProps) {
@@ -324,6 +379,8 @@ function TitleBar({
             className={styles.newTask}
             aria-label={panelCopy.newTask}
             aria-keyshortcuts="N"
+            disabled={newTaskBlockedReason !== undefined}
+            title={newTaskBlockedReason}
             onClick={onNewTask}
             type="button"
           >
@@ -348,6 +405,9 @@ function NavIcon({ kind }: { readonly kind: string }) {
     projects: 'M3 4h5v16H3ZM10 4h5v11h-5ZM17 4h4v8h-4Z',
     dashboard: 'M4 20V10m8 10V4m8 16v-7',
     agenda: 'M4 5h16v16H4ZM4 10h16M8 2v6m8-6v6',
+    backlog: 'M4 6h10M4 12h10M4 18h6M16 16l3 3 3-3M19 19V9',
+    sprints: 'M12 3a9 9 0 1 0 9 9M12 7v5l3 2',
+    impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
   }

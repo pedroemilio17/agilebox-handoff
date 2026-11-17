@@ -1,4 +1,13 @@
-import type { ChecklistItemId, EventId, TaskCommentId, TaskId, UserId } from '../shared/ids'
+import type {
+  AcceptanceCriterionId,
+  ChecklistItemId,
+  EventId,
+  ImpedimentId,
+  SprintId,
+  TaskCommentId,
+  TaskId,
+  UserId,
+} from '../shared/ids'
 import type { DateOnly } from '../values/date-only'
 import type { ParticipationRole } from '../values/role'
 import type { TaskPriority } from '../values/task-priority'
@@ -34,13 +43,58 @@ export type TimelineEvent = EventBase &
         readonly payload: { readonly itemId: ChecklistItemId; readonly title: string }
       }
     | {
+        readonly type:
+          | 'acceptance_criterion_added'
+          | 'acceptance_criterion_removed'
+          | 'acceptance_criterion_done'
+          | 'acceptance_criterion_reopened'
+        readonly payload: { readonly criterionId: AcceptanceCriterionId; readonly text: string }
+      }
+    | {
+        readonly type: 'acceptance_criterion_renamed'
+        readonly payload: Change<string> & { readonly criterionId: AcceptanceCriterionId }
+      }
+    | {
+        readonly type: 'acceptance_criterion_moved'
+        readonly payload: Change<number> & {
+          readonly criterionId: AcceptanceCriterionId
+          readonly text: string
+        }
+      }
+    | { readonly type: 'estimate_changed'; readonly payload: Change<number | null> }
+    | {
         readonly type: 'comment_added'
         readonly payload: { readonly commentId: TaskCommentId; readonly excerpt: string }
       }
     | { readonly type: 'comment_removed'; readonly payload: { readonly commentId: TaskCommentId } }
     | { readonly type: 'definition_confirmed'; readonly payload: { readonly count: number } }
+    | {
+        readonly type: 'task_archived' | 'task_unarchived'
+        readonly payload: Record<string, never>
+      }
+    | {
+        readonly type: 'task_added_to_backlog' | 'task_sent_to_backlog'
+        readonly payload: Record<string, never>
+      }
+    | {
+        readonly type: 'task_pulled_from_backlog'
+        readonly payload: { readonly status: TaskStatus }
+      }
+    | { readonly type: 'task_reordered'; readonly payload: { readonly position: number } }
     | { readonly type: 'blocked'; readonly payload: { readonly reason: string } }
-    | { readonly type: 'unblocked'; readonly payload: { readonly reason: string } }
+    | {
+        readonly type: 'unblocked'
+        /** Nota da resolução (M5.2a). Ausente em eventos antigos: tratar como nula. */
+        readonly payload: { readonly reason: string; readonly resolution?: string | null }
+      }
+    | {
+        readonly type: 'impediment_assigned'
+        readonly payload: {
+          readonly impedimentId: ImpedimentId
+          readonly before: UserId | null
+          readonly after: UserId | null
+        }
+      }
     | { readonly type: 'deadline_changed'; readonly payload: Change<DateOnly | null> }
     | { readonly type: 'renamed' | 'description_edited'; readonly payload: Change<string> }
     | { readonly type: 'responsible_changed'; readonly payload: Change<UserId> }
@@ -50,8 +104,18 @@ export type TimelineEvent = EventBase &
         readonly type: 'participant_added' | 'participant_removed'
         readonly payload: ParticipantChange
       }
+    | {
+        readonly type: 'task_added_to_sprint' | 'task_removed_from_sprint'
+        readonly payload: { readonly sprintId: SprintId; readonly sprintNumber: number }
+      }
   )
 
 export function createTimelineEvent(event: TimelineEvent): TimelineEvent {
   return { ...event, payload: { ...event.payload } } as TimelineEvent
 }
+
+/** Entrar e sair de sprint (M4.1 e M4.2): membros da união `TimelineEvent`. */
+export type TaskSprintTimelineEvent = Extract<
+  TimelineEvent,
+  { type: 'task_added_to_sprint' | 'task_removed_from_sprint' }
+>

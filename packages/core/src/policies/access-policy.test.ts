@@ -21,6 +21,8 @@ const project: Project = {
   name: 'P',
   nameKey: 'p',
   createdAt: '',
+  archivedAt: null,
+  archivedBy: null,
 }
 const task: Task = {
   id: 'task' as TaskId,
@@ -35,6 +37,10 @@ const task: Task = {
   priority: 'normal',
   blockedReason: null,
   blockedAt: null,
+  archivedAt: null,
+  archivedBy: null,
+  backlogRank: null,
+  estimatedHoursHundredths: null,
   deadline: null,
   ticket: null,
   searchText: '',
@@ -146,6 +152,35 @@ describe('política de acesso', () => {
       expect(policy.canSeeRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
       expect(policy.canEditRate(actor, { ...rate, organizationId: otherOrg })).toBe(false)
     }
+  })
+})
+
+describe('arquivamento', () => {
+  const archived = { ...ownTask, archivedAt: '2026-01-01T00:00:00.000Z', archivedBy: user }
+  it('arquivar e desarquivar seguem a edição: participante ou gestor, nunca entidade', () => {
+    expect(policy.canChangeTaskArchive(collaborator, ownTask)).toBe(true)
+    expect(policy.canChangeTaskArchive(manager, task)).toBe(true)
+    expect(policy.canChangeTaskArchive(collaborator, task)).toBe(false)
+    expect(policy.canChangeTaskArchive({ ...manager, organizationId: otherOrg }, task)).toBe(false)
+  })
+  it('tarefa arquivada não pode ser editada, mas quem participa ainda pode desarquivar', () => {
+    expect(policy.canEditTask(collaborator, ownTask)).toBe(true)
+    expect(policy.canEditTask(collaborator, archived)).toBe(false)
+    expect(policy.canEditTask(manager, archived)).toBe(false)
+    expect(policy.canChangeTaskArchive(collaborator, archived)).toBe(true)
+    expect(policy.isReadOnlyFor(collaborator, archived, true)).toBe(true)
+  })
+  it('projeto: só o gestor e quem criou o projeto arquivam', () => {
+    expect(policy.canArchiveProject(manager, project)).toBe(true)
+    expect(policy.canArchiveProject({ ...collaborator, userId: other }, project)).toBe(true)
+    expect(policy.canArchiveProject(collaborator, project)).toBe(false)
+    expect(policy.canArchiveProject({ ...manager, organizationId: otherOrg }, project)).toBe(false)
+  })
+  it('projeto: renomear segue a mesma regra de arquivar (gestor e criador)', () => {
+    expect(policy.canRenameProject(manager, project)).toBe(true)
+    expect(policy.canRenameProject({ ...collaborator, userId: other }, project)).toBe(true)
+    expect(policy.canRenameProject(collaborator, project)).toBe(false)
+    expect(policy.canRenameProject({ ...manager, organizationId: otherOrg }, project)).toBe(false)
   })
 })
 

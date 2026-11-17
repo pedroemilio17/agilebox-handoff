@@ -27,6 +27,7 @@ import {
   TASK_STATUS_LABELS,
 } from '@agilebox/core'
 import type { TaskDto, WipColumnDto } from '@agilebox/contract'
+import { formatHours } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import {
   Avatar,
@@ -42,12 +43,15 @@ import {
   WipLimitMeter,
 } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
+import { useCapabilities, type Capabilities } from '../../shared/capabilities/capabilities-context'
 import { queryKeys } from '../../shared/query/keys'
 import { formatDate } from '../../shared/lib/format-date'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
-import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
+import { isAgingTask, isArchivedTask, isBlockedTask } from '../../shared/lib/task-signals'
+import { blockedMarkerLabel } from '../impediments/impediment-copy'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
+import { sprintMarker } from '../sprints/sprint-rules'
 import { isWipStatus, type WipStatus } from './wip-limit'
 import { WipLimitEditor } from './WipLimitEditor'
 import styles from './BoardView.module.css'
@@ -84,6 +88,11 @@ export interface BoardViewProps {
   readonly readOnlyScope?: boolean
   /** Tenta carregar de novo quando a visão Equipe falha. */
   readonly onRetry?: () => void
+  /** Mostra tarefas arquivadas (desligado por padrão). A consulta é feita pelo pai. */
+  readonly showArchived?: boolean
+  readonly onShowArchivedChange?: (show: boolean) => void
+  /** Motivo para desabilitar "+" e "Nova tarefa" (ex.: projeto arquivado). */
+  readonly newTaskBlockedReason?: string | undefined
 }
 
 export function BoardView({
@@ -105,9 +114,20 @@ export function BoardView({
   onSetWipLimit,
   readOnlyScope = false,
   onRetry,
+  showArchived = false,
+  onShowArchivedChange,
+  newTaskBlockedReason,
 }: BoardViewProps) {
   const api = useApi()
+  const capabilities = useCapabilities()
   const [exception, setException] = useState<BoardException | null>(initialException)
+  // Filtro de um módulo desligado (ou sem a tela) não aparece; o valor guardado volta se ele reabrir.
+  const activeException =
+    exception !== null && exceptionVisible(exception, capabilities) ? exception : null
+  const blockedVisible = capabilities.can('impediments:passive')
+  // Filtro de sprint ativa só com a tela de Sprints (Intermediário em diante).
+  const sprintFilterVisible = capabilities.can('sprints:screen')
+  const flowVisible = capabilities.can('flowMetrics:screen')
   // Relógio do indicador "atualizado há N min": recalcula a cada 30 s, sem refazer a busca.
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -185,20 +205,28 @@ export function BoardView({
         : null
   }
 
-  const agingCount = (tasks ?? []).filter(isAgingTask).length
-  const overdueCount = (tasks ?? []).filter((task) => task.overdue).length
-  const highPriorityCount = (tasks ?? []).filter((task) => task.priority === 'high').length
-  const blockedCount = (tasks ?? []).filter(isBlockedTask).length
+  // Arquivadas ficam fora das contagens e dos filtros de exceção: são só para consulta.
+  const activeTasks = (tasks ?? []).filter((task) => !isArchivedTask(task))
+  const agingCount = activeTasks.filter(isAgingTask).length
+  const overdueCount = activeTasks.filter((task) => task.overdue).length
+  const highPriorityCount = activeTasks.filter((task) => task.priority === 'high').length
+  const blockedCount = activeTasks.filter(isBlockedTask).length
+  const activeSprintCount = activeTasks.filter((task) => task.sprint?.status === 'active').length
   const visibleTasks = (tasks ?? []).filter((task) =>
-    exception === 'aging'
-      ? isAgingTask(task)
-      : exception === 'overdue'
-        ? task.overdue
-        : exception === 'high'
-          ? task.priority === 'high'
-          : exception === 'blocked'
-            ? isBlockedTask(task)
-            : true,
+    activeException === null
+      ? true
+      : !isArchivedTask(task) &&
+        (activeException === 'aging'
+          ? isAgingTask(task)
+          : activeException === 'overdue'
+            ? task.overdue
+            : activeException === 'high'
+              ? task.priority === 'high'
+              : activeException === 'blocked'
+                ? isBlockedTask(task)
+                : activeException === 'activeSprint'
+                  ? task.sprint?.status === 'active'
+                  : true),
   )
   const columns = () =>
     TASK_STATUSES.map((status) => (
@@ -210,6 +238,7 @@ export function BoardView({
         onCreateTask={readOnlyScope ? undefined : onCreateTask}
         onOpenTask={onOpenTask}
         onMoveTask={onMoveTask}
+        newTaskBlockedReason={newTaskBlockedReason}
         wip={wipColumns.find((column) => column.status === status)}
         canEditWipLimits={canEditWipLimits && !readOnlyScope}
         onSetWipLimit={onSetWipLimit}
@@ -226,34 +255,56 @@ export function BoardView({
   return (
     <>
       <div className={styles.filters} aria-label="Filtros do quadro">
+        {flowVisible ? (
+          <button
+            type="button"
+            aria-pressed={activeException === 'aging'}
+            onClick={() => setException(activeException === 'aging' ? null : 'aging')}
+          >
+            Paradas · {agingCount}
+          </button>
+        ) : null}
         <button
           type="button"
-          aria-pressed={exception === 'aging'}
-          onClick={() => setException(exception === 'aging' ? null : 'aging')}
-        >
-          Paradas · {agingCount}
-        </button>
-        <button
-          type="button"
-          aria-pressed={exception === 'overdue'}
-          onClick={() => setException(exception === 'overdue' ? null : 'overdue')}
+          aria-pressed={activeException === 'overdue'}
+          onClick={() => setException(activeException === 'overdue' ? null : 'overdue')}
         >
           Vencidas · {overdueCount}
         </button>
         <button
           type="button"
-          aria-pressed={exception === 'high'}
-          onClick={() => setException(exception === 'high' ? null : 'high')}
+          aria-pressed={activeException === 'high'}
+          onClick={() => setException(activeException === 'high' ? null : 'high')}
         >
           Prioridade alta · {highPriorityCount}
         </button>
-        <button
-          type="button"
-          aria-pressed={exception === 'blocked'}
-          onClick={() => setException(exception === 'blocked' ? null : 'blocked')}
-        >
-          Bloqueadas · {blockedCount}
-        </button>
+        {blockedVisible ? (
+          <button
+            type="button"
+            aria-pressed={activeException === 'blocked'}
+            onClick={() => setException(activeException === 'blocked' ? null : 'blocked')}
+          >
+            Bloqueadas · {blockedCount}
+          </button>
+        ) : null}
+        {sprintFilterVisible ? (
+          <button
+            type="button"
+            aria-pressed={activeException === 'activeSprint'}
+            onClick={() => setException(activeException === 'activeSprint' ? null : 'activeSprint')}
+          >
+            Sprint ativa · {activeSprintCount}
+          </button>
+        ) : null}
+        {onShowArchivedChange ? (
+          <button
+            type="button"
+            aria-pressed={showArchived}
+            onClick={() => onShowArchivedChange(!showArchived)}
+          >
+            {panelCopy.showArchived}
+          </button>
+        ) : null}
         <span>
           {formatTaskCount(visibleTasks.length)} ·{' '}
           {refreshing
@@ -274,7 +325,13 @@ export function BoardView({
               })}
           action={
             !readOnlyScope && onNewTask ? (
-              <Button variant="primary" shortcut="N" onClick={onNewTask}>
+              <Button
+                variant="primary"
+                shortcut="N"
+                onClick={onNewTask}
+                disabled={newTaskBlockedReason !== undefined}
+                title={newTaskBlockedReason}
+              >
                 Nova tarefa
               </Button>
             ) : null
@@ -427,6 +484,7 @@ interface KanbanColumnProps {
   readonly canEditWipLimits: boolean
   readonly onSetWipLimit: BoardViewProps['onSetWipLimit']
   readonly readOnlyScope: boolean
+  readonly newTaskBlockedReason: string | undefined
 }
 
 function KanbanColumn({
@@ -443,6 +501,7 @@ function KanbanColumn({
   canEditWipLimits,
   onSetWipLimit,
   readOnlyScope,
+  newTaskBlockedReason,
 }: KanbanColumnProps) {
   const title = TASK_STATUS_LABELS[status]
   // Só Desenvolvendo e Revisar têm limite; nas outras colunas o cabeçalho segue só com a contagem.
@@ -451,6 +510,9 @@ function KanbanColumn({
     second.updatedAt.localeCompare(first.updatedAt),
   )
   const { isOver, setNodeRef } = useDroppable({ id: status })
+  const capabilities = useCapabilities()
+  const wipVisible = capabilities.can('wip:screen')
+  const flowVisible = capabilities.can('flowMetrics:screen')
 
   return (
     <section
@@ -463,7 +525,7 @@ function KanbanColumn({
         <h2>
           <StatusChip status={status} />
         </h2>
-        {acceptsWip && wip && wip.limit !== null && wip.state !== 'none' ? (
+        {wipVisible && acceptsWip && wip && wip.limit !== null && wip.state !== 'none' ? (
           <WipLimitMeter
             name={title}
             count={wip.count}
@@ -474,7 +536,11 @@ function KanbanColumn({
         ) : (
           <span aria-label={`${tasks.length} tarefas`}>{tasks.length}</span>
         )}
-        {isWipStatus(status) && canEditWipLimits && onSetWipLimit && !readOnlyScope ? (
+        {wipVisible &&
+        isWipStatus(status) &&
+        canEditWipLimits &&
+        onSetWipLimit &&
+        !readOnlyScope ? (
           <WipLimitEditor
             columnName={title}
             limit={wip?.limit ?? null}
@@ -486,6 +552,8 @@ function KanbanColumn({
             type="button"
             className={styles.addTask}
             aria-label={`Nova tarefa em ${title}`}
+            disabled={newTaskBlockedReason !== undefined}
+            title={newTaskBlockedReason}
             onClick={() => onCreateTask(status)}
           >
             +
@@ -498,8 +566,13 @@ function KanbanColumn({
             <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
           ) : (
             sortedTasks.map((task) => (
-              <li className={styles.card} data-task-id={task.id} key={task.id}>
+              <li
+                className={`${styles.card} ${isArchivedTask(task) ? styles.cardArchived : ''}`}
+                data-task-id={task.id}
+                key={task.id}
+              >
                 <TaskCard
+                  archived={isArchivedTask(task)}
                   readOnly
                   selected={selectedTaskId === task.id}
                   onOpen={() => onOpenTask(task.id)}
@@ -512,28 +585,45 @@ function KanbanColumn({
         </ul>
       ) : (
         <SortableContext
-          items={sortedTasks.map((task) => task.id)}
+          items={sortedTasks.filter((task) => !isArchivedTask(task)).map((task) => task.id)}
           strategy={verticalListSortingStrategy}
         >
           <ul className={styles.cards}>
             {sortedTasks.length === 0 ? (
               <li className={styles.empty}>{panelCopy.boardColumnEmpty}</li>
             ) : (
-              sortedTasks.map((task) => (
-                <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
-                  <TaskCard
-                    selected={selectedTaskId === task.id}
-                    onOpen={() => onOpenTask(task.id)}
-                    responsibleName={responsibleNames.get(task.id)}
-                    task={task}
-                  />
-                </SortableTaskCard>
-              ))
+              sortedTasks.map((task) =>
+                isArchivedTask(task) ? (
+                  // Arquivada: sem arrastar nem trocar de estado; abre só para leitura.
+                  <li
+                    className={`${styles.card} ${styles.cardArchived}`}
+                    data-task-id={task.id}
+                    key={task.id}
+                  >
+                    <TaskCard
+                      archived
+                      selected={selectedTaskId === task.id}
+                      onOpen={() => onOpenTask(task.id)}
+                      responsibleName={responsibleNames.get(task.id)}
+                      task={task}
+                    />
+                  </li>
+                ) : (
+                  <SortableTaskCard key={task.id} task={task} onMoveTask={onMoveTask}>
+                    <TaskCard
+                      selected={selectedTaskId === task.id}
+                      onOpen={() => onOpenTask(task.id)}
+                      responsibleName={responsibleNames.get(task.id)}
+                      task={task}
+                    />
+                  </SortableTaskCard>
+                ),
+              )
             )}
           </ul>
         </SortableContext>
       )}
-      {status === 'done' && !readOnlyScope && (
+      {status === 'done' && !readOnlyScope && flowVisible && (
         <p className={styles.cycle} {...(flowError ? { role: 'alert' } : {})}>
           {flowError
             ? 'Não foi possível calcular o ciclo.'
@@ -598,10 +688,20 @@ function SortableTaskCard({
   )
 }
 
-type BoardException = 'aging' | 'overdue' | 'high' | 'blocked'
+type BoardException = 'aging' | 'overdue' | 'high' | 'blocked' | 'activeSprint'
+
+/** "Paradas" depende da ferramenta de fluxo; "Bloqueadas" é efeito passivo do impedimento. */
+function exceptionVisible(value: BoardException, capabilities: Capabilities): boolean {
+  if (value === 'aging') return capabilities.can('flowMetrics:screen')
+  if (value === 'blocked') return capabilities.can('impediments:passive')
+  if (value === 'activeSprint') return capabilities.can('sprints:screen')
+  return true
+}
 
 interface TaskCardProps {
   readonly selected?: boolean
+  /** Arquivada: atenuada, com marcador "Arquivada" e nome acessível com o aviso. */
+  readonly archived?: boolean
   /** Visão Equipe: sem comentários no cartão e nome acessível com o estado e o responsável. */
   readonly readOnly?: boolean
   readonly task: TaskDto
@@ -615,21 +715,46 @@ function TaskCard({
   onOpen,
   selected = false,
   readOnly = false,
+  archived = false,
 }: TaskCardProps) {
   const deadline = describeDeadline(task)
-  const blocked = isBlockedTask(task)
+  const capabilities = useCapabilities()
+  const blocked = isBlockedTask(task) && capabilities.can('impediments:passive')
+  // Responsável do impedimento aberto (efeito passivo): só aparece no rótulo e no title.
+  const blockedOwner = blocked ? (task.impediment?.ownerName ?? null) : null
+  const blockedAria = blocked
+    ? `, bloqueada${blockedOwner ? `, responsável ${blockedOwner}` : ''}`
+    : ''
+  const showChecklist = capabilities.can('subtasks:passive')
   const { done, total } = task.checklistProgress
-  const checklistLabel = total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
+  const checklistLabel =
+    showChecklist && total > 0 ? `, ${panelCopy.checklistProgressCount(done, total)}` : ''
   const commentLabel =
     !readOnly && task.commentCount > 0 ? `, ${panelCopy.commentCountLabel(task.commentCount)}` : ''
+  // Marcadores passivos (M3.3): aparecem em qualquer nível, quando o módulo está ligado.
+  const criteria = task.criteriaProgress
+  const criteriaText =
+    capabilities.can('acceptance:passive') && criteria && criteria.total > 0
+      ? panelCopy.criteriaMarker(criteria.done, criteria.total)
+      : null
+  const estimateText =
+    capabilities.can('estimates.hours:passive') && task.estimatedHours != null
+      ? panelCopy.backlogEstimate(formatHours(Math.round(task.estimatedHours * 100)))
+      : null
+  // Sprint atual (M4.2): marcador passivo em qualquer nível, com o módulo ligado ou encerrando.
+  const sprintText = capabilities.can('sprints:passive') ? sprintMarker(task) : null
+  const passiveLabel = [criteriaText, estimateText, sprintText]
+    .filter(Boolean)
+    .map((text) => `, ${text}`)
+    .join('')
   const ariaLabel = readOnly
     ? panelCopy.teamCardLabel(
         task.key,
-        `${task.title}${task.priority === 'high' ? ', prioridade alta' : ''}${blocked ? ', bloqueada' : ''}`,
+        `${task.title}${task.priority === 'high' ? ', prioridade alta' : ''}${blockedAria}`,
         TASK_STATUS_LABELS[task.status],
         responsibleName ?? panelCopy.noResponsible.toLowerCase(),
       )
-    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blocked ? ', bloqueada' : ''}${checklistLabel}${commentLabel}`
+    : `${task.key} · ${task.title}${task.priority === 'high' ? ' · Prioridade alta' : ''}${blockedAria}${archived ? ', arquivada' : ''}${checklistLabel}${passiveLabel}${commentLabel}`
 
   return (
     <button
@@ -638,11 +763,14 @@ function TaskCard({
       aria-label={ariaLabel}
       className={styles.cardButton}
       onClick={onOpen}
-      title={blocked ? `Bloqueada: ${task.blockedReason}` : undefined}
+      title={blocked ? blockedMarkerLabel(task.blockedReason, blockedOwner) : undefined}
       type="button"
     >
       <span className={styles.cardTop}>
         <TaskKey value={task.key} />
+        {archived ? (
+          <span className={styles.archivedMarker}>{panelCopy.archivedMarker}</span>
+        ) : null}
         {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
         <span className={styles.projectName} id={`${task.id}-project`}>
           {task.projectName}
@@ -669,7 +797,10 @@ function TaskCard({
         ) : (
           <span />
         )}
-        <ChecklistProgress done={done} total={total} />
+        {showChecklist ? <ChecklistProgress done={done} total={total} /> : null}
+        {criteriaText ? <span className={styles.passiveMark}>{criteriaText}</span> : null}
+        {estimateText ? <span className={styles.passiveMark}>{estimateText}</span> : null}
+        {sprintText ? <span className={styles.passiveMark}>{sprintText}</span> : null}
         {readOnly ? null : <CommentCount count={task.commentCount} />}
         {blocked ? <SignalBadge variant="blocked">Bloqueada</SignalBadge> : null}
         {isAgingTask(task) && <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>}

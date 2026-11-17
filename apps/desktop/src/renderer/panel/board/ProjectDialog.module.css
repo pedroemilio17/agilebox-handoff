@@ -79,3 +79,19 @@
   justify-content: flex-start;
   min-height: var(--size-touch-target);
 }
+
+.archivedTag {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.archiveRow {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}

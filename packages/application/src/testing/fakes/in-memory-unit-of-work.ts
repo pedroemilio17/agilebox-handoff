@@ -2,11 +2,13 @@ import type { OrganizationId } from '@agilebox/core'
 import type { UnitOfWork, UnitOfWorkRepositories } from '../../ports'
 import {
   createInMemoryState,
+  InMemoryAcceptanceRepository,
   InMemoryBoardSettingsRepository,
   InMemoryChecklistRepository,
   InMemoryContributorRepository,
   InMemoryDailyEntryRepository,
   InMemoryDefinitionOfDoneRepository,
+  InMemoryImpedimentRepository,
   InMemoryTaskCommentRepository,
   InMemoryMeetingRepository,
   InMemoryOrganizationRepository,
@@ -15,7 +17,10 @@ import {
   InMemoryRetroActionRepository,
   InMemoryTaskOpenRepository,
   InMemoryTaskRepository,
+  InMemoryTeamToolsRepository,
   InMemoryTimelineRepository,
+  InMemorySprintRepository,
+  InMemorySprintTaskRepository,
   InMemoryUserRepository,
 } from './in-memory-repositories'
 import type { InMemoryState } from './in-memory-repositories'
@@ -32,19 +37,24 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   constructor(state = createInMemoryState()) {
     this.state = state
     this.repositories = {
+      acceptance: new InMemoryAcceptanceRepository(state),
       boardSettings: new InMemoryBoardSettingsRepository(state),
       checklist: new InMemoryChecklistRepository(state),
       comments: new InMemoryTaskCommentRepository(state),
       contributors: new InMemoryContributorRepository(state),
       dailyEntries: new InMemoryDailyEntryRepository(state),
       definitionOfDone: new InMemoryDefinitionOfDoneRepository(state),
+      impediments: new InMemoryImpedimentRepository(state),
       meetings: new InMemoryMeetingRepository(state),
       organizations: new InMemoryOrganizationRepository(state),
       participations: new InMemoryParticipationRepository(state),
       projects: new InMemoryProjectRepository(state),
       retroActions: new InMemoryRetroActionRepository(state),
+      sprints: new InMemorySprintRepository(state),
+      sprintTasks: new InMemorySprintTaskRepository(state),
       taskOpens: new InMemoryTaskOpenRepository(state),
       tasks: new InMemoryTaskRepository(state),
+      teamTools: new InMemoryTeamToolsRepository(state),
       timeline: new InMemoryTimelineRepository(state),
       users: new InMemoryUserRepository(state),
     }
@@ -57,6 +67,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     if (this.active) throw new Error('Transações aninhadas não são suportadas pelo fake')
     this.active = true
     const snapshot = {
+      acceptance: copyMap(this.state.acceptance),
       boardSettings: new Map(this.state.boardSettings),
       checklist: copyMap(this.state.checklist),
       comments: copyMap(this.state.comments),
@@ -68,9 +79,15 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       projects: copyMap(this.state.projects),
       members: copyMap(this.state.members),
       retroActions: copyMap(this.state.retroActions),
+      sprints: copyMap(this.state.sprints),
+      sprintTasks: copyMap(this.state.sprintTasks),
+      impediments: copyMap(this.state.impediments),
       organizations: new Map(this.state.organizations),
       taskOpens: copyMap(this.state.taskOpens),
       tasks: copyMap(this.state.tasks),
+      teamPreferences: new Map(this.state.teamPreferences),
+      teamModules: copyMap(this.state.teamModules),
+      teamToolsAudit: copyMap(this.state.teamToolsAudit),
       timeline: copyMap(this.state.timeline),
       users: copyMap(this.state.users),
     }

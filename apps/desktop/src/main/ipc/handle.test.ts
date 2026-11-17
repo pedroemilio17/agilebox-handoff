@@ -6,8 +6,8 @@ import {
   toUserId,
   toOrganizationId,
 } from '@agilebox/core'
-import type { Actor } from '@agilebox/core'
-import type { ActorSession } from '@agilebox/application'
+import type { ActorSession, TenantContext } from '@agilebox/application'
+import { createTenantContext } from '@agilebox/application'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
 import { createIpcHandler } from './handle'
 
@@ -30,16 +30,26 @@ describe('handler IPC', () => {
     expect(execute).not.toHaveBeenCalled()
   })
 
-  it('injeta o ator da sessão e ignora qualquer ator enviado pelo renderer', async () => {
-    const execute = vi.fn((currentActor: Actor, input: { name: string }) => ({
-      userId: currentActor.userId,
+  it('injeta o contexto da sessão e ignora qualquer ator ou time enviado pelo renderer', async () => {
+    const execute = vi.fn((context: TenantContext, input: { name: string }) => ({
+      userId: context.actor.userId,
       name: input.name,
     }))
     const handler = createIpcHandler(inputSchema, session, execute)
 
-    const result = await handler({}, { name: 'Projeto', actor: { userId: 'atacante' } })
+    const result = await handler(
+      {},
+      {
+        name: 'Projeto',
+        actor: { userId: 'atacante' },
+        userId: 'atacante',
+        tenantId: '00000000000000000000000009',
+        organizationId: '00000000000000000000000009',
+      },
+    )
 
-    expect(execute).toHaveBeenCalledWith(actor, { name: 'Projeto' })
+    expect(execute).toHaveBeenCalledWith(createTenantContext(actor), { name: 'Projeto' })
+    expect(execute.mock.calls[0]?.[0].tenantId).toBe(actor.organizationId)
     expect(result).toEqual({ ok: true, value: { userId: actor.userId, name: 'Projeto' } })
   })
 

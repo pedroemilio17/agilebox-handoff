@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createContributor,
@@ -52,10 +53,15 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     clock: new FixedClock(clockInstant),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
     meetings: unitOfWork.repositories.meetings,
@@ -131,7 +137,9 @@ describe('daily: pessoa', () => {
   it('get de hoje mostra a daily como devida até ser preenchida', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await expect(useCases.daily.getToday.execute(ana, { date: TODAY })).resolves.toEqual({
+    await expect(
+      useCases.daily.getToday.execute(createTenantContext(ana), { date: TODAY }),
+    ).resolves.toEqual({
       date: TODAY,
       due: true,
       entry: null,
@@ -141,7 +149,7 @@ describe('daily: pessoa', () => {
   it('salva a daily do dia, sem gerar aviso', async () => {
     const { useCases, unitOfWork, notifier } = setup()
     await seed(unitOfWork)
-    const saved = await useCases.daily.save.execute(ana, {
+    const saved = await useCases.daily.save.execute(createTenantContext(ana), {
       date: TODAY,
       answers,
       taskRefs: [ownTaskId],
@@ -154,7 +162,7 @@ describe('daily: pessoa', () => {
       noNews: false,
       taskRefs: [ownTaskId],
     })
-    const today = await useCases.daily.getToday.execute(ana, { date: TODAY })
+    const today = await useCases.daily.getToday.execute(createTenantContext(ana), { date: TODAY })
     expect(today.due).toBe(false)
     expect(today.entry?.id).toBe(saved.id)
     expect(notifier.changes).toEqual([])
@@ -163,8 +171,11 @@ describe('daily: pessoa', () => {
   it('duas gravações no mesmo dia: a segunda atualiza a primeira', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const first = await useCases.daily.save.execute(ana, { date: TODAY, answers })
-    const second = await useCases.daily.save.execute(ana, {
+    const first = await useCases.daily.save.execute(createTenantContext(ana), {
+      date: TODAY,
+      answers,
+    })
+    const second = await useCases.daily.save.execute(createTenantContext(ana), {
       date: TODAY,
       answers: { ...answers, blocker: 'Aguardo a revisão.' },
     })
@@ -182,37 +193,49 @@ describe('daily: pessoa', () => {
     const { useCases, unitOfWork } = setup(manager)
     await seed(unitOfWork)
     await expect(
-      useCases.daily.save.execute(manager, { date: TODAY, answers, noNews: false }),
+      useCases.daily.save.execute(createTenantContext(manager), {
+        date: TODAY,
+        answers,
+        noNews: false,
+      }),
     ).resolves.toMatchObject({ userId: managerId })
   })
 
   it('recusa data futura', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await expect(useCases.daily.save.execute(ana, { date: TOMORROW, answers })).rejects.toThrow(
-      ValidationError,
-    )
-    await expect(useCases.daily.getToday.execute(ana, { date: TOMORROW })).rejects.toThrow(
-      ValidationError,
-    )
+    await expect(
+      useCases.daily.save.execute(createTenantContext(ana), { date: TOMORROW, answers }),
+    ).rejects.toThrow(ValidationError)
+    await expect(
+      useCases.daily.getToday.execute(createTenantContext(ana), { date: TOMORROW }),
+    ).rejects.toThrow(ValidationError)
   })
 
   it('recusa data que não é hoje (retroativa ou outra data)', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await expect(useCases.daily.save.execute(ana, { date: YESTERDAY, answers })).rejects.toThrow(
-      PermissionDeniedError,
-    )
+    await expect(
+      useCases.daily.save.execute(createTenantContext(ana), { date: YESTERDAY, answers }),
+    ).rejects.toThrow(PermissionDeniedError)
   })
 
   it('recusa salvar por outra pessoa', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.daily.save.execute(ana, { date: TODAY, userId: brunoId, answers }),
+      useCases.daily.save.execute(createTenantContext(ana), {
+        date: TODAY,
+        userId: brunoId,
+        answers,
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.daily.save.execute(ana, { date: TODAY, userId: anaId, answers }),
+      useCases.daily.save.execute(createTenantContext(ana), {
+        date: TODAY,
+        userId: anaId,
+        answers,
+      }),
     ).resolves.toMatchObject({ userId: anaId })
   })
 
@@ -220,10 +243,14 @@ describe('daily: pessoa', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.daily.save.execute(ana, { date: TODAY, answers, taskRefs: [brunoTaskId] }),
+      useCases.daily.save.execute(createTenantContext(ana), {
+        date: TODAY,
+        answers,
+        taskRefs: [brunoTaskId],
+      }),
     ).rejects.toThrow(PermissionDeniedError)
     await expect(
-      useCases.daily.save.execute(ana, {
+      useCases.daily.save.execute(createTenantContext(ana), {
         date: TODAY,
         answers,
         taskRefs: ['00000000000000000000000099'],
@@ -235,7 +262,11 @@ describe('daily: pessoa', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     const before = await unitOfWork.repositories.tasks.findById(organizationId, ownTaskId)
-    await useCases.daily.save.execute(ana, { date: TODAY, answers, taskRefs: [ownTaskId] })
+    await useCases.daily.save.execute(createTenantContext(ana), {
+      date: TODAY,
+      answers,
+      taskRefs: [ownTaskId],
+    })
     expect(await unitOfWork.repositories.tasks.findById(organizationId, ownTaskId)).toEqual(before)
     expect(await unitOfWork.repositories.timeline.listByTask(organizationId, ownTaskId)).toEqual([])
   })
@@ -244,13 +275,13 @@ describe('daily: pessoa', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.daily.save.execute(ana, {
+      useCases.daily.save.execute(createTenantContext(ana), {
         date: TODAY,
         answers: { ...answers, progress: 'a'.repeat(501) },
       }),
     ).rejects.toThrow(ValidationError)
     await expect(
-      useCases.daily.save.execute(ana, {
+      useCases.daily.save.execute(createTenantContext(ana), {
         date: TODAY,
         answers: { progress: '  ', nextStep: '', blocker: '' },
       }),
@@ -261,7 +292,7 @@ describe('daily: pessoa', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     await expect(
-      useCases.daily.save.execute(ana, {
+      useCases.daily.save.execute(createTenantContext(ana), {
         date: TODAY,
         answers: { progress: '', nextStep: '', blocker: '' },
         noNews: true,
@@ -274,20 +305,22 @@ describe('daily: gestor e acesso', () => {
   it('colaborador não lista nem lê a daily de outra pessoa', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.daily.save.execute(ana, { date: TODAY, answers })
-    await expect(useCases.daily.listForDate.execute(bruno, { date: TODAY })).rejects.toThrow(
-      PermissionDeniedError,
-    )
+    await useCases.daily.save.execute(createTenantContext(ana), { date: TODAY, answers })
     await expect(
-      useCases.daily.getForUser.execute(bruno, { userId: anaId, date: TODAY }),
+      useCases.daily.listForDate.execute(createTenantContext(bruno), { date: TODAY }),
+    ).rejects.toThrow(PermissionDeniedError)
+    await expect(
+      useCases.daily.getForUser.execute(createTenantContext(bruno), { userId: anaId, date: TODAY }),
     ).rejects.toThrow(PermissionDeniedError)
   })
 
   it('gestor lista todas as pessoas com done e lê as dailies em somente leitura', async () => {
     const { useCases, unitOfWork } = setup(ana)
     await seed(unitOfWork)
-    await useCases.daily.save.execute(ana, { date: TODAY, answers })
-    const list = await useCases.daily.listForDate.execute(manager, { date: TODAY })
+    await useCases.daily.save.execute(createTenantContext(ana), { date: TODAY, answers })
+    const list = await useCases.daily.listForDate.execute(createTenantContext(manager), {
+      date: TODAY,
+    })
     expect(list).toHaveLength(3)
     expect(list).toEqual(
       expect.arrayContaining([
@@ -296,38 +329,54 @@ describe('daily: gestor e acesso', () => {
         { userId: brunoId, userName: 'Bruno', done: false },
       ]),
     )
-    const read = await useCases.daily.getForUser.execute(manager, { userId: anaId, date: TODAY })
+    const read = await useCases.daily.getForUser.execute(createTenantContext(manager), {
+      userId: anaId,
+      date: TODAY,
+    })
     expect(read).toMatchObject({ userId: anaId, userName: 'Ana', answers })
     await expect(
-      useCases.daily.getForUser.execute(manager, { userId: brunoId, date: TODAY }),
+      useCases.daily.getForUser.execute(createTenantContext(manager), {
+        userId: brunoId,
+        date: TODAY,
+      }),
     ).resolves.toBeNull()
   })
 
   it('entidade nunca tem daily: não aparece na lista e não é encontrada', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    const list = await useCases.daily.listForDate.execute(manager, { date: TODAY })
+    const list = await useCases.daily.listForDate.execute(createTenantContext(manager), {
+      date: TODAY,
+    })
     expect(list.map((row) => row.userId)).not.toContain(contributorId)
     await expect(
-      useCases.daily.getForUser.execute(manager, { userId: contributorId, date: TODAY }),
+      useCases.daily.getForUser.execute(createTenantContext(manager), {
+        userId: contributorId,
+        date: TODAY,
+      }),
     ).rejects.toThrow(NotFoundError)
   })
 
   it('isola as organizações: o gestor de outra não vê nem lê as daily desta', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
-    await useCases.daily.save.execute(ana, { date: TODAY, answers })
-    const list = await useCases.daily.listForDate.execute(otherOrgManager, { date: TODAY })
+    await useCases.daily.save.execute(createTenantContext(ana), { date: TODAY, answers })
+    const list = await useCases.daily.listForDate.execute(createTenantContext(otherOrgManager), {
+      date: TODAY,
+    })
     expect(list.map((row) => row.userId)).toEqual([otherManagerId])
     await expect(
-      useCases.daily.getForUser.execute(otherOrgManager, { userId: anaId, date: TODAY }),
+      useCases.daily.getForUser.execute(createTenantContext(otherOrgManager), {
+        userId: anaId,
+        date: TODAY,
+      }),
     ).rejects.toThrow(NotFoundError)
   })
 
   it('o gestor recebe o mesmo estado da lista do dia, sem notificar', async () => {
     const { useCases, unitOfWork, notifier } = setup()
     await seed(unitOfWork)
-    await useCases.daily.listForDate.execute(manager, { date: TODAY })
+    await useCases.daily.listForDate.execute(createTenantContext(manager), { date: TODAY })
     expect(notifier.changes).toEqual([])
   })
 })

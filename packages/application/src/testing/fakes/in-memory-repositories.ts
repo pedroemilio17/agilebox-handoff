@@ -1,6 +1,23 @@
-import { createOrganization, toOrganizationId } from '@agilebox/core'
+import {
+  applyTeamToolsUpdate,
+  auditRecordsFor,
+  ConflictError,
+  createOrganization,
+  createTeamToolsSettings,
+  defaultTeamTools,
+  toOrganizationId,
+  ValidationError,
+} from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
+  BacklogRankChange,
   BoardSettings,
+  ExperienceLevel,
+  TeamModuleSetting,
+  TeamToolsAuditEntry,
+  TeamToolsSettings,
+  TeamToolsUpdate,
+  UserId,
   ChecklistItem,
   DefinitionOfDoneItem,
   DailyEntry,
@@ -14,12 +31,19 @@ import type {
   Participation,
   Project,
   ProjectId,
+  Sprint,
+  SprintId,
+  SprintStatus,
+  SprintTask,
   Task,
   TaskId,
   TimelineEvent,
   User,
+  Impediment,
+  ImpedimentId,
 } from '@agilebox/core'
 import type {
+  AcceptanceRepository,
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
@@ -30,10 +54,15 @@ import type {
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
+  ImpedimentRepository,
+  ImpedimentListFilter,
   ProjectRepository,
   RetroActionRepository,
+  SprintRepository,
+  SprintTaskRepository,
   TaskOpenRepository,
   TaskRepository,
+  TeamToolsRepository,
   TimelineRepository,
   UserRepository,
 } from '../../ports'
@@ -41,6 +70,7 @@ import type {
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
 export interface InMemoryState {
+  acceptance: Map<OrganizationId, Map<string, AcceptanceCriterion>>
   boardSettings: Map<OrganizationId, BoardSettings>
   checklist: Map<OrganizationId, Map<string, ChecklistItem>>
   comments: Map<OrganizationId, Map<string, TaskComment>>
@@ -49,12 +79,25 @@ export interface InMemoryState {
   definitionOfDone: Map<OrganizationId, Map<string, DefinitionOfDoneItem>>
   meetings: Map<OrganizationId, Map<string, Meeting>>
   retroActions: Map<OrganizationId, Map<string, RetroAction>>
+  /** Sprints por id, com o descarte lógico (linha não some; `discarded` marca a exclusão). */
+  sprints: Map<OrganizationId, Map<string, InMemorySprintRow>>
+  /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
+  sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
+  /** Impedimentos por id (abertos e resolvidos; o histórico não some). */
+  impediments: Map<OrganizationId, Map<string, Impediment>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
   organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
+  teamPreferences: Map<OrganizationId, TeamPreferenceRow>
+  /** Linhas de `team_modules`, por módulo, dentro da organização. */
+  teamModules: Map<OrganizationId, Map<string, TeamModuleSetting>>
+  /** Auditoria por id (texto do id numérico). */
+  teamToolsAudit: Map<OrganizationId, Map<string, TeamToolsAuditEntry>>
+  teamToolsAuditNextId: number
   timeline: Map<OrganizationId, Map<string, TimelineEvent>>
   users: Map<OrganizationId, Map<string, User>>
 }
@@ -67,6 +110,7 @@ export function createInMemoryState(): InMemoryState {
     createdAt: '2026-01-01T00:00:00.000Z',
   })
   return {
+    acceptance: new Map(),
     boardSettings: new Map(),
     checklist: new Map(),
     comments: new Map(),
@@ -75,15 +119,35 @@ export function createInMemoryState(): InMemoryState {
     definitionOfDone: new Map(),
     meetings: new Map(),
     retroActions: new Map(),
+    sprints: new Map(),
+    sprintTasks: new Map(),
+    impediments: new Map(),
     participations: new Map(),
     projects: new Map(),
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
     tasks: new Map(),
+    teamPreferences: new Map(),
+    teamModules: new Map(),
+    teamToolsAudit: new Map(),
+    teamToolsAuditNextId: 1,
     timeline: new Map(),
     users: new Map(),
   }
+}
+
+/** Linha de sprint no fake: a sprint e o descarte lógico (nulos enquanto não descartada). */
+export interface InMemorySprintRow {
+  readonly sprint: Sprint
+  readonly discardedAt: string | null
+  readonly discardedBy: string | null
+}
+
+export interface TeamPreferenceRow {
+  readonly experienceLevel: ExperienceLevel
+  readonly changedBy: UserId | null
+  readonly changedAt: string | null
 }
 
 function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: OrganizationId) {
@@ -93,6 +157,15 @@ function bucket<T>(root: Map<OrganizationId, Map<string, T>>, organizationId: Or
     root.set(organizationId, values)
   }
   return values
+}
+
+/** Como o SQLite (conflito de id), um id já usado por outra organização não é regravado. */
+function usedByOtherOrganization<T>(
+  root: Map<OrganizationId, Map<string, T>>,
+  organizationId: OrganizationId,
+  id: string,
+): boolean {
+  return [...root].some(([owner, values]) => owner !== organizationId && values.has(id))
 }
 
 export class InMemoryOrganizationRepository implements OrganizationRepository {
@@ -117,6 +190,41 @@ export class InMemoryBoardSettingsRepository implements BoardSettingsRepository 
     await Promise.resolve()
     if (settings.organizationId === organizationId)
       this.state.boardSettings.set(organizationId, settings)
+  }
+}
+
+export class InMemoryAcceptanceRepository implements AcceptanceRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.acceptance, org).values()]
+      .filter((criterion) => criterion.taskId === taskId)
+      .sort((a, b) => a.position - b.position)
+  }
+  async listByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    return [...bucket(this.state.acceptance, org).values()]
+      .filter((criterion) => taskIds.includes(criterion.taskId))
+      .sort((a, b) => a.position - b.position)
+  }
+  async saveMany(org: OrganizationId, criteria: readonly AcceptanceCriterion[]) {
+    await Promise.resolve()
+    const tasks = bucket(this.state.tasks, org)
+    const values = bucket(this.state.acceptance, org)
+    for (const criterion of criteria) {
+      if (tasks.has(criterion.taskId)) values.set(criterion.id, criterion)
+    }
+  }
+  async remove(org: OrganizationId, criterionId: AcceptanceCriterion['id']) {
+    await Promise.resolve()
+    bucket(this.state.acceptance, org).delete(criterionId)
+  }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    const tasks = bucket(this.state.tasks, org)
+    return [...bucket(this.state.acceptance, org).values()].filter(
+      (criterion) => tasks.get(criterion.taskId)?.archivedAt === null,
+    ).length
   }
 }
 
@@ -218,7 +326,8 @@ export class InMemoryContributorRepository implements ContributorRepository {
   }
   async save(org: OrganizationId, value: Contributor) {
     await Promise.resolve()
-    bucket(this.state.contributors, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.contributors, org, value.id)) return
+    bucket(this.state.contributors, org).set(value.id, { ...value, organizationId: org })
   }
 }
 
@@ -281,6 +390,10 @@ export class InMemoryDailyEntryRepository implements DailyEntryRepository {
     // Só grava daily de usuário desta organização.
     if (bucket(this.state.users, org).has(value.userId))
       bucket(this.state.dailyEntries, org).set(value.id, value)
+  }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    return bucket(this.state.dailyEntries, org).size
   }
 }
 
@@ -361,7 +474,8 @@ export class InMemoryProjectRepository implements ProjectRepository {
   }
   async save(org: OrganizationId, value: Project) {
     await Promise.resolve()
-    bucket(this.state.projects, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.projects, org, value.id)) return
+    bucket(this.state.projects, org).set(value.id, { ...value, organizationId: org })
   }
   async listMembers(org: OrganizationId, projectId: Project['id']) {
     await Promise.resolve()
@@ -410,6 +524,14 @@ export class InMemoryTaskRepository implements TaskRepository {
           item.title.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR') === nameKey,
       ) ?? null
     )
+  }
+  async findManyById(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.tasks, org)
+    return taskIds.flatMap((id) => {
+      const task = values.get(id)
+      return task ? [task] : []
+    })
   }
   async listByProject(org: OrganizationId, projectId: Task['projectId']) {
     await Promise.resolve()
@@ -470,6 +592,20 @@ export class InMemoryTaskRepository implements TaskRepository {
     await Promise.resolve()
     return this.forUser(org, userId).find((item) => item.number === number) ?? null
   }
+  async listBacklog(org: OrganizationId, projectId: Task['projectId']) {
+    await Promise.resolve()
+    return [...bucket(this.state.tasks, org).values()].filter(
+      (item) => item.projectId === projectId && item.backlogRank !== null,
+    )
+  }
+  async updateBacklogRanks(org: OrganizationId, changes: readonly BacklogRankChange[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.tasks, org)
+    for (const change of changes) {
+      const task = values.get(change.taskId)
+      if (task) values.set(task.id, { ...task, backlogRank: change.backlogRank })
+    }
+  }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
     bucket(this.state.tasks, org).set(value.id, value)
@@ -514,6 +650,233 @@ export class InMemoryUserRepository implements UserRepository {
   }
   async save(org: OrganizationId, value: User) {
     await Promise.resolve()
-    bucket(this.state.users, org).set(value.id, value)
+    if (usedByOtherOrganization(this.state.users, org, value.id)) return
+    bucket(this.state.users, org).set(value.id, { ...value, organizationId: org })
+  }
+}
+
+export class InMemoryTeamToolsRepository implements TeamToolsRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private read(organizationId: OrganizationId): TeamToolsSettings {
+    const preference = this.state.teamPreferences.get(organizationId)
+    if (!preference) return defaultTeamTools(organizationId)
+    return createTeamToolsSettings({
+      level: preference.experienceLevel,
+      modules: [...bucket(this.state.teamModules, organizationId).values()],
+    })
+  }
+
+  async getSettings(organizationId: OrganizationId) {
+    await Promise.resolve()
+    return this.read(organizationId)
+  }
+
+  async saveSettings(
+    organizationId: OrganizationId,
+    update: TeamToolsUpdate,
+    actorId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    if (this.state.users.get(organizationId)?.has(actorId) !== true)
+      throw new ValidationError('Ator de outra organização')
+
+    // Valida tudo antes de escrever: um conjunto inválido não deixa nada gravado.
+    const { settings, changes } = applyTeamToolsUpdate(this.read(organizationId), update, {
+      organizationId,
+      actorId,
+      at,
+    })
+
+    const modules = bucket(this.state.teamModules, organizationId)
+    for (const module of settings.modules) modules.set(module.moduleId, module)
+
+    const previous = this.state.teamPreferences.get(organizationId)
+    const levelChanged = changes.some((change) => change.kind === 'level')
+    this.state.teamPreferences.set(organizationId, {
+      experienceLevel: settings.level,
+      changedBy: levelChanged ? actorId : (previous?.changedBy ?? null),
+      changedAt: levelChanged ? at : (previous?.changedAt ?? null),
+    })
+
+    const audit = bucket(this.state.teamToolsAudit, organizationId)
+    for (const record of auditRecordsFor(changes, { organizationId, actorId, at })) {
+      const id = this.state.teamToolsAuditNextId++
+      audit.set(String(id), { ...record, id })
+    }
+  }
+
+  async listAudit(organizationId: OrganizationId, limit: number) {
+    await Promise.resolve()
+    if (!Number.isInteger(limit) || limit < 1)
+      throw new ValidationError('Limite de auditoria inválido')
+    return [...bucket(this.state.teamToolsAudit, organizationId).values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+      .slice(0, limit)
+  }
+}
+
+const sprintRowKey = (row: Pick<SprintTask, 'sprintId' | 'taskId' | 'addedAt'>) =>
+  `${row.sprintId}|${row.taskId}|${row.addedAt}`
+
+export class InMemorySprintRepository implements SprintRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private visible(org: OrganizationId): Sprint[] {
+    return [...bucket(this.state.sprints, org).values()]
+      .filter((row) => row.discardedAt === null)
+      .map((row) => row.sprint)
+  }
+
+  async findById(org: OrganizationId, sprintId: SprintId) {
+    await Promise.resolve()
+    const row = bucket(this.state.sprints, org).get(sprintId)
+    return row && row.discardedAt === null ? row.sprint : null
+  }
+  async listByProject(org: OrganizationId, projectId: ProjectId, status?: SprintStatus) {
+    await Promise.resolve()
+    return this.visible(org)
+      .filter((sprint) => sprint.projectId === projectId)
+      .filter((sprint) => status === undefined || sprint.status === status)
+      .sort((a, b) => a.number - b.number)
+  }
+  async nextNumber(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const numbers = [...bucket(this.state.sprints, org).values()]
+      .filter((row) => row.sprint.projectId === projectId)
+      .map((row) => row.sprint.number)
+    return Math.max(0, ...numbers) + 1
+  }
+  async countActive(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return this.visible(org).filter(
+      (sprint) => sprint.projectId === projectId && sprint.status === 'active',
+    ).length
+  }
+  async countNotClosed(org: OrganizationId) {
+    await Promise.resolve()
+    return this.visible(org).filter((sprint) => sprint.status !== 'closed').length
+  }
+  async save(org: OrganizationId, sprint: Sprint) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprints, org)
+    const previous = values.get(sprint.id)
+    values.set(sprint.id, {
+      sprint,
+      discardedAt: previous?.discardedAt ?? null,
+      discardedBy: previous?.discardedBy ?? null,
+    })
+  }
+  async markDiscarded(org: OrganizationId, sprintId: SprintId, at: string, by: UserId) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprints, org)
+    const row = values.get(sprintId)
+    if (row) values.set(sprintId, { ...row, discardedAt: at, discardedBy: by })
+  }
+}
+
+export class InMemorySprintTaskRepository implements SprintTaskRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private rows(org: OrganizationId): SprintTask[] {
+    return [...bucket(this.state.sprintTasks, org).values()]
+  }
+
+  async listBySprint(org: OrganizationId, sprintId: SprintId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.sprintId === sprintId)
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt) || a.taskId.localeCompare(b.taskId))
+  }
+  async listOpenByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    return this.rows(org).filter((row) => row.removedAt === null && taskIds.includes(row.taskId))
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.taskId === taskId)
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt))
+  }
+  async countOpenInNotClosed(org: OrganizationId) {
+    await Promise.resolve()
+    const sprints = bucket(this.state.sprints, org)
+    return this.rows(org).filter(
+      (row) =>
+        row.removedAt === null &&
+        sprints.get(row.sprintId)?.discardedAt === null &&
+        sprints.get(row.sprintId)?.sprint.status !== 'closed',
+    ).length
+  }
+  async saveRows(org: OrganizationId, requested: readonly SprintTask[]) {
+    await Promise.resolve()
+    const values = bucket(this.state.sprintTasks, org)
+    const sprints = bucket(this.state.sprints, org)
+    const tasks = bucket(this.state.tasks, org)
+    // Sprint ou tarefa de outra organização não é regravada (mesma regra dos demais repositórios).
+    const rows = requested.filter((row) => sprints.has(row.sprintId) && tasks.has(row.taskId))
+    // Confere o estado final do lote: no máximo uma linha aberta por tarefa.
+    const next = new Map(values)
+    for (const row of rows) next.set(sprintRowKey(row), row)
+    const openPerTask = new Map<string, number>()
+    for (const row of next.values()) {
+      if (row.removedAt !== null) continue
+      openPerTask.set(row.taskId, (openPerTask.get(row.taskId) ?? 0) + 1)
+    }
+    if ([...openPerTask.values()].some((count) => count > 1))
+      throw new ConflictError('Tarefa já tem uma sprint aberta')
+    for (const row of rows) values.set(sprintRowKey(row), row)
+  }
+}
+
+/** Impedimentos no fake: um mapa por organização, sem nada apagado. */
+export class InMemoryImpedimentRepository implements ImpedimentRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  private rows(org: OrganizationId): Impediment[] {
+    return [...bucket(this.state.impediments, org).values()]
+  }
+  async findById(org: OrganizationId, impedimentId: ImpedimentId) {
+    await Promise.resolve()
+    return bucket(this.state.impediments, org).get(impedimentId) ?? null
+  }
+  async findOpenByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org).find((row) => row.taskId === taskId && row.status === 'open') ?? null
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return this.rows(org)
+      .filter((row) => row.taskId === taskId)
+      .sort((a, b) => a.openedAt.localeCompare(b.openedAt) || a.id.localeCompare(b.id))
+  }
+  async listOpenByTasks(org: OrganizationId, taskIds: readonly TaskId[]) {
+    await Promise.resolve()
+    const wanted = new Set(taskIds)
+    return this.rows(org).filter((row) => row.status === 'open' && wanted.has(row.taskId))
+  }
+  async listByOrganization(org: OrganizationId, filter: ImpedimentListFilter) {
+    await Promise.resolve()
+    return this.rows(org).filter(
+      (row) =>
+        (filter.includeResolved || row.status === 'open') &&
+        (filter.ownerId === undefined || row.ownerId === filter.ownerId),
+    )
+  }
+  async countByOrganization(org: OrganizationId) {
+    await Promise.resolve()
+    return this.rows(org).length
+  }
+  async save(org: OrganizationId, impediment: Impediment) {
+    await Promise.resolve()
+    const values = bucket(this.state.impediments, org)
+    const open = this.rows(org).find(
+      (row) =>
+        row.taskId === impediment.taskId && row.status === 'open' && row.id !== impediment.id,
+    )
+    if (impediment.status === 'open' && open)
+      throw new ConflictError('Tarefa já tem um impedimento aberto')
+    values.set(impediment.id, impediment)
   }
 }

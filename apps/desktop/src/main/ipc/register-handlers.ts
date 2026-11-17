@@ -1,11 +1,10 @@
-import type { Actor } from '@agilebox/core'
 import { API_SCHEMA_REGISTRY } from '@agilebox/contract'
 import type {
   ApiChannel,
   SaveDashboardSummaryInput,
   SaveDashboardSummaryOutput,
 } from '@agilebox/contract'
-import type { ActorSession } from '@agilebox/application'
+import type { ActorSession, TenantContext } from '@agilebox/application'
 import type { createUseCases } from '@agilebox/application'
 import { createIpcHandler } from './handle'
 import type { InputSchema } from './handle'
@@ -24,13 +23,13 @@ export function registerHandlers(
   useCases: UseCases,
   actorSession: ActorSession,
   saveDashboardSummary: (
-    actor: Actor,
+    context: TenantContext,
     input: SaveDashboardSummaryInput,
   ) => Promise<SaveDashboardSummaryOutput>,
 ): void {
   const register = <Channel extends ApiChannel>(
     channel: Channel,
-    execute: (actor: Actor, input: InputFor<Channel>) => unknown,
+    execute: (context: TenantContext, input: InputFor<Channel>) => unknown,
   ) => {
     ipcMain.handle(
       channel,
@@ -43,141 +42,228 @@ export function registerHandlers(
   }
 
   register('session.getCurrent', () => useCases.session.getCurrentActor.execute())
-  register('session.switchUser', (_actor, input) => useCases.session.switchUser.execute(input))
-  register('session.listUsers', (actor) => useCases.session.listUsers.execute(actor))
-  register('users.setDefaultRate', (actor, input) =>
-    useCases.users.setDefaultRate.execute(actor, input),
+  register('session.switchUser', (_context, input) => useCases.session.switchUser.execute(input))
+  register('session.listUsers', (context) => useCases.session.listUsers.execute(context))
+  register('users.setDefaultRate', (context, input) =>
+    useCases.users.setDefaultRate.execute(context, input),
   )
-  register('projects.list', (actor) => useCases.projects.listProjects.execute(actor))
-  register('projects.create', (actor, input) =>
-    useCases.projects.createProject.execute(actor, input),
+  register('projects.list', (context, input) =>
+    useCases.projects.listProjects.execute(context, input),
   )
-  register('projects.listMembers', (actor, input) =>
-    useCases.projects.listMembers.execute(actor, input),
+  register('projects.create', (context, input) =>
+    useCases.projects.createProject.execute(context, input),
   )
-  register('projects.addMember', (actor, input) =>
-    useCases.projects.addMember.execute(actor, input),
+  register('projects.listMembers', (context, input) =>
+    useCases.projects.listMembers.execute(context, input),
   )
-  register('projects.removeMember', (actor, input) =>
-    useCases.projects.removeMember.execute(actor, input),
+  register('projects.addMember', (context, input) =>
+    useCases.projects.addMember.execute(context, input),
   )
-  register('tasks.getBoardFlow', (actor, input) =>
-    useCases.tasks.getBoardFlow.execute(actor, {
+  register('projects.removeMember', (context, input) =>
+    useCases.projects.removeMember.execute(context, input),
+  )
+  register('projects.archive', (context, input) =>
+    useCases.projects.archive.execute(context, input),
+  )
+  register('projects.unarchive', (context, input) =>
+    useCases.projects.unarchive.execute(context, input),
+  )
+  register('projects.rename', (context, input) => useCases.projects.rename.execute(context, input))
+  register('tasks.getBoardFlow', (context, input) =>
+    useCases.tasks.getBoardFlow.execute(context, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
       ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
-  register('tasks.listBoard', (actor, input) =>
-    useCases.tasks.listBoard.execute(actor, {
+  register('tasks.listBoard', (context, input) =>
+    useCases.tasks.listBoard.execute(context, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
       ...(input.forUserId === undefined ? {} : { forUserId: input.forUserId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
-  register('tasks.listTeamBoard', (actor, input) =>
-    useCases.tasks.listTeamBoard.execute(actor, {
+  register('tasks.listTeamBoard', (context, input) =>
+    useCases.tasks.listTeamBoard.execute(context, {
       ...(input.projectId === undefined ? {} : { projectId: input.projectId }),
+      ...(input.includeArchived === undefined ? {} : { includeArchived: input.includeArchived }),
     }),
   )
-  register('tasks.get', (actor, input) => useCases.tasks.getDetail.execute(actor, input))
-  register('tasks.create', (actor, input) => useCases.tasks.create.execute(actor, input))
-  register('tasks.update', (actor, input) => useCases.tasks.update.execute(actor, input))
-  register('tasks.move', (actor, input) => useCases.tasks.move.execute(actor, input))
-  register('tasks.block', (actor, input) => useCases.tasks.block.execute(actor, input))
-  register('tasks.unblock', (actor, input) => useCases.tasks.unblock.execute(actor, input))
-  register('tasks.checklist.add', (actor, input) =>
-    useCases.tasks.checklist.add.execute(actor, input),
+  register('tasks.get', (context, input) => useCases.tasks.getDetail.execute(context, input))
+  register('tasks.create', (context, input) => useCases.tasks.create.execute(context, input))
+  register('tasks.update', (context, input) => useCases.tasks.update.execute(context, input))
+  register('tasks.move', (context, input) => useCases.tasks.move.execute(context, input))
+  register('tasks.block', (context, input) => useCases.tasks.block.execute(context, input))
+  register('tasks.unblock', (context, input) => useCases.tasks.unblock.execute(context, input))
+  register('impediments.list', (context, input) =>
+    useCases.impediments.list.execute(context, input),
   )
-  register('tasks.checklist.toggle', (actor, input) =>
-    useCases.tasks.checklist.toggle.execute(actor, input),
+  register('impediments.assign', (context, input) =>
+    useCases.impediments.assign.execute(context, input),
   )
-  register('tasks.checklist.rename', (actor, input) =>
-    useCases.tasks.checklist.rename.execute(actor, input),
+  register('impediments.resolve', (context, input) =>
+    useCases.impediments.resolve.execute(context, input),
   )
-  register('tasks.checklist.remove', (actor, input) =>
-    useCases.tasks.checklist.remove.execute(actor, input),
+  register('tasks.archive', (context, input) => useCases.tasks.archive.execute(context, input))
+  register('tasks.unarchive', (context, input) => useCases.tasks.unarchive.execute(context, input))
+  register('tasks.checklist.add', (context, input) =>
+    useCases.tasks.checklist.add.execute(context, input),
   )
-  register('tasks.checklist.move', (actor, input) =>
-    useCases.tasks.checklist.move.execute(actor, input),
+  register('tasks.checklist.toggle', (context, input) =>
+    useCases.tasks.checklist.toggle.execute(context, input),
   )
-  register('tasks.comments.add', (actor, input) =>
-    useCases.tasks.comments.add.execute(actor, input),
+  register('tasks.checklist.rename', (context, input) =>
+    useCases.tasks.checklist.rename.execute(context, input),
   )
-  register('tasks.comments.edit', (actor, input) =>
-    useCases.tasks.comments.edit.execute(actor, input),
+  register('tasks.checklist.remove', (context, input) =>
+    useCases.tasks.checklist.remove.execute(context, input),
   )
-  register('tasks.comments.remove', (actor, input) =>
-    useCases.tasks.comments.remove.execute(actor, input),
+  register('tasks.checklist.move', (context, input) =>
+    useCases.tasks.checklist.move.execute(context, input),
   )
-  register('tasks.listRecent', (actor) => useCases.tasks.listRecent.execute(actor))
-  register('tasks.listFrequent', (actor) => useCases.tasks.listFrequent.execute(actor))
-  register('tasks.search', (actor, input) => useCases.tasks.search.execute(actor, input))
-  register('tasks.recordOpen', (actor, input) => useCases.tasks.recordOpen.execute(actor, input))
-  register('participations.add', (actor, input) =>
-    useCases.participations.add.execute(actor, input),
+  register('tasks.setEstimate', (context, input) =>
+    useCases.tasks.setEstimate.execute(context, input),
   )
-  register('participations.remove', (actor, input) =>
-    useCases.participations.remove.execute(actor, input),
+  register('tasks.criteria.add', (context, input) =>
+    useCases.tasks.criteria.add.execute(context, input),
   )
-  register('participations.setHours', (actor, input) =>
-    useCases.participations.setHours.execute(actor, input),
+  register('tasks.criteria.toggle', (context, input) =>
+    useCases.tasks.criteria.toggle.execute(context, input),
   )
-  register('participations.setRate', (actor, input) =>
-    useCases.participations.setRate.execute(actor, input),
+  register('tasks.criteria.rename', (context, input) =>
+    useCases.tasks.criteria.rename.execute(context, input),
   )
-  register('projects.definitionOfDone.list', (actor, input) =>
-    useCases.projects.definitionOfDone.list.execute(actor, input),
+  register('tasks.criteria.remove', (context, input) =>
+    useCases.tasks.criteria.remove.execute(context, input),
   )
-  register('projects.definitionOfDone.add', (actor, input) =>
-    useCases.projects.definitionOfDone.add.execute(actor, input),
+  register('tasks.criteria.move', (context, input) =>
+    useCases.tasks.criteria.move.execute(context, input),
   )
-  register('projects.definitionOfDone.rename', (actor, input) =>
-    useCases.projects.definitionOfDone.rename.execute(actor, input),
+  register('tasks.comments.add', (context, input) =>
+    useCases.tasks.comments.add.execute(context, input),
   )
-  register('projects.definitionOfDone.remove', (actor, input) =>
-    useCases.projects.definitionOfDone.remove.execute(actor, input),
+  register('tasks.comments.edit', (context, input) =>
+    useCases.tasks.comments.edit.execute(context, input),
   )
-  register('projects.definitionOfDone.move', (actor, input) =>
-    useCases.projects.definitionOfDone.move.execute(actor, input),
+  register('tasks.comments.remove', (context, input) =>
+    useCases.tasks.comments.remove.execute(context, input),
   )
-  register('contributors.list', (actor) => useCases.contributors.list.execute(actor))
-  register('contributors.create', (actor, input) =>
-    useCases.contributors.create.execute(actor, input),
+  register('tasks.listRecent', (context) => useCases.tasks.listRecent.execute(context))
+  register('tasks.listFrequent', (context) => useCases.tasks.listFrequent.execute(context))
+  register('tasks.search', (context, input) => useCases.tasks.search.execute(context, input))
+  register('tasks.recordOpen', (context, input) =>
+    useCases.tasks.recordOpen.execute(context, input),
   )
-  register('contributors.setDefaultRate', (actor, input) =>
-    useCases.contributors.setDefaultRate.execute(actor, input),
+  register('sprints.list', (context, input) => useCases.sprints.list.execute(context, input))
+  register('sprints.get', (context, input) => useCases.sprints.get.execute(context, input))
+  register('sprints.create', (context, input) => useCases.sprints.create.execute(context, input))
+  register('sprints.update', (context, input) => useCases.sprints.update.execute(context, input))
+  register('sprints.start', (context, input) => useCases.sprints.start.execute(context, input))
+  register('sprints.close', (context, input) => useCases.sprints.close.execute(context, input))
+  register('sprints.discard', (context, input) => useCases.sprints.discard.execute(context, input))
+  register('sprints.addTask', (context, input) => useCases.sprints.addTask.execute(context, input))
+  register('sprints.removeTask', (context, input) =>
+    useCases.sprints.removeTask.execute(context, input),
   )
-  register('timeline.list', (actor, input) => useCases.timeline.list.execute(actor, input))
-  register('dashboard.get', (actor) => useCases.dashboard.get.execute(actor))
-  register('dashboard.exportSummary', (actor, input) =>
-    useCases.dashboard.exportSummary.execute(actor, input),
+  register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
+  register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))
+  register('backlog.reorder', (context, input) => useCases.backlog.reorder.execute(context, input))
+  register('backlog.pull', (context, input) => useCases.backlog.pull.execute(context, input))
+  register('backlog.sendBack', (context, input) =>
+    useCases.backlog.sendBack.execute(context, input),
   )
-  register('dashboard.saveSummary', (actor, input) => saveDashboardSummary(actor, input))
-  register('boardSettings.get', (actor) => useCases.boardSettings.get.execute(actor))
-  register('boardSettings.setWipLimits', (actor, input) =>
-    useCases.boardSettings.setWipLimits.execute(actor, input),
+  register('participations.add', (context, input) =>
+    useCases.participations.add.execute(context, input),
   )
-  register('meetings.list', (actor, input) => useCases.meetings.listRange.execute(actor, input))
-  register('meetings.listUpcoming', (actor) => useCases.meetings.listUpcoming.execute(actor))
-  register('meetings.create', (actor, input) => useCases.meetings.create.execute(actor, input))
-  register('meetings.update', (actor, input) => useCases.meetings.update.execute(actor, input))
-  register('meetings.delete', (actor, input) => useCases.meetings.delete.execute(actor, input))
-  register('meetings.retroActions.list', (actor, input) =>
-    useCases.meetings.retroActions.list.execute(actor, input),
+  register('participations.remove', (context, input) =>
+    useCases.participations.remove.execute(context, input),
   )
-  register('meetings.retroActions.add', (actor, input) =>
-    useCases.meetings.retroActions.add.execute(actor, input),
+  register('participations.setHours', (context, input) =>
+    useCases.participations.setHours.execute(context, input),
   )
-  register('meetings.retroActions.update', (actor, input) =>
-    useCases.meetings.retroActions.update.execute(actor, input),
+  register('participations.setRate', (context, input) =>
+    useCases.participations.setRate.execute(context, input),
   )
-  register('meetings.retroActions.toggle', (actor, input) =>
-    useCases.meetings.retroActions.toggle.execute(actor, input),
+  register('projects.definitionOfDone.list', (context, input) =>
+    useCases.projects.definitionOfDone.list.execute(context, input),
   )
-  register('meetings.retroActions.remove', (actor, input) =>
-    useCases.meetings.retroActions.remove.execute(actor, input),
+  register('projects.definitionOfDone.add', (context, input) =>
+    useCases.projects.definitionOfDone.add.execute(context, input),
   )
-  register('daily.getToday', (actor, input) => useCases.daily.getToday.execute(actor, input))
-  register('daily.save', (actor, input) => useCases.daily.save.execute(actor, input))
-  register('daily.listForDate', (actor, input) => useCases.daily.listForDate.execute(actor, input))
-  register('daily.getForUser', (actor, input) => useCases.daily.getForUser.execute(actor, input))
+  register('projects.definitionOfDone.rename', (context, input) =>
+    useCases.projects.definitionOfDone.rename.execute(context, input),
+  )
+  register('projects.definitionOfDone.remove', (context, input) =>
+    useCases.projects.definitionOfDone.remove.execute(context, input),
+  )
+  register('projects.definitionOfDone.move', (context, input) =>
+    useCases.projects.definitionOfDone.move.execute(context, input),
+  )
+  register('contributors.list', (context) => useCases.contributors.list.execute(context))
+  register('contributors.create', (context, input) =>
+    useCases.contributors.create.execute(context, input),
+  )
+  register('contributors.setDefaultRate', (context, input) =>
+    useCases.contributors.setDefaultRate.execute(context, input),
+  )
+  register('timeline.list', (context, input) => useCases.timeline.list.execute(context, input))
+  register('dashboard.get', (context) => useCases.dashboard.get.execute(context))
+  register('dashboard.exportSummary', (context, input) =>
+    useCases.dashboard.exportSummary.execute(context, input),
+  )
+  register('dashboard.saveSummary', (context, input) => saveDashboardSummary(context, input))
+  register('boardSettings.get', (context) => useCases.boardSettings.get.execute(context))
+  register('boardSettings.setWipLimits', (context, input) =>
+    useCases.boardSettings.setWipLimits.execute(context, input),
+  )
+  register('meetings.list', (context, input) => useCases.meetings.listRange.execute(context, input))
+  register('meetings.listUpcoming', (context) => useCases.meetings.listUpcoming.execute(context))
+  register('meetings.create', (context, input) => useCases.meetings.create.execute(context, input))
+  register('meetings.update', (context, input) => useCases.meetings.update.execute(context, input))
+  register('meetings.delete', (context, input) => useCases.meetings.delete.execute(context, input))
+  register('meetings.retroActions.list', (context, input) =>
+    useCases.meetings.retroActions.list.execute(context, input),
+  )
+  register('meetings.retroActions.add', (context, input) =>
+    useCases.meetings.retroActions.add.execute(context, input),
+  )
+  register('meetings.retroActions.update', (context, input) =>
+    useCases.meetings.retroActions.update.execute(context, input),
+  )
+  register('meetings.retroActions.toggle', (context, input) =>
+    useCases.meetings.retroActions.toggle.execute(context, input),
+  )
+  register('meetings.retroActions.remove', (context, input) =>
+    useCases.meetings.retroActions.remove.execute(context, input),
+  )
+  register('daily.getToday', (context, input) => useCases.daily.getToday.execute(context, input))
+  register('daily.save', (context, input) => useCases.daily.save.execute(context, input))
+  register('daily.listForDate', (context, input) =>
+    useCases.daily.listForDate.execute(context, input),
+  )
+  register('daily.getForUser', (context, input) =>
+    useCases.daily.getForUser.execute(context, input),
+  )
+  register('daily.suggestSummary', (context, input) =>
+    useCases.daily.suggestSummary.execute(context, input),
+  )
+  register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
+  register('teamTools.previewChange', (context, input) =>
+    useCases.teamTools.previewChange.execute(context, input),
+  )
+  register('teamTools.applyChange', (context, input) =>
+    useCases.teamTools.applyChange.execute(context, input),
+  )
+  register('teamTools.completeWindDown', (context, input) =>
+    useCases.teamTools.completeWindDown.execute(context, input),
+  )
+  register('teamTools.setLevel', (context, input) =>
+    useCases.teamTools.setLevel.execute(context, input),
+  )
+  register('teamTools.applyPreset', (context, input) =>
+    useCases.teamTools.applyPreset.execute(context, input),
+  )
+  register('teamTools.setModuleConfig', (context, input) =>
+    useCases.teamTools.setModuleConfig.execute(context, input),
+  )
 }

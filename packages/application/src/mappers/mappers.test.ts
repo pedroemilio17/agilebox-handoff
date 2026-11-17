@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createAcceptanceCriterion,
   createChecklistItem,
   createTaskComment,
+  toAcceptanceCriterionId,
   toChecklistItemId,
   toOrganizationId,
   toTaskCommentId,
@@ -31,8 +33,14 @@ describe('mappers de DTO', () => {
   it('monta a chave legível com o prefixo da organização', () => {
     const task = { ...aTask().build(), number: 118 }
 
-    expect(toTaskDto(task, 'AB', [], 0)).toMatchObject({ number: 118, key: 'AB-118' })
-    expect(toTaskDto(task, 'OPS', [], 0)).toMatchObject({ number: 118, key: 'OPS-118' })
+    expect(toTaskDto(task, 'AB', [], 0, [], null, null)).toMatchObject({
+      number: 118,
+      key: 'AB-118',
+    })
+    expect(toTaskDto(task, 'OPS', [], 0, [], null, null)).toMatchObject({
+      number: 118,
+      key: 'OPS-118',
+    })
   })
 
   it('oculta valores de outras pessoas e total em R$ para colaborador', () => {
@@ -55,6 +63,11 @@ describe('mappers de DTO', () => {
       },
       [],
       [],
+      [],
+      [],
+      0,
+      null,
+      null,
       [],
     )
 
@@ -85,13 +98,32 @@ describe('mappers de DTO', () => {
       [],
       [],
       [],
+      [],
+      0,
+      null,
+      null,
+      [],
     )
     expect(managerDto.participations[0]?.rate).toBe(45)
     expect(managerDto.total).toBe(90)
     expect(managerDto.canEdit).toBe(true)
     expect(managerDto.readOnly).toBe(false)
 
-    const memberDto = toTaskDetailDto(withHours, 'AB', actor(otherUserId), true, names, [], [], [])
+    const memberDto = toTaskDetailDto(
+      withHours,
+      'AB',
+      actor(otherUserId),
+      true,
+      names,
+      [],
+      [],
+      [],
+      [],
+      0,
+      null,
+      null,
+      [],
+    )
     expect(memberDto.canEdit).toBe(false)
     expect(memberDto.readOnly).toBe(true)
   })
@@ -120,11 +152,36 @@ describe('mappers de DTO', () => {
       doneAt: null,
     })
 
-    expect(toTaskDto(task, 'AB', [done, open], 2).checklistProgress).toEqual({
+    expect(toTaskDto(task, 'AB', [done, open], 2, [], null, null).checklistProgress).toEqual({
       done: 1,
       total: 2,
       percent: 50,
     })
+    const criterion = (id: string, criterionDone: boolean) =>
+      createAcceptanceCriterion({
+        id: toAcceptanceCriterionId(id),
+        organizationId: task.organizationId,
+        taskId: task.id,
+        text: 'Critério',
+        done: criterionDone,
+        position: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      })
+    expect(
+      toTaskDto(
+        task,
+        'AB',
+        [],
+        0,
+        [
+          criterion('01ARZ3NDEKTSV4RRFFQ69G5FD0', true),
+          criterion('01ARZ3NDEKTSV4RRFFQ69G5FD1', false),
+        ],
+        null,
+        null,
+      ).criteriaProgress,
+    ).toEqual({ done: 1, total: 2 })
     const detail = toTaskDetailDto(
       task,
       'AB',
@@ -133,6 +190,11 @@ describe('mappers de DTO', () => {
       { user: () => 'Ana Silva', contributor: () => 'Cliente' },
       [done, open],
       [],
+      [],
+      [],
+      0,
+      null,
+      null,
       [],
     )
     expect(detail.checklist.map((item) => item.title)).toEqual(['Revisar', 'Testar'])

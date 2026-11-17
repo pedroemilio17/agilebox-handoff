@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createDefinitionOfDoneItem,
@@ -39,8 +40,13 @@ function setup(actor: Actor = owner) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: new RecordingNotifier(),
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
@@ -123,7 +129,7 @@ describe('conferência da definição de pronto ao concluir', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     const error = await useCases.tasks.move
-      .execute(owner, { taskId, status: 'done' })
+      .execute(createTenantContext(owner), { taskId, status: 'done' })
       .catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(DefinitionOfDoneNotConfirmedError)
     expect(
@@ -137,7 +143,7 @@ describe('conferência da definição de pronto ao concluir', () => {
     const { useCases, unitOfWork } = setup()
     const [first, second] = await seed(unitOfWork)
     const error = await useCases.tasks.move
-      .execute(owner, {
+      .execute(createTenantContext(owner), {
         taskId,
         status: 'done',
         confirmedDefinitionItemIds: [first!.id, second!.id],
@@ -151,7 +157,7 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('confirmar todos conclui, registra a confirmação com a contagem e a linha do tempo', async () => {
     const { useCases, unitOfWork } = setup()
     const items = await seed(unitOfWork)
-    const moved = await useCases.tasks.move.execute(owner, {
+    const moved = await useCases.tasks.move.execute(createTenantContext(owner), {
       taskId,
       status: 'done',
       confirmedDefinitionItemIds: items.map((item) => item.id),
@@ -172,7 +178,7 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('gestor que conclui com a confirmação tem o evento marcado como Gestor', async () => {
     const { useCases, unitOfWork } = setup(manager)
     const items = await seed(unitOfWork)
-    await useCases.tasks.move.execute(manager, {
+    await useCases.tasks.move.execute(createTenantContext(manager), {
       taskId,
       status: 'done',
       confirmedDefinitionItemIds: items.map((item) => item.id),
@@ -186,7 +192,10 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('projeto sem itens conclui sem exigir nada e sem evento de confirmação', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, { titles: [] })
-    const moved = await useCases.tasks.move.execute(owner, { taskId, status: 'done' })
+    const moved = await useCases.tasks.move.execute(createTenantContext(owner), {
+      taskId,
+      status: 'done',
+    })
     expect(moved.status).toBe('done')
     expect(await timelineTypes(unitOfWork)).not.toContain('definition_confirmed')
   })
@@ -194,15 +203,18 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('item adicionado depois da conclusão anterior precisa ser confirmado de novo', async () => {
     const { useCases, unitOfWork } = setup()
     const items = await seed(unitOfWork, { titles: ['A'] })
-    await useCases.tasks.move.execute(owner, {
+    await useCases.tasks.move.execute(createTenantContext(owner), {
       taskId,
       status: 'done',
       confirmedDefinitionItemIds: items.map((item) => item.id),
     })
-    await useCases.tasks.move.execute(owner, { taskId, status: 'review' })
-    await useCases.projects.definitionOfDone.add.execute(owner, { projectId, title: 'Novo item' })
+    await useCases.tasks.move.execute(createTenantContext(owner), { taskId, status: 'review' })
+    await useCases.projects.definitionOfDone.add.execute(createTenantContext(owner), {
+      projectId,
+      title: 'Novo item',
+    })
     await expect(
-      useCases.tasks.move.execute(owner, {
+      useCases.tasks.move.execute(createTenantContext(owner), {
         taskId,
         status: 'done',
         confirmedDefinitionItemIds: items.map((item) => item.id),
@@ -213,7 +225,10 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('reabrir (sair de Concluído) não exige confirmação', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, { status: 'done', titles: ['A'] })
-    const reopened = await useCases.tasks.move.execute(owner, { taskId, status: 'review' })
+    const reopened = await useCases.tasks.move.execute(createTenantContext(owner), {
+      taskId,
+      status: 'review',
+    })
     expect(reopened.status).toBe('review')
   })
 
@@ -221,13 +236,17 @@ describe('conferência da definição de pronto ao concluir', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, { titles: ['A'] })
     await expect(
-      useCases.tasks.create.execute(owner, { projectId, title: 'Nova', status: 'done' }),
+      useCases.tasks.create.execute(createTenantContext(owner), {
+        projectId,
+        title: 'Nova',
+        status: 'done',
+      }),
     ).rejects.toBeInstanceOf(DefinitionOfDoneNotConfirmedError)
     const [item] = await unitOfWork.repositories.definitionOfDone.listByProject(
       organizationId,
       projectId,
     )
-    const created = await useCases.tasks.create.execute(owner, {
+    const created = await useCases.tasks.create.execute(createTenantContext(owner), {
       projectId,
       title: 'Nova',
       status: 'done',
@@ -244,7 +263,7 @@ describe('conferência da definição de pronto ao concluir', () => {
   it('o detalhe da tarefa traz a definição de pronto do projeto', async () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork, { titles: ['A', 'B'] })
-    const detail = await useCases.tasks.getDetail.execute(owner, { taskId })
+    const detail = await useCases.tasks.getDetail.execute(createTenantContext(owner), { taskId })
     expect(detail.projectDefinitionOfDone.map((item) => [item.title, item.position])).toEqual([
       ['A', 0],
       ['B', 1],
@@ -263,10 +282,10 @@ describe('conferência da definição de pronto ao concluir', () => {
         position: 0,
       }),
     ])
-    const detail = await useCases.tasks.getDetail.execute(owner, { taskId })
+    const detail = await useCases.tasks.getDetail.execute(createTenantContext(owner), { taskId })
     expect(detail.projectDefinitionOfDone).toEqual([])
     await expect(
-      useCases.tasks.move.execute(owner, { taskId, status: 'done' }),
+      useCases.tasks.move.execute(createTenantContext(owner), { taskId, status: 'done' }),
     ).resolves.toMatchObject({
       status: 'done',
     })

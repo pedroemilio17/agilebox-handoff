@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Drawer, ScopeBanner, Toast } from '@agilebox/ui'
 import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
 import type { SetWipLimitsInput, TaskDto, WipLimitsDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
+import { CapabilitiesProvider } from '../shared/capabilities/CapabilitiesProvider'
+import { useCapabilities } from '../shared/capabilities/capabilities-context'
 import { useActor } from '../shared/session/useActor'
 import { queryKeys } from '../shared/query/keys'
 import { panelCopy } from './copy'
@@ -12,6 +14,9 @@ import { useProjects } from './hooks/use-projects'
 import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
+import { BacklogView } from './backlog/BacklogView'
+import { SprintsView } from './sprints/SprintsView'
+import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -30,8 +35,26 @@ import { PanelCommands } from './commands/PanelCommands'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
+  return (
+    <CapabilitiesProvider>
+      <PanelContent />
+    </CapabilitiesProvider>
+  )
+}
+
+function PanelContent() {
   const [commandsOpen, setCommandsOpen] = useState(false)
   const api = useApi()
+  const capabilities = useCapabilities()
+  // Agenda só aparece com o módulo ligado e o nível da pessoa; a view guardada cai no Quadro.
+  const agendaVisible = capabilities.showScreen('agenda')
+  // Backlog segue o mesmo caminho: módulo ligado e nível da pessoa; senão a view cai no Quadro.
+  const backlogVisible = capabilities.showScreen('backlog')
+  // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
+  const sprintsVisible = capabilities.showScreen('sprints')
+  // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
+  const impedimentsVisible = capabilities.showScreen('impediments')
+  const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
   const [view, setView] = useState<PanelView>(() => {
     // Depois de trocar Translúcido/Opaco as janelas são recriadas: o painel volta em Ajustes.
@@ -43,6 +66,13 @@ export function App() {
       return 'projects'
     }
   })
+  const currentView: PanelView =
+    (view === 'agenda' && !agendaVisible) ||
+    (view === 'backlog' && !backlogVisible) ||
+    (view === 'sprints' && !sprintsVisible) ||
+    (view === 'impediments' && !impedimentsVisible)
+      ? 'projects'
+      : view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
@@ -55,6 +85,9 @@ export function App() {
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
+  const [showArchived, setShowArchived] = useState(false)
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false)
   const [notice, setNotice] = useState<{
     id: number
     message: string
@@ -62,21 +95,33 @@ export function App() {
   } | null>(null)
   const noticeSeq = useRef(0)
   const actor = useActor()
-  const projects = useProjects()
+  const projects = useProjects(showArchivedProjects)
+  // Projeto arquivado não recebe tarefa nova: a criação só oferece os ativos.
+  const activeProjects = useMemo(
+    () => (projects.data ?? []).filter((project) => project.archivedAt == null),
+    [projects.data],
+  )
+  const selectedProject = projects.data?.find((project) => project.id === selectedProjectId)
+  const selectedArchived = selectedProject?.archivedAt != null
+  const newTaskBlockedReason = selectedArchived ? panelCopy.archivedProjectNewTask : undefined
   const sessionUsers = useSessionUsers()
   const tasks = useQuery({
-    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id),
+    queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, showArchived),
     queryFn: () =>
       api.tasks.listBoard({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
+        ...(showArchived ? { includeArchived: true } : {}),
       }),
   })
   const teamTasks = useQuery({
-    queryKey: queryKeys.tasks.team(selectedProjectId ?? undefined),
+    queryKey: queryKeys.tasks.team(selectedProjectId ?? undefined, showArchived),
     queryFn: () =>
-      api.tasks.listTeamBoard(selectedProjectId ? { projectId: selectedProjectId } : {}),
-    enabled: view === 'projects' && taskScope === 'team',
+      api.tasks.listTeamBoard({
+        ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
+        ...(showArchived ? { includeArchived: true } : {}),
+      }),
+    enabled: currentView === 'projects' && taskScope === 'team',
   })
   const teamView = taskScope === 'team'
   const boardTasks = teamView ? teamTasks.data : tasks.data?.tasks
@@ -95,7 +140,8 @@ export function App() {
   }
   const boardFlow = useQuery({
     queryKey: [...queryKeys.tasks.all, 'flow', selectedProjectId, viewingUser?.id],
-    enabled: view === 'projects',
+    // Sem a ferramenta de métricas de fluxo o backend recusa a consulta: nem tenta.
+    enabled: currentView === 'projects' && flowFetch,
     queryFn: () =>
       api.tasks.getBoardFlow({
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
@@ -263,9 +309,28 @@ export function App() {
       if (goTo) {
         goTo = false
         if (timer) clearTimeout(timer)
-        if (key === 'q' || key === 'a' || (key === 'd' && isManager)) {
+        if (
+          key === 'q' ||
+          (key === 'b' && backlogVisible) ||
+          (key === 's' && sprintsVisible) ||
+          (key === 'i' && impedimentsVisible) ||
+          (key === 'a' && agendaVisible) ||
+          (key === 'd' && isManager)
+        ) {
           event.preventDefault()
-          setView(key === 'q' ? 'projects' : key === 'a' ? 'agenda' : 'dashboard')
+          setView(
+            key === 'q'
+              ? 'projects'
+              : key === 'b'
+                ? 'backlog'
+                : key === 's'
+                  ? 'sprints'
+                  : key === 'i'
+                    ? 'impediments'
+                    : key === 'a'
+                      ? 'agenda'
+                      : 'dashboard',
+          )
         }
         return
       }
@@ -287,7 +352,7 @@ export function App() {
       window.removeEventListener('keydown', onKeyDown)
       if (timer) clearTimeout(timer)
     }
-  }, [isManager])
+  }, [isManager, agendaVisible, backlogVisible, sprintsVisible, impedimentsVisible])
 
   return (
     <>
@@ -308,13 +373,14 @@ export function App() {
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
           ) : null
         }
-        view={view}
+        view={currentView}
         onViewChange={setView}
         taskScope={taskScope}
         onTaskScopeChange={changeTaskScope}
         isManager={isManager}
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
+        newTaskBlockedReason={newTaskBlockedReason}
         {...(projectCounts ? { projectCounts } : {})}
         onProjectSelect={(id) => {
           setSelectedProjectId(id)
@@ -327,6 +393,32 @@ export function App() {
           currentUserId: actor.actor?.userId,
           onSwitch: (userId) => switchUser.mutate(userId),
         }}
+        backlog={
+          <BacklogView
+            initialProjectId={selectedProjectId}
+            projects={activeProjects}
+            isManager={isManager}
+          />
+        }
+        sprints={
+          <SprintsView
+            initialProjectId={selectedProjectId}
+            projects={activeProjects}
+            isManager={isManager}
+            onOpenTask={(id) => {
+              openTask(id)
+              setView('projects')
+            }}
+          />
+        }
+        impediments={
+          <ImpedimentsView
+            onOpenTask={(id) => {
+              openTask(id)
+              setView('projects')
+            }}
+          />
+        }
         agenda={
           <AgendaView
             onOpenTask={(id) => {
@@ -366,7 +458,7 @@ export function App() {
           setNewTaskDialogOpen(true)
         }}
       >
-        {view === 'projects' ? (
+        {currentView === 'projects' ? (
           <>
             {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
             {activeTaskId && taskFullScreen ? (
@@ -407,6 +499,9 @@ export function App() {
                   onSetWipLimit={setBoardWipLimit}
                   readOnlyScope={teamView}
                   onRetry={() => void teamTasks.refetch()}
+                  showArchived={showArchived}
+                  onShowArchivedChange={setShowArchived}
+                  newTaskBlockedReason={newTaskBlockedReason}
                   updatedAt={
                     (teamView ? teamTasks.dataUpdatedAt : tasks.dataUpdatedAt) || undefined
                   }
@@ -438,7 +533,15 @@ export function App() {
               onClose={() => setProjectDialogOpen(false)}
               canManageMembers={canManageProject}
               canEditDefinition={canManageProject}
+              canArchiveProject={canManageProject}
+              canRenameProject={canManageProject}
               onManageMembers={setMembersProject}
+              showArchived={showArchivedProjects}
+              onShowArchivedChange={(show) => {
+                setShowArchivedProjects(show)
+                // Escondido o projeto selecionado, o quadro volta a todos os projetos.
+                if (!show && selectedArchived) setSelectedProjectId(null)
+              }}
             />
             <ProjectMembersDialog
               project={membersProject}
@@ -447,8 +550,8 @@ export function App() {
             <NewTaskDialog
               {...(newTaskStatus ? { initialStatus: newTaskStatus } : {})}
               open={newTaskDialogOpen}
-              projects={projects.data ?? []}
-              selectedProjectId={selectedProjectId}
+              projects={activeProjects}
+              selectedProjectId={selectedArchived ? null : selectedProjectId}
               onClose={() => setNewTaskDialogOpen(false)}
               onCreated={(createdTask) => openTask(createdTask.id)}
             />
@@ -459,7 +562,7 @@ export function App() {
       {definitionGate.dialog}
       {commandsOpen && (
         <PanelCommands
-          projects={projects.data ?? []}
+          projects={activeProjects}
           people={sessionUsers.data ?? []}
           selectedProjectId={selectedProjectId}
           isManager={isManager}

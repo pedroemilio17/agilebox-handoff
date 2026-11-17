@@ -49,28 +49,38 @@ export function useMoveTaskStatus(taskId: string) {
   })
 }
 
+/** Bloquear abre o impedimento; `ownerId` é o responsável por resolver (opcional). */
 export function useBlockTask(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (reason: string) => api.tasks.block({ taskId, reason }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
-    },
+    mutationFn: (input: { readonly reason: string; readonly ownerId?: string }) =>
+      api.tasks.block({
+        taskId,
+        reason: input.reason,
+        ...(input.ownerId ? { ownerId: input.ownerId } : {}),
+      }),
+    onSuccess: () => refreshAfterBlock(queryClient, taskId),
   })
 }
 
+/** Resolver é o desbloqueio com nota opcional; a tarefa sai do estado bloqueado. */
 export function useUnblockTask(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api.tasks.unblock({ taskId }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
-    },
+    mutationFn: (resolution?: string | null) =>
+      api.tasks.unblock({ taskId, ...(resolution ? { resolution } : {}) }),
+    onSuccess: () => refreshAfterBlock(queryClient, taskId),
   })
+}
+
+/** Bloqueio e desbloqueio mexem no impedimento: a lista, o quadro, o dashboard e a linha do tempo. */
+function refreshAfterBlock(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.impediments.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
 }
 
 /** Atualiza a tarefa e a linha do tempo depois de subtarefas e comentários. */
@@ -164,5 +174,107 @@ export function useRemoveComment(taskId: string) {
   return useMutation({
     mutationFn: (commentId: string) => api.tasks.comments.remove({ taskId, commentId }),
     onSettled: () => refreshAfterChecklist(queryClient, taskId),
+  })
+}
+
+/** Arquivar e desarquivar mudam o quadro, o detalhe, a linha do tempo e o painel do gestor. */
+function refreshAfterArchive(queryClient: ReturnType<typeof useQueryClient>, taskId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+}
+
+export function useArchiveTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.tasks.archive({ taskId }),
+    onSettled: () => refreshAfterArchive(queryClient, taskId),
+  })
+}
+
+export function useUnarchiveTask(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.tasks.unarchive({ taskId }),
+    onSettled: () => refreshAfterArchive(queryClient, taskId),
+  })
+}
+
+/**
+ * Critérios e estimativa (M3.3) mudam a tarefa, o quadro, o backlog, o dashboard e a linha do tempo.
+ */
+function refreshAfterCriteriaOrEstimate(
+  queryClient: ReturnType<typeof useQueryClient>,
+  taskId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+}
+
+export function useAddCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => api.tasks.criteria.add({ taskId, text }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useToggleCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ criterionId, done }: { readonly criterionId: string; readonly done: boolean }) =>
+      api.tasks.criteria.toggle({ taskId, criterionId, done }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useRenameCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ criterionId, text }: { readonly criterionId: string; readonly text: string }) =>
+      api.tasks.criteria.rename({ taskId, criterionId, text }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useRemoveCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (criterionId: string) => api.tasks.criteria.remove({ taskId, criterionId }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+export function useMoveCriterion(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      criterionId,
+      position,
+    }: {
+      readonly criterionId: string
+      readonly position: number
+    }) => api.tasks.criteria.move({ taskId, criterionId, position }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
+  })
+}
+
+/** Estimativa em horas; `null` tira a estimativa. */
+export function useSetEstimate(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (estimatedHours: number | null) =>
+      api.tasks.setEstimate({ taskId, estimatedHours }),
+    onSettled: () => refreshAfterCriteriaOrEstimate(queryClient, taskId),
   })
 }

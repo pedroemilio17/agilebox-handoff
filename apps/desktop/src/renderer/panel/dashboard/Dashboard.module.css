@@ -245,6 +245,11 @@
   position: relative;
   pointer-events: none;
 }
+.teamHeader.teamNoDaily,
+.teamRow.teamNoDaily {
+  grid-template-columns: 2fr 1.3fr 1.6fr 1.2fr;
+}
+
 .teamRow > .dailyCell {
   z-index: 1;
   display: flex;

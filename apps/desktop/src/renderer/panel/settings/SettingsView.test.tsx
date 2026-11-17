@@ -1,8 +1,26 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiProvider } from '../../shared/api/ApiProvider'
 import { WINDOW_OPACITY_KEY } from '../../shared/lib/window-opacity'
+import { createFakeApi } from '../../shared/testing/fake-api'
+import { teamToolsView } from '../../shared/testing/team-tools-fixture'
 import { SettingsView } from './SettingsView'
+
+/** Ajustes usa a API (ferramentas da equipe), então o teste monta os provedores. */
+function renderSettings() {
+  const api = createFakeApi()
+  vi.spyOn(api.teamTools, 'get').mockResolvedValue(teamToolsView({ modules: [], level: 'basic' }))
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <ApiProvider api={api}>
+      <QueryClientProvider client={queryClient}>
+        <SettingsView />
+      </QueryClientProvider>
+    </ApiProvider>,
+  )
+}
 
 const updates = {
   check: () => Promise.resolve({ state: 'up-to-date', commit: 'x' }),
@@ -26,7 +44,7 @@ afterEach(() => {
 
 describe('Ajustes: opacidade da janela', () => {
   it('mostra o padrão, salva o novo valor e restaura', async () => {
-    render(<SettingsView />)
+    renderSettings()
     const slider = screen.getByLabelText<HTMLInputElement>('Opacidade da janela')
     expect(slider.value).toBe('68')
     expect(screen.getByText('68%')).toBeTruthy()
@@ -42,7 +60,7 @@ describe('Ajustes: opacidade da janela', () => {
 
   it('abre com o valor salvo antes', () => {
     window.localStorage.setItem(WINDOW_OPACITY_KEY, '0.5')
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByLabelText<HTMLInputElement>('Opacidade da janela').value).toBe('50')
   })
 })
@@ -52,7 +70,7 @@ describe('Ajustes: fundo da janela', () => {
     const setAppearance = vi.fn()
     vi.stubGlobal('agilebox', { shell: { setAppearance }, updates })
     document.documentElement.dataset.glass = 'native'
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByRole('button', { name: 'Translúcido' }).getAttribute('aria-pressed')).toBe(
       'true',
     )
@@ -64,7 +82,7 @@ describe('Ajustes: fundo da janela', () => {
 
   it('no modo opaco mostra "Opaco" selecionado', () => {
     document.documentElement.dataset.glass = 'opaque'
-    render(<SettingsView />)
+    renderSettings()
     expect(screen.getByRole('button', { name: 'Opaco' }).getAttribute('aria-pressed')).toBe('true')
   })
 })

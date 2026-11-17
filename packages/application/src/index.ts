@@ -1,6 +1,7 @@
 export {}
 export * from './deps'
 export * from './create-use-cases'
+export * from './tenant-context'
 export * from './mappers'
 export * from './ports'
 export * from './use-cases/projects/create-project'

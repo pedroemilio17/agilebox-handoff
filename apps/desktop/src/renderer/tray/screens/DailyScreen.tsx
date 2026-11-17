@@ -6,6 +6,10 @@ import { useApi } from '../../shared/api/ApiProvider'
 import { useActor } from '../../shared/session/useActor'
 import { queryKeys } from '../../shared/query/keys'
 import { useDailyToday } from '../use-daily-today'
+import { useDailySuggestion } from '../use-daily-suggestion'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { DailySuggestionPanel } from './DailySuggestionPanel'
+import { DailyImpedimentsPanel } from './DailyImpedimentsPanel'
 import {
   DAILY_ANSWER_LIMIT,
   EMPTY_DAILY_ANSWERS,
@@ -107,8 +111,18 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   const [noNews, setNoNews] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
+  const [suggestionHidden, setSuggestionHidden] = useState(false)
+  const [suggestionUsed, setSuggestionUsed] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const discardRef = useRef<HTMLDivElement>(null)
+
+  // Sugestão do check-in: só com a ferramenta de check-ins ativa, e só depois de saber a data.
+  const capabilities = useCapabilities()
+  const suggestionAllowed = capabilities.canFetch('checkins:screen')
+  const creatingBlocked = capabilities.isWindingDown('checkins') && daily.data?.entry === null
+  const suggestion = useDailySuggestion(daily.data?.date ?? '', suggestionAllowed && loaded)
+  // Impedimentos abertos da pessoa (passo 3): só com o módulo ativo; sem ele, nada é pedido.
+  const impedimentsAllowed = capabilities.canFetch('impediments:passive')
 
   // Uma vez: preenche com a daily de hoje, se já existir, para editar.
   useEffect(() => {
@@ -251,9 +265,48 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
     save.mutate({ date, answers, noNews: true, taskRefs })
   }
 
-  const message = feedback ?? (save.isError ? trayCopy.dailySaveError : null)
+  // Usar a sugestão só escreve no campo de avanço, que a pessoa edita. Não grava a daily.
+  // Usar um impedimento só escreve no campo de bloqueio, que a pessoa edita. Não grava a daily.
+  const useImpediment = (text: string) => {
+    setAnswers((current) => {
+      if (current.blocker.includes(text)) return current
+      const blocker = current.blocker.trim() === '' ? text : `${current.blocker.trimEnd()}\n${text}`
+      return { ...current, blocker }
+    })
+    setNoNews(false)
+    setFeedback(null)
+    document.getElementById('daily-blocker')?.focus()
+  }
+
+  const useSuggestion = () => {
+    const lines = suggestion.data?.advanced ?? []
+    if (lines.length === 0) return
+    const text = lines.join('\n')
+    setAnswers((current) => {
+      if (current.progress.includes(text)) return current
+      const progress =
+        current.progress.trim() === '' ? text : `${current.progress.trimEnd()}\n${text}`
+      return { ...current, progress }
+    })
+    setNoNews(false)
+    setFeedback(null)
+    setSuggestionUsed(true)
+    document.getElementById('daily-progress')?.focus()
+  }
+
+  const ignoreSuggestion = () => {
+    setSuggestionHidden(true)
+    setSuggestionUsed(false)
+    document.getElementById('daily-progress')?.focus()
+  }
+
+  // Encerrando, criar a daily do dia é recusado; a que já existe segue editável (PLANO-2.0, regra 4).
+  let fallbackMessage: string | null = null
+  if (creatingBlocked) fallbackMessage = trayCopy.dailyWindingDown
+  else if (save.isError) fallbackMessage = trayCopy.dailySaveError
+  const message = feedback ?? fallbackMessage
   const stepNumber = step === 'review' ? 3 : step
-  const busy = save.isPending
+  const busy = save.isPending || creatingBlocked
   const citedTitles = taskRefs
     .map((id) => taskItems.find((item) => item.id === id)?.title)
     .filter((title): title is string => title !== undefined)
@@ -298,6 +351,15 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
               disabled={busy}
             />
           )}
+          {suggestionAllowed && !suggestionHidden ? (
+            <DailySuggestionPanel
+              status={suggestion.isError ? 'error' : suggestion.isPending ? 'loading' : 'ready'}
+              suggestion={suggestion.data}
+              usedNotice={suggestionUsed}
+              onUse={useSuggestion}
+              onIgnore={ignoreSuggestion}
+            />
+          ) : null}
           <AnswerField
             id="daily-progress"
             label={trayCopy.dailyProgressLabel}
@@ -332,6 +394,13 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
           <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
             {trayCopy.dailyStep3Title}
           </h3>
+          {impedimentsAllowed ? (
+            <DailyImpedimentsPanel
+              userId={actor.actor?.userId}
+              disabled={busy}
+              onUse={useImpediment}
+            />
+          ) : null}
           <AnswerField
             id="daily-blocker"
             label={trayCopy.dailyBlockerLabel}

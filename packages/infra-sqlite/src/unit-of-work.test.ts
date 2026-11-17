@@ -4,10 +4,14 @@ import { aMeeting, aUser } from '@agilebox/application/testing'
 import { createSqliteClient } from './client.js'
 import { organizations } from './schema/organizations.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
+import { createSqliteImpedimentRepository } from './repositories/impediment-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
+import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
+import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
+import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
@@ -26,7 +30,11 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...createSqliteCoreRepositories(database),
       ...createSqliteTaskRepositories(database),
+      acceptance: createSqliteAcceptanceRepository(database),
+      impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
+      teamTools: createSqliteTeamToolsRepository(database),
+      ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
@@ -59,7 +67,11 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...core,
       ...createSqliteTaskRepositories(database),
+      acceptance: createSqliteAcceptanceRepository(database),
+      impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
+      teamTools: createSqliteTeamToolsRepository(database),
+      ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,

@@ -20,6 +20,7 @@ import { queryKeys } from '../../shared/query/keys'
 import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { DailyDialog } from './DailyDialog'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { useNoticeOnError } from './use-notice-on-error'
 import type { CollaboratorStat } from './types'
 import styles from './Dashboard.module.css'
@@ -48,6 +49,12 @@ export function DashboardView({
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
   const [dailyOf, setDailyOf] = useState<{ userId: string; name: string } | null>(null)
   const api = useApi()
+  const capabilities = useCapabilities()
+  const dailyVisible = capabilities.can('checkins:screen')
+  const dailyFetch = capabilities.canFetch('checkins:screen')
+  const blockedVisible = capabilities.can('impediments:passive')
+  const wipVisible = capabilities.can('wip:passive')
+  const flowVisible = capabilities.can('flowMetrics:screen')
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
@@ -57,6 +64,8 @@ export function DashboardView({
   const dailyStatus = useQuery({
     queryKey: queryKeys.daily.forDate(today),
     queryFn: () => api.daily.listForDate({ date: today }),
+    // Sem a ferramenta de check-ins o backend recusa a consulta: não faz a chamada.
+    enabled: dailyFetch,
   })
   useNoticeOnError(dailyStatus.isError, panelCopy.dailyListError, onNotice)
   const saveSummary = useMutation({
@@ -84,32 +93,37 @@ export function DashboardView({
   if (dashboard.isError || !dashboard.data.insights)
     return <p role="alert">{panelCopy.dashboardError}</p>
   const data = dashboard.data.insights
-  const period = data.weeks.find((item) => item.start === selectedWeek)
-  const adherence = period ? (period.upToDatePercentage ?? null) : data.upToDatePercentage
-  const cycle = period ? (period.cycleDays ?? null) : data.cycleDays
-  const lead = period ? (period.leadDays ?? null) : data.leadDays
-  const throughput = period?.throughput ?? data.throughput
-  const index = period ? data.weeks.indexOf(period) : data.weeks.length - 1
-  const previous = data.weeks[index - 1]?.upToDatePercentage
+  // Sem `flowMetrics` (ferramenta desligada) o backend não envia as semanas nem os indicadores de fluxo.
+  const hasFlow = data.weeks !== undefined
+  const weeks = data.weeks ?? []
+  const period = weeks.find((item) => item.start === selectedWeek)
+  const adherence = period ? (period.upToDatePercentage ?? null) : (data.upToDatePercentage ?? null)
+  const cycle = period ? (period.cycleDays ?? null) : (data.cycleDays ?? null)
+  const lead = period ? (period.leadDays ?? null) : (data.leadDays ?? null)
+  const throughput = period?.throughput ?? data.throughput ?? 0
+  const index = period ? weeks.indexOf(period) : weeks.length - 1
+  const previous = weeks[index - 1]?.upToDatePercentage
   const delta = adherence !== null && previous != null ? Math.round(adherence - previous) : null
   const dailyDone = new Map((dailyStatus.data ?? []).map((item) => [item.userId, item.done]))
   const teamDone = data.team.filter((person) => dailyDone.get(person.user.id) === true).length
   return (
     <div className={styles.view}>
       <header className={styles.period}>
-        <select
-          aria-label="Semana do dashboard"
-          className={styles.weekSelect}
-          value={period?.start ?? data.weekStart}
-          onChange={(event) => setSelectedWeek(event.currentTarget.value)}
-        >
-          {data.weeks.map((item) => (
-            <option key={item.start} value={item.start}>
-              Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
-              {format(addDays(parseISO(item.start), 6), 'dd/MM')}
-            </option>
-          ))}
-        </select>
+        {hasFlow ? (
+          <select
+            aria-label="Semana do dashboard"
+            className={styles.weekSelect}
+            value={period?.start ?? data.weekStart}
+            onChange={(event) => setSelectedWeek(event.currentTarget.value)}
+          >
+            {weeks.map((item) => (
+              <option key={item.start} value={item.start}>
+                Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
+                {format(addDays(parseISO(item.start), 6), 'dd/MM')}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <div className={styles.periodActions}>
           <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
           <ExportMenu
@@ -125,32 +139,34 @@ export function DashboardView({
         </div>
       </header>
       <div className={styles.overview}>
-        <section className={styles.panel} aria-label="Quadro em dia">
-          <Eyebrow>Quadro em dia</Eyebrow>
-          <p className={styles.adoption}>
-            {adherence === null ? (
-              '—'
-            ) : (
-              <>
-                {Math.round(adherence)}
-                <span>%</span>
-              </>
-            )}
-          </p>
-          <Sparkline
-            label="Quadro em dia nas últimas seis semanas"
-            data={data.weeks.slice(0, index + 1).map((item) => ({
-              label: `S${getISOWeek(parseISO(item.start))}`,
-              value: item.upToDatePercentage ?? null,
-            }))}
-          />
-          <p className={styles.caption}>
-            das tarefas ativas foram atualizadas nas últimas 48h
-            {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
-          </p>
-        </section>
+        {hasFlow ? (
+          <section className={styles.panel} aria-label="Quadro em dia">
+            <Eyebrow>Quadro em dia</Eyebrow>
+            <p className={styles.adoption}>
+              {adherence === null ? (
+                '—'
+              ) : (
+                <>
+                  {Math.round(adherence)}
+                  <span>%</span>
+                </>
+              )}
+            </p>
+            <Sparkline
+              label="Quadro em dia nas últimas seis semanas"
+              data={weeks.slice(0, index + 1).map((item) => ({
+                label: `S${getISOWeek(parseISO(item.start))}`,
+                value: item.upToDatePercentage ?? null,
+              }))}
+            />
+            <p className={styles.caption}>
+              das tarefas ativas foram atualizadas nas últimas 48h
+              {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
+            </p>
+          </section>
+        ) : null}
         <div className={styles.exceptions}>
-          {data.overWipColumns.length > 0 ? (
+          {wipVisible && data.overWipColumns.length > 0 ? (
             <ul className={styles.wipExceptions} aria-label="Colunas acima do limite">
               {data.overWipColumns.map((column) => (
                 <li key={column.status}>
@@ -165,13 +181,15 @@ export function DashboardView({
               ))}
             </ul>
           ) : null}
-          <MetricTile
-            label="Bloqueadas"
-            value={data.blockedCount}
-            caption="com motivo registrado"
-            signal="danger"
-            onClick={() => onOpenException?.('blocked')}
-          />
+          {blockedVisible ? (
+            <MetricTile
+              label="Bloqueadas"
+              value={data.blockedCount}
+              caption="com motivo registrado"
+              signal="danger"
+              onClick={() => onOpenException?.('blocked')}
+            />
+          ) : null}
           <MetricTile
             label="Paradas"
             value={data.agingCount}
@@ -188,31 +206,34 @@ export function DashboardView({
         </div>
       </div>
       <div className={styles.overview}>
-        <section className={styles.panel} aria-label="Fluxo de seis semanas">
-          <Eyebrow>Fluxo · 6 semanas</Eyebrow>
-          <div className={styles.flowMetrics}>
-            <p>
-              <strong>{days(cycle)}</strong>
-              <span>tempo de ciclo médio</span>
-            </p>
-            <p>
-              <strong>{days(lead)}</strong>
-              <span>do pedido à entrega</span>
-            </p>
-            <p>
-              <strong>{throughput === 0 ? '—' : throughput}</strong>
-              <span>concluídas nesta semana</span>
-            </p>
-          </div>
-          {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
-          <BarChart
-            label="Concluídas por semana"
-            data={data.weeks.map((item) => ({
-              label: `S${getISOWeek(parseISO(item.start))}`,
-              value: item.throughput,
-            }))}
-          />
-        </section>
+        {/* Métricas de fluxo (ciclo, pedido à entrega, vazão): só com a ferramenta ligada, como no quadro. */}
+        {flowVisible && hasFlow ? (
+          <section className={styles.panel} aria-label="Fluxo de seis semanas">
+            <Eyebrow>Fluxo · 6 semanas</Eyebrow>
+            <div className={styles.flowMetrics}>
+              <p>
+                <strong>{days(cycle)}</strong>
+                <span>tempo de ciclo médio</span>
+              </p>
+              <p>
+                <strong>{days(lead)}</strong>
+                <span>do pedido à entrega</span>
+              </p>
+              <p>
+                <strong>{throughput === 0 ? '—' : throughput}</strong>
+                <span>concluídas nesta semana</span>
+              </p>
+            </div>
+            {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
+            <BarChart
+              label="Concluídas por semana"
+              data={weeks.map((item) => ({
+                label: `S${getISOWeek(parseISO(item.start))}`,
+                value: item.throughput,
+              }))}
+            />
+          </section>
+        ) : null}
         <section className={styles.panel} aria-label="Mudou desde ontem">
           <Eyebrow>Mudou desde ontem</Eyebrow>
           {data.recentChanges.length === 0 ? (
@@ -245,17 +266,22 @@ export function DashboardView({
       <section className={styles.panel} aria-label="Equipe">
         <Eyebrow>Equipe</Eyebrow>
         <div className={styles.teamScroll}>
-          <div className={styles.teamHeader}>
+          <div className={`${styles.teamHeader} ${dailyVisible ? '' : styles.teamNoDaily}`}>
             <span>Pessoa</span>
             <span>Em andamento</span>
             <span>Sinais</span>
-            {dailyStatus.data ? (
-              <span role="group" aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}>
-                {panelCopy.dailyCount(teamDone, data.team.length)}
-              </span>
-            ) : (
-              <span>{panelCopy.dailyColumn}</span>
-            )}
+            {dailyVisible ? (
+              dailyStatus.data ? (
+                <span
+                  role="group"
+                  aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}
+                >
+                  {panelCopy.dailyCount(teamDone, data.team.length)}
+                </span>
+              ) : (
+                <span>{panelCopy.dailyColumn}</span>
+              )
+            ) : null}
             <span>Última atualização</span>
           </div>
           {data.team.length === 0 ? (
@@ -265,7 +291,10 @@ export function DashboardView({
               const name = person.user.name
               const done = dailyDone.get(person.user.id)
               return (
-                <div className={styles.teamRow} key={person.user.id}>
+                <div
+                  className={`${styles.teamRow} ${dailyVisible ? '' : styles.teamNoDaily}`}
+                  key={person.user.id}
+                >
                   <button
                     type="button"
                     className={styles.teamRowLink}
@@ -288,7 +317,7 @@ export function DashboardView({
                         {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
                       </SignalBadge>
                     )}
-                    {person.blockedCount > 0 && (
+                    {blockedVisible && person.blockedCount > 0 && (
                       <SignalBadge variant="blocked">
                         {person.blockedCount}{' '}
                         {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
@@ -296,30 +325,32 @@ export function DashboardView({
                     )}
                     {person.agingCount === 0 &&
                       person.overdueCount === 0 &&
-                      person.blockedCount === 0 &&
+                      (!blockedVisible || person.blockedCount === 0) &&
                       '—'}
                   </span>
-                  <span className={styles.dailyCell}>
-                    {dailyStatus.isPending ? (
-                      <span className={styles.muted}>{panelCopy.dailyLoading}</span>
-                    ) : done === undefined ? (
-                      <span className={styles.muted}>—</span>
-                    ) : (
-                      <>
-                        <DailyStatusBadge done={done} />
-                        {done && (
-                          <button
-                            type="button"
-                            className={styles.inlineButton}
-                            aria-label={panelCopy.dailyViewOf(name)}
-                            onClick={() => setDailyOf({ userId: person.user.id, name })}
-                          >
-                            {panelCopy.dailyView}
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </span>
+                  {dailyVisible ? (
+                    <span className={styles.dailyCell}>
+                      {dailyStatus.isPending ? (
+                        <span className={styles.muted}>{panelCopy.dailyLoading}</span>
+                      ) : done === undefined ? (
+                        <span className={styles.muted}>—</span>
+                      ) : (
+                        <>
+                          <DailyStatusBadge done={done} />
+                          {done && (
+                            <button
+                              type="button"
+                              className={styles.inlineButton}
+                              aria-label={panelCopy.dailyViewOf(name)}
+                              onClick={() => setDailyOf({ userId: person.user.id, name })}
+                            >
+                              {panelCopy.dailyView}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </span>
+                  ) : null}
                   <span
                     className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
                   >
@@ -345,7 +376,7 @@ export function DashboardView({
           </p>
         ) : null}
       </section>
-      {dailyOf ? (
+      {dailyOf && dailyVisible ? (
         <DailyDialog
           userId={dailyOf.userId}
           userName={dailyOf.name}

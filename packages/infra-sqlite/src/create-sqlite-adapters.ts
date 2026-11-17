@@ -1,11 +1,15 @@
 import { createSqliteClient } from './client.js'
+import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
+import { createSqliteImpedimentRepository } from './repositories/impediment-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
+import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
+import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
 import { organizations } from './schema/index.js'
@@ -20,13 +24,17 @@ export function createSqliteAdapters(filename: string, migrationsFolder?: string
 export function createSqliteAdaptersForDatabase(database: ReturnType<typeof createSqliteClient>) {
   const repositories = {
     ...createSqliteCoreRepositories(database),
+    acceptance: createSqliteAcceptanceRepository(database),
     ...createSqliteTaskRepositories(database),
     meetings: createSqliteMeetingRepository(database),
     retroActions: createSqliteRetroActionRepository(database),
     comments: createSqliteTaskCommentRepository(database),
     boardSettings: createSqliteBoardSettingsRepository(database),
     definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
+    impediments: createSqliteImpedimentRepository(database),
     dailyEntries: createSqliteDailyEntryRepository(database),
+    teamTools: createSqliteTeamToolsRepository(database),
+    ...createSqliteSprintRepositories(database),
   }
   return {
     ...repositories,

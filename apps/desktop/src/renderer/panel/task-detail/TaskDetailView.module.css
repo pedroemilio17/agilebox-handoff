@@ -734,3 +734,74 @@
   color: var(--color-accent-text);
   font-weight: 600;
 }
+
+.archiveStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+}
+.archiveStrip p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+.blockRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.blockMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.blockField {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.blockSelect {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+.blockSelect:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+.historyList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.historyItem {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+.historyMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}

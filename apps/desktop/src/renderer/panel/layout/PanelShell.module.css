@@ -395,3 +395,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.archivedLabel {
+  flex: none;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.newTask:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

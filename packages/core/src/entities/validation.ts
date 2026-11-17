@@ -56,3 +56,15 @@ export function validateDefaultRate(rate: number): void {
 export function validateTaskNumber(number: number): number {
   return parseTaskNumber(number)
 }
+
+export const ACCEPTANCE_TEXT_MAX_LENGTH = 200
+export const ACCEPTANCE_MAX_CRITERIA = 20
+
+/** Critério de aceitação: até 200 caracteres. Vazio é recusado. */
+export function validateAcceptanceText(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) throw new ValidationError('Texto do critério obrigatório')
+  if (Array.from(trimmed).length > ACCEPTANCE_TEXT_MAX_LENGTH)
+    throw new ValidationError('Critério deve ter até 200 caracteres')
+  return trimmed
+}

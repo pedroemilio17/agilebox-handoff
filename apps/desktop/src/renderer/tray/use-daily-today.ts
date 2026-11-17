@@ -4,11 +4,12 @@ import { queryKeys } from '../shared/query/keys'
 import { todayDateOnly } from '../shared/lib/today'
 
 /** A daily da pessoa de hoje (ou null) e se ela ainda é devida. Data local, enviada pelo renderer. */
-export function useDailyToday() {
+export function useDailyToday(enabled = true) {
   const api = useApi()
   const date = todayDateOnly()
   return useQuery({
     queryKey: queryKeys.daily.today(date),
     queryFn: () => api.daily.getToday({ date }),
+    enabled,
   })
 }

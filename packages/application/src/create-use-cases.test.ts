@@ -1,3 +1,4 @@
+import { createTenantContext } from './tenant-context'
 import { createUser, toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
 import { describe, expect, it } from 'vitest'
@@ -33,8 +34,13 @@ describe('composição dos casos de uso', () => {
       changeNotifier: notifier,
       clock: new FixedClock('2026-01-02T12:00:00.000Z'),
       checklist: unitOfWork.repositories.checklist,
+      acceptance: unitOfWork.repositories.acceptance,
       retroActions: unitOfWork.repositories.retroActions,
       dailyEntries: unitOfWork.repositories.dailyEntries,
+      teamTools: unitOfWork.repositories.teamTools,
+      sprints: unitOfWork.repositories.sprints,
+      sprintTasks: unitOfWork.repositories.sprintTasks,
+      impediments: unitOfWork.repositories.impediments,
       definitionOfDone: unitOfWork.repositories.definitionOfDone,
       comments: unitOfWork.repositories.comments,
       boardSettings: unitOfWork.repositories.boardSettings,
@@ -51,30 +57,41 @@ describe('composição dos casos de uso', () => {
       users: unitOfWork.repositories.users,
     })
 
-    const project = await useCases.projects.createProject.execute(collaborator, {
-      name: 'Projeto do roteiro',
-    })
-    const task = await useCases.tasks.create.execute(collaborator, {
+    const project = await useCases.projects.createProject.execute(
+      createTenantContext(collaborator),
+      {
+        name: 'Projeto do roteiro',
+      },
+    )
+    const task = await useCases.tasks.create.execute(createTenantContext(collaborator), {
       projectId: project.id,
       title: 'Preparar entrega',
     })
-    await useCases.tasks.move.execute(collaborator, { taskId: task.id, status: 'in_progress' })
-    const participation = await useCases.participations.add.execute(collaborator, {
+    await useCases.tasks.move.execute(createTenantContext(collaborator), {
       taskId: task.id,
-      participant: { kind: 'user', userId: supportId },
-      role: 'support',
+      status: 'in_progress',
     })
-    await useCases.participations.setHours.execute(collaborator, {
+    const participation = await useCases.participations.add.execute(
+      createTenantContext(collaborator),
+      {
+        taskId: task.id,
+        participant: { kind: 'user', userId: supportId },
+        role: 'support',
+      },
+    )
+    await useCases.participations.setHours.execute(createTenantContext(collaborator), {
       taskId: task.id,
       participationId: participation.id,
       hours: '2,50',
     })
-    await useCases.tasks.update.execute(manager, {
+    await useCases.tasks.update.execute(createTenantContext(manager), {
       taskId: task.id,
       changes: { title: 'Entrega revisada' },
     })
 
-    const timeline = await useCases.timeline.list.execute(collaborator, { taskId: task.id })
+    const timeline = await useCases.timeline.list.execute(createTenantContext(collaborator), {
+      taskId: task.id,
+    })
     expect(timeline.map((event) => event.type)).toEqual([
       'renamed',
       'hours_changed',

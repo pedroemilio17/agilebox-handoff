@@ -15,3 +15,8 @@ export function isBlockedTask(task: Pick<TaskDto, 'blockedReason'>): boolean {
 export function isAgingTask(task: Pick<TaskDto, 'agingDays' | 'blockedReason'>): boolean {
   return !isBlockedTask(task) && (task.agingDays ?? 0) > AGING_THRESHOLD_DAYS
 }
+
+/** Arquivada: sai do quadro por padrão, aparece atenuada com "Mostrar arquivados" e é só leitura. */
+export function isArchivedTask(task: Pick<TaskDto, 'archivedAt'>): boolean {
+  return task.archivedAt !== null && task.archivedAt !== undefined
+}

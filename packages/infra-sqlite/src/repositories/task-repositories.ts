@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, inArray, like, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
-import { toTaskId } from '@agilebox/core'
+import { sortBacklog, toTaskId } from '@agilebox/core'
 import type {
   ChecklistRepository,
   ParticipationRepository,
@@ -92,6 +92,10 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
     async findById(organizationId, taskId) {
       const [task] = await findTaskRows(organizationId, eq(tasks.id, taskId))
       return task ?? null
+    },
+    async findManyById(organizationId, taskIds) {
+      if (taskIds.length === 0) return []
+      return findTaskRows(organizationId, inArray(tasks.id, [...taskIds]))
     },
     async findByProjectNameKey(organizationId, projectId, nameKey) {
       const project = await database
@@ -222,6 +226,21 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       )
       return task ?? null
     },
+    async listBacklog(organizationId, projectId) {
+      const result = await findTaskRows(
+        organizationId,
+        and(eq(tasks.projectId, projectId), isNotNull(tasks.backlogRank)),
+      )
+      return sortBacklog(result)
+    },
+    async updateBacklogRanks(organizationId, changes) {
+      for (const change of changes) {
+        await database
+          .update(tasks)
+          .set({ backlogRank: change.backlogRank })
+          .where(and(eq(tasks.id, change.taskId), eq(tasks.organizationId, organizationId)))
+      }
+    },
     async nextNumber(organizationId) {
       const [row] = await database
         .select({ current: sql<number>`coalesce(max(${tasks.number}), 0)` })
@@ -230,6 +249,13 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       return Number(row?.current ?? 0) + 1
     },
     async save(organizationId, task) {
+      // Tarefa de outra organização não é regravada: o save também apaga as participações dela.
+      const [owner] = await database
+        .select({ organizationId: tasks.organizationId })
+        .from(tasks)
+        .where(eq(tasks.id, task.id))
+        .limit(1)
+      if (owner && owner.organizationId !== organizationId) return
       const [project] = await database
         .select({ id: projects.id })
         .from(projects)
@@ -258,6 +284,10 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         priority: task.priority,
         blockedReason: task.blockedReason,
         blockedAt: task.blockedAt,
+        archivedAt: task.archivedAt,
+        archivedBy: task.archivedBy,
+        backlogRank: task.backlogRank,
+        estimatedHoursHundredths: task.estimatedHoursHundredths,
         deadline: task.deadline,
         ticketId: task.ticket === null ? null : String(task.ticket.id),
         ticketUrl: task.ticket?.url ?? null,
@@ -268,7 +298,11 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
       await database
         .insert(tasks)
         .values(value)
-        .onConflictDoUpdate({ target: tasks.id, set: value })
+        .onConflictDoUpdate({
+          target: tasks.id,
+          set: value,
+          setWhere: eq(tasks.organizationId, organizationId),
+        })
       await database.delete(taskParticipations).where(eq(taskParticipations.taskId, task.id))
       if (task.participations.length)
         await database.insert(taskParticipations).values(
@@ -318,6 +352,14 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         .where(and(eq(tasks.id, participation.taskId), eq(tasks.organizationId, organizationId)))
         .limit(1)
       if (!task) return
+      // Participação cujo id já pertence a tarefa de outra organização não é regravada.
+      const [owner] = await database
+        .select({ organizationId: tasks.organizationId })
+        .from(taskParticipations)
+        .innerJoin(tasks, eq(tasks.id, taskParticipations.taskId))
+        .where(eq(taskParticipations.id, participation.id))
+        .limit(1)
+      if (owner && owner.organizationId !== organizationId) return
       if (!(await participantBelongsToOrganization(organizationId, participation))) return
       const value = {
         id: participation.id,

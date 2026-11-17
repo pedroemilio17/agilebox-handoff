@@ -78,6 +78,55 @@
       "when": 1793829038227,
       "tag": "0010_daily_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1794842525531,
+      "tag": "0011_task_project_archive",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794847396630,
+      "tag": "0012_team_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1794854397758,
+      "tag": "0013_task_backlog",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1794855693175,
+      "tag": "0014_acceptance_criteria_estimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1794860229837,
+      "tag": "0015_sprints",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1794864497917,
+      "tag": "0016_task_impediments",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1794868588871,
+      "tag": "0017_team_tools_audit_config",
+      "breakpoints": true
     }
   ]
 }

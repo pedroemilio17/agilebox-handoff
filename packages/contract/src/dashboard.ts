@@ -26,7 +26,8 @@ export const collaboratorDashboardStatSchema = z.object({
 export const dashboardInsightsSchema = z.object({
   updatedAt: isoDateTimeSchema,
   weekStart: z.iso.date(),
-  upToDatePercentage: z.number().min(0).max(100).nullable(),
+  /** Campos de fluxo (adesão, ciclo, lead time, vazão e semanas): ausentes com `flowMetrics` desligado. */
+  upToDatePercentage: z.number().min(0).max(100).nullable().optional(),
   agingCount: z.number().int().nonnegative(),
   overdueCount: z.number().int().nonnegative(),
   blockedCount: z.number().int().nonnegative(),
@@ -38,18 +39,20 @@ export const dashboardInsightsSchema = z.object({
       limit: z.number().int().positive(),
     }),
   ),
-  cycleDays: z.number().nonnegative().nullable(),
-  leadDays: z.number().nonnegative().nullable(),
-  throughput: z.number().int().nonnegative(),
-  weeks: z.array(
-    z.object({
-      start: z.iso.date(),
-      throughput: z.number().int().nonnegative(),
-      cycleDays: z.number().nonnegative().nullable().optional(),
-      leadDays: z.number().nonnegative().nullable().optional(),
-      upToDatePercentage: z.number().min(0).max(100).nullable().optional(),
-    }),
-  ),
+  cycleDays: z.number().nonnegative().nullable().optional(),
+  leadDays: z.number().nonnegative().nullable().optional(),
+  throughput: z.number().int().nonnegative().optional(),
+  weeks: z
+    .array(
+      z.object({
+        start: z.iso.date(),
+        throughput: z.number().int().nonnegative(),
+        cycleDays: z.number().nonnegative().nullable().optional(),
+        leadDays: z.number().nonnegative().nullable().optional(),
+        upToDatePercentage: z.number().min(0).max(100).nullable().optional(),
+      }),
+    )
+    .optional(),
   recentChanges: z.array(
     z.object({
       id: ulidSchema,

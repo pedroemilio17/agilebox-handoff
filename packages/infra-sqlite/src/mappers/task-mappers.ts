@@ -19,13 +19,18 @@ import {
 } from '@agilebox/core'
 import type { ChecklistItem, Participation, Task, TaskComment, TimelineEvent } from '@agilebox/core'
 import { createTicket } from '@agilebox/core'
+import { createAcceptanceCriterion, toAcceptanceCriterionId } from '@agilebox/core'
+import type { AcceptanceCriterion } from '@agilebox/core'
 import type {
+  taskAcceptanceCriteria,
   taskChecklistItems,
   taskComments,
   taskEvents,
   taskParticipations,
   tasks,
 } from '../schema/index.js'
+
+type AcceptanceRow = typeof taskAcceptanceCriteria.$inferSelect
 
 type TaskRow = typeof tasks.$inferSelect
 type ParticipationRow = typeof taskParticipations.$inferSelect
@@ -69,6 +74,11 @@ export function mapTaskRow(
     priority: parseTaskPriority(row.priority),
     blockedReason: row.blockedReason ?? null,
     blockedAt: row.blockedAt ?? null,
+    archivedAt: row.archivedAt ?? null,
+    archivedBy:
+      row.archivedBy === null || row.archivedBy === undefined ? null : toUserId(row.archivedBy),
+    backlogRank: row.backlogRank ?? null,
+    estimatedHoursHundredths: row.estimatedHoursHundredths ?? null,
     deadline: row.deadline === null ? null : parseDateOnly(row.deadline),
     ticket:
       row.ticketId === null ? null : createTicket(Number(row.ticketId), row.ticketUrl ?? undefined),
@@ -101,6 +111,19 @@ export function mapChecklistItemRow(row: ChecklistRow): ChecklistItem {
     position: row.position,
     createdAt: row.createdAt,
     doneAt: row.doneAt ?? null,
+  })
+}
+
+export function mapAcceptanceCriterionRow(row: AcceptanceRow): AcceptanceCriterion {
+  return createAcceptanceCriterion({
+    id: toAcceptanceCriterionId(row.id),
+    organizationId: toOrganizationId(row.organizationId),
+    taskId: toTaskId(row.taskId),
+    text: row.text,
+    done: row.done,
+    position: row.position,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   })
 }
 

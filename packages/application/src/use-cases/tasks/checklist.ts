@@ -1,13 +1,11 @@
 import {
   addChecklistItem,
-  canEditTask,
   changedChecklistPositions,
   checklistEventDraft,
   createTimelineEvent,
   isManagerEdit,
   moveChecklistItem,
   NotFoundError,
-  PermissionDeniedError,
   removeChecklistItem,
   renameChecklistItem,
   setChecklistItemDone,
@@ -23,10 +21,13 @@ import type {
   TimelineEventDraft,
 } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
+import { assertTaskEditable } from './task-access'
 import { toTaskDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
+import { loadSprintRefs } from '../sprints/sprint-refs'
+import { loadImpedimentRefs } from '../impediments/impediment-refs'
 
 export interface AddChecklistItemInput {
   readonly taskId: string
@@ -71,8 +72,7 @@ abstract class ChangeChecklist {
   ): Promise<{ readonly task: Task; readonly items: readonly ChecklistItem[] }> {
     const task = await this.deps.tasks.findById(actor.organizationId, toTaskId(rawTaskId))
     if (!task) throw new NotFoundError('Tarefa não encontrada')
-    if (!canEditTask(actor, task))
-      throw new PermissionDeniedError('Sem permissão para editar esta tarefa')
+    assertTaskEditable(actor, task)
     const items = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     return { task, items }
   }
@@ -87,8 +87,21 @@ abstract class ChangeChecklist {
     const prefix = await findTaskPrefix(this.deps, actor.organizationId)
     const counts = await loadCommentCounts(this.deps, actor, [task])
     const commentCount = counts.get(task.id) ?? 0
+    // Subtarefas não mexem nos critérios: lidos uma vez, valem para as duas respostas abaixo.
+    const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
+    const sprint = (await loadSprintRefs(this.deps, actor.organizationId, [task.id])).get(task.id)
+    const impedimentRef =
+      (await loadImpedimentRefs(this.deps, actor.organizationId, [task.id])).get(task.id) ?? null
     if (step.changed.length === 0 && step.removedId === undefined)
-      return toTaskDto(task, prefix, step.items, commentCount)
+      return toTaskDto(
+        task,
+        prefix,
+        step.items,
+        commentCount,
+        criteria,
+        sprint ?? null,
+        impedimentRef,
+      )
     const now = await this.deps.clock.now(actor.organizationId)
     const updated: Task = { ...task, updatedAt: now }
     const events = await Promise.all(
@@ -112,7 +125,15 @@ abstract class ChangeChecklist {
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
-    return toTaskDto(updated, prefix, step.items, commentCount)
+    return toTaskDto(
+      updated,
+      prefix,
+      step.items,
+      commentCount,
+      criteria,
+      sprint ?? null,
+      impedimentRef,
+    )
   }
 }
 

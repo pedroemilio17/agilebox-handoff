@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toContributorId, toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -24,8 +25,13 @@ function setup() {
       changeNotifier: notifier,
       clock: new FixedClock('2026-01-02T00:00:00.000Z'),
       checklist: unitOfWork.repositories.checklist,
+      acceptance: unitOfWork.repositories.acceptance,
       retroActions: unitOfWork.repositories.retroActions,
       dailyEntries: unitOfWork.repositories.dailyEntries,
+      teamTools: unitOfWork.repositories.teamTools,
+      sprints: unitOfWork.repositories.sprints,
+      sprintTasks: unitOfWork.repositories.sprintTasks,
+      impediments: unitOfWork.repositories.impediments,
       definitionOfDone: unitOfWork.repositories.definitionOfDone,
       comments: unitOfWork.repositories.comments,
       boardSettings: unitOfWork.repositories.boardSettings,
@@ -50,7 +56,9 @@ describe('casos de uso de entidades', () => {
   it('cria entidade manual com tarifa não definida e notifica a organização', async () => {
     const { useCases, unitOfWork, notifier } = setup()
 
-    const result = await useCases.contributors.create.execute(actor, { name: '  Cliente Novo  ' })
+    const result = await useCases.contributors.create.execute(createTenantContext(actor), {
+      name: '  Cliente Novo  ',
+    })
     expect(result).toMatchObject({ name: 'Cliente Novo', defaultRate: null })
     await expect(
       unitOfWork.repositories.contributors.findById(organizationId, toContributorId(result.id)),
@@ -78,18 +86,20 @@ describe('casos de uso de entidades', () => {
     const { useCases } = setup()
 
     await expect(
-      useCases.contributors.create.execute({ ...actor, role: 'manager' }, { name: 'Fornecedor' }),
+      useCases.contributors.create.execute(createTenantContext({ ...actor, role: 'manager' }), {
+        name: 'Fornecedor',
+      }),
     ).resolves.toMatchObject({ name: 'Fornecedor' })
   })
 
   it('rejeita nome inválido sem salvar ou notificar', async () => {
     const { useCases, unitOfWork, notifier } = setup()
 
-    await expect(useCases.contributors.create.execute(actor, { name: '  ' })).rejects.toMatchObject(
-      {
-        code: 'VALIDATION',
-      },
-    )
+    await expect(
+      useCases.contributors.create.execute(createTenantContext(actor), { name: '  ' }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION',
+    })
     await expect(unitOfWork.repositories.contributors.list(organizationId)).resolves.toEqual([])
     expect(notifier.changes).toEqual([])
   })
@@ -104,9 +114,9 @@ describe('casos de uso de entidades', () => {
         .build(),
     )
 
-    await expect(useCases.contributors.list.execute(actor)).resolves.toMatchObject([
-      { name: 'Cliente', defaultRate: null },
-    ])
+    await expect(
+      useCases.contributors.list.execute(createTenantContext(actor)),
+    ).resolves.toMatchObject([{ name: 'Cliente', defaultRate: null }])
   })
 
   it('mostra o valor padrão da entidade apenas para o gestor', async () => {
@@ -114,7 +124,7 @@ describe('casos de uso de entidades', () => {
     await unitOfWork.repositories.contributors.save(organizationId, aContributor().build())
 
     await expect(
-      useCases.contributors.list.execute({ ...actor, role: 'manager' }),
+      useCases.contributors.list.execute(createTenantContext({ ...actor, role: 'manager' })),
     ).resolves.toMatchObject([{ defaultRate: 20 }])
   })
 
@@ -125,7 +135,7 @@ describe('casos de uso de entidades', () => {
 
     await expect(
       useCases.contributors.setDefaultRate.execute(
-        { ...actor, role: 'manager' },
+        createTenantContext({ ...actor, role: 'manager' }),
         {
           contributorId: contributor.id,
           rateCents: 5500,
@@ -143,7 +153,7 @@ describe('casos de uso de entidades', () => {
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
 
     await expect(
-      useCases.contributors.setDefaultRate.execute(actor, {
+      useCases.contributors.setDefaultRate.execute(createTenantContext(actor), {
         contributorId: contributor.id,
         rateCents: 5500,
       }),
@@ -157,7 +167,7 @@ describe('casos de uso de entidades', () => {
 
     await expect(
       useCases.contributors.setDefaultRate.execute(
-        { ...actor, role: 'manager' },
+        createTenantContext({ ...actor, role: 'manager' }),
         {
           contributorId: contributor.id,
           rateCents: 0,
@@ -166,7 +176,7 @@ describe('casos de uso de entidades', () => {
     ).rejects.toMatchObject({ code: 'VALIDATION' })
     await expect(
       useCases.contributors.setDefaultRate.execute(
-        { ...actor, role: 'manager' },
+        createTenantContext({ ...actor, role: 'manager' }),
         {
           contributorId: '00000000000000000000000006',
           rateCents: 5500,

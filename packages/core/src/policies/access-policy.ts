@@ -1,4 +1,5 @@
 import type { DailyEntry } from '../entities/daily-entry'
+import type { Impediment } from '../entities/impediment'
 import type { Meeting } from '../entities/meeting'
 import type { RetroAction } from '../entities/retro-action'
 import type { Participant } from '../entities/participation'
@@ -29,7 +30,12 @@ export function canViewTask(actor: Actor, task: Task, isMember: boolean): boolea
     (actor.role === 'manager' || isMember || participates(actor, task))
   )
 }
+/** Editar exige tarefa ativa: a arquivada só pode ser desarquivada (canChangeTaskArchive). */
 export function canEditTask(actor: Actor, task: Task): boolean {
+  return canChangeTaskArchive(actor, task) && task.archivedAt === null
+}
+/** Arquivar e desarquivar seguem a edição (participante ou gestor), inclusive numa tarefa arquivada. */
+export function canChangeTaskArchive(actor: Actor, task: Task): boolean {
   return (
     actor.organizationId === task.organizationId &&
     (actor.role === 'manager' || participates(actor, task))
@@ -44,12 +50,51 @@ export function canSeeProject(actor: Actor, project: Project, isMember: boolean)
 export function canCreateTask(actor: Actor, project: Project, isMember: boolean): boolean {
   return canSeeProject(actor, project, isMember)
 }
+/**
+ * Backlog do projeto (M3.1): visível a todos os membros e ao gestor, porque planejar é coletivo.
+ * Reordenar e puxar/devolver ao quadro seguem a mesma regra. Editar o conteúdo do item continua
+ * sendo de quem participa (canEditTask).
+ */
+export function canViewBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canReorderBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canPullFromBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canSendToBacklog(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+/**
+ * Sprints (M4.1): ver, planejar, iniciar e encerrar seguem o backlog, porque planejar é coletivo.
+ * Suposição registrada: o plano não separa quem planeja de quem inicia/encerra; por isso as três
+ * usam a mesma regra (gestor ou membro do projeto). Nada cruza organizações.
+ */
+export function canViewSprints(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canPlanSprint(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+export function canStartOrCloseSprint(actor: Actor, project: Project, isMember: boolean): boolean {
+  return canSeeProject(actor, project, isMember)
+}
+/** Adicionar item ao backlog é criar tarefa no projeto (membro ou gestor). */
+export const canAddToBacklog = canCreateTask
+/** Arquivar e desarquivar projeto: só o gestor e quem criou o projeto (mesma regra do botão Membros). */
+export function canArchiveProject(actor: Actor, project: Project): boolean {
+  return canManageMembers(actor, project)
+}
 export function canManageMembers(actor: Actor, project: Project): boolean {
   return (
     actor.organizationId === project.organizationId &&
     (actor.role === 'manager' || actor.userId === project.createdBy)
   )
 }
+/** Renomear projeto segue o botão Membros: gestor ou criador do projeto (M0.4). */
+export const canRenameProject = canManageMembers
 /** Editar a definição de pronto segue o botão Membros: gestor ou criador do projeto (PLANO 12.1). */
 export const canManageDefinitionOfDone = canManageMembers
 export function canSeeRate(actor: Actor, owner: RateOwner): boolean {
@@ -60,6 +105,17 @@ export function canSeeRate(actor: Actor, owner: RateOwner): boolean {
   )
 }
 export const canEditRate = canSeeRate
+/**
+ * Custo estimado (M3.2) segue o valor/hora do Responsável: quem vê o valor/hora dele vê o custo
+ * estimado (o gestor, ou o próprio Responsável). Para os demais, o custo vem nulo.
+ */
+export function canSeeEstimatedCost(actor: Actor, task: Task): boolean {
+  const responsible = task.participations.find((p) => p.role === 'responsible')
+  return (
+    responsible !== undefined &&
+    canSeeRate(actor, { organizationId: task.organizationId, participant: responsible.participant })
+  )
+}
 export function canSeeTaskTotal(actor: Actor, organizationId: OrganizationId): boolean {
   return actor.organizationId === organizationId && actor.role === 'manager'
 }
@@ -82,6 +138,10 @@ export function canToggleRetroAction(actor: Actor, action: RetroAction): boolean
 /** Combinados seguem a agenda: quem vê o agendamento vê os combinados dele. */
 export const canSeeRetroActions = canSeeMeeting
 export const canSeeDashboard = canSeeTaskTotal
+/** Ver as ferramentas da equipe é para qualquer membro (`tools:view`); mudá-las é só do gestor (`tools:manage`). */
+export function canManageTeamTools(actor: Actor): boolean {
+  return actor.role === 'manager'
+}
 /** Qualquer usuário da organização lê os limites de WIP; só o gestor os altera. */
 export function canViewBoardSettings(actor: Actor, organizationId: OrganizationId): boolean {
   return actor.organizationId === organizationId
@@ -108,6 +168,31 @@ export function canRemoveComment(actor: Actor, task: Task, comment: TaskComment)
     comment.organizationId === actor.organizationId &&
     comment.taskId === task.id &&
     (comment.authorId === actor.userId || actor.role === 'manager')
+  )
+}
+/**
+ * Impedimentos (M5.2a): o gestor vê todos da organização; quem participa da tarefa vê os impedimentos
+ * dela. Quem só é membro do projeto não vê (o escopo segue o de participação, como em `impediments.list`).
+ */
+export function canSeeImpediment(actor: Actor, task: Task): boolean {
+  return (
+    actor.organizationId === task.organizationId &&
+    (actor.role === 'manager' || participates(actor, task))
+  )
+}
+/** Atribuir responsável segue a edição da tarefa: quem participa ou o gestor, e não arquivada. */
+export const canAssignImpediment = canEditTask
+/**
+ * Resolver: quem edita a tarefa, ou o próprio responsável por resolver (mesmo sem participar).
+ * Tarefa arquivada não altera impedimento.
+ */
+export function canResolveImpediment(actor: Actor, task: Task, impediment: Impediment): boolean {
+  if (task.archivedAt !== null) return false
+  return (
+    canEditTask(actor, task) ||
+    (actor.organizationId === task.organizationId &&
+      impediment.ownerId !== null &&
+      impediment.ownerId === actor.userId)
   )
 }
 export function isManagerEdit(actor: Actor): boolean {

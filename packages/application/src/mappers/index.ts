@@ -1,4 +1,10 @@
 import {
+  canSeeEstimatedCost,
+  estimatedCostOf,
+  hundredthsToHours,
+  isInBacklog,
+  spentHundredths,
+  canChangeTaskArchive,
   canEditComment,
   canRemoveComment,
   canSeeRate,
@@ -9,9 +15,11 @@ import {
   describeEvent,
   formatTaskKey,
   isReadOnlyFor,
+  sprintLabel,
   total as calculateTaskTotal,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterion,
   Actor,
   BoardSettings,
   ChecklistItem,
@@ -24,6 +32,9 @@ import type {
   Participation,
   Project,
   RetroAction,
+  Impediment,
+  Sprint,
+  SprintTask,
   Task,
   TaskComment,
   TimelineEvent,
@@ -31,6 +42,10 @@ import type {
   User,
 } from '@agilebox/core'
 import type {
+  AcceptanceCriterionDto,
+  ImpedimentDto,
+  ImpedimentListItemDto,
+  ImpedimentRefDto,
   BoardSettingsDto,
   ChecklistItemDto,
   DailyEntryDto,
@@ -44,6 +59,9 @@ import type {
   ParticipationSummaryDto,
   ProjectDto,
   RetroActionDto,
+  SprintDto,
+  SprintHistoryRowDto,
+  SprintRefDto,
   TaskCommentDto,
   SessionUserDto,
   TaskDto,
@@ -100,6 +118,7 @@ export function toProjectDto(project: Project, definitionOfDoneCount: number): P
     createdBy: project.createdBy,
     createdAt: project.createdAt,
     definitionOfDoneCount,
+    archivedAt: project.archivedAt,
   }
 }
 
@@ -142,12 +161,18 @@ export function toChecklistItemDto(item: ChecklistItem): ChecklistItemDto {
   }
 }
 
-/** `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. */
+/**
+ * `checklist` são as subtarefas da tarefa; o progresso do card sai delas. `commentCount` é 0 quando o ator não vê os comentários. `criteria` são os critérios de aceitação, dos quais sai o x/y.
+ * `sprint` é a sprint aberta da tarefa (M4.2), carregada em lote por `loadSprintRefs`; nulo sem sprint.
+ */
 export function toTaskDto(
   task: Task,
   taskPrefix: string,
   checklist: readonly ChecklistItem[],
   commentCount: number,
+  criteria: readonly AcceptanceCriterion[],
+  sprint: SprintRefDto | null,
+  impediment: ImpedimentRefDto | null,
 ): TaskDto {
   return {
     id: task.id,
@@ -161,16 +186,137 @@ export function toTaskDto(
     priority: task.priority,
     blockedReason: task.blockedReason,
     blockedAt: task.blockedAt,
+    archivedAt: task.archivedAt,
+    backlogRank: task.backlogRank,
+    inBacklog: isInBacklog(task),
+    // Horas, não dinheiro: a comparação estimado × realizado é visível a quem vê a tarefa.
+    estimatedHours: hundredthsToHours(task.estimatedHoursHundredths),
+    actualHours: spentHundredths(task.participations) / 100,
     deadline: task.deadline,
     ticketId: task.ticket?.id ?? null,
     ticketUrl: task.ticket?.url ?? null,
     checklistProgress: checklistProgress(checklist),
+    criteriaProgress: {
+      done: criteria.filter((criterion) => criterion.done).length,
+      total: criteria.length,
+    },
     commentCount,
+    sprint,
+    impediment,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
   }
 }
 
+/** Impedimento como a interface o mostra. `ownerName` vem do usuário responsável (nulo sem responsável). */
+export function toImpedimentDto(impediment: Impediment, ownerName: string | null): ImpedimentDto {
+  return {
+    id: impediment.id,
+    taskId: impediment.taskId,
+    status: impediment.status,
+    reason: impediment.reason,
+    ownerId: impediment.ownerId,
+    ownerName: impediment.ownerId === null ? null : ownerName,
+    openedBy: impediment.openedBy,
+    openedAt: impediment.openedAt,
+    resolvedBy: impediment.resolvedBy,
+    resolvedAt: impediment.resolvedAt,
+    resolution: impediment.resolution,
+  }
+}
+
+/** Resumo do impedimento aberto, para o cartão e o detalhe da tarefa. */
+export function toImpedimentRefDto(
+  impediment: Impediment,
+  ownerName: string | null,
+): ImpedimentRefDto {
+  return {
+    id: impediment.id,
+    status: impediment.status,
+    reason: impediment.reason,
+    ownerId: impediment.ownerId,
+    ownerName: impediment.ownerId === null ? null : ownerName,
+    openedAt: impediment.openedAt,
+  }
+}
+
+/** Item da lista de impedimentos: o impedimento e a tarefa dele. */
+export function toImpedimentListItemDto(
+  impediment: Impediment,
+  ownerName: string | null,
+  task: {
+    readonly key: string
+    readonly title: string
+    readonly projectId: string
+    readonly projectName: string
+  },
+): ImpedimentListItemDto {
+  return {
+    ...toImpedimentDto(impediment, ownerName),
+    taskKey: task.key,
+    taskTitle: task.title,
+    projectId: task.projectId,
+    projectName: task.projectName,
+  }
+}
+
+/** Sprint como o card e o detalhe a mostram: "Sprint N" pelo número, com o nome e o estado. */
+export function toSprintRefDto(sprint: Sprint): SprintRefDto {
+  return { id: sprint.id, number: sprint.number, name: sprint.name, status: sprint.status }
+}
+
+export function toSprintDto(sprint: Sprint): SprintDto {
+  return {
+    id: sprint.id,
+    projectId: sprint.projectId,
+    number: sprint.number,
+    label: sprintLabel(sprint.number),
+    name: sprint.name,
+    goal: sprint.goal,
+    plannedStart: sprint.plannedStart,
+    plannedEnd: sprint.plannedEnd,
+    status: sprint.status,
+    startedAt: sprint.startedAt,
+    closedAt: sprint.closedAt,
+    closePolicy: sprint.closePolicy?.kind ?? null,
+    createdBy: sprint.createdBy,
+    createdAt: sprint.createdAt,
+  }
+}
+
+/** Uma linha do histórico. `taskKey` e `taskTitle` vêm da tarefa, que o chamador carrega. */
+export function toSprintHistoryRowDto(
+  row: SprintTask,
+  task: { readonly key: string; readonly title: string },
+): SprintHistoryRowDto {
+  return {
+    taskId: row.taskId,
+    taskKey: task.key,
+    taskTitle: task.title,
+    addedAt: row.addedAt,
+    addedBy: row.addedBy,
+    removedAt: row.removedAt,
+    removedBy: row.removedBy,
+    outcome: row.outcome,
+  }
+}
+
+export function toAcceptanceCriterionDto(criterion: AcceptanceCriterion): AcceptanceCriterionDto {
+  return {
+    id: criterion.id,
+    taskId: criterion.taskId,
+    text: criterion.text,
+    done: criterion.done,
+    position: criterion.position,
+    createdAt: criterion.createdAt,
+    updatedAt: criterion.updatedAt,
+  }
+}
+
+/**
+ * `responsibleDefaultRateCents` é o padrão do Responsável, usado no custo estimado quando o envolvimento
+ * dele está sem valor. O custo estimado só sai para quem vê o valor/hora do Responsável (`canSeeEstimatedCost`).
+ */
 export function toTaskDetailDto(
   task: Task,
   taskPrefix: string,
@@ -180,11 +326,22 @@ export function toTaskDetailDto(
   checklist: readonly ChecklistItem[],
   comments: readonly TaskCommentDto[],
   definitionOfDone: readonly DefinitionOfDoneItem[],
+  criteria: readonly AcceptanceCriterion[],
+  responsibleDefaultRateCents: number,
+  sprint: SprintRefDto | null,
+  impediment: ImpedimentRefDto | null,
+  impedimentHistory: readonly ImpedimentDto[],
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
+  const cost = canSeeEstimatedCost(actor, task)
+    ? estimatedCostOf(task, responsibleDefaultRateCents)
+    : null
   return {
-    ...toTaskDto(task, taskPrefix, checklist, comments.length),
+    ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint, impediment),
+    impedimentHistory: [...impedimentHistory],
     checklist: checklist.map(toChecklistItemDto),
+    criteria: criteria.map(toAcceptanceCriterionDto),
+    estimatedCost: cost === null ? null : rateInReais(cost),
     projectDefinitionOfDone: definitionOfDone.map(toDefinitionOfDoneItemDto),
     comments: [...comments],
     participations: task.participations.map((participation) =>
@@ -195,6 +352,7 @@ export function toTaskDetailDto(
       : null,
     canEdit,
     readOnly: isReadOnlyFor(actor, task, isMember),
+    canArchive: canChangeTaskArchive(actor, task),
   }
 }
 

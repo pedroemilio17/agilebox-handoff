@@ -14,6 +14,8 @@ import { Calendar } from './Calendar'
 import { MeetingForm, type MeetingDraft } from './MeetingForm'
 import { UpcomingList } from './UpcomingList'
 import { RetroActions } from './RetroActions'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { loadAgendaTasks } from './agenda-tasks'
 import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
 
@@ -35,6 +37,8 @@ export interface AgendaViewProps {
 }
 
 export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewProps) {
+  // Combinados da retro só com a ferramenta de review e retro; o restante da agenda segue.
+  const retroVisible = useCapabilities().can('reviewRetro:screen')
   const [mode, setMode] = useState<'day' | 'week' | 'month'>('week')
   const [showDeadlines, setShowDeadlines] = useState(true)
   const api = useApi()
@@ -69,9 +73,11 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
         .map((meeting) => [occurrenceKey(meeting), meeting]),
     ).values(),
   ]
+  const isManager = actor.actor?.role === 'manager'
   const tasks = useQuery({
-    queryKey: queryKeys.tasks.board(),
-    queryFn: () => api.tasks.listBoard({}),
+    queryKey: [...queryKeys.tasks.board(), 'agenda', isManager],
+    enabled: actor.actor !== undefined,
+    queryFn: () => loadAgendaTasks(api.tasks, isManager),
   })
   const selectDate = (date: string) => {
     setSelectedDate(date)
@@ -194,7 +200,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
             today={today}
             selectedDate={selectedDate}
             meetings={meetings}
-            tasks={tasks.data?.tasks ?? []}
+            tasks={tasks.data ?? []}
             showDeadlines={showDeadlines}
             canEdit={canManage}
             onSelectDate={selectDate}
@@ -219,7 +225,7 @@ export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewPr
             onEdit={openMeeting}
           />
         )}
-        {retroCurrent ? (
+        {retroCurrent && retroVisible ? (
           <div className={styles.retroPanel}>
             {retroSiblings.length > 1 ? (
               <div

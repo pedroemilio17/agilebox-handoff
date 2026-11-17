@@ -1,10 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DailyEntryDto, TaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
 import { createFakeApi, boardResponse } from '../shared/testing/fake-api'
+import { ALL_MODULES, teamToolsView } from '../shared/testing/team-tools-fixture'
 import { todayDateOnly } from '../shared/lib/today'
 import { App } from './App'
 
@@ -83,7 +84,8 @@ afterEach(() => {
 function setup({
   current = null,
   tasks = [A, B],
-}: { current?: DailyEntryDto | null; tasks?: TaskDto[] } = {}) {
+  winding = false,
+}: { current?: DailyEntryDto | null; tasks?: TaskDto[]; winding?: boolean } = {}) {
   const shell = {
     minimize: vi.fn(),
     close: vi.fn(),
@@ -102,12 +104,27 @@ function setup({
   vi.spyOn(api.tasks, 'listRecent').mockResolvedValue(tasks)
   vi.spyOn(api.tasks, 'listFrequent').mockResolvedValue([])
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
+  // Check-ins em encerramento: ativo na lista de existentes, como o servidor devolve.
+  if (winding)
+    vi.spyOn(api.teamTools, 'get').mockResolvedValue(
+      teamToolsView({
+        modules: ALL_MODULES.filter((id) => id !== 'checkins'),
+        level: 'advanced',
+        winding: ['checkins'],
+      }),
+    )
   const board = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse(tasks))
   const getToday = vi
     .spyOn(api.daily, 'getToday')
     .mockImplementation(({ date }) =>
       Promise.resolve({ date, due: stored === null, entry: stored }),
     )
+  // Sugestão do check-in (M5.1): sem movimento no dia, para não interferir nos passos.
+  vi.spyOn(api.daily, 'suggestSummary').mockResolvedValue({
+    advanced: [],
+    nextCandidates: [],
+    blockers: [],
+  })
   const save = vi.spyOn(api.daily, 'save').mockImplementation((input) => {
     stored = entry({
       answers: input.answers,
@@ -431,5 +448,41 @@ describe('Bandeja: daily em três passos', () => {
       .slice(before)
       .map(([arg]) => arg.height)
     expect(heights).toEqual([560])
+  })
+})
+
+describe('Bandeja: check-ins encerrando', () => {
+  it('sem daily de hoje, não convida e não oferece registrar', async () => {
+    const { getToday } = setup({ winding: true })
+    // Espera a consulta da daily de hoje terminar, para que a ausência do convite não seja só atraso.
+    await waitFor(() => expect(getToday).toHaveBeenCalled())
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    expect(screen.queryByText(INVITE)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Registrar a daily de hoje' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Editar a daily de hoje' })).toBeNull()
+  })
+
+  it('com daily de hoje já gravada, mantém o atalho para editar e deixa salvar a edição', async () => {
+    const existing = entry({
+      answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
+      taskRefs: [A.id],
+    })
+    const { save, user } = setup({ current: existing, winding: true })
+    await user.click(await screen.findByRole('button', { name: 'Editar a daily de hoje' }))
+    expect(
+      await screen.findByRole('heading', { name: 'Editar a daily de hoje', level: 2 }),
+    ).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    await user.click(screen.getByRole('button', { name: 'Concluir' }))
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({
+        date: TODAY,
+        answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
+        noNews: false,
+        taskRefs: [A.id],
+      }),
+    )
   })
 })

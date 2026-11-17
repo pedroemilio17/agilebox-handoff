@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   createDefinitionOfDoneItem,
@@ -38,8 +39,13 @@ function setup(actor: Actor = creator, unitOfWork = new InMemoryUnitOfWork()) {
     boardSettings: unitOfWork.repositories.boardSettings,
     changeNotifier: notifier,
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
     contributors: unitOfWork.repositories.contributors,
@@ -102,40 +108,55 @@ describe('definição de pronto: casos de uso', () => {
   it('gestor e criador adicionam, renomeiam, reordenam e removem', async () => {
     const { useCases, unitOfWork, notifier } = setup(creator)
     await seedProject(unitOfWork)
-    const added = await useCases.projects.definitionOfDone.add.execute(creator, {
-      projectId,
-      title: ' Testes passando ',
-    })
+    const added = await useCases.projects.definitionOfDone.add.execute(
+      createTenantContext(creator),
+      {
+        projectId,
+        title: ' Testes passando ',
+      },
+    )
     expect(added).toHaveLength(1)
     expect(added[0]).toMatchObject({ title: 'Testes passando', position: 0, projectId })
-    const second = await useCases.projects.definitionOfDone.add.execute(creator, {
-      projectId,
-      title: 'Documentação atualizada',
-    })
+    const second = await useCases.projects.definitionOfDone.add.execute(
+      createTenantContext(creator),
+      {
+        projectId,
+        title: 'Documentação atualizada',
+      },
+    )
     const [first, last] = second
     expect(last?.position).toBe(1)
 
-    const renamed = await useCases.projects.definitionOfDone.rename.execute(creator, {
-      projectId,
-      itemId: last!.id,
-      title: 'Documentação revisada',
-    })
+    const renamed = await useCases.projects.definitionOfDone.rename.execute(
+      createTenantContext(creator),
+      {
+        projectId,
+        itemId: last!.id,
+        title: 'Documentação revisada',
+      },
+    )
     expect(renamed.map((item) => item.title)).toEqual(['Testes passando', 'Documentação revisada'])
 
-    const moved = await useCases.projects.definitionOfDone.move.execute(manager, {
-      projectId,
-      itemId: last!.id,
-      position: 0,
-    })
+    const moved = await useCases.projects.definitionOfDone.move.execute(
+      createTenantContext(manager),
+      {
+        projectId,
+        itemId: last!.id,
+        position: 0,
+      },
+    )
     expect(moved.map((item) => [item.title, item.position])).toEqual([
       ['Documentação revisada', 0],
       ['Testes passando', 1],
     ])
 
-    const removed = await useCases.projects.definitionOfDone.remove.execute(creator, {
-      projectId,
-      itemId: first!.id,
-    })
+    const removed = await useCases.projects.definitionOfDone.remove.execute(
+      createTenantContext(creator),
+      {
+        projectId,
+        itemId: first!.id,
+      },
+    )
     expect(removed.map((item) => [item.title, item.position])).toEqual([
       ['Documentação revisada', 0],
     ])
@@ -147,23 +168,26 @@ describe('definição de pronto: casos de uso', () => {
     await seedProject(unitOfWork)
     await unitOfWork.repositories.definitionOfDone.saveMany(organizationId, [itemFor(1, 'A', 0)])
     await expect(
-      useCases.projects.definitionOfDone.add.execute(colleague, { projectId, title: 'B' }),
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(colleague), {
+        projectId,
+        title: 'B',
+      }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.projects.definitionOfDone.rename.execute(colleague, {
+      useCases.projects.definitionOfDone.rename.execute(createTenantContext(colleague), {
         projectId,
         itemId: '00000000000000000000000001',
         title: 'B',
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.projects.definitionOfDone.remove.execute(colleague, {
+      useCases.projects.definitionOfDone.remove.execute(createTenantContext(colleague), {
         projectId,
         itemId: '00000000000000000000000001',
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.projects.definitionOfDone.move.execute(colleague, {
+      useCases.projects.definitionOfDone.move.execute(createTenantContext(colleague), {
         projectId,
         itemId: '00000000000000000000000001',
         position: 0,
@@ -176,7 +200,9 @@ describe('definição de pronto: casos de uso', () => {
     await seedProject(unitOfWork)
     await unitOfWork.repositories.definitionOfDone.saveMany(organizationId, [itemFor(1, 'A', 0)])
     await expect(
-      useCases.projects.definitionOfDone.list.execute(colleague, { projectId }),
+      useCases.projects.definitionOfDone.list.execute(createTenantContext(colleague), {
+        projectId,
+      }),
     ).resolves.toEqual([expect.objectContaining({ title: 'A' })])
     const outsider: Actor = {
       userId: toUserId('00000000000000000000000007'),
@@ -185,7 +211,9 @@ describe('definição de pronto: casos de uso', () => {
     }
     const { useCases: outsiderCases } = setup(outsider, unitOfWork)
     await expect(
-      outsiderCases.projects.definitionOfDone.list.execute(outsider, { projectId }),
+      outsiderCases.projects.definitionOfDone.list.execute(createTenantContext(outsider), {
+        projectId,
+      }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
   })
 
@@ -193,15 +221,18 @@ describe('definição de pronto: casos de uso', () => {
     const { useCases, unitOfWork } = setup(creator)
     await seedProject(unitOfWork)
     for (let index = 0; index < 20; index += 1)
-      await useCases.projects.definitionOfDone.add.execute(creator, {
+      await useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
         projectId,
         title: `Item ${index + 1}`,
       })
     await expect(
-      useCases.projects.definitionOfDone.add.execute(creator, { projectId, title: 'Extra' }),
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
+        projectId,
+        title: 'Extra',
+      }),
     ).rejects.toBeInstanceOf(ValidationError)
     await expect(
-      useCases.projects.definitionOfDone.add.execute(creator, {
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
         projectId,
         title: 'a'.repeat(201),
       }),
@@ -212,7 +243,7 @@ describe('definição de pronto: casos de uso', () => {
     const { useCases, unitOfWork } = setup(creator)
     await seedProject(unitOfWork)
     await expect(
-      useCases.projects.definitionOfDone.add.execute(creator, {
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
         projectId: '00000000000000000000000099',
         title: 'X',
       }),
@@ -226,7 +257,7 @@ describe('definição de pronto: casos de uso', () => {
     })
     await unitOfWork.repositories.projects.save(otherOrganizationId, foreign)
     await expect(
-      useCases.projects.definitionOfDone.add.execute(creator, {
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
         projectId: foreign.id,
         title: 'X',
       }),
@@ -236,9 +267,15 @@ describe('definição de pronto: casos de uso', () => {
   it('a lista de projetos traz a contagem de itens', async () => {
     const { useCases, unitOfWork } = setup(creator)
     await seedProject(unitOfWork)
-    await useCases.projects.definitionOfDone.add.execute(creator, { projectId, title: 'A' })
-    await useCases.projects.definitionOfDone.add.execute(creator, { projectId, title: 'B' })
-    const projects = await useCases.projects.listProjects.execute(creator)
+    await useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
+      projectId,
+      title: 'A',
+    })
+    await useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
+      projectId,
+      title: 'B',
+    })
+    const projects = await useCases.projects.listProjects.execute(createTenantContext(creator))
     expect(projects).toEqual([expect.objectContaining({ id: projectId, definitionOfDoneCount: 2 })])
   })
 })

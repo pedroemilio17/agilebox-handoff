@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toOrganizationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -30,8 +31,13 @@ function setup(initialActor: Actor = actor) {
     changeNotifier: new RecordingNotifier(),
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,
@@ -75,7 +81,7 @@ describe('casos de uso de sessão', () => {
 
   it('lista usuários com tarifa filtrada pela política do ator', async () => {
     const { useCases } = setup()
-    await expect(useCases.session.listUsers.execute(actor)).resolves.toEqual([
+    await expect(useCases.session.listUsers.execute(createTenantContext(actor))).resolves.toEqual([
       expect.objectContaining({ id: userId, defaultRate: 45 }),
       expect.objectContaining({ id: otherUserId, defaultRate: null }),
     ])

@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 import type { DailyEntryRepository } from '@agilebox/application'
 import type { DailyEntry, DateOnly, OrganizationId, UserId } from '@agilebox/core'
 import { createSqliteClient } from '../client.js'
@@ -29,6 +29,13 @@ export function createSqliteDailyEntryRepository(database: SqliteDatabase): Dail
         .from(dailyEntries)
         .where(and(eq(dailyEntries.organizationId, organizationId), eq(dailyEntries.date, date)))
       return rows.map(mapDailyEntryRow)
+    },
+    async countByOrganization(organizationId: OrganizationId) {
+      const [row] = await database
+        .select({ total: count() })
+        .from(dailyEntries)
+        .where(eq(dailyEntries.organizationId, organizationId))
+      return row?.total ?? 0
     },
     async save(organizationId: OrganizationId, entry: DailyEntry) {
       // Só grava daily de usuário desta organização, e só cita tarefas desta organização.

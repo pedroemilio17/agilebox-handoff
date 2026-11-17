@@ -1,6 +1,7 @@
 import type { Participant } from '../entities/participation'
 import type { Task } from '../entities/task'
-import type { TimelineEvent } from '../entities/timeline-event'
+import type { TaskSprintTimelineEvent, TimelineEvent } from '../entities/timeline-event'
+import { sprintLabel } from '../entities/sprint'
 import { canSeeRate } from '../policies/access-policy'
 import type { Actor } from '../policies/actor'
 import type { ContributorId, OrganizationId, UserId } from '../shared/ids'
@@ -12,6 +13,8 @@ import type { Ticket } from '../values/ticket'
 
 type Draft<T> = T extends TimelineEvent ? Pick<T, 'type' | 'payload'> : never
 export type TimelineEventDraft = Draft<TimelineEvent>
+/** Rascunho de entrada/saída de sprint (ver TaskSprintTimelineEvent). */
+export type TaskSprintEventDraft = Pick<TaskSprintTimelineEvent, 'type' | 'payload'>
 export interface TimelineNames {
   readonly organizationId: OrganizationId
   readonly user: (id: UserId) => string
@@ -32,7 +35,15 @@ function sameTicket(a: Ticket | null, b: Ticket | null): boolean {
   return a === null || b === null ? a === b : a.id === b.id && a.url === b.url
 }
 
-export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
+/**
+ * Eventos das mudanças da tarefa. `resolution` é a nota de resolução quando a mudança desbloqueia
+ * (M5.2a): vai no evento `unblocked`.
+ */
+export function diffTask(
+  before: Task,
+  after: Task,
+  resolution: string | null = null,
+): TimelineEventDraft[] {
   const events: TimelineEventDraft[] = []
   if (before.status !== after.status)
     events.push({ type: 'status_changed', payload: { before: before.status, after: after.status } })
@@ -45,7 +56,13 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
     if (after.blockedReason !== null)
       events.push({ type: 'blocked', payload: { reason: after.blockedReason } })
     else if (before.blockedReason !== null)
-      events.push({ type: 'unblocked', payload: { reason: before.blockedReason } })
+      events.push({
+        type: 'unblocked',
+        payload:
+          resolution === null
+            ? { reason: before.blockedReason }
+            : { reason: before.blockedReason, resolution },
+      })
   }
   if (before.deadline !== after.deadline)
     events.push({
@@ -68,6 +85,11 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
     })
   if (!sameTicket(before.ticket, after.ticket))
     events.push({ type: 'ticket_changed', payload: { before: before.ticket, after: after.ticket } })
+  if (before.estimatedHoursHundredths !== after.estimatedHoursHundredths)
+    events.push({
+      type: 'estimate_changed',
+      payload: { before: before.estimatedHoursHundredths, after: after.estimatedHoursHundredths },
+    })
   for (const previous of before.participations) {
     const next = after.participations.find((p) => key(p.participant) === key(previous.participant))
     if (!next)
@@ -106,6 +128,11 @@ export function diffTask(before: Task, after: Task): TimelineEventDraft[] {
   return events
 }
 
+/** Estimativa em centésimos para o texto da linha do tempo ("2 h") ou "sem estimativa". */
+function estimateText(hundredths: number | null): string {
+  return hundredths === null ? 'sem estimativa' : formatHours(hundredths)
+}
+
 export function describeEvent(event: TimelineEvent, viewer: Actor, names: TimelineNames): string {
   const name = (p: Participant) =>
     p.kind === 'user' ? names.user(p.userId) : names.contributor(p.contributorId)
@@ -130,14 +157,52 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       return `removeu a subtarefa: ${event.payload.title}`
     case 'definition_confirmed':
       return `concluiu a tarefa confirmando a definição de pronto (${event.payload.count === 1 ? '1 item' : `${event.payload.count} itens`})`
+    case 'acceptance_criterion_added':
+      return `adicionou o critério: ${event.payload.text}`
+    case 'acceptance_criterion_removed':
+      return `removeu o critério: ${event.payload.text}`
+    case 'acceptance_criterion_done':
+      return `marcou o critério como atendido: ${event.payload.text}`
+    case 'acceptance_criterion_reopened':
+      return `desmarcou o critério: ${event.payload.text}`
+    case 'acceptance_criterion_renamed':
+      return `renomeou o critério de "${event.payload.before}" para "${event.payload.after}"`
+    case 'acceptance_criterion_moved':
+      return `reordenou o critério "${event.payload.text}" para a posição ${event.payload.after + 1}`
+    case 'estimate_changed':
+      return `alterou a estimativa de ${estimateText(event.payload.before)} para ${estimateText(event.payload.after)}`
     case 'comment_added':
       return 'comentou na tarefa'
     case 'comment_removed':
       return 'removeu um comentário'
+    case 'task_archived':
+      return 'arquivou a tarefa'
+    case 'task_unarchived':
+      return 'desarquivou a tarefa'
+    case 'task_added_to_backlog':
+      return 'adicionou a tarefa ao backlog'
+    case 'task_sent_to_backlog':
+      return 'devolveu a tarefa ao backlog'
+    case 'task_pulled_from_backlog':
+      return `puxou a tarefa do backlog para ${TASK_STATUS_LABELS[event.payload.status]}`
+    case 'task_reordered':
+      return `reordenou a tarefa no backlog (posição ${event.payload.position})`
+    case 'task_added_to_sprint':
+      return `adicionou a tarefa à ${sprintLabel(event.payload.sprintNumber)}`
+    case 'task_removed_from_sprint':
+      return `removeu a tarefa da ${sprintLabel(event.payload.sprintNumber)}`
     case 'blocked':
       return `bloqueou a tarefa: ${event.payload.reason}`
     case 'unblocked':
-      return 'desbloqueou a tarefa'
+      return event.payload.resolution
+        ? `desbloqueou a tarefa: ${event.payload.resolution}`
+        : 'desbloqueou a tarefa'
+    case 'impediment_assigned': {
+      const { before, after } = event.payload
+      if (after === null) return 'removeu o responsável pelo impedimento'
+      if (before === null) return `definiu ${names.user(after)} como responsável pelo impedimento`
+      return `alterou o responsável pelo impedimento de ${names.user(before)} para ${names.user(after)}`
+    }
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`
     case 'renamed':

@@ -195,3 +195,25 @@ describe('repositório de dailies', () => {
     expect(database.select().from(dailyEntries).all()).toEqual([])
   })
 })
+
+describe('contagem de dailies da organização', () => {
+  it('conta as dailies de todas as datas, sem contar as de outra organização', async () => {
+    const { repository } = await setup()
+    expect(await repository.countByOrganization(orgA)).toBe(0)
+
+    await repository.save(orgA, entry({ id: entryOne, date: '2026-11-04' }))
+    await repository.save(orgA, entry({ id: entryTwo, date: '2026-11-05' }))
+    await repository.save(
+      orgB,
+      entry({
+        id: toDailyEntryId('01ARZ3NDEKTSV4RRFFQ69G5FB9'),
+        organizationId: orgB,
+        userId: managerB,
+        date: '2026-11-04',
+      }),
+    )
+
+    expect(await repository.countByOrganization(orgA)).toBe(2)
+    expect(await repository.countByOrganization(orgB)).toBe(1)
+  })
+})

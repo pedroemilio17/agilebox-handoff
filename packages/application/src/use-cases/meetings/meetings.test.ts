@@ -1,3 +1,4 @@
+import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import {
   parseDateOnly,
@@ -30,8 +31,13 @@ function setup() {
     changeNotifier: notifier,
     clock: new FixedClock('2026-01-20T12:00:00.000Z'),
     checklist: unitOfWork.repositories.checklist,
+    acceptance: unitOfWork.repositories.acceptance,
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
+    teamTools: unitOfWork.repositories.teamTools,
+    sprints: unitOfWork.repositories.sprints,
+    sprintTasks: unitOfWork.repositories.sprintTasks,
+    impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
     boardSettings: unitOfWork.repositories.boardSettings,
@@ -73,7 +79,7 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(organizationId, earlier)
 
     await expect(
-      useCases.meetings.listRange.execute(actor, {
+      useCases.meetings.listRange.execute(createTenantContext(actor), {
         rangeStart: '2026-02-01',
         rangeEnd: '2026-02-28',
       }),
@@ -98,7 +104,7 @@ describe('casos de uso da agenda', () => {
       .build()
     await unitOfWork.repositories.meetings.save(organizationId, series)
 
-    const occurrences = await useCases.meetings.listRange.execute(actor, {
+    const occurrences = await useCases.meetings.listRange.execute(createTenantContext(actor), {
       rangeStart: '2026-12-01',
       rangeEnd: '2027-01-31',
     })
@@ -128,11 +134,12 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(organizationId, notMine)
 
     const range = { rangeStart: '2026-01-01', rangeEnd: '2026-01-31' }
-    await expect(useCases.meetings.listRange.execute(actor, range)).resolves.toMatchObject([
-      { id: mine.id },
-      { id: notMine.id },
-    ])
-    await expect(useCases.meetings.listRange.execute(manager, range)).resolves.toHaveLength(2)
+    await expect(
+      useCases.meetings.listRange.execute(createTenantContext(actor), range),
+    ).resolves.toMatchObject([{ id: mine.id }, { id: notMine.id }])
+    await expect(
+      useCases.meetings.listRange.execute(createTenantContext(manager), range),
+    ).resolves.toHaveLength(2)
   })
 
   it('não mostra agendamentos de outra organização, nem ao gestor dela', async () => {
@@ -149,15 +156,21 @@ describe('casos de uso da agenda', () => {
     await unitOfWork.repositories.meetings.save(otherOrganizationId, foreign)
 
     const range = { rangeStart: '2026-01-01', rangeEnd: '2026-01-31' }
-    await expect(useCases.meetings.listRange.execute(actor, range)).resolves.toEqual([])
-    await expect(useCases.meetings.listRange.execute(manager, range)).resolves.toEqual([])
-    await expect(useCases.meetings.listUpcoming.execute(actor)).resolves.toEqual([])
+    await expect(
+      useCases.meetings.listRange.execute(createTenantContext(actor), range),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.meetings.listRange.execute(createTenantContext(manager), range),
+    ).resolves.toEqual([])
+    await expect(
+      useCases.meetings.listUpcoming.execute(createTenantContext(actor)),
+    ).resolves.toEqual([])
   })
 
   it('rejeita intervalo invertido', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.meetings.listRange.execute(actor, {
+      useCases.meetings.listRange.execute(createTenantContext(actor), {
         rangeStart: '2026-02-10',
         rangeEnd: '2026-02-01',
       }),
@@ -188,7 +201,7 @@ describe('casos de uso da agenda', () => {
         .build(),
     )
 
-    const upcoming = await useCases.meetings.listUpcoming.execute(actor)
+    const upcoming = await useCases.meetings.listUpcoming.execute(createTenantContext(actor))
     // Avulso e série empatam em 20/01 às 09:00; a série continua em 27/01.
     expect(upcoming.map((item) => item.occurrenceDate).slice(0, 3)).toEqual([
       '2026-01-20',
@@ -204,7 +217,7 @@ describe('casos de uso da agenda', () => {
     const existing = aMeeting().build()
     await unitOfWork.repositories.meetings.save(organizationId, existing)
     await expect(
-      useCases.meetings.create.execute(actor, {
+      useCases.meetings.create.execute(createTenantContext(actor), {
         title: 'Planejamento',
         date: '2026-02-10',
         time: '09:30',
@@ -212,16 +225,16 @@ describe('casos de uso da agenda', () => {
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.meetings.update.execute(actor, {
+      useCases.meetings.update.execute(createTenantContext(actor), {
         meetingId: existing.id,
         changes: { title: 'Alteração não autorizada' },
       }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
     await expect(
-      useCases.meetings.delete.execute(actor, { meetingId: existing.id }),
+      useCases.meetings.delete.execute(createTenantContext(actor), { meetingId: existing.id }),
     ).rejects.toBeInstanceOf(PermissionDeniedError)
 
-    const created = await useCases.meetings.create.execute(manager, {
+    const created = await useCases.meetings.create.execute(createTenantContext(manager), {
       title: ' Planejamento ',
       date: '2026-02-10',
       time: '09:30',
@@ -234,7 +247,7 @@ describe('casos de uso da agenda', () => {
       createdAt: '2026-01-20T12:00:00.000Z',
       updatedAt: '2026-01-20T12:00:00.000Z',
     })
-    const updated = await useCases.meetings.update.execute(manager, {
+    const updated = await useCases.meetings.update.execute(createTenantContext(manager), {
       meetingId: created.id,
       changes: { time: '10:00', participants: [] },
     })
@@ -243,7 +256,7 @@ describe('casos de uso da agenda', () => {
       participants: [],
       updatedAt: '2026-01-20T12:00:00.000Z',
     })
-    await useCases.meetings.delete.execute(manager, { meetingId: created.id })
+    await useCases.meetings.delete.execute(createTenantContext(manager), { meetingId: created.id })
     await expect(
       unitOfWork.repositories.meetings.findById(organizationId, toMeetingId(created.id)),
     ).resolves.toBeNull()
@@ -266,11 +279,11 @@ describe('casos de uso da agenda', () => {
       .build()
     await unitOfWork.repositories.meetings.save(organizationId, series)
 
-    await useCases.meetings.update.execute(manager, {
+    await useCases.meetings.update.execute(createTenantContext(manager), {
       meetingId: series.id,
       changes: { time: '14:00', endTime: '15:00', recurrenceUntil: '2026-11-16' },
     })
-    const afterEdit = await useCases.meetings.listRange.execute(manager, {
+    const afterEdit = await useCases.meetings.listRange.execute(createTenantContext(manager), {
       rangeStart: '2026-11-01',
       rangeEnd: '2026-11-30',
     })
@@ -282,9 +295,9 @@ describe('casos de uso da agenda', () => {
       ['2026-11-16', '14:00', '15:00'],
     ])
 
-    await useCases.meetings.delete.execute(manager, { meetingId: series.id })
+    await useCases.meetings.delete.execute(createTenantContext(manager), { meetingId: series.id })
     await expect(
-      useCases.meetings.listRange.execute(manager, {
+      useCases.meetings.listRange.execute(createTenantContext(manager), {
         rangeStart: '2026-11-01',
         rangeEnd: '2026-11-30',
       }),
@@ -294,7 +307,7 @@ describe('casos de uso da agenda', () => {
   it('valida fim, tipo e data limite na criação e na edição', async () => {
     const { useCases } = setup()
     await expect(
-      useCases.meetings.create.execute(manager, {
+      useCases.meetings.create.execute(createTenantContext(manager), {
         title: 'Reunião',
         date: '2026-02-10',
         time: '09:30',
@@ -302,7 +315,7 @@ describe('casos de uso da agenda', () => {
         participants: [userId],
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
-    const created = await useCases.meetings.create.execute(manager, {
+    const created = await useCases.meetings.create.execute(createTenantContext(manager), {
       title: 'Retro',
       date: '2026-02-10',
       time: '09:30',
@@ -319,13 +332,13 @@ describe('casos de uso da agenda', () => {
       recurrenceUntil: '2026-03-10',
     })
     await expect(
-      useCases.meetings.update.execute(manager, {
+      useCases.meetings.update.execute(createTenantContext(manager), {
         meetingId: created.id,
         changes: { recurrenceUntil: '2026-02-01' },
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
     await expect(
-      useCases.meetings.update.execute(manager, {
+      useCases.meetings.update.execute(createTenantContext(manager), {
         meetingId: created.id,
         changes: { endTime: null, recurrenceUntil: null },
       }),
@@ -336,9 +349,14 @@ describe('casos de uso da agenda', () => {
     const { useCases } = setup()
     const meetingId = toMeetingId('00000000000000000000000010')
     await expect(
-      useCases.meetings.update.execute(manager, { meetingId, changes: { title: 'Novo título' } }),
+      useCases.meetings.update.execute(createTenantContext(manager), {
+        meetingId,
+        changes: { title: 'Novo título' },
+      }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
-    await expect(useCases.meetings.delete.execute(manager, { meetingId })).rejects.toMatchObject({
+    await expect(
+      useCases.meetings.delete.execute(createTenantContext(manager), { meetingId }),
+    ).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
   })
