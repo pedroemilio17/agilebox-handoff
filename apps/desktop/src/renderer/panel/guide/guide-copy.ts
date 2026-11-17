@@ -22,5 +22,6 @@ export const guideCopy = {
   openSprints: 'Abrir sprints',
   openAgenda: 'Abrir a agenda',
   openWbs: 'Abrir as entregas',
+  openMilestones: 'Abrir os marcos',
   dailyNote: 'Pela bandeja, no fim do dia',
 } as const

@@ -107,6 +107,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       removeDeliverable: (input) => call('wbs.removeDeliverable', input),
     },
     milestones: {
+      list: (input) => call('milestones.list', input),
       create: (input) => call('milestones.create', input),
       update: (input) => call('milestones.update', input),
       remove: (input) => call('milestones.remove', input),

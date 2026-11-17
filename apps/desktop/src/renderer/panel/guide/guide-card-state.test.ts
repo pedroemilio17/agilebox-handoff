@@ -127,7 +127,11 @@ describe('ação do passo da EAP', () => {
     })
   })
 
-  it('marcos ainda não têm botão', () => {
-    expect(guideStepAction('milestones.create')).toBeNull()
+  it('marcar os marcos leva à tela de marcos', () => {
+    expect(guideStepAction('milestones.create')).toEqual({
+      kind: 'navigate',
+      view: 'milestones',
+      label: 'Abrir os marcos',
+    })
   })
 })

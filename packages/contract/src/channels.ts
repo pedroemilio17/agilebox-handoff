@@ -110,6 +110,7 @@ export const API_CHANNELS = [
   'wbs.renameDeliverable',
   'wbs.moveDeliverable',
   'wbs.removeDeliverable',
+  'milestones.list',
   'milestones.create',
   'milestones.update',
   'milestones.remove',

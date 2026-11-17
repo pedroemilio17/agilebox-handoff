@@ -221,6 +221,7 @@ export const USE_CASE_MODULES = {
   'tasks.setDeliverable': { module: 'wbs', project: { from: 'taskId' } },
 
   // Marcos (ADR-10): criar marco é criar item do módulo (encerrando, recusa). Editar e remover seguem.
+  'milestones.list': { module: 'milestones', project: { from: 'projectId' } },
   'milestones.create': { module: 'milestones', creates: true, project: { from: 'projectId' } },
   'milestones.update': { module: 'milestones', project: { from: 'milestoneId' } },
   'milestones.remove': { module: 'milestones', project: { from: 'milestoneId' } },

@@ -184,6 +184,7 @@ export function registerHandlers(
   register('wbs.removeDeliverable', (context, input) =>
     useCases.wbs.removeDeliverable.execute(context, input),
   )
+  register('milestones.list', (context, input) => useCases.milestones.list.execute(context, input))
   register('milestones.create', (context, input) =>
     useCases.milestones.create.execute(context, input),
   )

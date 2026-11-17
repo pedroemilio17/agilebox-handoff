@@ -16,6 +16,7 @@ import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
 import { WbsView } from './wbs/WbsView'
+import { MilestonesView } from './milestones/MilestonesView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
@@ -64,6 +65,8 @@ function PanelContent({
   const backlogVisible = capabilities.showScreen('backlog')
   // Entregas (EAP): módulo ligado no projeto selecionado; sem projeto a view cai no Quadro.
   const wbsVisible = selectedProjectId !== null && capabilities.showScreen('wbs')
+  // Marcos: mesmo caminho (módulo ligado no projeto selecionado; sem projeto cai no Quadro).
+  const milestonesVisible = selectedProjectId !== null && capabilities.showScreen('milestones')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
@@ -85,6 +88,7 @@ function PanelContent({
     (view === 'agenda' && !agendaVisible) ||
     (view === 'backlog' && !backlogVisible) ||
     (view === 'wbs' && !wbsVisible) ||
+    (view === 'milestones' && !milestonesVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
@@ -422,6 +426,14 @@ function PanelContent({
         }
         wbs={
           <WbsView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        milestones={
+          <MilestonesView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}

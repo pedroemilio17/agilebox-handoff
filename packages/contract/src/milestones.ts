@@ -42,4 +42,25 @@ export const updateMilestoneOutputSchema = milestoneDtoSchema
 export const removeMilestoneInputSchema = z.object({ milestoneId: ulidSchema })
 export const removeMilestoneOutputSchema = z.void()
 
+/**
+ * Marco na tela de Marcos: o `deliverableTitle` vem só quando o módulo da EAP (`wbs`) está ligado no
+ * projeto (senão a entrega não é mostrada) e a entrega existe; nos outros casos, nulo.
+ */
+export const milestoneListItemDtoSchema = milestoneDtoSchema.extend({
+  deliverableTitle: z.string().nullable(),
+})
+
+/** Leitura de marcos do projeto (módulo `milestones`, não depende de `wbs`). */
+export const listMilestonesInputSchema = z.object({ projectId: ulidSchema })
+export const listMilestonesOutputSchema = z.object({
+  projectId: ulidSchema,
+  /** Quem pode criar, editar e remover marcos (gestor ou criador, projeto ativo). */
+  canEdit: z.boolean(),
+  milestones: z.array(milestoneListItemDtoSchema),
+})
+
 export type MilestoneDto = z.infer<typeof milestoneDtoSchema>
+export type MilestoneListItemDto = z.infer<typeof milestoneListItemDtoSchema>
+export type MilestonesListDto = z.infer<typeof listMilestonesOutputSchema>
+export type CreateMilestoneInput = z.infer<typeof createMilestoneInputSchema>
+export type UpdateMilestoneInput = z.infer<typeof updateMilestoneInputSchema>

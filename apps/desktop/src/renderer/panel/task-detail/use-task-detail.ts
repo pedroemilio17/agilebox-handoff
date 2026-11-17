@@ -24,6 +24,25 @@ export function useUpdateTask(taskId: string) {
   })
 }
 
+/**
+ * Liga a tarefa a uma entrega da EAP (nulo desliga). A EAP, o guia (o passo "Ligue as tarefas") e a
+ * própria tarefa mudam, então as três consultas são invalidadas.
+ */
+export function useSetDeliverable(taskId: string) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (deliverableId: string | null) =>
+      api.tasks.setDeliverable({ taskId, deliverableId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wbs.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.guide.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.list(taskId) })
+    },
+  })
+}
+
 export function useMoveTaskStatus(taskId: string) {
   const api = useApi()
   const queryClient = useQueryClient()

@@ -29,6 +29,7 @@ import {
 } from './use-cases/wbs/wbs'
 import {
   CreateMilestone,
+  ListMilestones,
   RemoveMilestone,
   UpdateMilestone,
 } from './use-cases/milestones/milestones'
@@ -312,6 +313,7 @@ export function createUseCases(deps: AppDeps) {
       removeDeliverable: forTenant('wbs.removeDeliverable', new RemoveDeliverable(deps)),
     },
     milestones: {
+      list: forTenant('milestones.list', new ListMilestones(deps)),
       create: forTenant('milestones.create', new CreateMilestone(deps)),
       update: forTenant('milestones.update', new UpdateMilestone(deps)),
       remove: forTenant('milestones.remove', new RemoveMilestone(deps)),

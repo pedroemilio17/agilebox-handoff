@@ -5,6 +5,7 @@ import {
   type AgileBoxBridge,
   type GuideViewDto,
   type ListBoardDto,
+  type MilestonesListDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
@@ -78,6 +79,11 @@ export function hiddenOrganizationModules(): OrganizationModulesViewDto {
   return { modules: [], hasActiveProjects: false }
 }
 
+/** Marcos vazios do projeto, sem edição: o padrão dos testes para a tela Marcos não aparecer preenchida. */
+export function emptyMilestonesView(projectId: string): MilestonesListDto {
+  return { projectId, canEdit: false, milestones: [] }
+}
+
 /** EAP vazia do projeto, sem edição: o padrão dos testes para a tela "Entregas" não aparecer preenchida. */
 export function emptyWbsView(projectId: string): WbsViewDto {
   return {
@@ -112,7 +118,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       get: (input) => Promise.resolve(emptyWbsView(input.projectId)),
       ...overrides.wbs,
     },
-    milestones: { ...api.milestones, ...overrides.milestones },
+    milestones: {
+      ...api.milestones,
+      list: (input) => Promise.resolve(emptyMilestonesView(input.projectId)),
+      ...overrides.milestones,
+    },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },
     teamTools: { ...api.teamTools, ...overrides.teamTools },

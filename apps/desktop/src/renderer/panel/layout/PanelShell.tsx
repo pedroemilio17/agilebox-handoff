@@ -22,6 +22,7 @@ export type PanelView =
   | 'projects'
   | 'backlog'
   | 'wbs'
+  | 'milestones'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -63,6 +64,8 @@ export interface PanelShellProps {
   readonly backlog?: ReactNode
   /** Entregas (EAP). O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly wbs?: ReactNode
+  /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly milestones?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -76,6 +79,7 @@ const viewTitles: Record<PanelView, string> = {
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
   wbs: 'Entregas',
+  milestones: 'Marcos',
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -107,6 +111,7 @@ export function PanelShell({
   modules,
   backlog,
   wbs,
+  milestones,
   sprints,
   impediments,
   children,
@@ -126,6 +131,10 @@ export function PanelShell({
     // Entregas (EAP): só com projeto selecionado e o módulo ligado no projeto.
     ...(selectedProjectId !== null && capabilities.showScreen('wbs')
       ? [{ id: 'wbs' as const, label: viewTitles.wbs, icon: '▤' }]
+      : []),
+    // Marcos: com projeto selecionado e o módulo ligado no projeto (sem EAP, a tela continua).
+    ...(selectedProjectId !== null && capabilities.showScreen('milestones')
+      ? [{ id: 'milestones' as const, label: viewTitles.milestones, icon: '◇' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -185,6 +194,8 @@ export function PanelShell({
             backlog
           ) : visibleView === 'wbs' && wbs ? (
             wbs
+          ) : visibleView === 'milestones' && milestones ? (
+            milestones
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -433,6 +444,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
     modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+    milestones: 'M12 3l8 9-8 9-8-9z',
   }
   return (
     <span aria-hidden="true">

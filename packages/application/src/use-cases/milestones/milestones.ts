@@ -1,13 +1,17 @@
 import {
+  canEditProjectStructure,
+  canSeeProject,
   createMilestone,
+  moduleStateOf,
   NotFoundError,
+  PermissionDeniedError,
   toDeliverableId,
   toMilestoneId,
   toProjectId,
   updateMilestone,
 } from '@agilebox/core'
 import type { Actor, DeliverableId, Milestone, MilestoneId, OrganizationId } from '@agilebox/core'
-import type { MilestoneDto } from '@agilebox/contract'
+import type { MilestoneDto, MilestonesListDto } from '@agilebox/contract'
 import { toMilestoneDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { recordGuideEvent } from '../guide/record-guide-event'
@@ -41,6 +45,58 @@ async function linkTarget(
     OTHER_PROJECT,
   )
   return linked.id
+}
+
+const VIEW_DENIED = 'Sem acesso a este projeto'
+
+/**
+ * Lista os marcos do projeto por data (ADR-10). Quem vê o projeto lê; `canEdit` diz se a tela pode
+ * mostrar as ações. A entrega só vem com título quando o módulo `wbs` não está desligado no projeto.
+ */
+export class ListMilestones {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(actor: Actor, input: { readonly projectId: string }): Promise<MilestonesListDto> {
+    const organizationId = actor.organizationId
+    const projectId = toProjectId(input.projectId)
+    const project = await this.deps.projects.findById(organizationId, projectId)
+    if (!project) throw new NotFoundError('Projeto não encontrado')
+    const members = await this.deps.projects.listMembers(organizationId, projectId)
+    if (
+      !canSeeProject(
+        actor,
+        project,
+        members.some((item) => item.userId === actor.userId),
+      )
+    )
+      throw new PermissionDeniedError(VIEW_DENIED)
+
+    const [milestones, modules] = await Promise.all([
+      this.deps.milestones.listByProject(organizationId, projectId),
+      this.deps.projectModules.list(organizationId, projectId),
+    ])
+    const wbsVisible = moduleStateOf(modules, 'wbs') !== 'disabled'
+    const sorted = [...milestones].sort(
+      (a, b) => a.dueOn.localeCompare(b.dueOn) || a.title.localeCompare(b.title, 'pt-BR'),
+    )
+    const items = await Promise.all(
+      sorted.map(async (milestone) => {
+        const deliverable =
+          wbsVisible && milestone.deliverableId !== null
+            ? await this.deps.deliverables.findById(organizationId, milestone.deliverableId)
+            : null
+        return {
+          ...toMilestoneDto(milestone),
+          deliverableTitle: deliverable?.title ?? null,
+        }
+      }),
+    )
+    return {
+      projectId,
+      canEdit: canEditProjectStructure(actor, project) && project.archivedAt === null,
+      milestones: items,
+    }
+  }
 }
 
 /** Cria marco (gestor ou criador do projeto). Evento do guia: "Marque os marcos". */

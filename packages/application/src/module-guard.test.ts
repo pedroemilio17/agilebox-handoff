@@ -724,7 +724,8 @@ describe('mapa de módulos dos casos de uso', () => {
       .sort()
 
     // 103 + 9 da EAP e dos marcos (ADR-10, fase 3, A2): 5 de `wbs`, `tasks.setDeliverable` e 3 de `milestones`.
-    expect(registered).toHaveLength(112)
+    // Mais 1: `milestones.list`, a leitura dos marcos (módulo `milestones`).
+    expect(registered).toHaveLength(113)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 

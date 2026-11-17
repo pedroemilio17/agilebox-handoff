@@ -188,6 +188,8 @@ import {
 import {
   createMilestoneInputSchema,
   createMilestoneOutputSchema,
+  listMilestonesInputSchema,
+  listMilestonesOutputSchema,
   removeMilestoneInputSchema,
   removeMilestoneOutputSchema,
   updateMilestoneInputSchema,
@@ -427,6 +429,7 @@ export const API_SCHEMA_REGISTRY = {
     input: removeDeliverableInputSchema,
     output: removeDeliverableOutputSchema,
   },
+  'milestones.list': { input: listMilestonesInputSchema, output: listMilestonesOutputSchema },
   'milestones.create': { input: createMilestoneInputSchema, output: createMilestoneOutputSchema },
   'milestones.update': { input: updateMilestoneInputSchema, output: updateMilestoneOutputSchema },
   'milestones.remove': { input: removeMilestoneInputSchema, output: removeMilestoneOutputSchema },
@@ -706,6 +709,7 @@ export interface AgileBoxApi {
     removeDeliverable: Method<'wbs.removeDeliverable'>
   }
   milestones: {
+    list: Method<'milestones.list'>
     create: Method<'milestones.create'>
     update: Method<'milestones.update'>
     remove: Method<'milestones.remove'>

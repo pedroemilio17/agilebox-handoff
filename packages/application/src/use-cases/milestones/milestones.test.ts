@@ -6,6 +6,7 @@ import {
   ValidationError,
   toMilestoneId,
   toProjectId,
+  toUserId,
 } from '@agilebox/core'
 import type { ModuleId } from '@agilebox/core'
 import type { WbsViewDto } from '@agilebox/contract'
@@ -270,5 +271,97 @@ describe('marcos: quem pode e quando', () => {
         title: 'X',
       }),
     ).rejects.toBeInstanceOf(NotFoundError)
+  })
+})
+
+describe('marcos: leitura da tela Marcos', () => {
+  it('lista por data, com canEdit do gestor e a entrega com título quando a EAP está ligada', async () => {
+    const { useCases } = await setup()
+    const infra = await deliverableIn(useCases, projectId, 'Infra')
+    await useCases.milestones.create.execute(ctx(manager), {
+      ...base,
+      title: 'Homologação',
+      dueOn: '2026-09-01',
+      criterion: 'Aprovada',
+    })
+    await useCases.milestones.create.execute(ctx(manager), {
+      ...base,
+      title: 'Infra pronta',
+      dueOn: '2026-07-15',
+      deliverableId: infra,
+    })
+    const view = await useCases.milestones.list.execute(ctx(manager), { projectId })
+    expect(view.projectId).toBe(projectId)
+    expect(view.canEdit).toBe(true)
+    expect(view.milestones.map((item) => item.title)).toEqual(['Infra pronta', 'Homologação'])
+    expect(view.milestones[0]).toMatchObject({
+      dueOn: '2026-07-15',
+      deliverableId: infra,
+      deliverableTitle: 'Infra',
+      criterion: null,
+    })
+    expect(view.milestones[1]).toMatchObject({
+      deliverableId: null,
+      deliverableTitle: null,
+      criterion: 'Aprovada',
+    })
+  })
+
+  it('colaborador do projeto lê os marcos, mas não edita (canEdit falso)', async () => {
+    const { useCases } = await setup()
+    await useCases.milestones.create.execute(ctx(manager), {
+      ...base,
+      title: 'Marco',
+      dueOn: '2026-07-01',
+    })
+    await useCases.projects.addMember.execute(ctx(manager), {
+      projectId,
+      userId: toUserId(ana.userId),
+    })
+    const view = await useCases.milestones.list.execute(ctx(ana), { projectId })
+    expect(view.canEdit).toBe(false)
+    expect(view.milestones.map((item) => item.title)).toEqual(['Marco'])
+  })
+
+  it('sem a EAP ligada, a entrega não aparece mesmo que o marco esteja ligado a ela', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const infra = await deliverableIn(useCases, projectId, 'Infra')
+    await useCases.milestones.create.execute(ctx(manager), {
+      ...base,
+      title: 'Marco',
+      dueOn: '2026-07-01',
+      deliverableId: infra,
+    })
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { wbs: 'disabled' })
+    const view = await useCases.milestones.list.execute(ctx(manager), { projectId })
+    expect(view.milestones[0]).toMatchObject({ deliverableId: infra, deliverableTitle: null })
+  })
+
+  it('projeto arquivado: lê os marcos, mas canEdit fica falso', async () => {
+    const { useCases } = await setup()
+    await useCases.milestones.create.execute(ctx(manager), {
+      ...base,
+      title: 'Marco',
+      dueOn: '2026-07-01',
+    })
+    await useCases.projects.archive.execute(ctx(manager), { projectId })
+    const view = await useCases.milestones.list.execute(ctx(manager), { projectId })
+    expect(view.canEdit).toBe(false)
+    expect(view.milestones).toHaveLength(1)
+  })
+
+  it('projeto de outra organização é NotFound', async () => {
+    const { useCases } = await setup()
+    await expect(
+      useCases.milestones.list.execute(ctx(otherManager), { projectId }),
+    ).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('módulo de marcos desligado recusa a leitura', async () => {
+    const { useCases, unitOfWork } = await setup()
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { milestones: 'disabled' })
+    await expect(
+      useCases.milestones.list.execute(ctx(manager), { projectId }),
+    ).rejects.toBeInstanceOf(PermissionDeniedError)
   })
 })
