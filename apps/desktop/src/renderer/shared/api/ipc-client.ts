@@ -30,6 +30,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     projects: {
       list: (input) => call('projects.list', input),
       create: (input) => call('projects.create', input),
+      createWithSetup: (input) => call('projects.createWithSetup', input),
       listMembers: (input) => call('projects.listMembers', input),
       addMember: (input) => call('projects.addMember', input),
       removeMember: (input) => call('projects.removeMember', input),
@@ -145,6 +146,10 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       listForDate: (input) => call('daily.listForDate', input),
       getForUser: (input) => call('daily.getForUser', input),
       suggestSummary: (input) => call('daily.suggestSummary', input),
+    },
+    projectModules: {
+      get: (input) => call('projectModules.get', input),
+      change: (input) => call('projectModules.change', input),
     },
     teamTools: {
       get: () => call('teamTools.get', undefined),

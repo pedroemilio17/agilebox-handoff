@@ -71,7 +71,8 @@ function toModuleDtos(rows: readonly ProjectModuleSetting[]): ProjectModuleDto[]
   })
 }
 
-function enableRefusalMessage(plan: Extract<EnablePlan, { ok: false }>): string {
+/** Mensagem em pt-BR para um pedido de ligar módulos que o domínio recusou. */
+export function enableRefusalMessage(plan: Extract<EnablePlan, { ok: false }>): string {
   switch (plan.reason) {
     case 'conflict': {
       const pairs = plan.conflicts

@@ -89,6 +89,7 @@ function setup(actorOf: Actor = collaborator) {
     dailyEntries: repos.dailyEntries,
     teamTools: repos.teamTools,
     projectModules: repos.projectModules,
+    projectSetup: repos.projectSetup,
     sprints: repos.sprints,
     sprintTasks: repos.sprintTasks,
     impediments: repos.impediments,

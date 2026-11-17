@@ -54,6 +54,7 @@ function setup(actor: Actor = ana, options: { sprints?: unknown } = {}) {
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
     projectModules: unitOfWork.repositories.projectModules,
+    projectSetup: unitOfWork.repositories.projectSetup,
     sprints: (options.sprints ??
       unitOfWork.repositories.sprints) as typeof unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,

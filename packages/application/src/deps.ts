@@ -16,6 +16,7 @@ import type {
   ParticipationRepository,
   ProjectModulesRepository,
   ProjectRepository,
+  ProjectSetupRepository,
   RetroActionRepository,
   SprintRepository,
   SprintTaskRepository,
@@ -45,6 +46,7 @@ export interface AppDeps {
   readonly participations: ParticipationRepository
   readonly projectModules: ProjectModulesRepository
   readonly projects: ProjectRepository
+  readonly projectSetup: ProjectSetupRepository
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository
   readonly sprintTasks: SprintTaskRepository

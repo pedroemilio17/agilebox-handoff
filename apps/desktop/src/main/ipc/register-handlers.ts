@@ -53,6 +53,9 @@ export function registerHandlers(
   register('projects.create', (context, input) =>
     useCases.projects.createProject.execute(context, input),
   )
+  register('projects.createWithSetup', (context, input) =>
+    useCases.projects.createWithSetup.execute(context, input),
+  )
   register('projects.listMembers', (context, input) =>
     useCases.projects.listMembers.execute(context, input),
   )
@@ -246,6 +249,12 @@ export function registerHandlers(
   )
   register('daily.suggestSummary', (context, input) =>
     useCases.daily.suggestSummary.execute(context, input),
+  )
+  register('projectModules.get', (context, input) =>
+    useCases.projectModules.get.execute(context, input),
+  )
+  register('projectModules.change', (context, input) =>
+    useCases.projectModules.change.execute(context, input),
   )
   register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
   register('teamTools.previewChange', (context, input) =>

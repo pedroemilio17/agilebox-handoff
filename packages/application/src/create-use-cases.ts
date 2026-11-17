@@ -29,6 +29,7 @@ import {
   UpdateSprint,
 } from './use-cases/sprints/sprints'
 import { CreateProject } from './use-cases/projects/create-project'
+import { CreateProjectWithSetup } from './use-cases/projects/create-project-with-setup'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { RenameProject } from './use-cases/projects/rename-project'
 import { ListProjects } from './use-cases/projects/list-projects'
@@ -194,6 +195,7 @@ export function createUseCases(deps: AppDeps) {
         new ListProjects(deps.projects, deps.definitionOfDone),
       ),
       createProject: forTenant('projects.createProject', new CreateProject(deps)),
+      createWithSetup: forTenant('projects.createWithSetup', new CreateProjectWithSetup(deps)),
       listMembers: forTenant('projects.listMembers', new ListProjectMembers(deps)),
       addMember: forTenant('projects.addMember', new AddProjectMember(deps)),
       removeMember: forTenant('projects.removeMember', new RemoveProjectMember(deps)),

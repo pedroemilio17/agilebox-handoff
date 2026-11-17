@@ -11,6 +11,7 @@ import { createSqliteDailyEntryRepository } from './repositories/daily-entry-rep
 import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
 import { createSqliteProjectModulesRepository } from './repositories/project-modules-repository.js'
+import { createSqliteProjectSetupRepository } from './repositories/project-setup-repository.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
@@ -36,6 +37,7 @@ describe('SqliteUnitOfWork', () => {
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
       projectModules: createSqliteProjectModulesRepository(database),
+      projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),
@@ -74,6 +76,7 @@ describe('SqliteUnitOfWork', () => {
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
       projectModules: createSqliteProjectModulesRepository(database),
+      projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
       comments: createSqliteTaskCommentRepository(database),

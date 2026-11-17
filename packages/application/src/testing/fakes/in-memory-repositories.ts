@@ -66,6 +66,8 @@ import type {
   ImpedimentRepository,
   ImpedimentListFilter,
   ProjectRepository,
+  ProjectSetup,
+  ProjectSetupRepository,
   RetroActionRepository,
   SprintRepository,
   SprintTaskRepository,
@@ -75,6 +77,7 @@ import type {
   TimelineRepository,
   UserRepository,
 } from '../../ports'
+import { assertPlainAnswers } from '../../ports/project-setup-repository'
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
 
@@ -101,6 +104,8 @@ export interface InMemoryState {
   impediments: Map<OrganizationId, Map<string, Impediment>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
+  /** Configuração inicial por projeto (uma linha por projeto), dentro da organização. */
+  projectSetup: Map<OrganizationId, Map<string, ProjectSetup>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
   organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
@@ -140,6 +145,7 @@ export function createInMemoryState(): InMemoryState {
     impediments: new Map(),
     participations: new Map(),
     projects: new Map(),
+    projectSetup: new Map(),
     projectModules: new Map(),
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
@@ -731,6 +737,23 @@ export class InMemoryTeamToolsRepository implements TeamToolsRepository {
     return [...bucket(this.state.teamToolsAudit, organizationId).values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
       .slice(0, limit)
+  }
+}
+
+export class InMemoryProjectSetupRepository implements ProjectSetupRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async get(organizationId: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return bucket(this.state.projectSetup, organizationId).get(projectId) ?? null
+  }
+
+  async save(organizationId: OrganizationId, setup: ProjectSetup) {
+    await Promise.resolve()
+    if (this.state.projects.get(organizationId)?.has(setup.projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+    assertPlainAnswers(setup.answers)
+    bucket(this.state.projectSetup, organizationId).set(setup.projectId, { ...setup })
   }
 }
 

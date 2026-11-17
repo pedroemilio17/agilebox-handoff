@@ -12,6 +12,8 @@ import {
   addProjectMemberOutputSchema,
   createProjectInputSchema,
   createProjectOutputSchema,
+  createProjectWithSetupInputSchema,
+  createProjectWithSetupOutputSchema,
   listProjectMembersInputSchema,
   listProjectMembersOutputSchema,
   listProjectsInputSchema,
@@ -156,6 +158,12 @@ import {
   teamToolsViewDtoSchema,
 } from './team-tools'
 import {
+  changeProjectModulesInputSchema,
+  getProjectModulesInputSchema,
+  projectModulesChangeResultDtoSchema,
+  projectModulesViewDtoSchema,
+} from './project-modules'
+import {
   addDefinitionOfDoneItemInputSchema,
   definitionOfDoneChangeOutputSchema,
   listDefinitionOfDoneInputSchema,
@@ -226,6 +234,10 @@ export const API_SCHEMA_REGISTRY = {
   'users.setDefaultRate': { input: setDefaultRateInputSchema, output: setDefaultRateOutputSchema },
   'projects.list': { input: listProjectsInputSchema, output: listProjectsOutputSchema },
   'projects.create': { input: createProjectInputSchema, output: createProjectOutputSchema },
+  'projects.createWithSetup': {
+    input: createProjectWithSetupInputSchema,
+    output: createProjectWithSetupOutputSchema,
+  },
   'projects.listMembers': {
     input: listProjectMembersInputSchema,
     output: listProjectMembersOutputSchema,
@@ -440,6 +452,14 @@ export const API_SCHEMA_REGISTRY = {
     input: suggestDailySummaryInputSchema,
     output: suggestDailySummaryOutputSchema,
   },
+  'projectModules.get': {
+    input: getProjectModulesInputSchema,
+    output: projectModulesViewDtoSchema,
+  },
+  'projectModules.change': {
+    input: changeProjectModulesInputSchema,
+    output: projectModulesChangeResultDtoSchema,
+  },
   'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
   'teamTools.previewChange': {
     input: previewTeamToolsChangeInputSchema,
@@ -485,6 +505,7 @@ export interface AgileBoxApi {
   projects: {
     list: Method<'projects.list'>
     create: Method<'projects.create'>
+    createWithSetup: Method<'projects.createWithSetup'>
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
@@ -498,6 +519,10 @@ export interface AgileBoxApi {
       remove: Method<'projects.definitionOfDone.remove'>
       move: Method<'projects.definitionOfDone.move'>
     }
+  }
+  projectModules: {
+    get: Method<'projectModules.get'>
+    change: Method<'projectModules.change'>
   }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>

@@ -81,6 +81,7 @@ export const USE_CASE_MODULES = {
 
   'projects.listProjects': { module: 'core', project: 'none' },
   'projects.createProject': { module: 'core', project: 'none' },
+  'projects.createWithSetup': { module: 'core', project: 'none' },
   'projects.listMembers': { module: 'core', project: 'none' },
   'projects.addMember': { module: 'core', project: 'none' },
   'projects.removeMember': { module: 'core', project: 'none' },

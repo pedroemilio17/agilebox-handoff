@@ -111,6 +111,7 @@ async function setup(options: SetupOptions = {}) {
         ? options.wrapTeamTools(repositories.teamTools)
         : repositories.teamTools),
     projectModules: repositories.projectModules,
+    projectSetup: repositories.projectSetup,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
     impediments: repositories.impediments,
@@ -719,7 +720,7 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(97)
+    expect(registered).toHaveLength(98)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 

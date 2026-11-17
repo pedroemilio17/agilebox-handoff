@@ -31,6 +31,7 @@ function setup() {
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
     projectModules: unitOfWork.repositories.projectModules,
+    projectSetup: unitOfWork.repositories.projectSetup,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     impediments: unitOfWork.repositories.impediments,
