@@ -59,6 +59,7 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     contributors: unitOfWork.repositories.contributors,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     impediments: unitOfWork.repositories.impediments,

@@ -10,6 +10,7 @@ import type { DefinitionOfDoneRepository } from './definition-of-done-repository
 import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
 import type { ParticipationRepository } from './participation-repository'
+import type { ProjectModulesRepository } from './project-modules-repository'
 import type { ProjectRepository } from './project-repository'
 import type { RetroActionRepository } from './retro-action-repository'
 import type { SprintRepository, SprintTaskRepository } from './sprint-repository'
@@ -31,6 +32,7 @@ export interface UnitOfWorkRepositories {
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
+  readonly projectModules: ProjectModulesRepository
   readonly projects: ProjectRepository
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository

@@ -14,6 +14,7 @@ import type {
   MeetingRepository,
   OrganizationRepository,
   ParticipationRepository,
+  ProjectModulesRepository,
   ProjectRepository,
   RetroActionRepository,
   SprintRepository,
@@ -42,6 +43,7 @@ export interface AppDeps {
   readonly meetings: MeetingRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
+  readonly projectModules: ProjectModulesRepository
   readonly projects: ProjectRepository
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository

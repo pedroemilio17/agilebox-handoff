@@ -69,6 +69,7 @@ export function createTaskHarness(initial: Actor = ana) {
     taskOpens: unitOfWork.repositories.taskOpens,
     tasks: unitOfWork.repositories.tasks,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     impediments: unitOfWork.repositories.impediments,

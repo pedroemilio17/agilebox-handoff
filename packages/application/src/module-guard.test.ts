@@ -107,6 +107,7 @@ async function setup(options: SetupOptions = {}) {
       (options.wrapTeamTools
         ? options.wrapTeamTools(repositories.teamTools)
         : repositories.teamTools),
+    projectModules: repositories.projectModules,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
     impediments: repositories.impediments,

@@ -103,6 +103,7 @@ async function setup() {
     taskOpens: repos.taskOpens,
     tasks: repos.tasks,
     teamTools: repos.teamTools,
+    projectModules: repos.projectModules,
     timeline: repos.timeline,
     unitOfWork,
     users: repos.users,

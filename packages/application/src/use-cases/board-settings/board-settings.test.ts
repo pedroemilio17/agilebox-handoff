@@ -41,6 +41,7 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
     impediments: unitOfWork.repositories.impediments,

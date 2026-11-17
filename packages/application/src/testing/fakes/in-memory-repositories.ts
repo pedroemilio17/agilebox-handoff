@@ -2,6 +2,10 @@ import {
   applyTeamToolsUpdate,
   auditRecordsFor,
   ConflictError,
+  MODULE_IDS,
+  toModuleId,
+  toModuleState,
+  toTeamModuleConfig,
   createOrganization,
   createTeamToolsSettings,
   defaultTeamTools,
@@ -31,6 +35,7 @@ import type {
   Participation,
   Project,
   ProjectId,
+  TeamModuleConfig,
   Sprint,
   SprintId,
   SprintStatus,
@@ -54,6 +59,9 @@ import type {
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
+  ProjectModuleChange,
+  ProjectModuleSetting,
+  ProjectModulesRepository,
   ImpedimentRepository,
   ImpedimentListFilter,
   ProjectRepository,
@@ -68,6 +76,11 @@ import type {
 } from '../../ports'
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
+
+/** Linha de `project_modules` no fake: a configuração segue o contrato da porta. */
+export interface InMemoryProjectModuleRow extends ProjectModuleSetting {
+  readonly projectId: ProjectId
+}
 
 export interface InMemoryState {
   acceptance: Map<OrganizationId, Map<string, AcceptanceCriterion>>
@@ -91,6 +104,8 @@ export interface InMemoryState {
   organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  /** Módulos de cada projeto, por projeto e módulo (`projectId|moduleId`), dentro da organização. */
+  projectModules: Map<OrganizationId, Map<string, InMemoryProjectModuleRow>>
   /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
   teamPreferences: Map<OrganizationId, TeamPreferenceRow>
   /** Linhas de `team_modules`, por módulo, dentro da organização. */
@@ -124,6 +139,7 @@ export function createInMemoryState(): InMemoryState {
     impediments: new Map(),
     participations: new Map(),
     projects: new Map(),
+    projectModules: new Map(),
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
@@ -714,6 +730,67 @@ export class InMemoryTeamToolsRepository implements TeamToolsRepository {
     return [...bucket(this.state.teamToolsAudit, organizationId).values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
       .slice(0, limit)
+  }
+}
+
+export class InMemoryProjectModulesRepository implements ProjectModulesRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async list(organizationId: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.projectModules, organizationId).values()]
+      .filter((row) => row.projectId === projectId)
+      .map((row) => ({
+        moduleId: row.moduleId,
+        state: row.state,
+        config: row.config,
+        changedBy: row.changedBy,
+        changedAt: row.changedAt,
+      }))
+      .sort((a, b) => MODULE_IDS.indexOf(a.moduleId) - MODULE_IDS.indexOf(b.moduleId))
+  }
+
+  async save(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    changes: readonly ProjectModuleChange[],
+    actorId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    if (this.state.users.get(organizationId)?.has(actorId) !== true)
+      throw new ValidationError('Ator de outra organização')
+    if (this.state.projects.get(organizationId)?.has(projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+
+    // Valida o pedido inteiro antes da primeira escrita, como o SQLite.
+    const seen = new Set<string>()
+    const parsed = changes.map((change) => {
+      const moduleId = toModuleId(change.moduleId)
+      if (seen.has(moduleId)) throw new ValidationError('Módulo repetido no mesmo pedido')
+      seen.add(moduleId)
+      return {
+        moduleId,
+        state: toModuleState(change.state),
+        config: change.config === undefined ? undefined : toTeamModuleConfig(change.config),
+      }
+    })
+
+    const rows = bucket(this.state.projectModules, organizationId)
+    for (const change of parsed) {
+      const key = `${projectId}|${change.moduleId}`
+      const previous = rows.get(key)
+      const config: TeamModuleConfig | null =
+        change.config !== undefined ? change.config : (previous?.config ?? null)
+      rows.set(key, {
+        projectId,
+        moduleId: change.moduleId,
+        state: change.state,
+        config,
+        changedBy: actorId,
+        changedAt: at,
+      })
+    }
   }
 }
 

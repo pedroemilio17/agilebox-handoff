@@ -31,3 +31,4 @@
 - [ ] ADR-10 · DECIDIR: níveis do design (N1/N2/N3) valem, mas `minLevel` (básico/intermediário/avançado) ainda esconde telas em `capabilities.ts`. A troca do significado do nível entra na fase 4 (guia), junto com as telas.
 - [ ] ADR-10 · DECIDIR: textos de tutorial e estado vazio dos módulos sem trilha no ADR (Custo, WIP, Critério de pronto, Burndown, Métricas, Linha de base, Riscos e herdados) foram escritos a partir do ADR e do design; revisar a redação.
 - [ ] ADR-10 · CONFERIR: `DEFAULT_TEAM_MODULE_IDS` virou lista fixa (13 ids) para a migração 0012 continuar igual e os módulos novos nascerem desligados.
+- [ ] ADR-10 · DECIDIR: `ProjectModulesRepository.save` não checa se o projeto está arquivado, e `list` de projeto inexistente devolve lista vazia. Decidir na fase 2 se arquivado recusa mudança de módulos.

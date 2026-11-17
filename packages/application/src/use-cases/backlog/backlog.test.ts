@@ -86,6 +86,7 @@ async function setup() {
     contributors: repos.contributors,
     dailyEntries: repos.dailyEntries,
     teamTools: repos.teamTools,
+    projectModules: repos.projectModules,
     sprints: repos.sprints,
     sprintTasks: repos.sprintTasks,
     impediments: repos.impediments,
