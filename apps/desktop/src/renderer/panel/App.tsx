@@ -17,6 +17,7 @@ import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
+import { ModulesView } from './modules/ModulesView'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -68,14 +69,16 @@ function PanelContent() {
       return 'projects'
     }
   })
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  // Módulos existe só com projeto selecionado; sem ele, a view guardada cai no Quadro.
   const currentView: PanelView =
     (view === 'agenda' && !agendaVisible) ||
     (view === 'backlog' && !backlogVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
-    (view === 'impediments' && !impedimentsVisible)
+    (view === 'impediments' && !impedimentsVisible) ||
+    (view === 'modules' && selectedProjectId === null)
       ? 'projects'
       : view
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus | undefined>()
@@ -436,6 +439,14 @@ function PanelContent() {
               openTask(id)
               setView('projects')
             }}
+          />
+        }
+        modules={
+          <ModulesView
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            archived={selectedArchived}
+            onNavigate={setView}
           />
         }
         dashboard={

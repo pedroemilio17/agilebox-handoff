@@ -24,6 +24,7 @@ export type PanelView =
   | 'sprints'
   | 'impediments'
   | 'agenda'
+  | 'modules'
   | 'plugins'
   | 'settings'
 
@@ -56,6 +57,8 @@ export interface PanelShellProps {
   }
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
+  /** Tela "Módulos" do projeto selecionado. O item da barra só aparece com projeto selecionado. */
+  readonly modules?: ReactNode
   readonly backlog?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
@@ -72,6 +75,7 @@ const viewTitles: Record<PanelView, string> = {
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
+  modules: 'Módulos',
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
 }
@@ -96,6 +100,7 @@ export function PanelShell({
   onSearch,
   dashboard,
   agenda,
+  modules,
   backlog,
   sprints,
   impediments,
@@ -124,6 +129,10 @@ export function PanelShell({
       : []),
     ...(capabilities.showScreen('agenda')
       ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
+      : []),
+    // Módulos: qualquer pessoa vê a lista do projeto selecionado (o colaborador só lê).
+    ...(selectedProjectId !== null
+      ? [{ id: 'modules' as const, label: viewTitles.modules, icon: '⚙' }]
       : []),
     { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
   ]
@@ -171,6 +180,8 @@ export function PanelShell({
             impediments
           ) : visibleView === 'agenda' && agenda ? (
             agenda
+          ) : visibleView === 'modules' && modules ? (
+            modules
           ) : visibleView === 'settings' ? (
             <SettingsView />
           ) : visibleView === 'plugins' ? (
@@ -410,6 +421,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
+    modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
   }
   return (
     <span aria-hidden="true">
