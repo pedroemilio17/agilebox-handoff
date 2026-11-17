@@ -76,6 +76,7 @@ export const trayCopy = {
   dailyTooLong: 'Esta resposta passa de 500 caracteres. Reduza o texto para continuar.',
   dailyShortcut: 'Ctrl+Enter avança',
   dailySaveError: 'Não foi possível registrar a daily. Seu texto continua aqui.',
+  dailyWindingDown: 'Os check-ins estão sendo encerrados: não dá para registrar uma daily nova.',
   dailyDiscardQuestion: 'Descartar o que foi escrito?',
   dailyDiscard: 'Descartar',
   dailySuggestionTitle: 'Sugestão a partir do que você moveu hoje',

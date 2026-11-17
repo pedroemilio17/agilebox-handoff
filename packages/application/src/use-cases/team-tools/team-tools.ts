@@ -249,9 +249,8 @@ export class PreviewTeamToolsChange {
 }
 
 /**
- * Grava a configuração de um módulo (só o gestor). O estado do módulo fica como está. Mudança só de
- * config não gera linha de auditoria: `team_tools_audit` aceita só estado, nível e preset, e ampliar
- * o CHECK exige recriar a tabela (lacuna registrada no relatório do M4.2).
+ * Grava a configuração de um módulo (só o gestor). O estado do módulo fica como está. Cada mudança
+ * de config de fato (não quando igual) entra na auditoria, com antes e depois em JSON (`config`).
  */
 export class SetTeamModuleConfig {
   constructor(private readonly deps: AppDeps) {}

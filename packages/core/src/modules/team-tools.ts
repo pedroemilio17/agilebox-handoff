@@ -71,17 +71,30 @@ export interface TeamToolsUpdate {
   readonly preset?: TeamPresetId
 }
 
-export const TEAM_TOOLS_AUDIT_KINDS = ['module_state', 'level', 'preset'] as const
+export const TEAM_TOOLS_AUDIT_KINDS = ['module_state', 'level', 'preset', 'config'] as const
 export type TeamToolsAuditKind = (typeof TEAM_TOOLS_AUDIT_KINDS)[number]
 
 /**
- * Diferença entre dois ajustes. `before`/`after` são o estado efetivo: ferramenta sem linha
+ * Diferença entre dois ajustes. `before`/`after` de estado são o estado efetivo: ferramenta sem linha
  * conta como `disabled`. `preset` registra a aplicação de um preset (uma entrada por gravação).
+ * `config` guarda a configuração antes e depois em JSON canônico (`canonicalConfigJson`); `null` é o padrão.
  */
 export type TeamToolsChange =
   | { kind: 'module_state'; moduleId: ModuleId; before: ModuleState; after: ModuleState }
   | { kind: 'level'; before: ExperienceLevel; after: ExperienceLevel }
   | { kind: 'preset'; presetId: TeamPresetId }
+  | { kind: 'config'; moduleId: ModuleId; before: string | null; after: string | null }
+
+/**
+ * Forma canônica da configuração de um módulo, para comparar e para auditar: chaves em ordem e
+ * `null` quando não há configuração (ausente ou sem chaves, que volta ao padrão).
+ */
+export function canonicalConfigJson(config: TeamModuleConfig | undefined): string | null {
+  if (config === undefined) return null
+  const keys = Object.keys(config).sort()
+  if (keys.length === 0) return null
+  return JSON.stringify(Object.fromEntries(keys.map((key) => [key, config[key]])))
+}
 
 /** Linha de `team_tools_audit` já com os dados de negócio; o id é atribuído pela persistência. */
 export interface TeamToolsAuditRecord {
@@ -274,18 +287,16 @@ export function defaultTeamTools(organizationId: OrganizationId): TeamToolsSetti
   }
 }
 
-function sameConfig(a: TeamModuleConfig | undefined, b: TeamModuleConfig | undefined): boolean {
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
-}
-
 /**
  * Aplica um pedido de gravação sobre os ajustes atuais, sem efeitos colaterais.
  *
  * - Valida nível, módulos e configuração do pedido e o conjunto resultante (`createTeamToolsSettings`).
  *   Conjunto inválido é recusado antes de qualquer escrita.
+ * - Config omitida no pedido fica como estava (mudar só o estado não apaga a configuração); config
+ *   informada substitui a anterior, e objeto vazio volta ao padrão.
  * - Carimba `changedBy`/`changedAt` só nas linhas que mudaram; as demais mantêm a autoria anterior.
- * - Devolve as diferenças de estado efetivo e de nível, que viram a auditoria. Mudança só de
- *   `config` altera a linha mas não gera entrada de auditoria (ver pendência no relatório).
+ * - Devolve as diferenças de estado efetivo, de nível, de preset e de configuração, que viram a
+ *   auditoria. Config igual não gera diferença.
  */
 export function applyTeamToolsUpdate(
   current: TeamToolsSettings,
@@ -316,9 +327,12 @@ export function applyTeamToolsUpdate(
   for (const requestedModule of update.modules) {
     const previous = current.modules.find((module) => module.moduleId === requestedModule.moduleId)
     const before = previous?.state ?? 'disabled'
-    const changed =
-      before !== requestedModule.state || !sameConfig(previous?.config, requestedModule.config)
-    if (before !== requestedModule.state) {
+    const config = requestedModule.config ?? previous?.config
+    const configBefore = canonicalConfigJson(previous?.config)
+    const configAfter = canonicalConfigJson(config)
+    const stateChanged = before !== requestedModule.state
+    const configChanged = configBefore !== configAfter
+    if (stateChanged) {
       changes.push({
         kind: 'module_state',
         moduleId: requestedModule.moduleId,
@@ -326,11 +340,20 @@ export function applyTeamToolsUpdate(
         after: requestedModule.state,
       })
     }
+    if (configChanged) {
+      changes.push({
+        kind: 'config',
+        moduleId: requestedModule.moduleId,
+        before: configBefore,
+        after: configAfter,
+      })
+    }
+    const changed = stateChanged || configChanged
     written.push({
       organizationId: stamp.organizationId,
       moduleId: requestedModule.moduleId,
       state: requestedModule.state,
-      ...(requestedModule.config !== undefined ? { config: requestedModule.config } : {}),
+      ...(config !== undefined ? { config } : {}),
       changedBy: changed ? stamp.actorId : (previous?.changedBy ?? null),
       changedAt: changed ? stamp.at : (previous?.changedAt ?? null),
     })
@@ -348,11 +371,17 @@ export function applyTeamToolsUpdate(
   return { settings, changes: orderChanges(changes) }
 }
 
+type ModuleChange = Extract<TeamToolsChange, { readonly moduleId: ModuleId }>
+
+function isModuleChange(change: TeamToolsChange): change is ModuleChange {
+  return change.kind === 'module_state' || change.kind === 'config'
+}
+
 function orderChanges(changes: TeamToolsChange[]): TeamToolsChange[] {
   const presets = changes.filter((change) => change.kind === 'preset')
   const levels = changes.filter((change) => change.kind === 'level')
   const modules = changes
-    .filter((change) => change.kind === 'module_state')
+    .filter(isModuleChange)
     .sort((a, b) => MODULE_IDS.indexOf(a.moduleId) - MODULE_IDS.indexOf(b.moduleId))
   return [...presets, ...levels, ...modules]
 }
@@ -382,6 +411,14 @@ export function auditRecordsFor(
         return {
           ...base,
           kind: 'module_state',
+          moduleId: change.moduleId,
+          before: change.before,
+          after: change.after,
+        }
+      case 'config':
+        return {
+          ...base,
+          kind: 'config',
           moduleId: change.moduleId,
           before: change.before,
           after: change.after,

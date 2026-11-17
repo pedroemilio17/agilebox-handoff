@@ -26,10 +26,15 @@ export interface DashboardSummaryPerson {
   readonly lastUpdatedAt: string | null
 }
 
+/**
+ * Insights do dashboard. Os campos de fluxo (adesão, ciclo, lead time, vazão e semanas) são opcionais:
+ * somem quando a ferramenta `flowMetrics` está desligada (PLANO-2.0, regra 6). Sem `weeks`, o resumo
+ * não traz as seções de fluxo.
+ */
 export interface DashboardSummaryInsights {
   readonly updatedAt: string
   readonly weekStart: string
-  readonly upToDatePercentage: number | null
+  readonly upToDatePercentage?: number | null | undefined
   readonly agingCount: number
   readonly overdueCount: number
   readonly blockedCount: number
@@ -38,10 +43,10 @@ export interface DashboardSummaryInsights {
     readonly count: number
     readonly limit: number
   }[]
-  readonly cycleDays: number | null
-  readonly leadDays: number | null
-  readonly throughput: number
-  readonly weeks: readonly DashboardSummaryWeek[]
+  readonly cycleDays?: number | null | undefined
+  readonly leadDays?: number | null | undefined
+  readonly throughput?: number | undefined
+  readonly weeks?: readonly DashboardSummaryWeek[] | undefined
   readonly team: readonly DashboardSummaryPerson[]
 }
 
@@ -66,12 +71,14 @@ const CSV_HEADER = [
 
 /**
  * Devolve o dashboard com os indicadores da semana escolhida nos campos de topo (adesão, ciclo,
- * lead time e vazão), que é o que a tela mostra quando há seletor de semana.
+ * lead time e vazão), que é o que a tela mostra quando há seletor de semana. Sem fluxo (`weeks`
+ * ausente), não há semana para escolher: devolve os insights como estão.
  */
 export function selectDashboardPeriod(
   insights: DashboardSummaryInsights,
   weekStart: string,
 ): DashboardSummaryInsights {
+  if (insights.weeks === undefined) return insights
   const week = insights.weeks.find((item) => item.start === weekStart)
   if (!week) throw new ValidationError('Semana fora do dashboard')
   return {
@@ -114,10 +121,9 @@ export function renderDashboardSummary(
     `- **Gerado em:** ${formatDateTime(options.generatedAt, options.timeZone)}`,
     `- **Período:** ${orDash(options.periodLabel)}`,
     '',
-    '## Adesão',
-    '',
-    `Quadro em dia: **${percent(insights.upToDatePercentage)}** das tarefas ativas foram atualizadas nas últimas 48h.`,
-    '',
+  ]
+  if (insights.weeks !== undefined) lines.push(...adherenceLines(insights))
+  lines.push(
     '## Exceções',
     '',
     `- Paradas (há mais de 4 dias em Desenvolvendo ou Revisar): ${insights.agingCount}`,
@@ -125,22 +131,9 @@ export function renderDashboardSummary(
     `- Bloqueadas (com motivo registrado): ${insights.blockedCount}`,
     `- Colunas acima do limite de WIP: ${overWipText(insights)}`,
     '',
-    '## Fluxo semanal',
-    '',
-    `- Tempo de ciclo médio: ${days(insights.cycleDays)}`,
-    `- Do pedido à entrega (lead time): ${days(insights.leadDays)}`,
-    `- Concluídas nesta semana: ${insights.throughput}`,
-    '',
-    '| Semana | Início | Concluídas | Ciclo médio | Lead time | Quadro em dia |',
-    '| --- | --- | ---: | ---: | ---: | ---: |',
-    ...insights.weeks.map(
-      (week) =>
-        `| ${isoWeekNumber(week.start)} | ${dayMonth(week.start)} | ${week.throughput} | ${days(week.cycleDays ?? null)} | ${days(week.leadDays ?? null)} | ${percent(week.upToDatePercentage ?? null)} |`,
-    ),
-    '',
-    '## Equipe',
-    '',
-  ]
+  )
+  if (insights.weeks !== undefined) lines.push(...flowLines(insights, insights.weeks))
+  lines.push('## Equipe', '')
   const team = sortedTeam(insights.team)
   if (team.length === 0) {
     lines.push('Nenhuma tarefa ainda.')
@@ -155,6 +148,38 @@ export function renderDashboardSummary(
     )
   }
   return `${lines.join('\n')}\n`
+}
+
+/** Seção de adesão ("Quadro em dia"). Só existe com o fluxo ligado. */
+function adherenceLines(insights: DashboardSummaryInsights): string[] {
+  return [
+    '## Adesão',
+    '',
+    `Quadro em dia: **${percent(insights.upToDatePercentage ?? null)}** das tarefas ativas foram atualizadas nas últimas 48h.`,
+    '',
+  ]
+}
+
+/** Seções de fluxo semanal (ciclo, lead time, vazão e tabela por semana). Só com o fluxo ligado. */
+function flowLines(
+  insights: DashboardSummaryInsights,
+  weeks: readonly DashboardSummaryWeek[],
+): string[] {
+  return [
+    '## Fluxo semanal',
+    '',
+    `- Tempo de ciclo médio: ${days(insights.cycleDays ?? null)}`,
+    `- Do pedido à entrega (lead time): ${days(insights.leadDays ?? null)}`,
+    `- Concluídas nesta semana: ${insights.throughput ?? 0}`,
+    '',
+    '| Semana | Início | Concluídas | Ciclo médio | Lead time | Quadro em dia |',
+    '| --- | --- | ---: | ---: | ---: | ---: |',
+    ...weeks.map(
+      (week) =>
+        `| ${isoWeekNumber(week.start)} | ${dayMonth(week.start)} | ${week.throughput} | ${days(week.cycleDays ?? null)} | ${days(week.leadDays ?? null)} | ${percent(week.upToDatePercentage ?? null)} |`,
+    ),
+    '',
+  ]
 }
 
 /** Uma linha por pessoa, na mesma ordem da planilha. BOM UTF-8 opcional, para o Excel reconhecer acentos. */

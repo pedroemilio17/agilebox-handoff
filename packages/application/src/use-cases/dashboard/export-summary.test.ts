@@ -74,7 +74,7 @@ describe('dashboard.exportSummary', () => {
     const { useCases, unitOfWork } = setup()
     await seed(unitOfWork)
     const period = (await useCases.dashboard.get.execute(createTenantContext(manager))).insights!
-      .weeks[5]!.start
+      .weeks![5]!.start
     await expect(
       useCases.dashboard.exportSummary.execute(createTenantContext(actor), {
         period,
@@ -95,7 +95,7 @@ describe('dashboard.exportSummary', () => {
     const dashboard = await useCases.dashboard.get.execute(createTenantContext(manager))
     const insights = dashboard.insights!
     const result = await useCases.dashboard.exportSummary.execute(createTenantContext(manager), {
-      period: insights.weeks[5]!.start,
+      period: insights.weeks![5]!.start,
       format: 'md',
     })
     expect(result.filename).toMatch(/^resumo-do-time-\d{4}-\d{2}-\d{2}\.md$/)
@@ -118,7 +118,7 @@ describe('dashboard.exportSummary', () => {
     await seed(unitOfWork)
     const insights = (await useCases.dashboard.get.execute(createTenantContext(manager))).insights!
     const result = await useCases.dashboard.exportSummary.execute(createTenantContext(manager), {
-      period: insights.weeks[5]!.start,
+      period: insights.weeks![5]!.start,
       format: 'csv',
     })
     expect(result.filename).toMatch(/^resumo-do-time-\d{4}-\d{2}-\d{2}\.csv$/)

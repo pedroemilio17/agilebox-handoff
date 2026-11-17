@@ -475,3 +475,58 @@ describe('entrada que o caso de uso não aceita do pedido', () => {
     expect((await stateOf(useCases)).get('wip')).toBe('winding_down')
   })
 })
+
+describe('configuração do módulo e auditoria (regra 7)', () => {
+  it('gravar o limite de sprints registra a auditoria de config com ator, antes e depois; igual não grava', async () => {
+    const { useCases, unitOfWork } = await setup()
+    await useCases.teamTools.setModuleConfig.execute(contextA, {
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 2 },
+    })
+    await useCases.teamTools.setModuleConfig.execute(contextA, {
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 3 },
+    })
+    await useCases.teamTools.setModuleConfig.execute(contextA, {
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 3 },
+    })
+
+    const audit = await unitOfWork.repositories.teamTools.listAudit(orgA, 20)
+    const configs = audit.filter((entry) => entry.kind === 'config')
+    expect(configs).toHaveLength(2)
+    expect(configs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          moduleId: 'sprints',
+          before: null,
+          after: '{"maxActiveSprints":2}',
+          actorId: managerAId,
+        }),
+        expect.objectContaining({
+          moduleId: 'sprints',
+          before: '{"maxActiveSprints":2}',
+          after: '{"maxActiveSprints":3}',
+          actorId: managerAId,
+        }),
+      ]),
+    )
+  })
+
+  it('desligar e reativar Sprints devolve o limite configurado', async () => {
+    const { useCases, unitOfWork } = await setup()
+    await useCases.teamTools.setModuleConfig.execute(contextA, {
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 4 },
+    })
+    const chain = ['burndown', 'reviewRetro', 'sprints'] as const
+    await change(useCases, { disable: [...chain], finalize: [...chain] })
+    await change(useCases, { enable: ['sprints'] })
+
+    const settings = await unitOfWork.repositories.teamTools.getSettings(orgA)
+    expect(settings.modules.find((module) => module.moduleId === 'sprints')).toMatchObject({
+      state: 'active',
+      config: { maxActiveSprints: 4 },
+    })
+  })
+})

@@ -9,6 +9,8 @@ Convenção de status: **Provado** = há código e teste que cobrem o critério;
 
 ---
 
+> **Atualização após o M5.4 (17/11/2026):** cinco lacunas desta auditoria foram corrigidas depois da sua escrita: (1) o dashboard não calcula nem devolve os insights de fluxo com `flowMetrics` desligado; (2) o check-in respeita o encerramento do módulo e `daily.save` permite editar a daily que já existe; (3) as mudanças de `config` do módulo são auditadas (migração 0017); (4) há teste de persistência real em SQLite de criar, editar, mover, concluir e reabrir tarefa; (5) há teste do encerramento completo de Sprints. O M5.4 também corrigiu um defeito que a auditoria não viu: desligar e reativar um módulo zerava a sua `config`. Continuam abertos, para decisão sua: a "parada" sem módulo, o destino dos itens quando o Backlog é desligado, o tipo `TenantContext` nominal e a conferência visual das telas novas. Testes após o M5.4: 289 arquivos e 2547 testes.
+
 ## (a) Resumo executivo
 
 1. A Onda 1 (M0 a M5) está entregue em 26 commits, com 6 migrações novas (0011 a 0016) e `pnpm check` verde: 285 arquivos de teste, 2515 testes, todos passando.

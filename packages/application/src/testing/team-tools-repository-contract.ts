@@ -135,6 +135,77 @@ export function describeTeamToolsRepositoryContract(
       })
     })
 
+    it('mudar a configuração de um módulo grava auditoria de config com antes e depois; igual não grava', async () => {
+      const repository = await makeRepository()
+      await repository.saveSettings(
+        organizationA,
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 2 } }],
+        },
+        managerA,
+        FIRST_CHANGE,
+      )
+      await repository.saveSettings(
+        organizationA,
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 3 } }],
+        },
+        managerA,
+        SECOND_CHANGE,
+      )
+      await repository.saveSettings(
+        organizationA,
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 3 } }],
+        },
+        managerA,
+        '2026-11-16T12:00:00.000Z',
+      )
+
+      const audit = await repository.listAudit(organizationA, 10)
+      expect(
+        audit
+          .filter((entry) => entry.kind === 'config')
+          .map((entry) => [entry.moduleId, entry.before, entry.after, entry.actorId]),
+      ).toEqual([
+        ['sprints', '{"maxActiveSprints":2}', '{"maxActiveSprints":3}', managerA],
+        ['sprints', null, '{"maxActiveSprints":2}', managerA],
+      ])
+      expect(audit.find((entry) => entry.kind === 'config')).toMatchObject({
+        createdAt: SECOND_CHANGE,
+      })
+    })
+
+    it('mudar só o estado de um módulo com configuração mantém a configuração gravada', async () => {
+      const repository = await makeRepository()
+      await repository.saveSettings(
+        organizationA,
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 4 } }],
+        },
+        managerA,
+        FIRST_CHANGE,
+      )
+      await repository.saveSettings(
+        organizationA,
+        { level: 'advanced', modules: [{ moduleId: 'sprints', state: 'winding_down' }] },
+        managerA,
+        SECOND_CHANGE,
+      )
+
+      const settings = await repository.getSettings(organizationA)
+      expect(settings.modules.find((module) => module.moduleId === 'sprints')).toMatchObject({
+        state: 'winding_down',
+        config: { maxActiveSprints: 4 },
+      })
+      const audit = await repository.listAudit(organizationA, 10)
+      expect(audit.filter((entry) => entry.kind === 'config')).toHaveLength(1)
+    })
+
     it('recusa conjunto inválido e não grava nada, nem auditoria', async () => {
       const repository = await makeRepository()
 

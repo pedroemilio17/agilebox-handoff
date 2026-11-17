@@ -249,3 +249,32 @@ describe('período', () => {
     expect(isoWeekNumber('2026-12-28')).toBe(53)
   })
 })
+
+describe('sem fluxo (ferramenta flowMetrics desligada)', () => {
+  const withoutFlow = insights({
+    upToDatePercentage: undefined,
+    cycleDays: undefined,
+    leadDays: undefined,
+    throughput: undefined,
+    weeks: undefined,
+  })
+
+  it('o resumo em Markdown omite adesão e fluxo, mas mantém exceções e equipe', () => {
+    const md = renderDashboardSummary(withoutFlow, options)
+    expect(md).not.toContain('## Adesão')
+    expect(md).not.toContain('## Fluxo semanal')
+    expect(md).toContain('## Exceções')
+    expect(md).toContain('## Equipe')
+    expect(md).toContain('Bruno Lima')
+  })
+
+  it('selectDashboardPeriod devolve os insights como estão, sem semana para escolher', () => {
+    expect(selectDashboardPeriod(withoutFlow, '2026-10-13')).toBe(withoutFlow)
+  })
+
+  it('com fluxo, selectDashboardPeriod ainda recusa semana fora do dashboard', () => {
+    expect(() => selectDashboardPeriod(insights(), '2025-01-06')).toThrow(
+      'Semana fora do dashboard',
+    )
+  })
+})

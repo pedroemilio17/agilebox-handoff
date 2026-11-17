@@ -40,7 +40,12 @@ function TrayContent() {
   // Sair da daily (Voltar ou Esc) passa pela guarda da tela, que pede confirmação se houver texto.
   const dailyExit = useRef<(() => void) | null>(null)
   const { screen } = state
-  const inviteVisible = dailyVisible && Boolean(daily.data?.due) && !dailyDismissed
+  // Encerrando, a daily de hoje não pode ser criada: sem ela, o convite e o atalho somem. A que já
+  // existe segue editável (PLANO-2.0, regra 4), por isso o atalho continua quando há entrada.
+  const dailyCreationBlocked =
+    capabilities.isWindingDown('checkins') && daily.data !== undefined && daily.data.entry === null
+  const inviteVisible =
+    dailyVisible && Boolean(daily.data?.due) && !dailyDismissed && !dailyCreationBlocked
 
   const automatic = autoHeight(screen.kind, visibleTasks, inviteVisible)
   const height = collapsed ? TRAY_COLLAPSED_HEIGHT : (manualHeight ?? automatic)
@@ -130,7 +135,7 @@ function TrayContent() {
           {screen.kind === 'home' ? (
             <HomeScreen
               highlightTaskId={state.highlightTaskId}
-              daily={dailyVisible ? daily.data : undefined}
+              daily={dailyVisible && !dailyCreationBlocked ? daily.data : undefined}
               inviteVisible={inviteVisible}
               onStartDaily={() => dispatch({ type: 'openDaily' })}
               onDismissDaily={() => setDailyDismissed(true)}

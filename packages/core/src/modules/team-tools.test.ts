@@ -292,6 +292,101 @@ describe('gravação de ajustes', () => {
     expect(settings.modules.every((module) => module.changedBy === null)).toBe(true)
   })
 
+  describe('configuração de módulo (regra 7: toda mudança é auditada)', () => {
+    const withSprintsConfig = (maxActiveSprints: number): TeamToolsSettings => ({
+      ...current,
+      modules: current.modules.map((module) =>
+        module.moduleId === 'sprints' ? { ...module, config: { maxActiveSprints } } : module,
+      ),
+    })
+
+    it('mudar a configuração gera diferença de config, com antes e depois em JSON', () => {
+      const { settings, changes } = applyTeamToolsUpdate(
+        current,
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 3 } }],
+        },
+        stamp,
+      )
+      expect(changes).toEqual([
+        { kind: 'config', moduleId: 'sprints', before: null, after: '{"maxActiveSprints":3}' },
+      ])
+      expect(settings.modules.find((module) => module.moduleId === 'sprints')).toMatchObject({
+        config: { maxActiveSprints: 3 },
+        changedBy: actorId,
+        changedAt: at,
+      })
+      expect(auditRecordsFor(changes, stamp)).toEqual([
+        expect.objectContaining({
+          kind: 'config',
+          moduleId: 'sprints',
+          before: null,
+          after: '{"maxActiveSprints":3}',
+          actorId,
+          createdAt: at,
+        }),
+      ])
+    })
+
+    it('configuração igual não gera diferença nem carimba', () => {
+      const { changes, settings } = applyTeamToolsUpdate(
+        withSprintsConfig(3),
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { maxActiveSprints: 3 } }],
+        },
+        stamp,
+      )
+      expect(changes).toEqual([])
+      expect(settings.modules.find((module) => module.moduleId === 'sprints')?.changedBy).toBe(null)
+    })
+
+    it('ordem das chaves não conta como mudança', () => {
+      const { changes } = applyTeamToolsUpdate(
+        {
+          ...current,
+          modules: current.modules.map((module) =>
+            module.moduleId === 'sprints' ? { ...module, config: { b: 2, a: 1 } } : module,
+          ),
+        },
+        {
+          level: 'advanced',
+          modules: [{ moduleId: 'sprints', state: 'active', config: { a: 1, b: 2 } }],
+        },
+        stamp,
+      )
+      expect(changes).toEqual([])
+    })
+
+    it('pedido sem configuração mantém a que já existe, inclusive ao mudar o estado', () => {
+      // Sprints tem dependentes ativos (revisão, burndown): entra em encerramento, sem apagar a config.
+      const { settings, changes } = applyTeamToolsUpdate(
+        withSprintsConfig(3),
+        { level: 'advanced', modules: [{ moduleId: 'sprints', state: 'winding_down' }] },
+        stamp,
+      )
+      expect(changes).toEqual([
+        { kind: 'module_state', moduleId: 'sprints', before: 'active', after: 'winding_down' },
+      ])
+      expect(settings.modules.find((module) => module.moduleId === 'sprints')?.config).toEqual({
+        maxActiveSprints: 3,
+      })
+    })
+
+    it('objeto vazio volta ao padrão e fica registrado como mudança', () => {
+      const { settings, changes } = applyTeamToolsUpdate(
+        withSprintsConfig(3),
+        { level: 'advanced', modules: [{ moduleId: 'sprints', state: 'active', config: {} }] },
+        stamp,
+      )
+      expect(changes).toEqual([
+        { kind: 'config', moduleId: 'sprints', before: '{"maxActiveSprints":3}', after: null },
+      ])
+      expect(settings.modules.find((module) => module.moduleId === 'sprints')?.config).toEqual({})
+    })
+  })
+
   it('recusa o pedido inteiro quando o conjunto resultante é inválido', () => {
     expect(() =>
       applyTeamToolsUpdate(

@@ -286,7 +286,7 @@ describe('guard de módulo: encerramento (winding_down)', () => {
     ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
   })
 
-  it('check-ins: ler a daily segue permitido e salvar é recusado', async () => {
+  it('check-ins: ler a daily segue permitido e criar a daily do dia é recusado', async () => {
     const { useCases, unitOfWork } = await setup()
     await setModules(unitOfWork, orgA, managerAId, { checkins: 'winding_down' })
 
@@ -297,6 +297,41 @@ describe('guard de módulo: encerramento (winding_down)', () => {
         answers: { progress: 'Testei', nextStep: 'Revisar', blocker: '' },
       }),
     ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
+  })
+
+  it('check-ins encerrando: editar a daily que já existe no dia segue permitido', async () => {
+    const { useCases, unitOfWork } = await setup()
+    await useCases.daily.save.execute(contextA, {
+      date: TODAY,
+      answers: { progress: 'Primeira versão', nextStep: 'Revisar', blocker: '' },
+    })
+
+    await setModules(unitOfWork, orgA, managerAId, { checkins: 'winding_down' })
+
+    const edited = await useCases.daily.save.execute(contextA, {
+      date: TODAY,
+      answers: { progress: 'Segunda versão', nextStep: 'Revisar', blocker: '' },
+    })
+    expect(edited.answers.progress).toBe('Segunda versão')
+    const today = await useCases.daily.getToday.execute(contextA, { date: TODAY })
+    expect(today.entry?.answers.progress).toBe('Segunda versão')
+  })
+
+  it('check-ins desligado: editar a daily existente também é recusado', async () => {
+    const { useCases, unitOfWork } = await setup()
+    await useCases.daily.save.execute(contextA, {
+      date: TODAY,
+      answers: { progress: 'Versão', nextStep: 'Revisar', blocker: '' },
+    })
+
+    await setModules(unitOfWork, orgA, managerAId, { checkins: 'disabled' })
+
+    await expect(
+      useCases.daily.save.execute(contextA, {
+        date: TODAY,
+        answers: { progress: 'Outra', nextStep: 'Revisar', blocker: '' },
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 
   it('limite de WIP: os limites seguem editáveis e lidos (não criam item)', async () => {
@@ -496,7 +531,6 @@ describe('mapa de módulos dos casos de uso', () => {
       .sort()
     expect(creates).toEqual([
       'backlog.add',
-      'daily.save',
       'meetings.create',
       'meetings.retroActions.add',
       'sprints.addTask',

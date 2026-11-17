@@ -119,6 +119,7 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   // Sugestão do check-in: só com a ferramenta de check-ins ativa, e só depois de saber a data.
   const capabilities = useCapabilities()
   const suggestionAllowed = capabilities.canFetch('checkins:screen')
+  const creatingBlocked = capabilities.isWindingDown('checkins') && daily.data?.entry === null
   const suggestion = useDailySuggestion(daily.data?.date ?? '', suggestionAllowed && loaded)
   // Impedimentos abertos da pessoa (passo 3): só com o módulo ativo; sem ele, nada é pedido.
   const impedimentsAllowed = capabilities.canFetch('impediments:passive')
@@ -299,9 +300,13 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
     document.getElementById('daily-progress')?.focus()
   }
 
-  const message = feedback ?? (save.isError ? trayCopy.dailySaveError : null)
+  // Encerrando, criar a daily do dia é recusado; a que já existe segue editável (PLANO-2.0, regra 4).
+  let fallbackMessage: string | null = null
+  if (creatingBlocked) fallbackMessage = trayCopy.dailyWindingDown
+  else if (save.isError) fallbackMessage = trayCopy.dailySaveError
+  const message = feedback ?? fallbackMessage
   const stepNumber = step === 'review' ? 3 : step
-  const busy = save.isPending
+  const busy = save.isPending || creatingBlocked
   const citedTitles = taskRefs
     .map((id) => taskItems.find((item) => item.id === id)?.title)
     .filter((title): title is string => title !== undefined)

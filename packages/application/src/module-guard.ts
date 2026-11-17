@@ -23,10 +23,11 @@ export interface ModuleUsePolicy {
  * Decisões por caso de uso que não são óbvias:
  * - `dashboard.get` e `dashboard.exportSummary` ficam em `core`: a resposta mistura estatísticas do
  *   núcleo (status, atrasadas, colaboradores) com insights de fluxo. Com `flowMetrics` na regra,
- *   desligar o módulo tiraria o painel inteiro do gestor. Os insights de fluxo do dashboard seguem
- *   acessíveis com o módulo desligado (ver relatório, pendência para o M2).
- * - `daily.save` cria (ou atualiza) a daily do dia: marcado como `creates`, por caso de uso e não
- *   por item. Editar a daily já existente durante o encerramento também é recusado.
+ *   desligar o módulo tiraria o painel inteiro do gestor. Os insights de fluxo não são calculados
+ *   nem devolvidos quando `flowMetrics` está desligado (o caso de uso lê a equipe, como o guard).
+ * - `daily.save` não é `creates` no mapa: cria a daily do dia (recusado no encerramento) ou edita a
+ *   que já existe (segue permitido). A diferença é checada dentro do caso de uso, com
+ *   `assertModuleUsable(..., { creates: true })` só quando não há daily na data (PLANO-2.0, linha 65).
  * - `participations.setHours` e `setRate` ficam em `core`: horas e valor/hora alimentam o custo,
  *   que é regra do produto e não da ferramenta de estimativa (`estimates.hours`).
  * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto, não é o módulo
@@ -115,7 +116,7 @@ export const USE_CASE_MODULES = {
   'boardSettings.setWipLimits': { module: 'wip' },
 
   'daily.getToday': { module: 'checkins' },
-  'daily.save': { module: 'checkins', creates: true },
+  'daily.save': { module: 'checkins' },
   'daily.listForDate': { module: 'checkins' },
   'daily.getForUser': { module: 'checkins' },
   // Sugestão do check-in (M5.1): só leitura, então segue no encerramento (winding_down).

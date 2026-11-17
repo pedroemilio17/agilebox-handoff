@@ -101,7 +101,7 @@ describe('linha do tempo e dashboard', () => {
       weekStart: '2025-12-29',
     })
     expect(result.insights?.weeks).toHaveLength(6)
-    expect(result.insights?.weeks[5]?.throughput).toBe(1)
+    expect(result.insights?.weeks?.[5]?.throughput).toBe(1)
     expect(result.insights?.recentChanges).toHaveLength(1)
     expect(result.insights?.recentChanges[0]?.text).toContain('para Concluído')
     expect(result.insights?.team[0]).toMatchObject({

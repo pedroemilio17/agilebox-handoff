@@ -22,10 +22,13 @@ export const teamToolsAudit = sqliteTable(
     createdAt: text('created_at').notNull(),
   },
   (table) => [
-    check('team_tools_audit_kind_check', sql`${table.kind} IN ('module_state', 'level', 'preset')`),
+    check(
+      'team_tools_audit_kind_check',
+      sql`${table.kind} IN ('module_state', 'level', 'preset', 'config')`,
+    ),
     check(
       'team_tools_audit_module_check',
-      sql`${table.kind} <> 'module_state' OR ${table.moduleId} IS NOT NULL`,
+      sql`${table.kind} NOT IN ('module_state', 'config') OR ${table.moduleId} IS NOT NULL`,
     ),
     index('team_tools_audit_organization_created_idx').on(table.organizationId, table.createdAt),
   ],

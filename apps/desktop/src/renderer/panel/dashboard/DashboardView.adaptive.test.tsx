@@ -60,10 +60,29 @@ const dashboard: DashboardDto = {
   collaborators: [],
 }
 
+/** Painel sem os campos de fluxo: é o que o servidor devolve com `flowMetrics` desligado. */
+const dashboardWithoutFlow: DashboardDto = {
+  ...dashboard,
+  insights: {
+    updatedAt: dashboard.insights!.updatedAt,
+    weekStart: dashboard.insights!.weekStart,
+    agingCount: dashboard.insights!.agingCount,
+    overdueCount: dashboard.insights!.overdueCount,
+    blockedCount: dashboard.insights!.blockedCount,
+    overWipColumns: dashboard.insights!.overWipColumns,
+    recentChanges: dashboard.insights!.recentChanges,
+    team: dashboard.insights!.team,
+  },
+}
+
 /** Dashboard com as capacidades de um time (ferramentas e nível), como o servidor calcularia. */
-function setup(modules: readonly ModuleId[], level: ExperienceLevel) {
+function setup(
+  modules: readonly ModuleId[],
+  level: ExperienceLevel,
+  payload: DashboardDto = dashboard,
+) {
   const api = createFakeApi()
-  vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboard)
+  vi.spyOn(api.dashboard, 'get').mockResolvedValue(payload)
   const listForDate = vi
     .spyOn(api.daily, 'listForDate')
     .mockResolvedValue([{ userId: BRUNO, userName: 'Bruno Lima', done: true }])
@@ -117,5 +136,17 @@ describe('Dashboard adaptativo (M2.1)', () => {
     expect(screen.queryByRole('list', { name: 'Colunas acima do limite' })).toBeNull()
     expect(screen.queryByText(/Daily de hoje/)).toBeNull()
     expect(listForDate).not.toHaveBeenCalled()
+  })
+
+  it('sem fluxo no DTO (ferramenta desligada): não mostra semanas, adesão nem fluxo, e o resto segue', async () => {
+    setup(ALL_MODULES, 'advanced', dashboardWithoutFlow)
+
+    const team = await screen.findByRole('region', { name: 'Equipe' })
+    expect(within(team).getByText('Bruno Lima')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Paradas/ })).toBeTruthy()
+    expect(screen.queryByRole('combobox', { name: 'Semana do dashboard' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Quadro em dia' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Fluxo de seis semanas' })).toBeNull()
+    expect(screen.queryByText(/tempo de ciclo médio/)).toBeNull()
   })
 })

@@ -8,17 +8,25 @@ import {
   flowSnapshot,
   isStaleTask,
   isOverdueTask,
+  moduleStateOf,
+  moduleUseRefusal,
   recentChanges,
   lastActorUpdate,
   participates,
   describeEvent,
   overWipColumns,
 } from '@agilebox/core'
-import type { Actor, Task } from '@agilebox/core'
+import type { Actor, Task, TimelineEvent } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { visibleTasks } from '../tasks/task-visibility'
+
+type DashboardInsights = NonNullable<DashboardDto['insights']>
+type FlowInsights = Pick<
+  DashboardInsights,
+  'upToDatePercentage' | 'cycleDays' | 'leadDays' | 'throughput' | 'weeks'
+>
 
 export class GetDashboard {
   constructor(private readonly deps: AppDeps) {}
@@ -27,10 +35,11 @@ export class GetDashboard {
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
-    const [allTasks, users, boardSettings] = await Promise.all([
+    const [allTasks, users, boardSettings, teamTools] = await Promise.all([
       this.deps.tasks.listBoard(actor.organizationId, {}),
       this.deps.users.list(actor.organizationId),
       this.deps.boardSettings.findByOrganization(actor.organizationId),
+      this.deps.teamTools.getSettings(actor.organizationId),
     ])
     // Dashboard e insights não contam tarefas arquivadas nem as de projeto arquivado.
     const tasks = await visibleTasks(this.deps, actor.organizationId, allTasks)
@@ -47,7 +56,11 @@ export class GetDashboard {
         tasks.map((task) => this.deps.timeline.listByTask(actor.organizationId, task.id)),
       )
     ).flat()
-    const current = flowMetrics(tasks, events, weeks[5]!, now)
+    // Com `flowMetrics` desligado (regra do guard: `active` ou `winding_down` liberam a leitura),
+    // os insights de fluxo nem são calculados e somem do DTO (PLANO-2.0, regra 6).
+    const flowEnabled =
+      moduleUseRefusal(moduleStateOf(teamTools.modules, 'flowMetrics'), { creates: false }) === null
+    const flow = flowEnabled ? this.flowInsights(tasks, events, weeks, now) : {}
     const aging = tasks.filter((task) => isStaleTask(task, events, today, timeZone))
     const overdue = tasks.filter((task) => isOverdueTask(task, today))
     const isBlocked = (task: Task) => task.blockedReason !== null
@@ -63,18 +76,12 @@ export class GetDashboard {
       insights: {
         updatedAt: now,
         weekStart: weeks[5]!.start,
-        ...current,
+        ...flow,
         agingCount: aging.length,
         overdueCount: overdue.length,
         blockedCount: tasks.filter(isBlocked).length,
         // Todas as tarefas da organização, não só as do gestor.
         overWipColumns: overWipColumns(tasks, boardSettings?.wipLimits ?? {}),
-        weeks: weeks.map((week, index) => {
-          const end = new Date(`${week.endExclusive}T00:00:00`)
-          const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()
-          const snapshot = index === weeks.length - 1 ? tasks : flowSnapshot(tasks, events, at)
-          return { start: week.start, ...flowMetrics(snapshot, events, week, at) }
-        }),
         recentChanges: recentChanges(tasks, events, since.toISOString(), now).map((event) => ({
           id: event.id,
           taskId: event.taskId,
@@ -109,6 +116,25 @@ export class GetDashboard {
             }
           }),
       },
+    }
+  }
+
+  /** Adesão, ciclo, lead time, vazão e a série das seis semanas. Só com `flowMetrics` disponível. */
+  private flowInsights(
+    tasks: readonly Task[],
+    events: readonly TimelineEvent[],
+    weeks: ReturnType<typeof flowWeeks>,
+    now: string,
+  ): FlowInsights {
+    const current = flowMetrics(tasks, events, weeks[5]!, now)
+    return {
+      ...current,
+      weeks: weeks.map((week, index) => {
+        const end = new Date(`${week.endExclusive}T00:00:00`)
+        const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()
+        const snapshot = index === weeks.length - 1 ? tasks : flowSnapshot(tasks, events, at)
+        return { start: week.start, ...flowMetrics(snapshot, events, week, at) }
+      }),
     }
   }
 }

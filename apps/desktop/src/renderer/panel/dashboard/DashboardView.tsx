@@ -93,32 +93,37 @@ export function DashboardView({
   if (dashboard.isError || !dashboard.data.insights)
     return <p role="alert">{panelCopy.dashboardError}</p>
   const data = dashboard.data.insights
-  const period = data.weeks.find((item) => item.start === selectedWeek)
-  const adherence = period ? (period.upToDatePercentage ?? null) : data.upToDatePercentage
-  const cycle = period ? (period.cycleDays ?? null) : data.cycleDays
-  const lead = period ? (period.leadDays ?? null) : data.leadDays
-  const throughput = period?.throughput ?? data.throughput
-  const index = period ? data.weeks.indexOf(period) : data.weeks.length - 1
-  const previous = data.weeks[index - 1]?.upToDatePercentage
+  // Sem `flowMetrics` (ferramenta desligada) o backend não envia as semanas nem os indicadores de fluxo.
+  const hasFlow = data.weeks !== undefined
+  const weeks = data.weeks ?? []
+  const period = weeks.find((item) => item.start === selectedWeek)
+  const adherence = period ? (period.upToDatePercentage ?? null) : (data.upToDatePercentage ?? null)
+  const cycle = period ? (period.cycleDays ?? null) : (data.cycleDays ?? null)
+  const lead = period ? (period.leadDays ?? null) : (data.leadDays ?? null)
+  const throughput = period?.throughput ?? data.throughput ?? 0
+  const index = period ? weeks.indexOf(period) : weeks.length - 1
+  const previous = weeks[index - 1]?.upToDatePercentage
   const delta = adherence !== null && previous != null ? Math.round(adherence - previous) : null
   const dailyDone = new Map((dailyStatus.data ?? []).map((item) => [item.userId, item.done]))
   const teamDone = data.team.filter((person) => dailyDone.get(person.user.id) === true).length
   return (
     <div className={styles.view}>
       <header className={styles.period}>
-        <select
-          aria-label="Semana do dashboard"
-          className={styles.weekSelect}
-          value={period?.start ?? data.weekStart}
-          onChange={(event) => setSelectedWeek(event.currentTarget.value)}
-        >
-          {data.weeks.map((item) => (
-            <option key={item.start} value={item.start}>
-              Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
-              {format(addDays(parseISO(item.start), 6), 'dd/MM')}
-            </option>
-          ))}
-        </select>
+        {hasFlow ? (
+          <select
+            aria-label="Semana do dashboard"
+            className={styles.weekSelect}
+            value={period?.start ?? data.weekStart}
+            onChange={(event) => setSelectedWeek(event.currentTarget.value)}
+          >
+            {weeks.map((item) => (
+              <option key={item.start} value={item.start}>
+                Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
+                {format(addDays(parseISO(item.start), 6), 'dd/MM')}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <div className={styles.periodActions}>
           <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
           <ExportMenu
@@ -134,30 +139,32 @@ export function DashboardView({
         </div>
       </header>
       <div className={styles.overview}>
-        <section className={styles.panel} aria-label="Quadro em dia">
-          <Eyebrow>Quadro em dia</Eyebrow>
-          <p className={styles.adoption}>
-            {adherence === null ? (
-              '—'
-            ) : (
-              <>
-                {Math.round(adherence)}
-                <span>%</span>
-              </>
-            )}
-          </p>
-          <Sparkline
-            label="Quadro em dia nas últimas seis semanas"
-            data={data.weeks.slice(0, index + 1).map((item) => ({
-              label: `S${getISOWeek(parseISO(item.start))}`,
-              value: item.upToDatePercentage ?? null,
-            }))}
-          />
-          <p className={styles.caption}>
-            das tarefas ativas foram atualizadas nas últimas 48h
-            {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
-          </p>
-        </section>
+        {hasFlow ? (
+          <section className={styles.panel} aria-label="Quadro em dia">
+            <Eyebrow>Quadro em dia</Eyebrow>
+            <p className={styles.adoption}>
+              {adherence === null ? (
+                '—'
+              ) : (
+                <>
+                  {Math.round(adherence)}
+                  <span>%</span>
+                </>
+              )}
+            </p>
+            <Sparkline
+              label="Quadro em dia nas últimas seis semanas"
+              data={weeks.slice(0, index + 1).map((item) => ({
+                label: `S${getISOWeek(parseISO(item.start))}`,
+                value: item.upToDatePercentage ?? null,
+              }))}
+            />
+            <p className={styles.caption}>
+              das tarefas ativas foram atualizadas nas últimas 48h
+              {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
+            </p>
+          </section>
+        ) : null}
         <div className={styles.exceptions}>
           {wipVisible && data.overWipColumns.length > 0 ? (
             <ul className={styles.wipExceptions} aria-label="Colunas acima do limite">
@@ -200,7 +207,7 @@ export function DashboardView({
       </div>
       <div className={styles.overview}>
         {/* Métricas de fluxo (ciclo, pedido à entrega, vazão): só com a ferramenta ligada, como no quadro. */}
-        {flowVisible ? (
+        {flowVisible && hasFlow ? (
           <section className={styles.panel} aria-label="Fluxo de seis semanas">
             <Eyebrow>Fluxo · 6 semanas</Eyebrow>
             <div className={styles.flowMetrics}>
@@ -220,7 +227,7 @@ export function DashboardView({
             {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
             <BarChart
               label="Concluídas por semana"
-              data={data.weeks.map((item) => ({
+              data={weeks.map((item) => ({
                 label: `S${getISOWeek(parseISO(item.start))}`,
                 value: item.throughput,
               }))}
