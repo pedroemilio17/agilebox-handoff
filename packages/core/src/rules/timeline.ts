@@ -4,7 +4,7 @@ import type { TaskSprintTimelineEvent, TimelineEvent } from '../entities/timelin
 import { sprintLabel } from '../entities/sprint'
 import { canSeeRate } from '../policies/access-policy'
 import type { Actor } from '../policies/actor'
-import type { ContributorId, OrganizationId, UserId } from '../shared/ids'
+import type { ContributorId, DeliverableId, OrganizationId, UserId } from '../shared/ids'
 import { formatHours } from '../values/hours'
 import { formatBRL } from '../values/money'
 import { TASK_PRIORITY_LABELS } from '../values/task-priority'
@@ -128,6 +128,26 @@ export function diffTask(
   return events
 }
 
+/**
+ * Mudança de entrega da tarefa (ADR-10). Nulo nos dois lados não é mudança: devolve nulo. Guarda o
+ * título de cada lado, para a linha do tempo continuar legível depois de renomear ou remover.
+ */
+export function deliverableChangeDraft(
+  before: { readonly id: DeliverableId; readonly title: string } | null,
+  after: { readonly id: DeliverableId; readonly title: string } | null,
+): TimelineEventDraft | null {
+  if ((before?.id ?? null) === (after?.id ?? null)) return null
+  return {
+    type: 'deliverable_changed',
+    payload: {
+      before: before?.id ?? null,
+      after: after?.id ?? null,
+      beforeTitle: before?.title ?? null,
+      afterTitle: after?.title ?? null,
+    },
+  }
+}
+
 /** Estimativa em centésimos para o texto da linha do tempo ("2 h") ou "sem estimativa". */
 function estimateText(hundredths: number | null): string {
   return hundredths === null ? 'sem estimativa' : formatHours(hundredths)
@@ -202,6 +222,12 @@ export function describeEvent(event: TimelineEvent, viewer: Actor, names: Timeli
       if (after === null) return 'removeu o responsável pelo impedimento'
       if (before === null) return `definiu ${names.user(after)} como responsável pelo impedimento`
       return `alterou o responsável pelo impedimento de ${names.user(before)} para ${names.user(after)}`
+    }
+    case 'deliverable_changed': {
+      const { beforeTitle, afterTitle } = event.payload
+      if (afterTitle === null) return `removeu a tarefa da entrega "${beforeTitle ?? ''}"`
+      if (beforeTitle === null) return `ligou a tarefa à entrega "${afterTitle}"`
+      return `mudou a tarefa da entrega "${beforeTitle}" para "${afterTitle}"`
     }
     case 'deadline_changed':
       return `alterou o prazo de ${event.payload.before ?? 'sem prazo'} para ${event.payload.after ?? 'sem prazo'}`

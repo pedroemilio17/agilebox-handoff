@@ -21,6 +21,18 @@ import {
 } from './use-cases/project-modules/project-modules'
 import { DismissGuideCard, GetGuide, ResolveWelcome } from './use-cases/guide/guide'
 import {
+  CreateDeliverable,
+  GetWbs,
+  MoveDeliverable,
+  RemoveDeliverable,
+  RenameDeliverable,
+} from './use-cases/wbs/wbs'
+import {
+  CreateMilestone,
+  RemoveMilestone,
+  UpdateMilestone,
+} from './use-cases/milestones/milestones'
+import {
   AddSprintTask,
   CloseSprint,
   CreateSprint,
@@ -77,6 +89,7 @@ import {
   CreateTask,
   GetTaskDetail,
   MoveTask,
+  SetTaskDeliverable,
   SetTaskEstimate,
   UnarchiveTask,
   UnblockTask,
@@ -223,6 +236,7 @@ export function createUseCases(deps: AppDeps) {
       archive: forTenant('tasks.archive', new ArchiveTask(deps)),
       unarchive: forTenant('tasks.unarchive', new UnarchiveTask(deps)),
       setEstimate: forTenant('tasks.setEstimate', new SetTaskEstimate(deps)),
+      setDeliverable: forTenant('tasks.setDeliverable', new SetTaskDeliverable(deps)),
       criteria: {
         add: forTenant('tasks.criteria.add', new AddAcceptanceCriterion(deps)),
         toggle: forTenant('tasks.criteria.toggle', new ToggleAcceptanceCriterion(deps)),
@@ -289,6 +303,18 @@ export function createUseCases(deps: AppDeps) {
       discard: forTenant('sprints.discard', new DiscardSprint(deps)),
       addTask: forTenant('sprints.addTask', new AddSprintTask(deps)),
       removeTask: forTenant('sprints.removeTask', new RemoveSprintTask(deps)),
+    },
+    wbs: {
+      get: forTenant('wbs.get', new GetWbs(deps)),
+      createDeliverable: forTenant('wbs.createDeliverable', new CreateDeliverable(deps)),
+      renameDeliverable: forTenant('wbs.renameDeliverable', new RenameDeliverable(deps)),
+      moveDeliverable: forTenant('wbs.moveDeliverable', new MoveDeliverable(deps)),
+      removeDeliverable: forTenant('wbs.removeDeliverable', new RemoveDeliverable(deps)),
+    },
+    milestones: {
+      create: forTenant('milestones.create', new CreateMilestone(deps)),
+      update: forTenant('milestones.update', new UpdateMilestone(deps)),
+      remove: forTenant('milestones.remove', new RemoveMilestone(deps)),
     },
     backlog: {
       list: forTenant('backlog.list', new ListBacklog(deps)),

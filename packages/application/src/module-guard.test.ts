@@ -723,7 +723,8 @@ describe('mapa de módulos dos casos de uso', () => {
       .filter((path) => !sessionUseCases.includes(path))
       .sort()
 
-    expect(registered).toHaveLength(103)
+    // 103 + 9 da EAP e dos marcos (ADR-10, fase 3, A2): 5 de `wbs`, `tasks.setDeliverable` e 3 de `milestones`.
+    expect(registered).toHaveLength(112)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -740,12 +741,14 @@ describe('mapa de módulos dos casos de uso', () => {
       'backlog.add',
       'meetings.create',
       'meetings.retroActions.add',
+      'milestones.create',
       'sprints.addTask',
       'sprints.create',
       'sprints.start',
       'tasks.block',
       'tasks.checklist.add',
       'tasks.criteria.add',
+      'wbs.createDeliverable',
     ])
   })
 

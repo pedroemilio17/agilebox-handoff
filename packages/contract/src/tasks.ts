@@ -48,6 +48,8 @@ export const taskDtoSchema = z.object({
   backlogRank: z.number().int().safe().nullable().optional(),
   /** Item de backlog: fora do quadro e das listas padrão. Ausente em respostas antigas: tratar como falso. */
   inBacklog: z.boolean().optional(),
+  /** Entrega da EAP à qual a tarefa aponta (ADR-10). Nulo = sem entrega. Ausente em respostas antigas. */
+  deliverableId: ulidSchema.nullable().optional(),
   /** Estimativa em horas (ADR-07, módulo `estimates.hours`). Nulo = sem estimativa. Ausente em respostas antigas. */
   estimatedHours: z.number().nonnegative().max(ESTIMATE_MAX_HOURS).nullable().optional(),
   /** Horas realizadas: soma das horas das participações. Ausente em respostas antigas: tratar como zero. */
@@ -190,6 +192,12 @@ export const setTaskEstimateInputSchema = z.object({
   estimatedHours: estimatedHoursSchema,
 })
 export const setTaskEstimateOutputSchema = taskDtoSchema
+/** Ligar a tarefa a uma entrega do mesmo projeto (nulo desliga). Quem edita a tarefa faz isso. */
+export const setTaskDeliverableInputSchema = z.object({
+  taskId: ulidSchema,
+  deliverableId: ulidSchema.nullable(),
+})
+export const setTaskDeliverableOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()
 export const listFrequentTasksInputSchema = z.undefined()
 export const listRecentTasksOutputSchema = taskListOutputSchema

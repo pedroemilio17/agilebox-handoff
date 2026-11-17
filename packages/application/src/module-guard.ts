@@ -4,14 +4,18 @@ import {
   moduleStateOf,
   moduleUseRefusal,
   PermissionDeniedError,
+  toDeliverableId,
   toImpedimentId,
+  toMilestoneId,
   toProjectId,
   toSprintId,
   toTaskId,
 } from '@agilebox/core'
 import type { ModuleId, ModuleState, OrganizationId, ProjectId } from '@agilebox/core'
 import type {
+  DeliverableRepository,
   ImpedimentRepository,
+  MilestoneRepository,
   ProjectModulesRepository,
   ProjectRepository,
   SprintRepository,
@@ -33,6 +37,8 @@ export type ProjectResolution =
   | { readonly from: 'taskId' }
   | { readonly from: 'sprintId' }
   | { readonly from: 'impedimentId' }
+  | { readonly from: 'deliverableId' }
+  | { readonly from: 'milestoneId' }
 
 /** Módulo de um caso de uso, se ele cria itens novos desse módulo, e de onde sai o projeto. */
 export interface ModuleUsePolicy {
@@ -66,6 +72,8 @@ export interface ModuleUsePolicy {
  * - `teamTools.*` fica em `core`: a gestão das ferramentas não pode ser desligada por ela mesma.
  * - `project` (ADR-10): `tasks.*`, participações e impedimentos saem do `taskId` (ou do impedimento,
  *   que leva à tarefa); sprints saem do `sprintId`; backlog e sprints.list/create, do `projectId`.
+ *   EAP e marcos: entregas saem do `deliverableId` (e criar, do `projectId`); marcos saem do
+ *   `milestoneId` (e criar, do `projectId`). `tasks.setDeliverable` segue a tarefa.
  *   Agenda, check-in, limites do quadro, impedimentos da organização e ações de retro não têm
  *   projeto: `'none'`, a regra da organização. `tasks.getBoardFlow` tem `projectId` opcional: sem ele,
  *   é o quadro inteiro e vale a regra da organização.
@@ -202,6 +210,20 @@ export const USE_CASE_MODULES = {
   'sprints.discard': { module: 'sprints', project: { from: 'sprintId' } },
   'sprints.addTask': { module: 'sprints', creates: true, project: { from: 'sprintId' } },
   'sprints.removeTask': { module: 'sprints', project: { from: 'sprintId' } },
+
+  // EAP (ADR-10): criar entrega é criar item do módulo (encerrando, recusa). Renomear, mover, remover
+  // e ler seguem. Ligar tarefa a entrega é editar a tarefa, então usa o módulo da EAP e a tarefa.
+  'wbs.get': { module: 'wbs', project: { from: 'projectId' } },
+  'wbs.createDeliverable': { module: 'wbs', creates: true, project: { from: 'projectId' } },
+  'wbs.renameDeliverable': { module: 'wbs', project: { from: 'deliverableId' } },
+  'wbs.moveDeliverable': { module: 'wbs', project: { from: 'deliverableId' } },
+  'wbs.removeDeliverable': { module: 'wbs', project: { from: 'deliverableId' } },
+  'tasks.setDeliverable': { module: 'wbs', project: { from: 'taskId' } },
+
+  // Marcos (ADR-10): criar marco é criar item do módulo (encerrando, recusa). Editar e remover seguem.
+  'milestones.create': { module: 'milestones', creates: true, project: { from: 'projectId' } },
+  'milestones.update': { module: 'milestones', project: { from: 'milestoneId' } },
+  'milestones.remove': { module: 'milestones', project: { from: 'milestoneId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */
@@ -222,6 +244,8 @@ export interface ModuleGuardPorts {
   readonly tasks: TaskRepository
   readonly sprints: SprintRepository
   readonly impediments: ImpedimentRepository
+  readonly deliverables: DeliverableRepository
+  readonly milestones: MilestoneRepository
 }
 
 /** Ordem de força dos estados: o melhor estado entre vários projetos é o que vale. */
@@ -295,6 +319,20 @@ async function targetOf(
       if (impediment === null) return missing
       const task = await ports.tasks.findById(organizationId, impediment.taskId)
       return task === null ? missing : project(task.projectId)
+    }
+    case 'deliverableId': {
+      const deliverableId = parseIdOrNull(toDeliverableId, raw)
+      const deliverable =
+        deliverableId === null
+          ? null
+          : await ports.deliverables.findById(organizationId, deliverableId)
+      return deliverable === null ? missing : project(deliverable.projectId)
+    }
+    case 'milestoneId': {
+      const milestoneId = parseIdOrNull(toMilestoneId, raw)
+      const milestone =
+        milestoneId === null ? null : await ports.milestones.findById(organizationId, milestoneId)
+      return milestone === null ? missing : project(milestone.projectId)
     }
   }
 }

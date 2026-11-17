@@ -32,6 +32,7 @@ export const timelineEventTypeSchema = z.enum([
   'acceptance_criterion_renamed',
   'acceptance_criterion_moved',
   'estimate_changed',
+  'deliverable_changed',
   'comment_added',
   'comment_removed',
   'hours_changed',

@@ -9,6 +9,7 @@ import {
   deliverableCodes,
   deliverableHeight,
   deliverableLevel,
+  arrangeAfterMove,
   moveDeliverable,
 } from './deliverable-tree'
 
@@ -233,6 +234,60 @@ describe('título da entrega', () => {
     )
     expect(() => createDeliverable({ ...base, title: 'a'.repeat(201) }, [])).toThrow(
       ValidationError,
+    )
+  })
+})
+
+describe('mover e reordenar irmãos', () => {
+  /** Posições finais de cada entrega (pelo número do teste), só as que mudaram. */
+  const movedPositions = (changed: readonly Deliverable[]) =>
+    Object.fromEntries(changed.map((item) => [item.title, [item.parentId, item.position]]))
+
+  it('dentro do mesmo pai, a entrega vai para a posição pedida e os irmãos andam sem buraco', () => {
+    const roots = [node(1, null, 0), node(2, null, 1), node(3, null, 2)]
+    const changed = arrangeAfterMove(roots, id(1), { parentId: null, position: 2 })
+    expect(movedPositions(changed)).toEqual({
+      'Entrega 2': [null, 0],
+      'Entrega 3': [null, 1],
+      'Entrega 1': [null, 2],
+    })
+  })
+
+  it('trocar de pai fecha o buraco no pai de origem e abre espaço no de destino', () => {
+    const all = [
+      node(1, null, 0),
+      node(2, null, 1),
+      node(3, 1, 0),
+      node(4, 1, 1),
+      node(5, null, 2),
+      node(6, 5, 0),
+    ]
+    // Move a Entrega 3 (filha da 1) para a 5, na posição 0, antes da 6.
+    const changed = arrangeAfterMove(all, id(3), { parentId: id(5), position: 0 })
+    expect(movedPositions(changed)).toEqual({
+      'Entrega 4': [id(1), 0],
+      'Entrega 3': [id(5), 0],
+      'Entrega 6': [id(5), 1],
+    })
+  })
+
+  it('posição além do fim vira o fim dos irmãos', () => {
+    const roots = [node(1, null, 0), node(2, null, 1)]
+    const changed = arrangeAfterMove(roots, id(1), { parentId: null, position: 99 })
+    expect(movedPositions(changed)).toEqual({ 'Entrega 2': [null, 0], 'Entrega 1': [null, 1] })
+  })
+
+  it('mover para o mesmo lugar não muda nada', () => {
+    const roots = [node(1, null, 0), node(2, null, 1)]
+    expect(arrangeAfterMove(roots, id(2), { parentId: null, position: 1 })).toEqual([])
+  })
+
+  it('as mesmas regras de profundidade e ciclo valem aqui', () => {
+    expect(() => arrangeAfterMove(chain, id(1), { parentId: id(3), position: 0 })).toThrow(
+      ValidationError,
+    )
+    expect(() => arrangeAfterMove(chain, id(9), { parentId: null, position: 0 })).toThrow(
+      NotFoundError,
     )
   })
 })

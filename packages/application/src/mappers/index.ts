@@ -33,6 +33,7 @@ import type {
   Project,
   RetroAction,
   Impediment,
+  Milestone,
   Sprint,
   SprintTask,
   Task,
@@ -59,6 +60,7 @@ import type {
   ParticipationSummaryDto,
   ProjectDto,
   RetroActionDto,
+  MilestoneDto,
   SprintDto,
   SprintHistoryRowDto,
   SprintRefDto,
@@ -189,6 +191,7 @@ export function toTaskDto(
     archivedAt: task.archivedAt,
     backlogRank: task.backlogRank,
     inBacklog: isInBacklog(task),
+    deliverableId: task.deliverableId,
     // Horas, não dinheiro: a comparação estimado × realizado é visível a quem vê a tarefa.
     estimatedHours: hundredthsToHours(task.estimatedHoursHundredths),
     actualHours: spentHundredths(task.participations) / 100,
@@ -263,6 +266,19 @@ export function toImpedimentListItemDto(
 /** Sprint como o card e o detalhe a mostram: "Sprint N" pelo número, com o nome e o estado. */
 export function toSprintRefDto(sprint: Sprint): SprintRefDto {
   return { id: sprint.id, number: sprint.number, name: sprint.name, status: sprint.status }
+}
+
+/** Marco como a interface o mostra (ADR-10). */
+export function toMilestoneDto(milestone: Milestone): MilestoneDto {
+  return {
+    id: milestone.id,
+    projectId: milestone.projectId,
+    title: milestone.title,
+    dueOn: milestone.dueOn,
+    deliverableId: milestone.deliverableId,
+    criterion: milestone.criterion,
+    createdAt: milestone.createdAt,
+  }
 }
 
 export function toSprintDto(sprint: Sprint): SprintDto {

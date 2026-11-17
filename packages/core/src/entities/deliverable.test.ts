@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renameDeliverable } from './deliverable'
-import { ValidationError } from '../shared/errors'
+import { ConflictError, ValidationError } from '../shared/errors'
 import { toDeliverableId, toOrganizationId, toProjectId, toUserId } from '../shared/ids'
 import { setTaskDeliverable, createTask } from './task'
 import { toParticipationId, toTaskId } from '../shared/ids'
@@ -68,5 +68,13 @@ describe('campo deliverableId da tarefa', () => {
     expect(linked).toEqual({ ...task, deliverableId: target })
     expect(setTaskDeliverable(linked, target)).toBe(linked)
     expect(setTaskDeliverable(linked, null).deliverableId).toBeNull()
+  })
+
+  it('setTaskDeliverable recusa tarefa arquivada, como as demais alterações', () => {
+    const archived = { ...task, archivedAt: at, archivedBy: toUserId(ulid(3)) }
+    expect(() => setTaskDeliverable(archived, toDeliverableId(ulid(9)))).toThrow(
+      'Tarefa arquivada não pode ser alterada',
+    )
+    expect(() => setTaskDeliverable(archived, null)).toThrow(ConflictError)
   })
 })

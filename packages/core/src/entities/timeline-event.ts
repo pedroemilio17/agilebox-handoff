@@ -1,6 +1,7 @@
 import type {
   AcceptanceCriterionId,
   ChecklistItemId,
+  DeliverableId,
   EventId,
   ImpedimentId,
   SprintId,
@@ -62,6 +63,14 @@ export type TimelineEvent = EventBase &
         }
       }
     | { readonly type: 'estimate_changed'; readonly payload: Change<number | null> }
+    | {
+        /** Entrega da EAP (ADR-10). Títulos guardados no evento: a entrega pode ser renomeada ou removida. */
+        readonly type: 'deliverable_changed'
+        readonly payload: Change<DeliverableId | null> & {
+          readonly beforeTitle: string | null
+          readonly afterTitle: string | null
+        }
+      }
     | {
         readonly type: 'comment_added'
         readonly payload: { readonly commentId: TaskCommentId; readonly excerpt: string }

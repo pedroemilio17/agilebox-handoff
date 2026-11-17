@@ -124,6 +124,9 @@ export function registerHandlers(
   register('tasks.checklist.move', (context, input) =>
     useCases.tasks.checklist.move.execute(context, input),
   )
+  register('tasks.setDeliverable', (context, input) =>
+    useCases.tasks.setDeliverable.execute(context, input),
+  )
   register('tasks.setEstimate', (context, input) =>
     useCases.tasks.setEstimate.execute(context, input),
   )
@@ -167,6 +170,28 @@ export function registerHandlers(
   register('sprints.addTask', (context, input) => useCases.sprints.addTask.execute(context, input))
   register('sprints.removeTask', (context, input) =>
     useCases.sprints.removeTask.execute(context, input),
+  )
+  register('wbs.get', (context, input) => useCases.wbs.get.execute(context, input))
+  register('wbs.createDeliverable', (context, input) =>
+    useCases.wbs.createDeliverable.execute(context, input),
+  )
+  register('wbs.renameDeliverable', (context, input) =>
+    useCases.wbs.renameDeliverable.execute(context, input),
+  )
+  register('wbs.moveDeliverable', (context, input) =>
+    useCases.wbs.moveDeliverable.execute(context, input),
+  )
+  register('wbs.removeDeliverable', (context, input) =>
+    useCases.wbs.removeDeliverable.execute(context, input),
+  )
+  register('milestones.create', (context, input) =>
+    useCases.milestones.create.execute(context, input),
+  )
+  register('milestones.update', (context, input) =>
+    useCases.milestones.update.execute(context, input),
+  )
+  register('milestones.remove', (context, input) =>
+    useCases.milestones.remove.execute(context, input),
   )
   register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
   register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))

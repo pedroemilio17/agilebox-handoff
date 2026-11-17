@@ -80,6 +80,8 @@ import {
   criteriaChangeOutputSchema,
   setTaskEstimateInputSchema,
   setTaskEstimateOutputSchema,
+  setTaskDeliverableInputSchema,
+  setTaskDeliverableOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -183,6 +185,26 @@ import {
   removeDefinitionOfDoneItemInputSchema,
   renameDefinitionOfDoneItemInputSchema,
 } from './definition-of-done'
+import {
+  createMilestoneInputSchema,
+  createMilestoneOutputSchema,
+  removeMilestoneInputSchema,
+  removeMilestoneOutputSchema,
+  updateMilestoneInputSchema,
+  updateMilestoneOutputSchema,
+} from './milestones'
+import {
+  createDeliverableInputSchema,
+  createDeliverableOutputSchema,
+  getWbsInputSchema,
+  getWbsOutputSchema,
+  moveDeliverableInputSchema,
+  moveDeliverableOutputSchema,
+  removeDeliverableInputSchema,
+  removeDeliverableOutputSchema,
+  renameDeliverableInputSchema,
+  renameDeliverableOutputSchema,
+} from './wbs'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -387,6 +409,27 @@ export const API_SCHEMA_REGISTRY = {
     input: removeSprintTaskInputSchema,
     output: removeSprintTaskOutputSchema,
   },
+  'tasks.setDeliverable': {
+    input: setTaskDeliverableInputSchema,
+    output: setTaskDeliverableOutputSchema,
+  },
+  'wbs.get': { input: getWbsInputSchema, output: getWbsOutputSchema },
+  'wbs.createDeliverable': {
+    input: createDeliverableInputSchema,
+    output: createDeliverableOutputSchema,
+  },
+  'wbs.renameDeliverable': {
+    input: renameDeliverableInputSchema,
+    output: renameDeliverableOutputSchema,
+  },
+  'wbs.moveDeliverable': { input: moveDeliverableInputSchema, output: moveDeliverableOutputSchema },
+  'wbs.removeDeliverable': {
+    input: removeDeliverableInputSchema,
+    output: removeDeliverableOutputSchema,
+  },
+  'milestones.create': { input: createMilestoneInputSchema, output: createMilestoneOutputSchema },
+  'milestones.update': { input: updateMilestoneInputSchema, output: updateMilestoneOutputSchema },
+  'milestones.remove': { input: removeMilestoneInputSchema, output: removeMilestoneOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -572,6 +615,7 @@ export interface AgileBoxApi {
     archive: Method<'tasks.archive'>
     unarchive: Method<'tasks.unarchive'>
     setEstimate: Method<'tasks.setEstimate'>
+    setDeliverable: Method<'tasks.setDeliverable'>
     criteria: {
       add: Method<'tasks.criteria.add'>
       toggle: Method<'tasks.criteria.toggle'>
@@ -653,6 +697,18 @@ export interface AgileBoxApi {
     discard: Method<'sprints.discard'>
     addTask: Method<'sprints.addTask'>
     removeTask: Method<'sprints.removeTask'>
+  }
+  wbs: {
+    get: Method<'wbs.get'>
+    createDeliverable: Method<'wbs.createDeliverable'>
+    renameDeliverable: Method<'wbs.renameDeliverable'>
+    moveDeliverable: Method<'wbs.moveDeliverable'>
+    removeDeliverable: Method<'wbs.removeDeliverable'>
+  }
+  milestones: {
+    create: Method<'milestones.create'>
+    update: Method<'milestones.update'>
+    remove: Method<'milestones.remove'>
   }
   backlog: {
     list: Method<'backlog.list'>

@@ -137,3 +137,49 @@ export function moveDeliverable(
   )
   return { ...deliverable, parentId: target.parentId, position }
 }
+
+/** Ordem de exibição entre irmãos: posição e, em empate, id (a mesma de `deliverableCodes`). */
+function inSiblingOrder(a: Deliverable, b: Deliverable): number {
+  return a.position - b.position || a.id.localeCompare(b.id)
+}
+
+/**
+ * Move a entrega e arruma os irmãos: ela entra no pai de destino na posição pedida (grudada no fim
+ * se passar do tamanho) e os irmãos das duas pontas ficam com posições 0..n-1, sem buracos.
+ * Devolve só as entregas cuja posição ou pai mudou, para o caso de uso gravar em lote. Mover para o
+ * mesmo lugar devolve lista vazia.
+ */
+export function arrangeAfterMove(
+  all: readonly Deliverable[],
+  deliverableId: DeliverableId,
+  target: { readonly parentId: DeliverableId | null; readonly position: number },
+): Deliverable[] {
+  const current = indexById(all).get(deliverableId)
+  if (!current) throw new NotFoundError('Entrega não encontrada')
+  const moved = moveDeliverable(current, all, target)
+  if (moved === current) return []
+
+  const changed = new Map<DeliverableId, Deliverable>()
+  const siblingsOf = (parentId: DeliverableId | null) =>
+    all
+      .filter((item) => item.parentId === parentId && item.id !== deliverableId)
+      .sort(inSiblingOrder)
+
+  // Pai de origem: os irmãos que ficaram se reencaixam sem buraco.
+  if (current.parentId !== moved.parentId) {
+    siblingsOf(current.parentId).forEach((item, index) => {
+      if (item.position !== index) changed.set(item.id, { ...item, position: index })
+    })
+  }
+
+  // Pai de destino: a entrega entra na posição pedida e os irmãos seguintes empurram.
+  const targetSiblings = siblingsOf(moved.parentId)
+  const index = Math.min(moved.position, targetSiblings.length)
+  const ordered = [...targetSiblings.slice(0, index), moved, ...targetSiblings.slice(index)]
+  ordered.forEach((item, position) => {
+    if (item.id === deliverableId) changed.set(item.id, { ...moved, position })
+    else if (item.position !== position) changed.set(item.id, { ...item, position })
+  })
+
+  return [...changed.values()]
+}

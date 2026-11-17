@@ -5,6 +5,8 @@ import {
   validateImpedimentResolution,
   toImpedimentId,
   setEstimatedHours,
+  setTaskDeliverable,
+  deliverableChangeDraft,
   archiveTask,
   blockTask,
   canChangeTaskArchive,
@@ -37,6 +39,7 @@ import {
   setStatus,
   setTicket,
   toEventId,
+  toDeliverableId,
   toProjectId,
   toTaskId,
   toParticipationId,
@@ -472,6 +475,61 @@ export class SetTaskEstimate extends ChangeTask {
       {},
       // Limpar a estimativa (nulo) não é definir uma: o passo do guia só conclui ao estimar.
       input.estimatedHours === null ? null : 'task.estimated',
+    )
+  }
+}
+
+/**
+ * Liga a tarefa a uma entrega da EAP do mesmo projeto (nulo desliga). Quem pode editar a tarefa pode
+ * ligar; projeto arquivado e tarefa arquivada recusam. Gera linha do tempo (com o título dos dois
+ * lados) e, ao ligar, o evento do guia "Quebre cada entrega em tarefas".
+ */
+export class SetTaskDeliverable extends ChangeTask {
+  async execute(
+    actor: Actor,
+    input: { readonly taskId: string; readonly deliverableId: string | null },
+  ): Promise<TaskDto> {
+    const organizationId = actor.organizationId
+    const task = await this.deps.tasks.findById(organizationId, toTaskId(input.taskId))
+    if (!task) throw new NotFoundError('Tarefa não encontrada')
+    // Permissão antes de qualquer consulta à entrega: quem não edita a tarefa não descobre nada dela.
+    assertTaskEditable(actor, task)
+    const project = await this.deps.projects.findById(organizationId, task.projectId)
+    if (project?.archivedAt)
+      throw new ConflictError('Projeto arquivado não aceita mudanças nas entregas das tarefas.')
+
+    const target =
+      input.deliverableId === null
+        ? null
+        : await this.deps.deliverables.findById(
+            organizationId,
+            toDeliverableId(input.deliverableId),
+          )
+    if (input.deliverableId !== null && target === null)
+      throw new NotFoundError('Entrega não encontrada')
+    if (target !== null && target.projectId !== task.projectId)
+      throw new ValidationError('A entrega é de outro projeto')
+
+    const current =
+      task.deliverableId === null
+        ? null
+        : await this.deps.deliverables.findById(organizationId, task.deliverableId)
+    const linkChanged = (target?.id ?? null) !== (task.deliverableId ?? null)
+    const draft = deliverableChangeDraft(
+      current === null ? null : { id: current.id, title: current.title },
+      target === null ? null : { id: target.id, title: target.title },
+    )
+    return this.change(
+      actor,
+      input.taskId,
+      (item) => setTaskDeliverable(item, target?.id ?? null),
+      draft === null ? [] : [draft],
+      [],
+      'edit',
+      undefined,
+      {},
+      // Só ligar a uma entrega conta para o guia; desligar, ou trocar sem mudança, não.
+      target !== null && linkChanged ? 'task.deliverable_set' : null,
     )
   }
 }

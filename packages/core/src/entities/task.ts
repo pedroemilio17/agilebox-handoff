@@ -208,8 +208,12 @@ export function setEstimatedHours(task: Task, hours: number | null): Task {
   const next = estimateToHundredths(hours)
   return next === task.estimatedHoursHundredths ? task : { ...task, estimatedHoursHundredths: next }
 }
-/** Aponta a tarefa para uma entrega (ou remove o vínculo com nulo). Sem evento de linha do tempo ainda. */
+/**
+ * Aponta a tarefa para uma entrega (ou remove o vínculo com nulo). Tarefa arquivada não muda, como
+ * nas demais alterações. Valor igual ao atual devolve a mesma tarefa (sem evento na linha do tempo).
+ */
 export function setTaskDeliverable(task: Task, deliverableId: DeliverableId | null): Task {
+  if (task.archivedAt !== null) throw new ConflictError('Tarefa arquivada não pode ser alterada')
   return task.deliverableId === deliverableId ? task : { ...task, deliverableId }
 }
 export function setPriority(task: Task, priority: TaskPriority): Task {
