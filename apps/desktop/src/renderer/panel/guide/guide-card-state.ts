@@ -41,6 +41,8 @@ export interface GuideCardState {
 const NAVIGATE_ACTIONS: Readonly<Record<string, { view: PanelView; label: string }>> = {
   'backlog.list': { view: 'backlog', label: guideCopy.openBacklog },
   'backlog.rank': { view: 'backlog', label: guideCopy.openBacklog },
+  'wbs.deliverables': { view: 'wbs', label: guideCopy.openWbs },
+  'wbs.tasks': { view: 'wbs', label: guideCopy.openWbs },
   'estimate.first': { view: 'backlog', label: guideCopy.openBacklog },
   'sprints.create': { view: 'sprints', label: guideCopy.openSprints },
   'sprints.add': { view: 'sprints', label: guideCopy.openSprints },

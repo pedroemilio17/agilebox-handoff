@@ -21,5 +21,6 @@ export const guideCopy = {
   openBacklog: 'Abrir o backlog',
   openSprints: 'Abrir sprints',
   openAgenda: 'Abrir a agenda',
+  openWbs: 'Abrir as entregas',
   dailyNote: 'Pela bandeja, no fim do dia',
 } as const

@@ -1,5 +1,6 @@
 import {
   failureResult,
+  type WbsViewDto,
   type AgileBoxApi,
   type AgileBoxBridge,
   type GuideViewDto,
@@ -77,6 +78,18 @@ export function hiddenOrganizationModules(): OrganizationModulesViewDto {
   return { modules: [], hasActiveProjects: false }
 }
 
+/** EAP vazia do projeto, sem edição: o padrão dos testes para a tela "Entregas" não aparecer preenchida. */
+export function emptyWbsView(projectId: string): WbsViewDto {
+  return {
+    projectId,
+    canEdit: false,
+    deliverables: [],
+    summary: { deliverables: 0, tasks: 0, hours: 0, cost: null, progress: 0 },
+    milestones: [],
+    tasksWithoutDeliverable: 0,
+  }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -93,7 +106,12 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
     boardSettings: { ...api.boardSettings, ...overrides.boardSettings },
     meetings: { ...api.meetings, ...overrides.meetings },
     backlog: { ...api.backlog, ...overrides.backlog },
-    wbs: { ...api.wbs, ...overrides.wbs },
+    // Sem EAP configurada, a leitura devolve uma visão vazia e sem permissão de edição.
+    wbs: {
+      ...api.wbs,
+      get: (input) => Promise.resolve(emptyWbsView(input.projectId)),
+      ...overrides.wbs,
+    },
     milestones: { ...api.milestones, ...overrides.milestones },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },

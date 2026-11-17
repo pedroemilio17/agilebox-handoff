@@ -21,6 +21,7 @@ export type PanelView =
   | 'dashboard'
   | 'projects'
   | 'backlog'
+  | 'wbs'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -60,6 +61,8 @@ export interface PanelShellProps {
   /** Tela "Módulos" do projeto selecionado. O item da barra só aparece com projeto selecionado. */
   readonly modules?: ReactNode
   readonly backlog?: ReactNode
+  /** Entregas (EAP). O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly wbs?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -72,6 +75,7 @@ const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
+  wbs: 'Entregas',
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -102,6 +106,7 @@ export function PanelShell({
   agenda,
   modules,
   backlog,
+  wbs,
   sprints,
   impediments,
   children,
@@ -117,6 +122,10 @@ export function PanelShell({
     // Backlog só com o módulo ligado e o nível da pessoa (Intermediário em diante).
     ...(capabilities.showScreen('backlog')
       ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
+      : []),
+    // Entregas (EAP): só com projeto selecionado e o módulo ligado no projeto.
+    ...(selectedProjectId !== null && capabilities.showScreen('wbs')
+      ? [{ id: 'wbs' as const, label: viewTitles.wbs, icon: '▤' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -174,6 +183,8 @@ export function PanelShell({
             dashboard
           ) : visibleView === 'backlog' && backlog ? (
             backlog
+          ) : visibleView === 'wbs' && wbs ? (
+            wbs
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (

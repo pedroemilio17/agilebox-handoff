@@ -15,6 +15,7 @@ import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
+import { WbsView } from './wbs/WbsView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
@@ -61,6 +62,8 @@ function PanelContent({
   const agendaVisible = capabilities.showScreen('agenda')
   // Backlog segue o mesmo caminho: módulo ligado e nível da pessoa; senão a view cai no Quadro.
   const backlogVisible = capabilities.showScreen('backlog')
+  // Entregas (EAP): módulo ligado no projeto selecionado; sem projeto a view cai no Quadro.
+  const wbsVisible = selectedProjectId !== null && capabilities.showScreen('wbs')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
@@ -81,6 +84,7 @@ function PanelContent({
   const currentView: PanelView =
     (view === 'agenda' && !agendaVisible) ||
     (view === 'backlog' && !backlogVisible) ||
+    (view === 'wbs' && !wbsVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
@@ -413,6 +417,14 @@ function PanelContent({
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+            onNavigate={setView}
+          />
+        }
+        wbs={
+          <WbsView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
             onNavigate={setView}
           />
         }

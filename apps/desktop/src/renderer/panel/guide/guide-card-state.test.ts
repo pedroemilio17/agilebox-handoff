@@ -112,3 +112,22 @@ describe('guideStepAction', () => {
     expect(guideStepAction('qualquer.coisa')).toBeNull()
   })
 })
+
+describe('ação do passo da EAP', () => {
+  it('"Liste as entregas" e "Quebre cada entrega" levam à tela Entregas', () => {
+    expect(guideStepAction('wbs.deliverables')).toEqual({
+      kind: 'navigate',
+      view: 'wbs',
+      label: 'Abrir as entregas',
+    })
+    expect(guideStepAction('wbs.tasks')).toEqual({
+      kind: 'navigate',
+      view: 'wbs',
+      label: 'Abrir as entregas',
+    })
+  })
+
+  it('marcos ainda não têm botão', () => {
+    expect(guideStepAction('milestones.create')).toBeNull()
+  })
+})
