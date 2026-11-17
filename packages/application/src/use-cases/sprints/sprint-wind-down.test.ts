@@ -103,6 +103,8 @@ async function setup() {
     retroActions: repos.retroActions,
     sprints: repos.sprints,
     sprintTasks: repos.sprintTasks,
+    deliverables: repos.deliverables,
+    milestones: repos.milestones,
     impediments: repos.impediments,
     taskOpens: repos.taskOpens,
     tasks: repos.tasks,

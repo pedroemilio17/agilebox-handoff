@@ -48,6 +48,8 @@ function setup(actor: Actor = creator, unitOfWork = new InMemoryUnitOfWork()) {
     guideProgress: unitOfWork.repositories.guideProgress,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,

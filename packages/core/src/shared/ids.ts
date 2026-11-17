@@ -20,6 +20,8 @@ export type DailyEntryId = Id<'DailyEntry'>
 export type AcceptanceCriterionId = Id<'AcceptanceCriterion'>
 export type SprintId = Id<'Sprint'>
 export type ImpedimentId = Id<'Impediment'>
+export type DeliverableId = Id<'Deliverable'>
+export type MilestoneId = Id<'Milestone'>
 
 function toId<Kind extends string>(value: string): Id<Kind> {
   if (!/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(value) || value.length !== 26) {
@@ -45,3 +47,5 @@ export const toAcceptanceCriterionId = (value: string): AcceptanceCriterionId =>
 export const toDailyEntryId = (value: string): DailyEntryId => toId(value)
 export const toSprintId = (value: string): SprintId => toId(value)
 export const toImpedimentId = (value: string): ImpedimentId => toId(value)
+export const toDeliverableId = (value: string): DeliverableId => toId(value)
+export const toMilestoneId = (value: string): MilestoneId => toId(value)

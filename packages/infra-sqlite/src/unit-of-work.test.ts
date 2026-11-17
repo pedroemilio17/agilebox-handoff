@@ -17,6 +17,7 @@ import { createSqliteTeamToolsRepository } from './repositories/team-tools-repos
 import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
+import { createSqliteDeliverableRepositories } from './repositories/deliverable-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
 
@@ -33,6 +34,7 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...createSqliteCoreRepositories(database),
       ...createSqliteTaskRepositories(database),
+      ...createSqliteDeliverableRepositories(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
@@ -73,6 +75,7 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...core,
       ...createSqliteTaskRepositories(database),
+      ...createSqliteDeliverableRepositories(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),

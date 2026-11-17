@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from 'drizzle-orm'
 import type { SQLWrapper } from 'drizzle-orm'
-import { sortBacklog, toTaskId } from '@agilebox/core'
+import { sortBacklog, toTaskId, ValidationError } from '@agilebox/core'
 import type {
   ChecklistRepository,
   ParticipationRepository,
@@ -21,6 +21,7 @@ import { createSqliteChecklistRepository } from './checklist-repository.js'
 import { mapParticipationRow, mapTaskRow, mapTimelineEventRow } from '../mappers/task-mappers.js'
 import {
   contributors,
+  deliverables,
   projects,
   taskEvents,
   taskOpens,
@@ -272,6 +273,21 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         ),
       )
       if (!project || !creator || !validParticipants.every(Boolean)) return
+      if (task.deliverableId !== null) {
+        // Entrega precisa ser do mesmo projeto e da organização (como no fake).
+        const [deliverable] = await database
+          .select({ id: deliverables.id })
+          .from(deliverables)
+          .where(
+            and(
+              eq(deliverables.id, task.deliverableId),
+              eq(deliverables.organizationId, organizationId),
+              eq(deliverables.projectId, task.projectId),
+            ),
+          )
+          .limit(1)
+        if (!deliverable) throw new ValidationError('Entrega não encontrada neste projeto')
+      }
       const value = {
         id: task.id,
         organizationId,
@@ -288,6 +304,7 @@ export function createSqliteTaskRepositories(database: SqliteDatabase): {
         archivedBy: task.archivedBy,
         backlogRank: task.backlogRank,
         estimatedHoursHundredths: task.estimatedHoursHundredths,
+        deliverableId: task.deliverableId,
         deadline: task.deadline,
         ticketId: task.ticket === null ? null : String(task.ticket.id),
         ticketUrl: task.ticket?.url ?? null,

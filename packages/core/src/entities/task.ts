@@ -1,5 +1,12 @@
 import { ConflictError, ValidationError } from '../shared/errors'
-import type { OrganizationId, ParticipationId, ProjectId, TaskId, UserId } from '../shared/ids'
+import type {
+  DeliverableId,
+  OrganizationId,
+  ParticipationId,
+  ProjectId,
+  TaskId,
+  UserId,
+} from '../shared/ids'
 import { parseDateOnly } from '../values/date-only'
 import type { DateOnly } from '../values/date-only'
 import { estimateToHundredths } from '../values/hours'
@@ -36,6 +43,8 @@ export interface Task {
   readonly backlogRank: number | null
   /** Estimativa em centésimos de hora (ADR-07, módulo `estimates.hours`). Nulo = sem estimativa. */
   readonly estimatedHoursHundredths: number | null
+  /** Entrega da EAP à qual a tarefa aponta (qualquer nível do projeto). Nulo = sem entrega. */
+  readonly deliverableId: DeliverableId | null
   readonly deadline: DateOnly | null
   readonly ticket: Ticket | null
   readonly searchText: string
@@ -55,6 +64,8 @@ export interface CreateTaskInput {
   readonly createdAt: string
   readonly responsibleParticipationId: ParticipationId
   readonly responsibleRateCents: number
+  /** Entrega de destino. Ausente = sem entrega. */
+  readonly deliverableId?: DeliverableId | null
 }
 
 function searchText(title: string, projectName: string): string {
@@ -96,6 +107,7 @@ export function createTask(input: CreateTaskInput): Task {
     archivedBy: null,
     backlogRank: null,
     estimatedHoursHundredths: null,
+    deliverableId: input.deliverableId ?? null,
     deadline: null,
     ticket: null,
     searchText: searchText(title, projectName),
@@ -195,6 +207,10 @@ export function setEstimatedHours(task: Task, hours: number | null): Task {
   if (task.archivedAt !== null) throw new ConflictError('Tarefa arquivada não pode ser alterada')
   const next = estimateToHundredths(hours)
   return next === task.estimatedHoursHundredths ? task : { ...task, estimatedHoursHundredths: next }
+}
+/** Aponta a tarefa para uma entrega (ou remove o vínculo com nulo). Sem evento de linha do tempo ainda. */
+export function setTaskDeliverable(task: Task, deliverableId: DeliverableId | null): Task {
+  return task.deliverableId === deliverableId ? task : { ...task, deliverableId }
 }
 export function setPriority(task: Task, priority: TaskPriority): Task {
   return { ...task, priority: parseTaskPriority(priority) }

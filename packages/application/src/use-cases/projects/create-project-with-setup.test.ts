@@ -96,6 +96,8 @@ async function setup(options: Options = {}) {
     retroActions: repositories.retroActions,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
+    deliverables: repositories.deliverables,
+    milestones: repositories.milestones,
     taskOpens: repositories.taskOpens,
     tasks: repositories.tasks,
     teamTools: repositories.teamTools,

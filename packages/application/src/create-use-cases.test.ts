@@ -43,6 +43,8 @@ describe('composição dos casos de uso', () => {
       guideProgress: unitOfWork.repositories.guideProgress,
       sprints: unitOfWork.repositories.sprints,
       sprintTasks: unitOfWork.repositories.sprintTasks,
+      deliverables: unitOfWork.repositories.deliverables,
+      milestones: unitOfWork.repositories.milestones,
       impediments: unitOfWork.repositories.impediments,
       definitionOfDone: unitOfWork.repositories.definitionOfDone,
       comments: unitOfWork.repositories.comments,

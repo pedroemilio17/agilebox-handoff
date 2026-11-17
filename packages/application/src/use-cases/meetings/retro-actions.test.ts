@@ -68,6 +68,8 @@ function setup(actor: Actor = manager) {
     guideProgress: unitOfWork.repositories.guideProgress,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     taskOpens: unitOfWork.repositories.taskOpens,
     tasks: unitOfWork.repositories.tasks,

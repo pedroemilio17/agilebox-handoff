@@ -4,6 +4,7 @@ import { createSqliteBoardSettingsRepository } from './repositories/board-settin
 import { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
+import { createSqliteDeliverableRepositories } from './repositories/deliverable-repository.js'
 import { createSqliteGuideProgressRepository } from './repositories/guide-progress-repository.js'
 import { createSqliteImpedimentRepository } from './repositories/impediment-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
@@ -40,6 +41,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     teamTools: createSqliteTeamToolsRepository(database),
     projectModules: createSqliteProjectModulesRepository(database),
     projectSetup: createSqliteProjectSetupRepository(database),
+    ...createSqliteDeliverableRepositories(database),
     ...createSqliteSprintRepositories(database),
   }
   return {

@@ -93,6 +93,8 @@ function setup(actorOf: Actor = collaborator) {
     guideProgress: repos.guideProgress,
     sprints: repos.sprints,
     sprintTasks: repos.sprintTasks,
+    deliverables: repos.deliverables,
+    milestones: repos.milestones,
     impediments: repos.impediments,
     definitionOfDone: repos.definitionOfDone,
     comments: repos.comments,

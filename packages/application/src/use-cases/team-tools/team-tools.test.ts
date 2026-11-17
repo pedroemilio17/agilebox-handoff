@@ -88,6 +88,8 @@ async function setup() {
     guideProgress: repositories.guideProgress,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
+    deliverables: repositories.deliverables,
+    milestones: repositories.milestones,
     impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),

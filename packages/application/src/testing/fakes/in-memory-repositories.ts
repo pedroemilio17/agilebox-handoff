@@ -24,6 +24,10 @@ import type {
   UserId,
   ChecklistItem,
   DefinitionOfDoneItem,
+  Deliverable,
+  DeliverableId,
+  Milestone,
+  MilestoneId,
   DailyEntry,
   DefinitionOfDoneItemId,
   Contributor,
@@ -55,10 +59,12 @@ import type {
   ContributorRepository,
   DailyEntryRepository,
   DefinitionOfDoneRepository,
+  DeliverableRepository,
   GuideProgressEntry,
   GuideProgressRepository,
   TaskCommentRepository,
   MeetingRepository,
+  MilestoneRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
@@ -105,6 +111,10 @@ export interface InMemoryState {
   retroActions: Map<OrganizationId, Map<string, RetroAction>>
   /** Sprints por id, com o descarte lógico (linha não some; `discarded` marca a exclusão). */
   sprints: Map<OrganizationId, Map<string, InMemorySprintRow>>
+  /** Entregas da EAP por id, dentro da organização. */
+  deliverables: Map<OrganizationId, Map<string, Deliverable>>
+  /** Marcos por id, dentro da organização. */
+  milestones: Map<OrganizationId, Map<string, Milestone>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
   /** Impedimentos por id (abertos e resolvidos; o histórico não some). */
@@ -147,8 +157,10 @@ export function createInMemoryState(): InMemoryState {
     contributors: new Map(),
     dailyEntries: new Map(),
     definitionOfDone: new Map(),
+    deliverables: new Map(),
     guideProgress: new Map(),
     meetings: new Map(),
+    milestones: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
@@ -651,6 +663,12 @@ export class InMemoryTaskRepository implements TaskRepository {
   }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
+    if (value.deliverableId !== null) {
+      // Como o SQLite: a entrega precisa existir na organização e no mesmo projeto da tarefa.
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
     bucket(this.state.tasks, org).set(value.id, value)
   }
   private forUser(org: OrganizationId, userId: User['id']) {
@@ -1068,6 +1086,124 @@ export class InMemorySprintTaskRepository implements SprintTaskRepository {
 }
 
 /** Impedimentos no fake: um mapa por organização, sem nada apagado. */
+/** Projeto e criador precisam existir na organização (mesma regra do SQLite). */
+function assertProjectAndCreator(
+  state: InMemoryState,
+  org: OrganizationId,
+  projectId: ProjectId,
+  createdBy: User['id'],
+): void {
+  if (!bucket(state.projects, org).has(projectId))
+    throw new ValidationError('Projeto não encontrado nesta organização')
+  if (!bucket(state.users, org).has(createdBy))
+    throw new ValidationError('Pessoa de outra organização')
+}
+
+export class InMemoryDeliverableRepository implements DeliverableRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    // Pai nulo (raiz) vem antes; entre irmãos, pela posição.
+    return [...bucket(this.state.deliverables, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort(
+        (a, b) =>
+          (a.parentId ?? '').localeCompare(b.parentId ?? '') ||
+          a.position - b.position ||
+          a.id.localeCompare(b.id),
+      )
+  }
+  async findById(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return bucket(this.state.deliverables, org).get(deliverableId) ?? null
+  }
+  async save(org: OrganizationId, value: Deliverable) {
+    await Promise.resolve()
+    this.write(org, value)
+  }
+  async saveMany(org: OrganizationId, values: readonly Deliverable[]) {
+    await Promise.resolve()
+    for (const value of values) this.write(org, value)
+  }
+  async countChildren(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.deliverables, org).values()].filter(
+      (item) => item.parentId === deliverableId,
+    ).length
+  }
+  async countTasks(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.tasks, org).values()].filter(
+      (item) => item.deliverableId === deliverableId,
+    ).length
+  }
+  async countMilestones(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.milestones, org).values()].filter(
+      (item) => item.deliverableId === deliverableId,
+    ).length
+  }
+  async delete(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    const children = await this.countChildren(org, deliverableId)
+    const tasks = await this.countTasks(org, deliverableId)
+    const milestones = await this.countMilestones(org, deliverableId)
+    if (children + tasks + milestones > 0)
+      throw new ConflictError(
+        'Entrega tem filhos, tarefas ou marcos ligados e não pode ser apagada',
+      )
+    bucket(this.state.deliverables, org).delete(deliverableId)
+  }
+
+  private write(org: OrganizationId, value: Deliverable) {
+    // Id de outra organização não é regravado (como no SQLite).
+    if (usedByOtherOrganization(this.state.deliverables, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.parentId !== null) {
+      const parent = bucket(this.state.deliverables, org).get(value.parentId)
+      if (!parent || parent.projectId !== value.projectId)
+        throw new ValidationError('Entrega pai não encontrada neste projeto')
+    }
+    bucket(this.state.deliverables, org).set(value.id, value)
+  }
+}
+
+export class InMemoryMilestoneRepository implements MilestoneRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.milestones, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort(
+        (a, b) =>
+          a.dueOn.localeCompare(b.dueOn) ||
+          a.title.localeCompare(b.title) ||
+          a.id.localeCompare(b.id),
+      )
+  }
+  async findById(org: OrganizationId, milestoneId: MilestoneId) {
+    await Promise.resolve()
+    return bucket(this.state.milestones, org).get(milestoneId) ?? null
+  }
+  async save(org: OrganizationId, value: Milestone) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.milestones, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.deliverableId !== null) {
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
+    bucket(this.state.milestones, org).set(value.id, value)
+  }
+  async delete(org: OrganizationId, milestoneId: MilestoneId) {
+    await Promise.resolve()
+    bucket(this.state.milestones, org).delete(milestoneId)
+  }
+}
+
 export class InMemoryImpedimentRepository implements ImpedimentRepository {
   constructor(private readonly state: InMemoryState) {}
 

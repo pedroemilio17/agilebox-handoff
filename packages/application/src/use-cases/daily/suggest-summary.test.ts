@@ -59,6 +59,8 @@ function setup(actor: Actor = ana, options: { sprints?: unknown } = {}) {
     sprints: (options.sprints ??
       unitOfWork.repositories.sprints) as typeof unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),

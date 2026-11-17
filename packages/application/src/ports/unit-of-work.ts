@@ -7,6 +7,7 @@ import type { ContributorRepository } from './contributor-repository'
 import type { DailyEntryRepository } from './daily-entry-repository'
 import type { ImpedimentRepository } from './impediment-repository'
 import type { DefinitionOfDoneRepository } from './definition-of-done-repository'
+import type { DeliverableRepository, MilestoneRepository } from './deliverable-repository'
 import type { GuideProgressRepository } from './guide-progress-repository'
 import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
@@ -30,9 +31,11 @@ export interface UnitOfWorkRepositories {
   readonly contributors: ContributorRepository
   readonly dailyEntries: DailyEntryRepository
   readonly definitionOfDone: DefinitionOfDoneRepository
+  readonly deliverables: DeliverableRepository
   readonly guideProgress: GuideProgressRepository
   readonly impediments: ImpedimentRepository
   readonly meetings: MeetingRepository
+  readonly milestones: MilestoneRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projectModules: ProjectModulesRepository

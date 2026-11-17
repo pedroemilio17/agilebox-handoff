@@ -10,9 +10,11 @@ import type {
   TaskCommentRepository,
   ContributorRepository,
   DefinitionOfDoneRepository,
+  DeliverableRepository,
   GuideProgressRepository,
   IdGenerator,
   MeetingRepository,
+  MilestoneRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectModulesRepository,
@@ -40,10 +42,12 @@ export interface AppDeps {
   readonly contributors: ContributorRepository
   readonly dailyEntries: DailyEntryRepository
   readonly definitionOfDone: DefinitionOfDoneRepository
+  readonly deliverables: DeliverableRepository
   readonly guideProgress: GuideProgressRepository
   readonly idGenerator: IdGenerator
   readonly impediments: ImpedimentRepository
   readonly meetings: MeetingRepository
+  readonly milestones: MilestoneRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projectModules: ProjectModulesRepository
