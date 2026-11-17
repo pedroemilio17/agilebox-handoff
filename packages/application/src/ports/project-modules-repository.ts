@@ -48,4 +48,14 @@ export interface ProjectModulesRepository {
     actorId: UserId,
     at: string,
   ): Promise<void>
+  /**
+   * Estado de um módulo em cada projeto NÃO arquivado da organização: uma entrada por projeto, e
+   * projeto sem linha conta como `disabled`. Projeto arquivado não entra. Lista vazia quer dizer que
+   * a organização não tem nenhum projeto ativo. Só lê dados da organização pedida (ADR-10, regra de
+   * casos de uso sem projeto nos argumentos).
+   */
+  statesAcrossProjects(
+    organizationId: OrganizationId,
+    moduleId: ModuleId,
+  ): Promise<readonly ModuleState[]>
 }

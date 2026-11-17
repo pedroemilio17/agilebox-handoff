@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
   createUser,
+  DEFAULT_TEAM_MODULE_IDS,
   toOrganizationId,
+  toProjectId,
   toUserId,
   ValidationError,
   PermissionDeniedError,
@@ -17,6 +19,7 @@ import { aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
+import { setProjectModules } from '../../testing/task-harness'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
 
 const NOW = '2026-11-16T12:00:00.000Z'
@@ -113,6 +116,15 @@ async function change(useCases: UseCases, input: TeamToolsChangeInput) {
   return useCases.teamTools.applyChange.execute(contextA, input)
 }
 
+/** Muda as ferramentas de um projeto (ADR-10: é o que o guard lê), pelo caso de uso do projeto. */
+async function changeProject(
+  useCases: UseCases,
+  projectId: string,
+  input: { enable?: ModuleId[]; disable?: ModuleId[] },
+) {
+  return useCases.projectModules.change.execute(contextA, { projectId, ...input })
+}
+
 /** Ferramentas desligadas de vez (`disabled`) para os testes partirem de um estado conhecido. */
 async function disableForGood(useCases: UseCases, moduleIds: ModuleId[]) {
   await change(useCases, { disable: moduleIds, finalize: moduleIds })
@@ -121,6 +133,10 @@ async function disableForGood(useCases: UseCases, moduleIds: ModuleId[]) {
 /** Dados existentes para os testes de contagem e de reativação. */
 async function fixtures(useCases: UseCases) {
   const project = await useCases.projects.createProject.execute(contextA, { name: 'Projeto' })
+  // O projeto começa só com o núcleo (ADR-10): liga as ferramentas que a equipe trazia por padrão.
+  await changeProject(useCases, project.id, {
+    enable: DEFAULT_TEAM_MODULE_IDS.filter((id): id is ModuleId => id !== 'core'),
+  })
   const task = await useCases.tasks.create.execute(contextA, {
     projectId: project.id,
     title: 'Tarefa',
@@ -240,12 +256,12 @@ describe('ferramentas da equipe: regras de ativar e desativar', () => {
       await useCases.tasks.getDetail.execute(contextA, { taskId: task.id })
     ).checklist.map((item) => [item.title, item.done])
 
-    await change(useCases, { disable: ['subtasks', 'wip'], finalize: ['subtasks', 'wip'] })
+    await changeProject(useCases, task.projectId, { disable: ['subtasks', 'wip'] })
     await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
       REFUSED_DISABLED,
     )
 
-    await change(useCases, { enable: ['subtasks', 'wip'] })
+    await changeProject(useCases, task.projectId, { enable: ['subtasks', 'wip'] })
     const after = await useCases.tasks.getDetail.execute(contextA, { taskId: task.id })
     expect(after.checklist.map((item) => [item.title, item.done])).toEqual(checklistBefore)
     expect((await useCases.boardSettings.get.execute(contextA)).wipLimits).toEqual({
@@ -265,14 +281,19 @@ describe('ferramentas da equipe: regras de ativar e desativar', () => {
 
 describe('encerramento gradual (winding_down)', () => {
   it('desligar entra em encerramento: criar é recusado e editar o que existe passa', async () => {
-    const { useCases } = await setup()
+    const { useCases, unitOfWork } = await setup()
     const { task } = await fixtures(useCases)
     const existing = (await useCases.tasks.getDetail.execute(contextA, { taskId: task.id }))
       .checklist[0]!
 
+    // A equipe registra o encerramento na própria configuração...
     const result = await change(useCases, { disable: ['subtasks'] })
     expect(result.windingDown).toEqual(['subtasks'])
 
+    // ...e o efeito no guard vem do projeto: ele entra em encerramento para o caso de uso.
+    await setProjectModules(unitOfWork, orgA, toProjectId(task.projectId), managerA.userId, {
+      subtasks: 'winding_down',
+    })
     await expect(
       useCases.tasks.checklist.add.execute(contextA, { taskId: task.id, title: 'Novo' }),
     ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
@@ -294,6 +315,16 @@ describe('encerramento gradual (winding_down)', () => {
       moduleId: 'subtasks',
     })
     expect(done.view.modules.find((module) => module.id === 'subtasks')?.state).toBe('disabled')
+    // A conclusão da equipe não mexe no projeto: o módulo do projeto desliga pelo próprio caminho.
+    await expect(
+      useCases.tasks.checklist.toggle.execute(contextA, {
+        taskId: task.id,
+        itemId: (await useCases.tasks.getDetail.execute(contextA, { taskId: task.id }))
+          .checklist[0]!.id,
+        done: false,
+      }),
+    ).resolves.toBeDefined()
+    await changeProject(useCases, task.projectId, { disable: ['subtasks'] })
     await expect(
       useCases.tasks.checklist.toggle.execute(contextA, {
         taskId: task.id,

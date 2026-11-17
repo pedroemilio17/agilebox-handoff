@@ -16,10 +16,11 @@ import {
   ctx,
   manager,
   orgA,
+  projectId,
   orgB,
   otherManager,
   seedTaskHarness,
-  setModules,
+  setProjectModules,
   taskId,
 } from '../../testing/task-harness'
 
@@ -229,7 +230,7 @@ describe('critérios de aceitação: tarefa arquivada e guard de módulo', () =>
   it('módulo `acceptance` desligado recusa com a mensagem de ferramenta desativada', async () => {
     const { useCases, unitOfWork } = createTaskHarness(ana)
     await seedTaskHarness(unitOfWork)
-    await setModules(unitOfWork, orgA, manager.userId, { acceptance: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { acceptance: 'disabled' })
     await expect(
       useCases.tasks.criteria.add.execute(ctx(ana), { taskId, text: 'Nada' }),
     ).rejects.toThrow('Esta ferramenta está desativada para a equipe.')
@@ -239,7 +240,9 @@ describe('critérios de aceitação: tarefa arquivada e guard de módulo', () =>
     const { useCases, unitOfWork } = createTaskHarness(ana)
     await seedTaskHarness(unitOfWork)
     await useCases.tasks.criteria.add.execute(ctx(ana), { taskId, text: 'Existente' })
-    await setModules(unitOfWork, orgA, manager.userId, { acceptance: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, {
+      acceptance: 'winding_down',
+    })
     await expect(
       useCases.tasks.criteria.add.execute(ctx(ana), { taskId, text: 'Novo' }),
     ).rejects.toThrow('Esta ferramenta está sendo encerrada: não aceita itens novos.')

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
   createUser,
+  DEFAULT_TEAM_MODULE_IDS,
   MODULE_IDS,
   toOrganizationId,
+  toProjectId,
   toUserId,
 } from '@agilebox/core'
 import type { Actor, ModuleId, ModuleState, OrganizationId, UserId } from '@agilebox/core'
@@ -17,6 +19,7 @@ import { FixedClock } from './testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from './testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from './testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from './testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from './testing/task-harness'
 
 const NOW = '2026-01-02T12:00:00.000Z'
 const TODAY = '2026-01-02'
@@ -129,8 +132,11 @@ async function setup(options: SetupOptions = {}) {
 
 type UseCases = Awaited<ReturnType<typeof setup>>['useCases']
 
-/** Grava estados de ferramentas da organização A pelo gestor A. Ferramenta não citada fica como está. */
-async function setModules(
+/**
+ * Grava estados de ferramentas da EQUIPE da organização A. Só a gestão da equipe lê isso: o guard
+ * olha o projeto (ADR-10), e a equipe só conta quando a organização não tem projeto ativo.
+ */
+async function setTeamModules(
   unitOfWork: InMemoryUnitOfWork,
   organizationId: OrganizationId,
   actorId: UserId,
@@ -149,8 +155,16 @@ async function setModules(
 }
 
 /** Dados criados enquanto tudo está ativo, para os testes depois mudarem o estado dos módulos. */
-async function fixtures(useCases: UseCases) {
+async function fixtures(useCases: UseCases, unitOfWork: InMemoryUnitOfWork) {
   const project = await useCases.projects.createProject.execute(contextA, { name: 'Projeto' })
+  // O projeto começa só com o núcleo (ADR-10): liga as ferramentas que a equipe trazia por padrão.
+  await enableProjectModules(
+    unitOfWork,
+    orgA,
+    toProjectId(project.id),
+    managerAId,
+    DEFAULT_TEAM_MODULE_IDS,
+  )
   const task = await useCases.tasks.create.execute(contextA, {
     projectId: project.id,
     title: 'Tarefa',
@@ -221,15 +235,21 @@ describe('guard de módulo: um caso de uso representativo por módulo', () => {
   for (const representative of REPRESENTATIVES) {
     it(`${representative.module}: recusa com desativado e executa com ativo`, async () => {
       const { useCases, unitOfWork } = await setup()
-      const fx = await fixtures(useCases)
+      const fx = await fixtures(useCases, unitOfWork)
 
-      await setModules(unitOfWork, orgA, managerAId, representative.disabled)
+      await setProjectModules(
+        unitOfWork,
+        orgA,
+        toProjectId(fx.project.id),
+        managerAId,
+        representative.disabled,
+      )
       await expect(representative.call(useCases, fx)).rejects.toMatchObject(REFUSED_DISABLED)
 
       const reactivated = Object.fromEntries(
         Object.keys(representative.disabled).map((id) => [id, 'active' as const]),
       ) as Partial<Record<ModuleId, ModuleState>>
-      await setModules(unitOfWork, orgA, managerAId, reactivated)
+      await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, reactivated)
       await expect(representative.call(useCases, fx)).resolves.toBeDefined()
     })
   }
@@ -238,7 +258,7 @@ describe('guard de módulo: um caso de uso representativo por módulo', () => {
 describe('guard de módulo: encerramento (winding_down)', () => {
   it('subtarefas: o que já existe segue editável e a criação é recusada', async () => {
     const { useCases, unitOfWork } = await setup()
-    const fx = await fixtures(useCases)
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.tasks.checklist.add.execute(contextA, {
       taskId: fx.task.id,
       title: 'Item antigo',
@@ -246,7 +266,9 @@ describe('guard de módulo: encerramento (winding_down)', () => {
     const itemId = (await useCases.tasks.getDetail.execute(contextA, { taskId: fx.task.id }))
       .checklist[0]!.id
 
-    await setModules(unitOfWork, orgA, managerAId, { subtasks: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      subtasks: 'winding_down',
+    })
 
     await expect(
       useCases.tasks.checklist.toggle.execute(contextA, {
@@ -274,10 +296,12 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('impedimentos: desbloquear segue permitido e bloquear é recusado', async () => {
     const { useCases, unitOfWork } = await setup()
-    const fx = await fixtures(useCases)
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.tasks.block.execute(contextA, { taskId: fx.task.id, reason: 'Aguardando' })
 
-    await setModules(unitOfWork, orgA, managerAId, { impediments: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      impediments: 'winding_down',
+    })
 
     await expect(
       useCases.tasks.unblock.execute(contextA, { taskId: fx.task.id }),
@@ -289,7 +313,10 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('check-ins: ler a daily segue permitido e criar a daily do dia é recusado', async () => {
     const { useCases, unitOfWork } = await setup()
-    await setModules(unitOfWork, orgA, managerAId, { checkins: 'winding_down' })
+    const fx = await fixtures(useCases, unitOfWork)
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      checkins: 'winding_down',
+    })
 
     await expect(useCases.daily.getToday.execute(contextA, { date: TODAY })).resolves.toBeDefined()
     await expect(
@@ -302,12 +329,15 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('check-ins encerrando: editar a daily que já existe no dia segue permitido', async () => {
     const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.daily.save.execute(contextA, {
       date: TODAY,
       answers: { progress: 'Primeira versão', nextStep: 'Revisar', blocker: '' },
     })
 
-    await setModules(unitOfWork, orgA, managerAId, { checkins: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      checkins: 'winding_down',
+    })
 
     const edited = await useCases.daily.save.execute(contextA, {
       date: TODAY,
@@ -320,12 +350,15 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('check-ins desligado: editar a daily existente também é recusado', async () => {
     const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.daily.save.execute(contextA, {
       date: TODAY,
       answers: { progress: 'Versão', nextStep: 'Revisar', blocker: '' },
     })
 
-    await setModules(unitOfWork, orgA, managerAId, { checkins: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      checkins: 'disabled',
+    })
 
     await expect(
       useCases.daily.save.execute(contextA, {
@@ -337,7 +370,10 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('limite de WIP: os limites seguem editáveis e lidos (não criam item)', async () => {
     const { useCases, unitOfWork } = await setup()
-    await setModules(unitOfWork, orgA, managerAId, { wip: 'winding_down' })
+    const fx = await fixtures(useCases, unitOfWork)
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      wip: 'winding_down',
+    })
 
     await expect(
       useCases.boardSettings.setWipLimits.execute(contextA, { wipLimits: { in_progress: 3 } }),
@@ -347,14 +383,16 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 
   it('ações de retro: alterar e listar segue permitido e adicionar é recusado', async () => {
     const { useCases, unitOfWork } = await setup()
-    const fx = await fixtures(useCases)
+    const fx = await fixtures(useCases, unitOfWork)
     const action = await useCases.meetings.retroActions.add.execute(contextA, {
       meetingId: fx.meeting.id,
       occurrenceDate: MEETING_DATE,
       title: 'Ação antiga',
     })
 
-    await setModules(unitOfWork, orgA, managerAId, { reviewRetro: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      reviewRetro: 'winding_down',
+    })
 
     await expect(
       useCases.meetings.retroActions.toggle.execute(contextA, { actionId: action.id, done: true }),
@@ -378,11 +416,11 @@ describe('guard de módulo: encerramento (winding_down)', () => {
 describe('guard de módulo: núcleo', () => {
   it('núcleo nunca é recusado, com todos os outros módulos desligados', async () => {
     const { useCases, unitOfWork } = await setup()
-    const fx = await fixtures(useCases)
+    const fx = await fixtures(useCases, unitOfWork)
     const allOff = Object.fromEntries(
       MODULE_IDS.filter((id) => id !== 'core').map((id) => [id, 'disabled' as const]),
     ) as Partial<Record<ModuleId, ModuleState>>
-    await setModules(unitOfWork, orgA, managerAId, allOff)
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, allOff)
 
     await expect(useCases.projects.listProjects.execute(contextA)).resolves.toBeDefined()
     await expect(
@@ -410,11 +448,31 @@ describe('guard de módulo: núcleo', () => {
     }
     const { useCases } = await setup({ teamTools: emptyTeamTools })
 
-    await useCases.projects.createProject.execute(contextA, { name: 'Sem configuração' })
+    const project = await useCases.projects.createProject.execute(contextA, { name: 'Sem linhas' })
     await useCases.tasks.listBoard.execute(contextA, {})
+    await useCases.tasks.create.execute(contextA, { projectId: project.id, title: 'Núcleo' })
     expect(reads).toBe(0)
 
-    // Linha ausente conta como desativado: o módulo é recusado e a leitura acontece uma vez.
+    // Projeto sem linha conta como desligado, e a equipe não entra: o projeto decide, sem leitura.
+    await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
+      REFUSED_DISABLED,
+    )
+    expect(reads).toBe(0)
+  })
+
+  it('sem nenhum projeto ativo, a regra da equipe vale (compatibilidade): uma leitura', async () => {
+    let reads = 0
+    const emptyTeamTools: TeamToolsRepository = {
+      getSettings: () => {
+        reads += 1
+        return Promise.resolve({ level: 'advanced', modules: [] })
+      },
+      saveSettings: () => Promise.reject(new Error('não usado neste teste')),
+      listAudit: () => Promise.resolve([]),
+    }
+    const { useCases } = await setup({ teamTools: emptyTeamTools })
+
+    // Nenhum projeto: linha ausente na equipe conta como desligado, e a leitura acontece uma vez.
     await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
       REFUSED_DISABLED,
     )
@@ -442,11 +500,13 @@ describe('guard de módulo: núcleo', () => {
 describe('guard de módulo: reativar devolve os dados como estavam', () => {
   it('subtarefas: desativar esconde e reativar devolve o mesmo checklist', async () => {
     const { useCases, unitOfWork } = await setup()
-    const fx = await fixtures(useCases)
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.tasks.checklist.add.execute(contextA, { taskId: fx.task.id, title: 'Item' })
     const before = await useCases.tasks.getDetail.execute(contextA, { taskId: fx.task.id })
 
-    await setModules(unitOfWork, orgA, managerAId, { subtasks: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      subtasks: 'disabled',
+    })
     await expect(
       useCases.tasks.checklist.add.execute(contextA, { taskId: fx.task.id, title: 'Outro' }),
     ).rejects.toMatchObject(REFUSED_DISABLED)
@@ -454,38 +514,53 @@ describe('guard de módulo: reativar devolve os dados como estavam', () => {
     const hidden = await useCases.tasks.getDetail.execute(contextA, { taskId: fx.task.id })
     expect(hidden.checklist).toEqual(before.checklist)
 
-    await setModules(unitOfWork, orgA, managerAId, { subtasks: 'active' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      subtasks: 'active',
+    })
     const after = await useCases.tasks.getDetail.execute(contextA, { taskId: fx.task.id })
     expect(after).toEqual(before)
   })
 
   it('limite de WIP: desativar e reativar devolve os limites gravados', async () => {
     const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
     await useCases.boardSettings.setWipLimits.execute(contextA, {
       wipLimits: { in_progress: 2 },
     })
     const before = await useCases.boardSettings.get.execute(contextA)
 
-    await setModules(unitOfWork, orgA, managerAId, { wip: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      wip: 'disabled',
+    })
     await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
       REFUSED_DISABLED,
     )
 
-    await setModules(unitOfWork, orgA, managerAId, { wip: 'active' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      wip: 'active',
+    })
     await expect(useCases.boardSettings.get.execute(contextA)).resolves.toEqual(before)
   })
 })
 
 describe('guard de módulo: isolamento por organização', () => {
-  it('desligar um módulo no time A não afeta o time B', async () => {
+  it('desligar um módulo no projeto do time A não afeta o time B', async () => {
     const { useCases, unitOfWork } = await setup()
+    const fxA = await fixtures(useCases, unitOfWork)
     const fxB = await useCases.projects.createProject.execute(contextB, { name: 'Projeto B' })
+    await enableProjectModules(unitOfWork, orgB, toProjectId(fxB.id), managerBId, [
+      'wip',
+      'subtasks',
+    ])
     const taskB = await useCases.tasks.create.execute(contextB, {
       projectId: fxB.id,
       title: 'Tarefa B',
     })
 
-    await setModules(unitOfWork, orgA, managerAId, { wip: 'disabled', subtasks: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fxA.project.id), managerAId, {
+      wip: 'disabled',
+      subtasks: 'disabled',
+    })
 
     await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
       REFUSED_DISABLED,
@@ -494,6 +569,133 @@ describe('guard de módulo: isolamento por organização', () => {
     await expect(
       useCases.tasks.checklist.add.execute(contextB, { taskId: taskB.id, title: 'Item B' }),
     ).resolves.toBeDefined()
+  })
+})
+
+describe('guard de módulo por projeto (ADR-10)', () => {
+  it('módulo ligado só em outro projeto não vale: a tarefa do projeto sem o módulo é recusada', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    // Segundo projeto só com o núcleo: nele, subtarefas e impedimentos estão desligados.
+    const other = await useCases.projects.createProject.execute(contextA, { name: 'Outro' })
+    const otherTask = await useCases.tasks.create.execute(contextA, {
+      projectId: other.id,
+      title: 'Tarefa do outro',
+    })
+
+    await expect(
+      useCases.tasks.checklist.add.execute(contextA, { taskId: otherTask.id, title: 'Item' }),
+    ).rejects.toMatchObject(REFUSED_DISABLED)
+    await expect(
+      useCases.tasks.block.execute(contextA, { taskId: otherTask.id, reason: 'Aguardando' }),
+    ).rejects.toMatchObject(REFUSED_DISABLED)
+    // A tarefa do projeto que tem o módulo segue normal.
+    await expect(
+      useCases.tasks.checklist.add.execute(contextA, { taskId: fx.task.id, title: 'Item' }),
+    ).resolves.toBeDefined()
+  })
+
+  it('impedimentId resolve o projeto pela tarefa do impedimento', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    const other = await useCases.projects.createProject.execute(contextA, { name: 'Outro' })
+    await enableProjectModules(unitOfWork, orgA, toProjectId(other.id), managerAId, ['impediments'])
+    const otherTask = await useCases.tasks.create.execute(contextA, {
+      projectId: other.id,
+      title: 'Tarefa do outro',
+    })
+    const blockedHere = await useCases.tasks.block.execute(contextA, {
+      taskId: fx.task.id,
+      reason: 'Aqui',
+    })
+    expect(blockedHere.id).toBe(fx.task.id)
+    await useCases.tasks.block.execute(contextA, { taskId: otherTask.id, reason: 'Lá' })
+    const [here, there] = await useCases.impediments.list.execute(contextA, {})
+    const impedimentHere = here!.taskId === fx.task.id ? here! : there!
+    const impedimentThere = here!.taskId === fx.task.id ? there! : here!
+
+    // Desliga Impedimentos só no projeto da primeira tarefa: resolver lá recusa, lá fora segue.
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      impediments: 'disabled',
+    })
+    await expect(
+      useCases.impediments.resolve.execute(contextA, { impedimentId: impedimentHere.id }),
+    ).rejects.toMatchObject(REFUSED_DISABLED)
+    await expect(
+      useCases.impediments.resolve.execute(contextA, { impedimentId: impedimentThere.id }),
+    ).resolves.toBeDefined()
+  })
+
+  it('caso sem projeto vale se algum projeto ativo tem o módulo', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    // Segundo projeto sem limites de WIP: o quadro inteiro segue com o módulo, pelo projeto que tem.
+    await useCases.projects.createProject.execute(contextA, { name: 'Sem WIP' })
+    await expect(useCases.boardSettings.get.execute(contextA)).resolves.toBeDefined()
+
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      wip: 'disabled',
+    })
+    await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
+      REFUSED_DISABLED,
+    )
+  })
+
+  it('winding_down em um projeto e desligado no outro: caso sem projeto recusa criar e deixa ler', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    await useCases.projects.createProject.execute(contextA, { name: 'Sem check-in' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      checkins: 'winding_down',
+    })
+
+    await expect(useCases.daily.getToday.execute(contextA, { date: TODAY })).resolves.toBeDefined()
+    await expect(
+      useCases.daily.save.execute(contextA, {
+        date: TODAY,
+        answers: { progress: 'Testei', nextStep: 'Revisar', blocker: '' },
+      }),
+    ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
+  })
+
+  it('a equipe não entra na conta quando a organização tem projeto ativo', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+
+    // Equipe desligou WIP, mas o projeto tem: vale o projeto.
+    await setTeamModules(unitOfWork, orgA, managerAId, { wip: 'disabled' })
+    await expect(useCases.boardSettings.get.execute(contextA)).resolves.toBeDefined()
+
+    // Equipe ligou, mas o projeto não tem: vale o projeto.
+    await setTeamModules(unitOfWork, orgA, managerAId, { wip: 'active' })
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      wip: 'disabled',
+    })
+    await expect(useCases.boardSettings.get.execute(contextA)).rejects.toMatchObject(
+      REFUSED_DISABLED,
+    )
+  })
+
+  it('projeto de outra organização não vaza: a recusa não aparece para quem não é dono', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    // Subtarefas desligadas no projeto do time A: quem está fora não deve ver isso como recusa.
+    await setProjectModules(unitOfWork, orgA, toProjectId(fx.project.id), managerAId, {
+      subtasks: 'disabled',
+    })
+
+    await expect(
+      useCases.tasks.checklist.add.execute(contextB, { taskId: fx.task.id, title: 'Vazado' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      useCases.backlog.list.execute(contextB, { projectId: fx.project.id }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    // Projeto que não existe também segue para o caso de uso, que responde não encontrado.
+    await expect(
+      useCases.backlog.list.execute(contextA, {
+        projectId: toProjectId('00000000000000000000000099'),
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
 })
 
@@ -541,6 +743,19 @@ describe('mapa de módulos dos casos de uso', () => {
       'tasks.checklist.add',
       'tasks.criteria.add',
     ])
+  })
+
+  it('todo caso de uso declara de onde sai o projeto, e os casos de exemplo batem com a regra', () => {
+    for (const [path, policy] of Object.entries(USE_CASE_MODULES)) {
+      expect(policy.project, path).toBeDefined()
+    }
+    expect(USE_CASE_MODULES['sprints.close'].project).toEqual({ from: 'sprintId' })
+    expect(USE_CASE_MODULES['backlog.add'].project).toEqual({ from: 'projectId' })
+    expect(USE_CASE_MODULES['tasks.criteria.add'].project).toEqual({ from: 'taskId' })
+    expect(USE_CASE_MODULES['impediments.resolve'].project).toEqual({ from: 'impedimentId' })
+    expect(USE_CASE_MODULES['impediments.list'].project).toBe('none')
+    expect(USE_CASE_MODULES['meetings.create'].project).toBe('none')
+    expect(USE_CASE_MODULES['daily.save'].project).toBe('none')
   })
 
   it('o núcleo é o módulo de todos os casos que não dependem de ferramenta', () => {

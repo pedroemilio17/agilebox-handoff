@@ -237,21 +237,20 @@ async function projectWipState(useCases: UseCases, projectId: string) {
 }
 
 /**
- * Defeito de produção (não corrigido aqui): o guard de módulo lê só as ferramentas da equipe
- * (`module-guard.ts`), nunca `project_modules`. Pelo ADR-10, um projeto sem o módulo é só núcleo,
- * então Sprints ligada na equipe não deveria liberar a criação de sprint num projeto Simples.
+ * Módulo por projeto no guard (ADR-10): o projeto decide, a equipe não entra na conta. Com Sprints
+ * ligada só na equipe, um projeto sem Sprints recusa a criação de sprint; com Sprints ligada no
+ * projeto, ela funciona, mesmo com a equipe desligada.
  */
-describe('módulo por projeto no guard (defeito relatado)', () => {
+describe('módulo por projeto no guard', () => {
   const sprintInput = (projectId: string) => ({
     projectId,
     plannedStart: '2026-11-16',
     plannedEnd: '2026-11-27',
   })
 
-  it('controle: com Sprints ligada na equipe e no projeto, criar sprint funciona', async () => {
+  it('projeto com Sprints ligada no projeto cria sprint, com a equipe desligada', async () => {
     const { useCases } = await setup()
     await teamWithOnlyCore(useCases)
-    await useCases.teamTools.applyChange.execute(contextManagerA, { enable: ['sprints'] })
     const project = await useCases.projects.createProject.execute(contextManagerA, {
       name: 'Projeto com sprint',
     })
@@ -265,20 +264,16 @@ describe('módulo por projeto no guard (defeito relatado)', () => {
     expect(created.sprint.projectId).toBe(project.id)
   })
 
-  it.fails(
-    'projeto sem Sprints recusa criar sprint mesmo com Sprints ligada na equipe',
-    async () => {
-      const { useCases } = await setup()
-      await teamWithOnlyCore(useCases)
-      await useCases.teamTools.applyChange.execute(contextManagerA, { enable: ['sprints'] })
-      const project = await useCases.projects.createProject.execute(contextManagerA, {
-        name: 'Projeto Simples',
-      })
+  it('projeto sem Sprints recusa criar sprint mesmo com Sprints ligada na equipe', async () => {
+    const { useCases } = await setup()
+    await teamWithOnlyCore(useCases)
+    await useCases.teamTools.applyChange.execute(contextManagerA, { enable: ['sprints'] })
+    const project = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Projeto Simples',
+    })
 
-      // Deveria recusar: o projeto não tem Sprints (só núcleo). Hoje o guard deixa passar.
-      await expect(
-        useCases.sprints.create.execute(contextManagerA, sprintInput(project.id)),
-      ).rejects.toBeInstanceOf(PermissionDeniedError)
-    },
-  )
+    await expect(
+      useCases.sprints.create.execute(contextManagerA, sprintInput(project.id)),
+    ).rejects.toBeInstanceOf(PermissionDeniedError)
+  })
 })

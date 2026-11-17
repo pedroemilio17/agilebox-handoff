@@ -6,6 +6,7 @@ import {
   toDailyEntryId,
   toOrganizationId,
   toTaskId,
+  toProjectId,
   toUserId,
 } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
@@ -88,11 +89,23 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
       },
     },
   })
+  // Ferramentas do projeto (ADR-10): o mesmo padrão da demonstração, ligado em cada projeto criado.
+  // Gravado pelo gestor do seed (o primeiro usuário não é gestor, e só o gestor muda módulos).
+  const projectModules = defaults.modules
+    .filter((module) => module.state === 'active' && module.moduleId !== 'core')
+    .map(({ moduleId }) => ({ moduleId, state: 'active' as const }))
   const projects = []
   for (const name of demoSeedData.projects) {
     const project = await useCases.projects.createProject.execute(createTenantContext(actor), {
       name,
     })
+    await runtime.projectModules.save(
+      organizationId,
+      toProjectId(project.id),
+      projectModules,
+      users[4]!.id,
+      createdAt,
+    )
     projects.push(project)
     for (const user of users) {
       if (user.id !== users[0]!.id) {

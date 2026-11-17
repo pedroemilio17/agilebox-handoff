@@ -46,6 +46,7 @@ import type {
   User,
   Impediment,
   ImpedimentId,
+  ModuleId,
 } from '@agilebox/core'
 import type {
   AcceptanceRepository,
@@ -791,6 +792,17 @@ export class InMemoryProjectModulesRepository implements ProjectModulesRepositor
         changedAt: at,
       })
     }
+  }
+
+  async statesAcrossProjects(organizationId: OrganizationId, moduleId: ModuleId) {
+    await Promise.resolve()
+    const live = [...bucket(this.state.projects, organizationId).values()].filter(
+      (project) => project.archivedAt === null,
+    )
+    const rows = bucket(this.state.projectModules, organizationId)
+    return live.map(
+      (project) => rows.get(`${project.id}|${moduleId}`)?.state ?? ('disabled' as const),
+    )
   }
 }
 

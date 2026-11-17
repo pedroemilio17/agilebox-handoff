@@ -16,6 +16,7 @@ import { aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
+import { enableProjectModules } from '../../testing/task-harness'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
@@ -71,7 +72,10 @@ async function seedTask(
 ) {
   const project = aProject().build()
   await unitOfWork.repositories.projects.save(organizationId, project)
-  await unitOfWork.repositories.users.save(organizationId, aUser().build())
+  const user = aUser().build()
+  await unitOfWork.repositories.users.save(organizationId, user)
+  // Subtarefas são módulo do projeto (ADR-10): o projeto da fixture liga o módulo.
+  await enableProjectModules(unitOfWork, organizationId, project.id, user.id, ['subtasks'])
   const task = aTask()
     .inProject(project)
     .with({ number: options.number ?? 1 })

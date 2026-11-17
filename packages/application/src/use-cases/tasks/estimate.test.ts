@@ -9,8 +9,9 @@ import {
   ctx,
   manager,
   orgA,
+  projectId,
   seedTaskHarness,
-  setModules,
+  setProjectModules,
   taskId,
 } from '../../testing/task-harness'
 
@@ -159,7 +160,7 @@ describe('estimativa: regras do guard e do arquivamento', () => {
     const { useCases, unitOfWork } = createTaskHarness(ana)
     await seedTaskHarness(unitOfWork)
     // `burndown` exige horas ou pontos: desligá-la junto, como faria a prévia de impacto.
-    await setModules(unitOfWork, orgA, manager.userId, {
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, {
       burndown: 'disabled',
       'estimates.hours': 'disabled',
     })
@@ -171,7 +172,9 @@ describe('estimativa: regras do guard e do arquivamento', () => {
   it('encerrando, a estimativa continua editável (não é item novo)', async () => {
     const { useCases, unitOfWork } = createTaskHarness(ana)
     await seedTaskHarness(unitOfWork)
-    await setModules(unitOfWork, orgA, manager.userId, { 'estimates.hours': 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, {
+      'estimates.hours': 'winding_down',
+    })
     expect((await setEstimate(useCases, 3)).estimatedHours).toBe(3)
   })
 

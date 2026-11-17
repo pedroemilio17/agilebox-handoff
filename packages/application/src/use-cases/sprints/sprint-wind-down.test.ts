@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
+  DEFAULT_TEAM_MODULE_IDS,
   createProject,
   createUser,
   toOrganizationId,
   toProjectId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, ModuleId } from '@agilebox/core'
+import type { Actor, ModuleId, ModuleState } from '@agilebox/core'
 import { createTenantContext } from '../../tenant-context'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
@@ -17,6 +18,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 
 /**
  * Caminho completo do encerramento de Sprints (PLANO-2.0, casos de teste de ferramentas): a sprint
@@ -78,6 +80,8 @@ async function setup() {
   )
   for (const userId of [anaId, managerId])
     await repos.projects.addMember(orgA, { projectId, userId, addedBy: anaId, addedAt: NOW })
+  // Ferramentas do projeto (ADR-10): o projeto de teste começa com as que a equipe trazia por padrão.
+  await enableProjectModules(unitOfWork, orgA, projectId, managerId, DEFAULT_TEAM_MODULE_IDS)
 
   const actorSession: ActorSession = { get: () => ana, set: () => undefined }
   const useCases = createUseCases({
@@ -108,7 +112,7 @@ async function setup() {
     unitOfWork,
     users: repos.users,
   })
-  return { useCases, repos }
+  return { useCases, repos, unitOfWork }
 }
 
 type Ctx = Awaited<ReturnType<typeof setup>>
@@ -122,9 +126,21 @@ async function rejectionOf(promise: Promise<unknown>): Promise<{ code: string }>
   throw new Error('esperava recusa')
 }
 
+/** Estado do módulo no projeto de teste (ADR-10: é o que o guard lê). */
 async function stateOf(c: Ctx, moduleId: ModuleId, actor: Actor = manager) {
+  const view = await c.useCases.projectModules.get.execute(ctx(actor), { projectId })
+  return view.modules.find((module) => module.id === moduleId)?.state
+}
+
+/** Estado do módulo na equipe, para a organização de quem pede. */
+async function teamStateOf(c: Ctx, moduleId: ModuleId, actor: Actor) {
   const view = await c.useCases.teamTools.get.execute(ctx(actor))
   return view.modules.find((module) => module.id === moduleId)?.state
+}
+
+/** Muda o estado dos módulos no projeto de teste, sem passar pela equipe (ADR-10). */
+async function setProject(c: Ctx, states: Partial<Record<ModuleId, ModuleState>>) {
+  await setProjectModules(c.unitOfWork, orgA, projectId, managerId, states)
 }
 
 describe('encerramento de Sprints: caminho completo com os três tipos de item', () => {
@@ -172,7 +188,7 @@ describe('encerramento de Sprints: caminho completo com os três tipos de item',
     })
 
     // 1. Desligar Sprints com as dependências: entra em encerramento (não some).
-    await useCases.teamTools.applyChange.execute(ctx(manager), { disable: SPRINT_CHAIN })
+    await setProject(c, Object.fromEntries(SPRINT_CHAIN.map((id) => [id, 'winding_down'])))
     for (const moduleId of SPRINT_CHAIN) expect(await stateOf(c, moduleId)).toBe('winding_down')
 
     // 2. Criar, iniciar e adicionar item são recusados com CONFLITO.
@@ -236,9 +252,9 @@ describe('encerramento de Sprints: caminho completo com os três tipos de item',
     expect(board.find((task) => task.id === concluido.id)).toMatchObject({ status: 'done' })
 
     // 6. Concluir o encerramento: dependentes primeiro, depois Sprints. Vira disabled.
-    await useCases.teamTools.completeWindDown.execute(ctx(manager), { moduleId: 'reviewRetro' })
-    await useCases.teamTools.completeWindDown.execute(ctx(manager), { moduleId: 'burndown' })
-    await useCases.teamTools.completeWindDown.execute(ctx(manager), { moduleId: 'sprints' })
+    await setProject(c, { reviewRetro: 'disabled' })
+    await setProject(c, { burndown: 'disabled' })
+    await setProject(c, { sprints: 'disabled' })
     for (const moduleId of SPRINT_CHAIN) expect(await stateOf(c, moduleId)).toBe('disabled')
 
     // 7. Chamadas passam a ser recusadas com FORBIDDEN, leitura inclusive.
@@ -253,7 +269,7 @@ describe('encerramento de Sprints: caminho completo com os três tipos de item',
 
     // 8. Reativar devolve sprint, histórico e itens como estavam.
     const backlogBefore = ids(await useCases.backlog.list.execute(ctx(ana), { projectId }))
-    await useCases.teamTools.applyChange.execute(ctx(manager), { enable: ['sprints'] })
+    await setProject(c, { sprints: 'active' })
     expect(await stateOf(c, 'sprints')).toBe('active')
     const back = await useCases.sprints.get.execute(ctx(ana), { sprintId: sprint.sprint.id })
     expect(back.sprint).toMatchObject({ status: 'closed', closePolicy: 'return_to_backlog' })
@@ -262,18 +278,12 @@ describe('encerramento de Sprints: caminho completo com os três tipos de item',
     const draftBack = await useCases.sprints.get.execute(ctx(ana), { sprintId: draft.sprint.id })
     expect(draftBack.sprint.status).toBe('draft')
 
-    // 9. A auditoria registra os passos: ida ao encerramento, desativação e reativação.
-    const audit = await c.repos.teamTools.listAudit(orgA, 50)
-    const sprintStates = audit
-      .filter((entry) => entry.kind === 'module_state' && entry.moduleId === 'sprints')
-      .map((entry) => [entry.before, entry.after, entry.actorId])
-    expect(sprintStates).toEqual(
-      expect.arrayContaining([
-        ['active', 'winding_down', managerId],
-        ['winding_down', 'disabled', managerId],
-        ['disabled', 'active', managerId],
-      ]),
+    // 9. A linha do módulo no projeto guarda quem mudou por último. A trilha de auditoria dos
+    // módulos do projeto ainda não existe (lacuna registrada); a da equipe segue em team-tools.test.ts.
+    const row = (await c.repos.projectModules.list(orgA, projectId)).find(
+      (setting) => setting.moduleId === 'sprints',
     )
+    expect(row).toMatchObject({ state: 'active', changedBy: managerId })
   })
 
   it('o time B não enxerga nem altera a sprint do time A durante o encerramento', async () => {
@@ -283,12 +293,12 @@ describe('encerramento de Sprints: caminho completo com os três tipos de item',
       plannedStart: '2026-11-16',
       plannedEnd: '2026-11-27',
     })
-    await c.useCases.teamTools.applyChange.execute(ctx(manager), { disable: SPRINT_CHAIN })
+    await setProject(c, Object.fromEntries(SPRINT_CHAIN.map((id) => [id, 'winding_down'])))
     await expect(
       c.useCases.sprints.get.execute(ctx(managerB), { sprintId: sprint.sprint.id }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' })
     await expect(c.useCases.teamTools.get.execute(ctx(managerB))).resolves.toBeDefined()
-    expect(await stateOf(c, 'sprints', managerB)).toBe('active')
+    expect(await teamStateOf(c, 'sprints', managerB)).toBe('active')
   })
 })
 

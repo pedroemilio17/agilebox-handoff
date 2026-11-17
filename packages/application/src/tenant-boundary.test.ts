@@ -145,6 +145,11 @@ describe('fronteira TenantContext: casos de uso registrados', () => {
     const project = await useCases.projects.createProject.execute(contextA, {
       name: 'Projeto secreto A',
     })
+    // Agenda é do projeto (ADR-10): a organização A liga em um projeto ativo para criar reunião.
+    await useCases.projectModules.change.execute(contextA, {
+      projectId: project.id,
+      enable: ['agenda'],
+    })
     const task = await useCases.tasks.create.execute(contextA, {
       projectId: project.id,
       title: 'Tarefa secreta A',

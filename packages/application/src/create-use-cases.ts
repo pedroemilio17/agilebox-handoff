@@ -1,8 +1,7 @@
 import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
-import { assertModuleUsable, USE_CASE_MODULES } from './module-guard'
-import type { ModuleUsePolicy, UseCasePath } from './module-guard'
-import type { TeamToolsRepository } from './ports'
+import { assertProjectModuleUsable, USE_CASE_MODULES } from './module-guard'
+import type { ModuleGuardPorts, ModuleUsePolicy, UseCasePath } from './module-guard'
 import { assertTenantContext } from './tenant-context'
 import type { TenantContext } from './tenant-context'
 import {
@@ -139,9 +138,10 @@ interface UseCaseLike<Input extends unknown[], Output> {
 /**
  * Monta a fronteira `forTenant`: exige o `TenantContext` da sessão e, depois disso, aplica o guard
  * de módulo declarado em `USE_CASE_MODULES` para o caminho do caso de uso. O caminho é tipado pelas
- * chaves do mapa, então um caso de uso novo sem declaração não compila.
+ * chaves do mapa, então um caso de uso novo sem declaração não compila. Os argumentos do caso de
+ * uso são repassados ao guard, que acha o projeto a partir deles (ADR-10).
  */
-function tenantScope(teamTools: TeamToolsRepository) {
+function tenantScope(ports: ModuleGuardPorts) {
   return function forTenant<Path extends UseCasePath, Input extends unknown[], Output>(
     path: Path,
     useCase: UseCaseLike<Input, Output>,
@@ -151,7 +151,7 @@ function tenantScope(teamTools: TeamToolsRepository) {
       execute(context: TenantContext, ...args: Input): Promise<Awaited<Output>> {
         // Contexto inválido falha antes de qualquer consulta, de forma síncrona.
         assertTenantContext(context)
-        return callAfterModuleGuard(teamTools, context, policy, () =>
+        return callAfterModuleGuard(ports, context, policy, args, () =>
           useCase.execute(context.actor, ...args),
         )
       },
@@ -160,18 +160,19 @@ function tenantScope(teamTools: TeamToolsRepository) {
 }
 
 async function callAfterModuleGuard<T>(
-  teamTools: TeamToolsRepository,
+  ports: ModuleGuardPorts,
   context: TenantContext,
   policy: ModuleUsePolicy,
+  args: readonly unknown[],
   call: () => T,
 ): Promise<Awaited<T>> {
-  await assertModuleUsable(teamTools, context.tenantId, policy)
+  await assertProjectModuleUsable(ports, context.tenantId, policy, args)
   const result = await call()
   return result
 }
 
 export function createUseCases(deps: AppDeps) {
-  const forTenant = tenantScope(deps.teamTools)
+  const forTenant = tenantScope(deps)
   return {
     // Exceção: estes dois estabelecem a sessão (quem é o ator atual); não há contexto antes deles.
     session: {

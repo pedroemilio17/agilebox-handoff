@@ -23,7 +23,7 @@ import {
   otherManager,
   projectId,
   seedTaskHarness,
-  setModules,
+  setProjectModules,
   taskId,
 } from '../../testing/task-harness'
 
@@ -254,7 +254,7 @@ describe('impedimentos: módulo, linha do tempo e atomicidade', () => {
     await useCases.tasks.block.execute(ctx(ana), { taskId, reason: 'Motivo' })
     const [open] = await useCases.impediments.list.execute(ctx(ana), {})
 
-    await setModules(unitOfWork, orgA, managerId, { impediments: 'winding_down' })
+    await setProjectModules(unitOfWork, orgA, projectId, managerId, { impediments: 'winding_down' })
     await expect(
       useCases.tasks.block.execute(ctx(ana), { taskId, reason: 'Outro' }),
     ).rejects.toThrow(ConflictError)
@@ -263,7 +263,7 @@ describe('impedimentos: módulo, linha do tempo e atomicidade', () => {
     ).resolves.toMatchObject({ ownerId: biaId })
     expect(await useCases.impediments.list.execute(ctx(ana), {})).toHaveLength(1)
 
-    await setModules(unitOfWork, orgA, managerId, { impediments: 'disabled' })
+    await setProjectModules(unitOfWork, orgA, projectId, managerId, { impediments: 'disabled' })
     await expect(useCases.impediments.list.execute(ctx(ana), {})).rejects.toThrow(
       PermissionDeniedError,
     )

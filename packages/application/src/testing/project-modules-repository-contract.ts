@@ -22,6 +22,10 @@ export const projectModulesFixtures = {
   managerB: toUserId('01ARZ3NDEKTSV4RRFFQ69G5FAY'),
   projectA: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB0'),
   projectB: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB1'),
+  /** Segundo projeto ativo da organização A (sem linhas gravadas nos testes de origem). */
+  projectA2: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB2'),
+  /** Projeto arquivado da organização A: não conta para a regra de casos de uso sem projeto. */
+  projectArchivedA: toProjectId('01ARZ3NDEKTSV4RRFFQ69G5FB3'),
 } as const
 
 export const projectModulesCreatedAt = '2026-01-01T00:00:00.000Z'
@@ -30,8 +34,16 @@ const SECOND_CHANGE = '2026-11-16T11:00:00.000Z'
 
 /** Dados mínimos para o armazenamento de cada implementação: gestor e projeto por organização. */
 export function projectModulesSeed() {
-  const { organizationA, organizationB, managerA, managerB, projectA, projectB } =
-    projectModulesFixtures
+  const {
+    organizationA,
+    organizationB,
+    managerA,
+    managerB,
+    projectA,
+    projectB,
+    projectA2,
+    projectArchivedA,
+  } = projectModulesFixtures
   const user = (id: UserId, organizationId: OrganizationId) =>
     createUser({
       id,
@@ -59,6 +71,24 @@ export function projectModulesSeed() {
         createdBy: managerB,
         createdAt: projectModulesCreatedAt,
       }),
+      createProject({
+        id: projectA2,
+        organizationId: organizationA,
+        name: 'Projeto A2',
+        createdBy: managerA,
+        createdAt: projectModulesCreatedAt,
+      }),
+      {
+        ...createProject({
+          id: projectArchivedA,
+          organizationId: organizationA,
+          name: 'Projeto arquivado',
+          createdBy: managerA,
+          createdAt: projectModulesCreatedAt,
+        }),
+        archivedAt: '2026-11-01T00:00:00.000Z',
+        archivedBy: managerA,
+      },
     ],
   }
 }
@@ -71,8 +101,16 @@ export function describeProjectModulesRepositoryContract(
   name: string,
   makeRepository: () => Promise<ProjectModulesRepository>,
 ): void {
-  const { organizationA, organizationB, managerA, managerB, projectA, projectB } =
-    projectModulesFixtures
+  const {
+    organizationA,
+    organizationB,
+    managerA,
+    managerB,
+    projectA,
+    projectB,
+    projectA2,
+    projectArchivedA,
+  } = projectModulesFixtures
   const config = { horario: '09:00', dias: [1, 2, 3] }
 
   describe(`contrato dos módulos do projeto: ${name}`, () => {
@@ -290,6 +328,66 @@ export function describeProjectModulesRepositoryContract(
         ).rejects.toThrow(ValidationError)
       }
       expect(await repository.list(organizationA, projectA)).toEqual([])
+    })
+
+    it('statesAcrossProjects: organização sem projeto ativo devolve lista vazia', async () => {
+      const repository = await makeRepository()
+      const sem = toOrganizationId('01ARZ3NDEKTSV4RRFFQ69G5FBZ')
+      expect(await repository.statesAcrossProjects(sem, 'agenda')).toEqual([])
+    })
+
+    it('statesAcrossProjects: um estado por projeto ativo, sem linha conta como desligado, arquivado fica fora', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationA,
+        projectA,
+        [{ moduleId: 'agenda', state: 'active' }],
+        managerA,
+        FIRST_CHANGE,
+      )
+      // Arquivado com o módulo ligado: não pode liberar nada na organização.
+      await repository.save(
+        organizationA,
+        projectArchivedA,
+        [{ moduleId: 'agenda', state: 'winding_down' }],
+        managerA,
+        FIRST_CHANGE,
+      )
+
+      const states = await repository.statesAcrossProjects(organizationA, 'agenda')
+      expect([...states].sort()).toEqual(['active', 'disabled'])
+    })
+
+    it('statesAcrossProjects: só enxerga a organização pedida e o módulo pedido', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationB,
+        projectB,
+        [{ moduleId: 'agenda', state: 'active' }],
+        managerB,
+        FIRST_CHANGE,
+      )
+
+      expect(await repository.statesAcrossProjects(organizationB, 'agenda')).toEqual(['active'])
+      expect(await repository.statesAcrossProjects(organizationA, 'agenda')).toEqual([
+        'disabled',
+        'disabled',
+      ])
+      expect(await repository.statesAcrossProjects(organizationB, 'backlog')).toEqual(['disabled'])
+    })
+
+    it('statesAcrossProjects: devolve o estado encerrando como está gravado', async () => {
+      const repository = await makeRepository()
+      await repository.save(
+        organizationA,
+        projectA2,
+        [{ moduleId: 'agenda', state: 'winding_down' }],
+        managerA,
+        FIRST_CHANGE,
+      )
+
+      const states = await repository.statesAcrossProjects(organizationA, 'agenda')
+      expect([...states].sort()).toEqual(['disabled', 'winding_down'])
     })
   })
 }

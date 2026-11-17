@@ -391,17 +391,18 @@ export class CloseSprint {
       throw new ValidationError('Escolha a sprint seguinte para levar os itens abertos')
     const now = await this.deps.clock.now(organizationId)
     const changed = await this.deps.unitOfWork.run(organizationId, async (repos) => {
-      const settings = await repos.teamTools.getSettings(organizationId)
       const sprint = await requireSprint(repos, organizationId, input.sprintId)
       const policy: SprintClosePolicy =
         input.policy === 'carry_over' && input.nextSprintId !== undefined
           ? { kind: 'carry_over', nextSprintId: toSprintId(input.nextSprintId) }
           : { kind: 'return_to_backlog' }
       // Levar os itens cria linhas novas na sprint seguinte: o módulo em encerramento não cria.
-      if (
-        policy.kind === 'carry_over' &&
-        moduleStateOf(settings.modules, 'sprints') === 'winding_down'
-      )
+      // O estado é o do projeto da sprint (ADR-10).
+      const projectRows =
+        policy.kind === 'carry_over'
+          ? await repos.projectModules.list(organizationId, sprint.projectId)
+          : []
+      if (policy.kind === 'carry_over' && moduleStateOf(projectRows, 'sprints') === 'winding_down')
         throw new ConflictError(
           'Sprints está sendo encerrada: os itens abertos voltam ao backlog ou ficam no quadro',
         )

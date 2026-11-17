@@ -10,6 +10,7 @@ import {
 } from '@agilebox/core'
 import type { Actor, TimelineEvent } from '@agilebox/core'
 import { createTenantContext } from '../../tenant-context'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
@@ -103,9 +104,9 @@ async function setup() {
     unitOfWork,
     users: repos.users,
   })
-  // O módulo `backlog` é de Intermediário para cima: a equipe de teste já o tem ligado.
-  await useCases.teamTools.applyChange.execute(ctx(manager), { enable: ['backlog'] })
-  return { useCases, repos, notifier }
+  // O módulo `backlog` é do projeto (ADR-10): o projeto de teste já o tem ligado.
+  await enableProjectModules(unitOfWork, orgA, projectId, managerId, ['backlog'])
+  return { useCases, repos, notifier, unitOfWork }
 }
 
 type Ctx = Awaited<ReturnType<typeof setup>>
@@ -446,9 +447,7 @@ describe('backlog: isolamento, arquivamento e módulo', () => {
   it('módulo backlog: encerrando não aceita item novo, mas deixa puxar; desativado recusa tudo', async () => {
     const c = await setup()
     const item = await add(c, ana, 'Antes de encerrar')
-    // Sprints depende de Backlog, e Burndown e Revisão dependem de Sprints: o domínio recusa desligar só um.
-    const chain = ['burndown', 'reviewRetro', 'sprints', 'backlog'] as const
-    await c.useCases.teamTools.applyChange.execute(ctx(manager), { disable: [...chain] })
+    await setProjectModules(c.unitOfWork, orgA, projectId, managerId, { backlog: 'winding_down' })
 
     await expect(add(c, ana, 'Novo')).rejects.toMatchObject({ code: 'CONFLICT' })
     await expect(add(c, manager, 'Gestora')).rejects.toMatchObject({ code: 'CONFLICT' })
@@ -459,10 +458,7 @@ describe('backlog: isolamento, arquivamento e módulo', () => {
       status: 'todo',
     })
 
-    await c.useCases.teamTools.applyChange.execute(ctx(manager), {
-      disable: [...chain],
-      finalize: [...chain],
-    })
+    await setProjectModules(c.unitOfWork, orgA, projectId, managerId, { backlog: 'disabled' })
     await expect(c.useCases.backlog.list.execute(ctx(ana), { projectId })).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })

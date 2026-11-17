@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
   createProject,
+  DEFAULT_TEAM_MODULE_IDS,
   createUser,
   toOrganizationId,
   toProjectId,
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, TimelineEvent } from '@agilebox/core'
+import type { Actor, ModuleId, ModuleState, TimelineEvent } from '@agilebox/core'
 import { createTenantContext } from '../../tenant-context'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
@@ -18,6 +19,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 
 const NOW = '2026-11-16T12:00:00.000Z'
 const orgA = toOrganizationId('00000000000000000000000001')
@@ -82,6 +84,8 @@ async function setup(): Promise<Setup> {
   )
   for (const userId of [anaId, managerId])
     await repos.projects.addMember(orgA, { projectId, userId, addedBy: anaId, addedAt: NOW })
+  // Ferramentas do projeto (ADR-10): o projeto de teste começa com as que a equipe trazia por padrão.
+  await enableProjectModules(unitOfWork, orgA, projectId, managerId, DEFAULT_TEAM_MODULE_IDS)
 
   let current = ana
   const actorSession: ActorSession = { get: () => current, set: (actor) => (current = actor) }
@@ -155,11 +159,19 @@ async function backlogItem(c: Ctx, title: string) {
   return c.useCases.backlog.add.execute(ctx(ana), { projectId, title })
 }
 
+/**
+ * Muda os módulos do projeto de teste (ADR-10). `disable` entra em encerramento (`winding_down`);
+ * com `finalize`, o módulo fica desligado. `enable` liga como `active`.
+ */
 async function change(
   c: Ctx,
   input: { enable?: string[]; disable?: string[]; finalize?: string[] },
 ) {
-  return c.useCases.teamTools.applyChange.execute(ctx(manager), input)
+  const states: Partial<Record<ModuleId, ModuleState>> = {}
+  for (const id of input.enable ?? []) states[id as ModuleId] = 'active'
+  for (const id of input.disable ?? [])
+    states[id as ModuleId] = (input.finalize ?? []).includes(id) ? 'disabled' : 'winding_down'
+  await setProjectModules(c.unitOfWork, orgA, projectId, managerId, states)
 }
 
 async function eventsOf(c: Ctx, taskId: string): Promise<readonly TimelineEvent[]> {

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import type { ProjectModuleChange, ProjectModulesRepository } from '@agilebox/application'
 import {
   MODULE_IDS,
@@ -108,6 +108,32 @@ export function createSqliteProjectModulesRepository(
         client.exec(`RELEASE ${SAVEPOINT}`)
         throw error
       }
+    },
+
+    async statesAcrossProjects(organizationId: OrganizationId, moduleId: ModuleId) {
+      const live = await database
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.organizationId, organizationId), isNull(projects.archivedAt)))
+      if (live.length === 0) return []
+
+      const rows = await database
+        .select({ projectId: projectModules.projectId, state: projectModules.state })
+        .from(projectModules)
+        .where(
+          and(
+            eq(projectModules.organizationId, organizationId),
+            eq(projectModules.moduleId, moduleId),
+            inArray(
+              projectModules.projectId,
+              live.map((project) => project.id),
+            ),
+          ),
+        )
+      return live.map((project) => {
+        const row = rows.find((item) => item.projectId === project.id)
+        return row === undefined ? 'disabled' : toModuleState(row.state)
+      })
     },
   }
 }

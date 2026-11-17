@@ -187,6 +187,13 @@ O SQLite é um adaptador. Para que outro banco (Postgres, por exemplo) entre só
 - **Repositórios assíncronos** (`Promise`) pelo mesmo motivo.
 - A **suíte de contrato** (seção 8) é a prova: o adaptador novo só entra quando passa nela inteira.
 
+### 3.8 Módulos por projeto e guard (ADR-10)
+
+- O guard de módulo (`application/src/module-guard.ts`) lê `project_modules` do **projeto**: o projeto sai dos argumentos do caso de uso (`projectId`, `taskId`, `sprintId`, `impedimentId`, conforme `USE_CASE_MODULES[…].project`). Projeto novo começa só com o núcleo.
+- `team_modules` deixa de ser lido pelo guard. A equipe só entra na conta quando a organização não tem nenhum projeto ativo (compatibilidade), e a leitura de painel da organização (`organizationModuleStateOf`) segue a mesma regra.
+- Casos sem projeto (agenda, check-ins, limites do quadro, impedimentos da organização, ações de retro): o módulo vale se estiver ligado em pelo menos um projeto não arquivado da organização, e encerrando (`winding_down`) recusa só o que cria. Quem não resolve projeto (projeto ou tarefa de outra organização, ou inexistente) passa pelo guard e recebe `NotFoundError` do próprio caso de uso.
+- Exibição que depende de módulo (impedimento e sprint no cartão, sprint de encerramento) também lê o estado do projeto. A configuração (ex.: limite de sprints ativas, ADR-08) segue na equipe até existir caso de uso de configuração por projeto.
+
 ---
 
 ## 4. Convenções de código
