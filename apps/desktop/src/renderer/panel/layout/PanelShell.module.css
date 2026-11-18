@@ -9,7 +9,7 @@
   box-shadow: var(--glass-window-highlight), var(--shadow-window);
   color: var(--color-text-primary);
   backdrop-filter: var(--glass-window-backdrop);
-  animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) both;
+  animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) backwards;
 }
 
 :global(:root[data-glass='compositor']) .window,
@@ -515,7 +515,7 @@
   gap: var(--space-4);
   min-height: 0;
   padding: var(--space-1) var(--space-6) var(--space-6);
-  animation: viewEnter var(--motion-duration-view) var(--ease-ios) both;
+  animation: viewEnter var(--motion-duration-view) var(--ease-ios) backwards;
 }
 
 @keyframes windowOpen {

@@ -163,3 +163,10 @@
 - Alvos: os itens seguem as medidas do mockup (36 px de topo, 34 px de subitem), abaixo dos 44 px do token de toque. Confirmar se quer 44 px.
 - Não há tela para "Plano" (`HibPlano`) nem para o gerenciamento de metodologia; ficou fora.
 - DECIDIR: o rodapé mostra só o papel ("Gestor"). O design pede "Gestor · Time".
+
+## Arrastar cartões (B1)
+
+- Causa: o `DragOverlay` do dnd-kit é `position: fixed` dentro de ancestrais com `backdrop-filter` e animações com `fill-mode: both` (que mantêm `transform`), então o cartão saía deslocado do ponteiro. Correção: overlay em portal no `body`, origem da rotação no ponto do clique, animações `windowOpen`/`viewEnter`/`cardEnter` com `backwards`.
+- CONFERIR rodando: cartão sob o ponteiro com rolagem e janela de vários tamanhos; cartões da coluna agora devem abrir espaço ao arrastar (antes `cardEnter both` anulava o transform do dnd-kit).
+- DECIDIR: a inclinação de 2° do cartão arrastado não está no design (lá só `opacity: .45`); mantida, remover se não quiser.
+- Outros `position: fixed` dentro de `.window` (menus, tooltips) podem sofrer do mesmo backdrop-filter; não vi sintoma.

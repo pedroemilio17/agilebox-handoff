@@ -69,7 +69,7 @@
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-card);
   background: var(--surface-card);
-  animation: cardEnter var(--motion-duration-card) var(--ease-ios) both;
+  animation: cardEnter var(--motion-duration-card) var(--ease-ios) backwards;
   transition:
     background 200ms ease,
     transform 250ms var(--ease-ios);
@@ -92,7 +92,7 @@
   visibility: hidden;
 }
 
-/* Cópia que flutua sobre o quadro durante o arraste. */
+/* Cópia que flutua sobre o quadro durante o arraste. O transform-origin vem inline (ponto do clique). */
 .overlay {
   overflow: hidden;
   border: 1px solid var(--color-hairline);
@@ -288,6 +288,10 @@
   .card {
     animation: none;
     transition-duration: 0.01ms;
+  }
+
+  .overlay {
+    transform: none;
   }
 }
 
