@@ -271,3 +271,27 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
   - Acompanhamento: "Propor nova base" e "Uma nova base passa pelo aceite da equipe". Não há aceite; o app tira a foto direto (só gestor) e o botão diz "Tirar nova foto".
 - Textos do design que mudaram: "Enter para a próxima" (no lugar de "Enter cria e vai para o próximo"), "Horas: de 590 h previstas no projeto", a frase da EAP "...aparecem no quadro e no cronograma".
 - CONFERIR na tela: 1280 e 1440 px, tabela da EAP com ações flutuantes, matriz de riscos e cores de calor, interruptor da linha de base, rolagem da raiz das quatro telas.
+
+## Telas 17 e 18, híbrido (plano e sprint dentro da entrega)
+
+- Feito: "Plano" (17) na barra do projeto, antes do Quadro, com a EAP e as sprints ligadas (o gate é o mesmo da EAP e das Sprints). Linha do tempo com entregas (faixas que se sobrepõem vão para outra linha), marcos e sprints; entrega atual com marco, sprints que a atravessam e o que falta; próximas entregas; painel "Como o híbrido funciona" com o texto do design. Sprint dentro da entrega (18): trilha da entrega, título, datas com dia útil, contexto (progresso, marco e meta), selo E# em cada cartão, aviso de item que não é da entrega com "Devolver ao backlog", e o quadro da sprint reaproveitado.
+- DECIDIR: a faixa da entrega vai da primeira à última sprint que tem tarefas dela. O app não tem data de início nem de fim por entrega, então isso é derivado. Entrega sem nenhuma sprint não tem faixa no tempo.
+- DECIDIR: "Abrir Sprint N" usa a sprint ativa e a entrega que tem mais itens nela. Sprint também abre pelo número na entrega atual.
+- DECIDIR: "Plano" aparece em qualquer projeto com EAP e sprints ligadas, não só no híbrido (é o gate pedido). Quer um filtro pelo preset?
+- DECIDIR: a regra "item novo fora da entrega pede aprovação" está no painel do design, mas o app não tem aprovação. O texto ficou como no design. Quer a regra no domínio?
+- DECIDIR: "Mover para a Entrega 2" e "Propor incluir na Entrega 1" (18) não foram feitos. Mover direto burla a aprovação acima. Só "Devolver ao backlog" existe.
+- DECIDIR: os itens das sprints vêm do detalhe de cada sprint (uma consulta por sprint). Para colaborador, o detalhe pode trazer só as tarefas dele, enquanto a EAP traz todas. Os números podem não bater. Conferir.
+- NÃO implementado (sem dado ou regra no app):
+  - "Prazo final · sex 27/02/2027" no cabeçalho do plano: não há data de fim do projeto.
+  - "Ocupa toda a capacidade da Sprint 2 (30 h)" e "30 h de 30 h de capacidade": não há capacidade de sprint.
+  - "Carla trouxe AB-212 ... passa a capacidade em 8 h": o app não guarda quem trouxe o item para a sprint nessa tela. O alerta é genérico.
+  - "Sprint 1 concluída · esta é a última sprint da entrega": a última sprint da entrega não é um dado. A tela mostra "Sprints desta entrega: S1, S2".
+  - Avatares dos cartões da sprint (design mostra as iniciais de quem faz). O quadro da 08 não tem avatar.
+  - Atalho N em "Nova tarefa" (já pendente na Sprint).
+- Textos novos meus (revisar): "Sprints desta entrega: S1, S2", "Sem sprint com itens desta entrega.", "Sem entrega: os itens desta sprint não estão ligados à EAP.", "X h planejadas nesta sprint", "Itens fora da entrega" (plural), "N itens estão na sprint, mas não são desta entrega. Eles não estão nas entregas planejadas.", "Planejada", "termina em dd/mm", "N dias atrás", "Sem marco ligado a esta entrega.", "Nenhuma outra entrega em aberto.", "Cadastre as entregas na EAP para ver o plano.", "Escolha um projeto para ver o plano.".
+- Dado do design: "sex 28/11" não bate com 2026. 28/11/2026 é sábado, e a dia 17/11 até 28/11 são 9 dias úteis (o design diz 10). O app usa o calendário real ("sáb 28/11", "dia 2 de 9").
+- Próximas entregas: o design diz "12 itens no backlog, 3 sem estimativa". O app mostra "N itens, M sem estimativa" dos itens da entrega, porque não separa o backlog por entrega nessa tela.
+- Quadro da sprint (18): as quatro colunas do design; se houver item em Planejamento, aparece a quinta coluna (regra da tela 08).
+- Tokens novos: `--color-deliverable*` (entrega: barra, marco e selo E#) e `--surface-column` (#141318, que antes estava literal em Sprints, EAP e Plano; mesmo valor).
+- Literais no CSS do plano: cores de status das sprints na faixa (`#22352b` fechada, `#2d3f5c` ativa). Só o plano usa. Virar token se outra tela precisar.
+- CONFERIR: 1280 e 1440 px; faixas que se sobrepõem em duas linhas; "Abrir Sprint" sem sprint ativa; sprint 18 de uma entrega sem itens; entrega atual sem sprint (só marco e falta); o colaborador vendo o plano.

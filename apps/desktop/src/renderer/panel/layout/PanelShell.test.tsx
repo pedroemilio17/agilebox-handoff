@@ -110,7 +110,9 @@ describe('barra lateral conforme o design', () => {
     expect(nav.getByRole('button', { name: 'Sprints' }).textContent).toContain('S4')
     expect(nav.getByRole('button', { name: 'Burndown' })).toBeTruthy()
     expect(nav.getByRole('button', { name: 'Módulos' }).textContent).toContain('6')
-    expect(subitemNames().slice(0, 5)).toEqual([
+    // "Plano" entra antes do Quadro quando a EAP e as sprints estão ligadas (design 17 e 18).
+    expect(subitemNames().slice(0, 6)).toEqual([
+      'Plano',
       'Quadro',
       'Backlog',
       'Sprints',
@@ -131,6 +133,38 @@ describe('barra lateral conforme o design', () => {
     const { nav } = renderShell({ view: 'backlog' })
     expect(nav.getByRole('button', { name: 'Backlog' }).getAttribute('aria-current')).toBe('page')
     expect(nav.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBeNull()
+  })
+
+  it('Plano aparece antes do Quadro só com EAP e sprints ligados, no projeto selecionado', () => {
+    const { nav } = renderShell()
+    expect(subitemNames()[0]).toBe('Plano')
+    expect(nav.getByRole('button', { name: 'Plano' })).toBeTruthy()
+  })
+
+  it('Plano some sem a EAP ou sem as sprints ligadas', () => {
+    const { nav } = renderShell({}, ['backlog', 'sprints'])
+    expect(nav.queryByRole('button', { name: 'Plano' })).toBeNull()
+    cleanup()
+    const second = renderShell({}, ['backlog', 'wbs'])
+    expect(second.nav.queryByRole('button', { name: 'Plano' })).toBeNull()
+  })
+
+  it('sem projeto selecionado, Plano não aparece', () => {
+    const { nav } = renderShell({ selectedProjectId: null })
+    expect(nav.queryByRole('button', { name: 'Plano' })).toBeNull()
+  })
+
+  it('clicar em Plano abre o plano; a sprint aberta dentro da entrega destaca Quadro', () => {
+    const { nav, props } = renderShell({ view: 'plan', plan: <p>Plano do projeto</p> })
+    expect(nav.getByRole('button', { name: 'Plano' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByText('Plano do projeto')).toBeTruthy()
+    cleanup()
+    const inSprint = renderShell({ view: 'planSprint', planSprint: <p>Sprint na entrega</p> })
+    expect(inSprint.nav.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+    expect(screen.getByText('Sprint na entrega')).toBeTruthy()
+    expect(props).toBeDefined()
   })
 
   it('clicar num subitem chama a troca de tela', async () => {

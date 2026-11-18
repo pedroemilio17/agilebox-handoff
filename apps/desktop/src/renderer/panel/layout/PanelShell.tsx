@@ -14,6 +14,7 @@ import { trackingCopy } from '../tracking/tracking-screen'
 import { baselineCopy } from '../baseline/baseline-screen'
 import { burndownCopy } from '../burndown/burndown-screen'
 import { flowMetricsCopy } from '../flow-metrics/flow-metrics-screen'
+import { planCopy } from '../plan/plan-screen'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -29,6 +30,8 @@ export type PanelView =
   | 'flowMetrics'
   | 'risks'
   | 'sprints'
+  | 'plan'
+  | 'planSprint'
   | 'impediments'
   | 'agenda'
   | 'modules'
@@ -83,6 +86,10 @@ export interface PanelShellProps {
   readonly backlog?: ReactNode
   /** Entregas (EAP). O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly wbs?: ReactNode
+  /** Plano do projeto híbrido (tela 17). O item da barra só aparece com a EAP e as sprints ligadas. */
+  readonly plan?: ReactNode
+  /** Sprint dentro da entrega (tela 18), aberta pelo plano. Destaca "Quadro" na barra, como no design. */
+  readonly planSprint?: ReactNode
   /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly milestones?: ReactNode
   /** Cronograma do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
@@ -110,6 +117,8 @@ const viewTitles: Record<PanelView, string> = {
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
   wbs: 'Entregas (EAP)',
+  plan: planCopy.title,
+  planSprint: sprintCopy.title,
   milestones: 'Marcos',
   schedule: 'Cronograma',
   tracking: trackingCopy.title,
@@ -160,6 +169,8 @@ export function PanelShell({
   modules,
   backlog,
   wbs,
+  plan,
+  planSprint,
   milestones,
   schedule,
   tracking,
@@ -187,7 +198,11 @@ export function PanelShell({
   // Subitens da seção do projeto, na ordem do design (Quadro, Backlog, Sprints, Burndown, Módulos).
   // Os de módulo seguem o mesmo gate de antes; sem projeto selecionado, só os da organização.
   // Backlog e Sprints são da organização quando não há projeto: a tela continua alcançável.
+  // Plano (híbrido): com projeto selecionado e a EAP e as sprints ligadas. Vem antes do Quadro, como no design.
+  const planVisible =
+    hasProject && capabilities.showScreen('wbs') && capabilities.showScreen('sprints')
   const contextEntries: readonly RailEntry[] = [
+    ...(planVisible ? [{ id: 'plan' as const, label: planCopy.title, icon: '◫' }] : []),
     { id: 'projects', label: 'Quadro', icon: '▦' },
     ...(capabilities.showScreen('backlog')
       ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
@@ -257,7 +272,7 @@ export function PanelShell({
         expanded={railExpanded}
         topEntries={topEntries}
         contextEntries={contextEntries}
-        selected={visibleView}
+        selected={visibleView === 'planSprint' ? 'projects' : visibleView}
         onExpandChange={setRailExpanded}
         onSelect={onViewChange}
         account={account}
@@ -292,6 +307,10 @@ export function PanelShell({
             backlog
           ) : visibleView === 'wbs' && wbs ? (
             wbs
+          ) : visibleView === 'plan' && plan ? (
+            plan
+          ) : visibleView === 'planSprint' && planSprint ? (
+            planSprint
           ) : visibleView === 'milestones' && milestones ? (
             milestones
           ) : visibleView === 'schedule' && schedule ? (

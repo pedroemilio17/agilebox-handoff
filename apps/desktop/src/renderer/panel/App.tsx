@@ -24,6 +24,8 @@ import { BaselineView } from './baseline/BaselineView'
 import { BurndownView } from './burndown/BurndownView'
 import { FlowMetricsView } from './flow-metrics/FlowMetricsView'
 import { SprintsView } from './sprints/SprintsView'
+import { PlanView } from './plan/PlanView'
+import { PlanSprintView } from './plan/PlanSprintView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
 import { summarizeModules } from './modules/modules-screen'
@@ -90,10 +92,20 @@ function PanelContent({
   const risksVisible = selectedProjectId !== null && capabilities.showScreen('risks')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
+  // Plano (híbrido, tela 17): precisa da EAP e das sprints ligadas no projeto selecionado.
+  const planVisible =
+    selectedProjectId !== null &&
+    capabilities.showScreen('wbs') &&
+    capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
   const impedimentsVisible = capabilities.showScreen('impediments')
   const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
+  // Sprint aberta a partir do plano (tela 18): a sprint e a entrega em que ela está aberta.
+  const [planSprint, setPlanSprint] = useState<{
+    readonly sprintId: string
+    readonly deliverableId: string | null
+  } | null>(null)
   const [view, setView] = useState<PanelView>(() => {
     // Depois de trocar Translúcido/Opaco as janelas são recriadas: o painel volta em Ajustes.
     try {
@@ -117,6 +129,8 @@ function PanelContent({
     (view === 'flowMetrics' && !flowMetricsVisible) ||
     (view === 'risks' && !risksVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
+    (view === 'plan' && !planVisible) ||
+    (view === 'planSprint' && (!planVisible || planSprint === null)) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
       ? 'projects'
@@ -473,6 +487,37 @@ function PanelContent({
             projectName={selectedProject?.name ?? null}
             onNavigate={setView}
           />
+        }
+        plan={
+          <PlanView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onOpenSprint={(sprintId, deliverableId) => {
+              setPlanSprint({ sprintId, deliverableId })
+              setView('planSprint')
+            }}
+          />
+        }
+        planSprint={
+          selectedProjectId !== null && planSprint !== null ? (
+            <PlanSprintView
+              key={planSprint.sprintId}
+              projectId={selectedProjectId}
+              sprintId={planSprint.sprintId}
+              deliverableId={planSprint.deliverableId}
+              showEstimates={capabilities.can('estimates.hours:passive')}
+              onBack={() => setView('plan')}
+              onOpenTask={(id) => {
+                openTask(id)
+                setView('projects')
+              }}
+              onNewTask={() => {
+                setNewTaskStatus(undefined)
+                setNewTaskDialogOpen(true)
+              }}
+            />
+          ) : null
         }
         risks={
           <RisksView

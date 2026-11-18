@@ -757,7 +757,7 @@
   min-width: 0;
   padding: 10px;
   border-radius: 14px;
-  background: #141318;
+  background: var(--surface-column);
 }
 
 .boardColumnHead {

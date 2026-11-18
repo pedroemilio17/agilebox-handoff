@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import type { TaskDto } from '@agilebox/contract'
@@ -29,6 +30,7 @@ export function ActiveBoard({
   removeDisabled,
   onOpenTask,
   onRemove,
+  cardTag,
 }: {
   readonly items: readonly TaskDto[]
   readonly midSprint: ReadonlySet<string>
@@ -36,6 +38,8 @@ export function ActiveBoard({
   readonly removeDisabled: boolean
   readonly onOpenTask: (taskId: string) => void
   readonly onRemove: (taskId: string) => void
+  /** Selo extra no topo do cartão (ex.: a entrega da tarefa, na tela da sprint dentro da entrega). */
+  readonly cardTag?: (task: TaskDto) => ReactNode
 }) {
   const groups = groupByStatus(items)
   const statuses: readonly TaskStatus[] =
@@ -77,6 +81,7 @@ export function ActiveBoard({
                   >
                     <div className={styles.cardTop}>
                       <TaskKey value={task.key} />
+                      {cardTag ? cardTag(task) : null}
                       <span className={styles.spacer} />
                       {midSprint.has(task.id) ? (
                         <span className={styles.flag}>{sprintCopy.addedMidSprint}</span>
