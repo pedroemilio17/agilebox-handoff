@@ -225,14 +225,14 @@ describe('Impedimento aberto no detalhe', () => {
 })
 
 describe('Níveis e módulos', () => {
-  it('Básico: só o motivo, sem resolver, atribuir ou histórico', async () => {
+  it('Básico: o histórico aparece (é tela), mas a faixa só mostra o motivo, sem resolver ou atribuir', async () => {
     const { api } = setup({ detail: blockedDetail(), modules: SCRUM, level: 'basic' })
     await settleCapabilities(api)
     const strip = await screen.findByRole('region', { name: 'Bloqueio' })
     expect(within(strip).getByText(REASON)).toBeTruthy()
     expect(within(strip).queryByRole('button')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
-    expect(screen.queryByRole('region', { name: impedimentCopy.historyTitle })).toBeNull()
+    expect(screen.getByRole('region', { name: impedimentCopy.historyTitle })).toBeTruthy()
   })
 
   it('módulo desligado: nem o motivo aparece', async () => {

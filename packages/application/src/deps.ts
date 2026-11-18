@@ -8,13 +8,19 @@ import type {
   DailyEntryRepository,
   ImpedimentRepository,
   TaskCommentRepository,
+  TaskDependencyRepository,
   ContributorRepository,
   DefinitionOfDoneRepository,
+  DeliverableRepository,
+  GuideProgressRepository,
   IdGenerator,
   MeetingRepository,
+  MilestoneRepository,
   OrganizationRepository,
   ParticipationRepository,
+  ProjectModulesRepository,
   ProjectRepository,
+  ProjectSetupRepository,
   RetroActionRepository,
   SprintRepository,
   SprintTaskRepository,
@@ -37,15 +43,21 @@ export interface AppDeps {
   readonly contributors: ContributorRepository
   readonly dailyEntries: DailyEntryRepository
   readonly definitionOfDone: DefinitionOfDoneRepository
+  readonly deliverables: DeliverableRepository
+  readonly guideProgress: GuideProgressRepository
   readonly idGenerator: IdGenerator
   readonly impediments: ImpedimentRepository
   readonly meetings: MeetingRepository
+  readonly milestones: MilestoneRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
+  readonly projectModules: ProjectModulesRepository
   readonly projects: ProjectRepository
+  readonly projectSetup: ProjectSetupRepository
   readonly retroActions: RetroActionRepository
   readonly sprints: SprintRepository
   readonly sprintTasks: SprintTaskRepository
+  readonly taskDependencies: TaskDependencyRepository
   readonly taskOpens: TaskOpenRepository
   readonly tasks: TaskRepository
   readonly teamTools: TeamToolsRepository

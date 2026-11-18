@@ -30,6 +30,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     projects: {
       list: (input) => call('projects.list', input),
       create: (input) => call('projects.create', input),
+      createWithSetup: (input) => call('projects.createWithSetup', input),
       listMembers: (input) => call('projects.listMembers', input),
       addMember: (input) => call('projects.addMember', input),
       removeMember: (input) => call('projects.removeMember', input),
@@ -64,6 +65,8 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
         move: (input) => call('tasks.checklist.move', input),
       },
       setEstimate: (input) => call('tasks.setEstimate', input),
+      setDeliverable: (input) => call('tasks.setDeliverable', input),
+      setStart: (input) => call('tasks.setStart', input),
       criteria: {
         add: (input) => call('tasks.criteria.add', input),
         toggle: (input) => call('tasks.criteria.toggle', input),
@@ -96,6 +99,30 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       discard: (input) => call('sprints.discard', input),
       addTask: (input) => call('sprints.addTask', input),
       removeTask: (input) => call('sprints.removeTask', input),
+    },
+    wbs: {
+      get: (input) => call('wbs.get', input),
+      createDeliverable: (input) => call('wbs.createDeliverable', input),
+      renameDeliverable: (input) => call('wbs.renameDeliverable', input),
+      moveDeliverable: (input) => call('wbs.moveDeliverable', input),
+      removeDeliverable: (input) => call('wbs.removeDeliverable', input),
+    },
+    schedule: {
+      get: (input) => call('schedule.get', input),
+      addDependency: (input) => call('schedule.addDependency', input),
+      removeDependency: (input) => call('schedule.removeDependency', input),
+    },
+    tracking: {
+      get: (input) => call('tracking.get', input),
+    },
+    burndown: {
+      get: (input) => call('burndown.get', input),
+    },
+    milestones: {
+      list: (input) => call('milestones.list', input),
+      create: (input) => call('milestones.create', input),
+      update: (input) => call('milestones.update', input),
+      remove: (input) => call('milestones.remove', input),
     },
     backlog: {
       list: (input) => call('backlog.list', input),
@@ -145,6 +172,17 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       listForDate: (input) => call('daily.listForDate', input),
       getForUser: (input) => call('daily.getForUser', input),
       suggestSummary: (input) => call('daily.suggestSummary', input),
+    },
+    projectModules: {
+      get: (input) => call('projectModules.get', input),
+      change: (input) => call('projectModules.change', input),
+      setConfig: (input) => call('projectModules.setConfig', input),
+      getOrganization: () => call('projectModules.getOrganization', undefined),
+    },
+    guide: {
+      get: (input) => call('guide.get', input),
+      dismissCard: (input) => call('guide.dismissCard', input),
+      resolveWelcome: (input) => call('guide.resolveWelcome', input),
     },
     teamTools: {
       get: () => call('teamTools.get', undefined),

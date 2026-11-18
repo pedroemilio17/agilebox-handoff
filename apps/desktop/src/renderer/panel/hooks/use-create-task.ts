@@ -8,6 +8,10 @@ export function useCreateTask() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateTaskInput) => api.tasks.create(input),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+    onSuccess: async () => {
+      // Uma tarefa nova pode concluir um passo do guia.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.guide.all })
+    },
   })
 }

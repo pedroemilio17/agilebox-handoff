@@ -187,6 +187,13 @@ O SQLite é um adaptador. Para que outro banco (Postgres, por exemplo) entre só
 - **Repositórios assíncronos** (`Promise`) pelo mesmo motivo.
 - A **suíte de contrato** (seção 8) é a prova: o adaptador novo só entra quando passa nela inteira.
 
+### 3.8 Módulos por projeto e guard (ADR-10)
+
+- O guard de módulo (`application/src/module-guard.ts`) lê `project_modules` do **projeto**: o projeto sai dos argumentos do caso de uso (`projectId`, `taskId`, `sprintId`, `impedimentId`, conforme `USE_CASE_MODULES[…].project`). Projeto novo começa só com o núcleo.
+- `team_modules` deixa de ser lido pelo guard. A equipe só entra na conta quando a organização não tem nenhum projeto ativo (compatibilidade), e a leitura de painel da organização (`organizationModuleStateOf`) segue a mesma regra.
+- Casos sem projeto (agenda, check-ins, limites do quadro, impedimentos da organização, ações de retro): o módulo vale se estiver ligado em pelo menos um projeto não arquivado da organização, e encerrando (`winding_down`) recusa só o que cria. Quem não resolve projeto (projeto ou tarefa de outra organização, ou inexistente) passa pelo guard e recebe `NotFoundError` do próprio caso de uso.
+- Exibição que depende de módulo (impedimento e sprint no cartão, sprint de encerramento) também lê o estado do projeto. A configuração do módulo (ex.: limite de sprints ativas, ADR-08) pode ser gravada no projeto (`projectModules.setConfig`, só o gestor, módulo ligado); sem configuração no projeto, vale a da equipe (valor padrão herdado). Config vazia limpa e volta a herdar. Ainda não há tela para editá-la por projeto.
+
 ---
 
 ## 4. Convenções de código
@@ -624,3 +631,9 @@ Não bloqueiam os marcos M1 a M5.
 4. **Entidades do Azure AD**: importar funcionários como `contributors` com `source = azure`.
 5. **Plug-ins**: GLPI, Azure DevOps, webhooks de commit, caixa de pendências, aviso de atualização.
 6. **Aviso diário**.
+
+#### 3.8.1 Guia e janela de boas-vindas (ADR-10)
+
+- O guia é gerado dos manifestos (`core/src/modules/guide.ts`); o progresso é por **pessoa e por projeto** (`guide_progress`) e conclui sozinho por evento de domínio (`recordGuideEvent`, chamado dentro da transação dos casos de uso). Nenhum passo bloqueia ação alguma.
+- Chaves reservadas em `guide_progress`: `__card__` (card "Primeiros passos" dispensado) e `__welcome__` (janela de boas-vindas respondida). Não contam como passo.
+- A janela de boas-vindas (única exceção à regra de não usar modais) aparece quando a pessoa é membro, não criou o projeto, entrou depois da criação, a trilha não é vazia e ela ainda não respondeu (`isWelcomeDue`).

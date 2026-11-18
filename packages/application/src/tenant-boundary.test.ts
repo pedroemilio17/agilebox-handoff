@@ -72,8 +72,14 @@ async function setup() {
     contributors: repositories.contributors,
     dailyEntries: repositories.dailyEntries,
     teamTools: repositories.teamTools,
+    projectModules: repositories.projectModules,
+    projectSetup: repositories.projectSetup,
+    guideProgress: repositories.guideProgress,
     sprints: repositories.sprints,
     sprintTasks: repositories.sprintTasks,
+    deliverables: repositories.deliverables,
+    taskDependencies: repositories.taskDependencies,
+    milestones: repositories.milestones,
     impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
@@ -143,6 +149,11 @@ describe('fronteira TenantContext: casos de uso registrados', () => {
     const contextB: TenantContext = createTenantContext(managerB)
     const project = await useCases.projects.createProject.execute(contextA, {
       name: 'Projeto secreto A',
+    })
+    // Agenda é do projeto (ADR-10): a organização A liga em um projeto ativo para criar reunião.
+    await useCases.projectModules.change.execute(contextA, {
+      projectId: project.id,
+      enable: ['agenda'],
     })
     const task = await useCases.tasks.create.execute(contextA, {
       projectId: project.id,

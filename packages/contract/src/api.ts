@@ -12,6 +12,8 @@ import {
   addProjectMemberOutputSchema,
   createProjectInputSchema,
   createProjectOutputSchema,
+  createProjectWithSetupInputSchema,
+  createProjectWithSetupOutputSchema,
   listProjectMembersInputSchema,
   listProjectMembersOutputSchema,
   listProjectsInputSchema,
@@ -78,6 +80,8 @@ import {
   criteriaChangeOutputSchema,
   setTaskEstimateInputSchema,
   setTaskEstimateOutputSchema,
+  setTaskDeliverableInputSchema,
+  setTaskDeliverableOutputSchema,
   recordTaskOpenInputSchema,
   recordTaskOpenOutputSchema,
   searchTasksInputSchema,
@@ -156,6 +160,23 @@ import {
   teamToolsViewDtoSchema,
 } from './team-tools'
 import {
+  changeProjectModulesInputSchema,
+  setProjectModuleConfigInputSchema,
+  getOrganizationModulesInputSchema,
+  getProjectModulesInputSchema,
+  organizationModulesViewDtoSchema,
+  projectModulesChangeResultDtoSchema,
+  projectModulesViewDtoSchema,
+} from './project-modules'
+import {
+  dismissGuideCardInputSchema,
+  dismissGuideCardOutputSchema,
+  getGuideInputSchema,
+  guideViewDtoSchema,
+  resolveGuideWelcomeInputSchema,
+  resolveGuideWelcomeOutputSchema,
+} from './guide'
+import {
   addDefinitionOfDoneItemInputSchema,
   definitionOfDoneChangeOutputSchema,
   listDefinitionOfDoneInputSchema,
@@ -164,6 +185,40 @@ import {
   removeDefinitionOfDoneItemInputSchema,
   renameDefinitionOfDoneItemInputSchema,
 } from './definition-of-done'
+import {
+  createMilestoneInputSchema,
+  createMilestoneOutputSchema,
+  listMilestonesInputSchema,
+  listMilestonesOutputSchema,
+  removeMilestoneInputSchema,
+  removeMilestoneOutputSchema,
+  updateMilestoneInputSchema,
+  updateMilestoneOutputSchema,
+} from './milestones'
+import {
+  createDeliverableInputSchema,
+  createDeliverableOutputSchema,
+  getWbsInputSchema,
+  getWbsOutputSchema,
+  moveDeliverableInputSchema,
+  moveDeliverableOutputSchema,
+  removeDeliverableInputSchema,
+  removeDeliverableOutputSchema,
+  renameDeliverableInputSchema,
+  renameDeliverableOutputSchema,
+} from './wbs'
+import {
+  addTaskDependencyInputSchema,
+  addTaskDependencyOutputSchema,
+  getScheduleInputSchema,
+  getScheduleOutputSchema,
+  removeTaskDependencyInputSchema,
+  removeTaskDependencyOutputSchema,
+  setTaskStartInputSchema,
+  setTaskStartOutputSchema,
+} from './schedule'
+import { getTrackingInputSchema, getTrackingOutputSchema } from './tracking'
+import { getBurndownInputSchema, getBurndownOutputSchema } from './burndown'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -226,6 +281,10 @@ export const API_SCHEMA_REGISTRY = {
   'users.setDefaultRate': { input: setDefaultRateInputSchema, output: setDefaultRateOutputSchema },
   'projects.list': { input: listProjectsInputSchema, output: listProjectsOutputSchema },
   'projects.create': { input: createProjectInputSchema, output: createProjectOutputSchema },
+  'projects.createWithSetup': {
+    input: createProjectWithSetupInputSchema,
+    output: createProjectWithSetupOutputSchema,
+  },
   'projects.listMembers': {
     input: listProjectMembersInputSchema,
     output: listProjectMembersOutputSchema,
@@ -364,6 +423,40 @@ export const API_SCHEMA_REGISTRY = {
     input: removeSprintTaskInputSchema,
     output: removeSprintTaskOutputSchema,
   },
+  'tasks.setStart': { input: setTaskStartInputSchema, output: setTaskStartOutputSchema },
+  'schedule.get': { input: getScheduleInputSchema, output: getScheduleOutputSchema },
+  'schedule.addDependency': {
+    input: addTaskDependencyInputSchema,
+    output: addTaskDependencyOutputSchema,
+  },
+  'schedule.removeDependency': {
+    input: removeTaskDependencyInputSchema,
+    output: removeTaskDependencyOutputSchema,
+  },
+  'tracking.get': { input: getTrackingInputSchema, output: getTrackingOutputSchema },
+  'burndown.get': { input: getBurndownInputSchema, output: getBurndownOutputSchema },
+  'tasks.setDeliverable': {
+    input: setTaskDeliverableInputSchema,
+    output: setTaskDeliverableOutputSchema,
+  },
+  'wbs.get': { input: getWbsInputSchema, output: getWbsOutputSchema },
+  'wbs.createDeliverable': {
+    input: createDeliverableInputSchema,
+    output: createDeliverableOutputSchema,
+  },
+  'wbs.renameDeliverable': {
+    input: renameDeliverableInputSchema,
+    output: renameDeliverableOutputSchema,
+  },
+  'wbs.moveDeliverable': { input: moveDeliverableInputSchema, output: moveDeliverableOutputSchema },
+  'wbs.removeDeliverable': {
+    input: removeDeliverableInputSchema,
+    output: removeDeliverableOutputSchema,
+  },
+  'milestones.list': { input: listMilestonesInputSchema, output: listMilestonesOutputSchema },
+  'milestones.create': { input: createMilestoneInputSchema, output: createMilestoneOutputSchema },
+  'milestones.update': { input: updateMilestoneInputSchema, output: updateMilestoneOutputSchema },
+  'milestones.remove': { input: removeMilestoneInputSchema, output: removeMilestoneOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -440,6 +533,31 @@ export const API_SCHEMA_REGISTRY = {
     input: suggestDailySummaryInputSchema,
     output: suggestDailySummaryOutputSchema,
   },
+  'projectModules.get': {
+    input: getProjectModulesInputSchema,
+    output: projectModulesViewDtoSchema,
+  },
+  'projectModules.change': {
+    input: changeProjectModulesInputSchema,
+    output: projectModulesChangeResultDtoSchema,
+  },
+  'projectModules.setConfig': {
+    input: setProjectModuleConfigInputSchema,
+    output: projectModulesViewDtoSchema,
+  },
+  'projectModules.getOrganization': {
+    input: getOrganizationModulesInputSchema,
+    output: organizationModulesViewDtoSchema,
+  },
+  'guide.get': { input: getGuideInputSchema, output: guideViewDtoSchema },
+  'guide.dismissCard': {
+    input: dismissGuideCardInputSchema,
+    output: dismissGuideCardOutputSchema,
+  },
+  'guide.resolveWelcome': {
+    input: resolveGuideWelcomeInputSchema,
+    output: resolveGuideWelcomeOutputSchema,
+  },
   'teamTools.get': { input: getTeamToolsInputSchema, output: teamToolsViewDtoSchema },
   'teamTools.previewChange': {
     input: previewTeamToolsChangeInputSchema,
@@ -485,6 +603,7 @@ export interface AgileBoxApi {
   projects: {
     list: Method<'projects.list'>
     create: Method<'projects.create'>
+    createWithSetup: Method<'projects.createWithSetup'>
     listMembers: Method<'projects.listMembers'>
     addMember: Method<'projects.addMember'>
     removeMember: Method<'projects.removeMember'>
@@ -499,6 +618,17 @@ export interface AgileBoxApi {
       move: Method<'projects.definitionOfDone.move'>
     }
   }
+  projectModules: {
+    get: Method<'projectModules.get'>
+    change: Method<'projectModules.change'>
+    setConfig: Method<'projectModules.setConfig'>
+    getOrganization: Method<'projectModules.getOrganization'>
+  }
+  guide: {
+    get: Method<'guide.get'>
+    dismissCard: Method<'guide.dismissCard'>
+    resolveWelcome: Method<'guide.resolveWelcome'>
+  }
   tasks: {
     getBoardFlow: Method<'tasks.getBoardFlow'>
     listBoard: Method<'tasks.listBoard'>
@@ -512,6 +642,8 @@ export interface AgileBoxApi {
     archive: Method<'tasks.archive'>
     unarchive: Method<'tasks.unarchive'>
     setEstimate: Method<'tasks.setEstimate'>
+    setDeliverable: Method<'tasks.setDeliverable'>
+    setStart: Method<'tasks.setStart'>
     criteria: {
       add: Method<'tasks.criteria.add'>
       toggle: Method<'tasks.criteria.toggle'>
@@ -593,6 +725,30 @@ export interface AgileBoxApi {
     discard: Method<'sprints.discard'>
     addTask: Method<'sprints.addTask'>
     removeTask: Method<'sprints.removeTask'>
+  }
+  wbs: {
+    get: Method<'wbs.get'>
+    createDeliverable: Method<'wbs.createDeliverable'>
+    renameDeliverable: Method<'wbs.renameDeliverable'>
+    moveDeliverable: Method<'wbs.moveDeliverable'>
+    removeDeliverable: Method<'wbs.removeDeliverable'>
+  }
+  schedule: {
+    get: Method<'schedule.get'>
+    addDependency: Method<'schedule.addDependency'>
+    removeDependency: Method<'schedule.removeDependency'>
+  }
+  tracking: {
+    get: Method<'tracking.get'>
+  }
+  burndown: {
+    get: Method<'burndown.get'>
+  }
+  milestones: {
+    list: Method<'milestones.list'>
+    create: Method<'milestones.create'>
+    update: Method<'milestones.update'>
+    remove: Method<'milestones.remove'>
   }
   backlog: {
     list: Method<'backlog.list'>

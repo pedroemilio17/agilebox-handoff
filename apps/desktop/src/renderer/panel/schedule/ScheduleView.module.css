@@ -1,0 +1,560 @@
+/* Tela "Cronograma" (Gantt, lista de datas e dependências). Só tokens. */
+
+.view {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.project,
+.range {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.note,
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+  line-height: 1.45;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-body-small);
+}
+
+.errorBox {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+/* Escala Semanas | Meses: grupo de botões com aria-pressed. */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-button);
+  background: var(--glass-control);
+}
+
+.segment {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-control-segment-selected);
+  color: var(--color-text-primary);
+}
+
+.segment:focus-visible,
+.button:focus-visible,
+.input:focus-visible,
+.select:focus-visible,
+.scroll:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.swatchLine {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: var(--color-text-muted);
+}
+
+.legend li:last-child .swatchLine {
+  background: var(--color-signal-warning);
+}
+
+.swatchInProgress {
+  background: var(--color-status-desenvolvendo);
+}
+
+.swatchDone {
+  background: var(--color-status-concluido);
+}
+
+.swatchFuture {
+  background: var(--color-status-planejamento);
+}
+
+.swatchLate {
+  background: var(--color-signal-danger);
+}
+
+.swatchDiamond {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: var(--color-text-primary);
+}
+
+.swatchToday {
+  width: 2px;
+  height: 12px;
+  background: var(--color-primary-bg);
+}
+
+/* Cartão do Gantt: rola na horizontal; a coluna de nomes fica fixa. */
+.ganttCard {
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-group);
+  overflow: hidden;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.ganttInner {
+  position: relative;
+  min-width: 100%;
+}
+
+.ganttHead,
+.ganttRow {
+  display: grid;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+.ganttHead {
+  height: 40px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.nameCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  font-size: var(--font-size-body-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nameHead {
+  composes: nameCell;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+
+.nameTask {
+  padding-left: var(--space-6);
+}
+
+.nameTaskIndent {
+  padding-left: calc(var(--space-6) + var(--space-3));
+}
+
+.nameGroup {
+  font-weight: 600;
+}
+
+.key {
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+}
+
+.code {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  background: var(--glass-control);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  line-height: 20px;
+}
+
+.axis {
+  position: relative;
+  height: 100%;
+}
+
+.axisLabel {
+  position: absolute;
+  top: 12px;
+  padding-left: var(--space-1);
+  border-left: 1px solid var(--color-hairline-strong);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  white-space: nowrap;
+}
+
+.ganttRow {
+  height: 40px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.groupRow {
+  background: var(--glass-control);
+}
+
+.timeline {
+  position: relative;
+  min-width: 0;
+}
+
+.bar {
+  position: absolute;
+  top: 12px;
+  height: 16px;
+  min-width: 4px;
+  border-radius: 4px;
+  background: var(--color-status-afazer);
+}
+
+.bar[data-state='done'] {
+  background: var(--color-status-concluido);
+}
+
+.bar[data-state='current'] {
+  background: var(--color-status-desenvolvendo);
+}
+
+.bar[data-state='future'] {
+  background: var(--color-status-planejamento);
+}
+
+.bar[data-state='late'] {
+  background: var(--color-signal-danger);
+}
+
+.noDates {
+  position: absolute;
+  top: 11px;
+  left: var(--space-3);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-chip);
+}
+
+.milestone {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  transform: rotate(45deg);
+  background: var(--color-text-primary);
+}
+
+.milestoneLabel {
+  position: absolute;
+  top: 10px;
+  padding-left: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-chip);
+  white-space: nowrap;
+}
+
+/* Camada sobre as linhas: grade, traço de hoje e setas. Não recebe o mouse. */
+.overlay {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+}
+
+.gridLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-hairline);
+}
+
+.todayLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-primary-bg);
+}
+
+.depSvg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.depLine {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.depLine[data-conflict='true'] {
+  stroke: var(--color-signal-warning);
+  stroke-width: 1.8;
+}
+
+.arrowHead {
+  fill: var(--color-text-muted);
+}
+
+.arrowHeadConflict {
+  fill: var(--color-signal-warning);
+}
+
+/* Faixa de alerta: só aparece com conflito de dependência. */
+.alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-signal-warning);
+  border-radius: var(--radius-group);
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+  font-size: var(--font-size-body-small);
+}
+
+.alertTag {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  background: var(--color-signal-warning-bg);
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.card {
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-group);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+}
+
+/* Tabela de datas: rola na horizontal em telas pequenas. */
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body-small);
+}
+
+.table th,
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+
+.table tbody th {
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.input,
+.select {
+  box-sizing: border-box;
+  min-height: var(--size-touch-target);
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+}
+
+.dateCell {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.button {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-button);
+  background: var(--glass-control);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.errorText {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-chip);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  background: var(--glass-control);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-chip);
+  white-space: nowrap;
+}
+
+.status[data-state='late'] {
+  background: var(--color-signal-danger-bg);
+  color: var(--color-signal-danger-text);
+}
+
+.status[data-state='done'] {
+  color: var(--color-status-concluido);
+}
+
+.dependencyList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dependencyItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-body-small);
+}
+
+.conflictTag {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+  font-size: var(--font-size-chip);
+  line-height: 22px;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-chip);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment,
+  .button {
+    transition: none;
+  }
+}

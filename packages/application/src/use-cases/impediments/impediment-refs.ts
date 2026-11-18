@@ -1,15 +1,38 @@
 import { moduleStateOf, NotFoundError, toUserId } from '@agilebox/core'
-import type { ImpedimentOwnerCandidate, OrganizationId, TaskId, UserId } from '@agilebox/core'
+import type {
+  ImpedimentOwnerCandidate,
+  OrganizationId,
+  ProjectId,
+  TaskId,
+  UserId,
+} from '@agilebox/core'
 import type { ImpedimentDto, ImpedimentRefDto } from '@agilebox/contract'
 import { toImpedimentDto, toImpedimentRefDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 
-type ImpedimentDeps = Pick<AppDeps, 'teamTools' | 'impediments' | 'users'>
+type ImpedimentDeps = Pick<AppDeps, 'projectModules' | 'impediments' | 'tasks' | 'users'>
 
-/** Módulo `impediments` desligado: nenhum impedimento aparece nas respostas (esconde, não apaga). */
-async function impedimentsVisible(deps: ImpedimentDeps, organizationId: OrganizationId) {
-  const settings = await deps.teamTools.getSettings(organizationId)
-  return moduleStateOf(settings.modules, 'impediments') !== 'disabled'
+/**
+ * Tarefas cujo projeto tem o módulo `impediments` ligado (ADR-10: o estado é do projeto da tarefa).
+ * Desligado no projeto, os impedimentos dele não aparecem nas respostas (esconde, não apaga).
+ */
+async function tasksWithImpedimentsVisible(
+  deps: ImpedimentDeps,
+  organizationId: OrganizationId,
+  taskIds: readonly TaskId[],
+): Promise<Set<TaskId>> {
+  const visibleByProject = new Map<ProjectId, boolean>()
+  const visible = new Set<TaskId>()
+  for (const taskId of new Set(taskIds)) {
+    const task = await deps.tasks.findById(organizationId, taskId)
+    if (!task) continue
+    if (!visibleByProject.has(task.projectId)) {
+      const rows = await deps.projectModules.list(organizationId, task.projectId)
+      visibleByProject.set(task.projectId, moduleStateOf(rows, 'impediments') !== 'disabled')
+    }
+    if (visibleByProject.get(task.projectId) === true) visible.add(taskId)
+  }
+  return visible
 }
 
 /** Nomes dos responsáveis, em lote e sem repetir consulta. */
@@ -35,8 +58,14 @@ export async function loadImpedimentRefs(
   taskIds: readonly TaskId[],
 ): Promise<ReadonlyMap<TaskId, ImpedimentRefDto>> {
   const refs = new Map<TaskId, ImpedimentRefDto>()
-  if (taskIds.length === 0 || !(await impedimentsVisible(deps, organizationId))) return refs
-  const rows = await deps.impediments.listOpenByTasks(organizationId, taskIds)
+  if (taskIds.length === 0) return refs
+  const found = await deps.impediments.listOpenByTasks(organizationId, taskIds)
+  const visible = await tasksWithImpedimentsVisible(
+    deps,
+    organizationId,
+    found.map((row) => row.taskId),
+  )
+  const rows = found.filter((row) => visible.has(row.taskId))
   const names = await loadOwnerNames(
     deps,
     organizationId,
@@ -56,7 +85,8 @@ export async function loadImpedimentHistory(
   organizationId: OrganizationId,
   taskId: TaskId,
 ): Promise<ImpedimentDto[]> {
-  if (!(await impedimentsVisible(deps, organizationId))) return []
+  const visible = await tasksWithImpedimentsVisible(deps, organizationId, [taskId])
+  if (!visible.has(taskId)) return []
   const rows = await deps.impediments.listByTask(organizationId, taskId)
   const names = await loadOwnerNames(
     deps,

@@ -10,10 +10,15 @@ import { createSqliteRetroActionRepository } from './repositories/retro-action-r
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
+import { createSqliteProjectModulesRepository } from './repositories/project-modules-repository.js'
+import { createSqliteGuideProgressRepository } from './repositories/guide-progress-repository.js'
+import { createSqliteProjectSetupRepository } from './repositories/project-setup-repository.js'
 import { createSqliteTeamToolsRepository } from './repositories/team-tools-repository.js'
 import { createSqliteSprintRepositories } from './repositories/sprint-repository.js'
 import { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
+import { createSqliteDeliverableRepositories } from './repositories/deliverable-repository.js'
+import { createSqliteTaskDependencyRepository } from './repositories/task-dependency-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
 
@@ -30,12 +35,17 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...createSqliteCoreRepositories(database),
       ...createSqliteTaskRepositories(database),
+      ...createSqliteDeliverableRepositories(database),
+      taskDependencies: createSqliteTaskDependencyRepository(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      projectModules: createSqliteProjectModulesRepository(database),
+      projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
+      guideProgress: createSqliteGuideProgressRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
       retroActions: createSqliteRetroActionRepository(database),
@@ -67,12 +77,17 @@ describe('SqliteUnitOfWork', () => {
     const unitOfWork = createSqliteUnitOfWork(database, {
       ...core,
       ...createSqliteTaskRepositories(database),
+      ...createSqliteDeliverableRepositories(database),
+      taskDependencies: createSqliteTaskDependencyRepository(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      projectModules: createSqliteProjectModulesRepository(database),
+      projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),
       definitionOfDone: createSqliteDefinitionOfDoneRepository(database),
+      guideProgress: createSqliteGuideProgressRepository(database),
       comments: createSqliteTaskCommentRepository(database),
       meetings,
       retroActions: createSqliteRetroActionRepository(database),

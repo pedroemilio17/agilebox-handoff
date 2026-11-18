@@ -86,7 +86,8 @@ export function CostCard({ task, readOnly }: CostCardProps) {
   }
 
   return (
-    <PropertyRow label="Horas e custo">
+    // Com o módulo `cost` desligado, o cartão mostra só as horas (valor/hora e total já vêm nulos).
+    <PropertyRow label={task.costEnabled ? 'Horas e custo' : panelCopy.hours}>
       <div className={styles.propertyContent}>
         <ul className={styles.list}>
           {lines.map(({ participation, value }) => (

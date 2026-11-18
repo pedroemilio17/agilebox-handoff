@@ -51,6 +51,18 @@ export const PASSIVE_TOOL_TERMS: readonly RegExp[] = [
   startsWord('Estimativa'),
 ]
 
+/**
+ * Nomes de telas que o Básico vê desde o ADR-10 (o nível não esconde tela): o item de menu e o
+ * título aparecem; as ações e medidores que dependem do nível continuam nos termos proibidos.
+ */
+export const SCREEN_NAME_TERMS: readonly RegExp[] = [
+  startsWord('Backlog'),
+  startsWord('Sprint'),
+  startsWord('Impedimento'),
+  startsWord('Impedimentos'),
+  startsWord('Histórico de impedimentos'),
+]
+
 export const FORBIDDEN_TERMS: readonly RegExp[] = [
   // Nomes de ferramentas (catálogo de MODULE_LABELS) e as palavras-raiz deles.
   startsWord('Backlog'),

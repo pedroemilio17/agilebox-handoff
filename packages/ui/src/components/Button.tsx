@@ -1,10 +1,12 @@
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, Ref } from 'react'
 import styles from './Button.module.css'
 import { Kbd } from './Indicators'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   readonly shortcut?: string
   readonly variant?: 'primary' | 'secondary'
+  /** React 19: `ref` chega como prop comum e vai para o botão. */
+  readonly ref?: Ref<HTMLButtonElement>
 }
 
 export function Button({

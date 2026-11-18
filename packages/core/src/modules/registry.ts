@@ -17,6 +17,14 @@ export const MODULE_IDS = [
   'flowMetrics',
   'reviewRetro',
   'burndown',
+  // ADR-10: módulos novos por projeto.
+  'cost',
+  'milestones',
+  'wbs',
+  'schedule',
+  'definitionOfDone',
+  'baseline',
+  'risks',
 ] as const
 
 export type ModuleId = (typeof MODULE_IDS)[number]
@@ -38,6 +46,13 @@ export const MODULE_LABELS: Readonly<Record<ModuleId, string>> = {
   flowMetrics: 'Métricas de fluxo',
   reviewRetro: 'Review e retro',
   burndown: 'Burndown e velocity',
+  cost: 'Custo',
+  milestones: 'Marcos',
+  wbs: 'Entregas (EAP)',
+  schedule: 'Cronograma',
+  definitionOfDone: 'Critério de pronto',
+  baseline: 'Linha de base',
+  risks: 'Riscos',
 }
 
 export interface ModuleDefinition {
@@ -93,6 +108,15 @@ const DEFINITIONS: readonly ModuleDefinition[] = [
     requiresAnyOf: [['estimates.hours'], ['estimates.points']],
     minLevel: 'advanced',
   },
+  // ADR-10. `minLevel` segue a escala antiga (básico, intermediário, avançado) enquanto o nível
+  // do design (N1 a N3, em `manifest.ts`) não substitui a regra que esconde telas.
+  { id: 'cost', requires: ['estimates.hours'], minLevel: 'basic' },
+  { id: 'milestones', requires: ['core'], minLevel: 'basic' },
+  { id: 'wbs', requires: ['core'], minLevel: 'intermediate' },
+  { id: 'schedule', requires: ['core'], minLevel: 'intermediate' },
+  { id: 'definitionOfDone', requires: ['core'], minLevel: 'intermediate' },
+  { id: 'baseline', requires: ['schedule'], minLevel: 'advanced' },
+  { id: 'risks', requires: ['core'], minLevel: 'advanced' },
 ]
 
 function freezeDefinition(definition: ModuleDefinition): Readonly<ModuleDefinition> {

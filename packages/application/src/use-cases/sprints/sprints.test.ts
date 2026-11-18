@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganization,
   createProject,
+  DEFAULT_TEAM_MODULE_IDS,
   createUser,
   toOrganizationId,
   toProjectId,
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, TimelineEvent } from '@agilebox/core'
+import type { Actor, ModuleId, ModuleState, TimelineEvent } from '@agilebox/core'
 import { createTenantContext } from '../../tenant-context'
 import type { TenantContext } from '../../tenant-context'
 import { createUseCases } from '../../create-use-cases'
@@ -18,6 +19,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 
 const NOW = '2026-11-16T12:00:00.000Z'
 const orgA = toOrganizationId('00000000000000000000000001')
@@ -82,6 +84,8 @@ async function setup(): Promise<Setup> {
   )
   for (const userId of [anaId, managerId])
     await repos.projects.addMember(orgA, { projectId, userId, addedBy: anaId, addedAt: NOW })
+  // Ferramentas do projeto (ADR-10): o projeto de teste começa com as que a equipe trazia por padrão.
+  await enableProjectModules(unitOfWork, orgA, projectId, managerId, DEFAULT_TEAM_MODULE_IDS)
 
   let current = ana
   const actorSession: ActorSession = { get: () => current, set: (actor) => (current = actor) }
@@ -106,10 +110,16 @@ async function setup(): Promise<Setup> {
       retroActions: repos.retroActions,
       sprints: repos.sprints,
       sprintTasks: repos.sprintTasks,
+      deliverables: repos.deliverables,
+      taskDependencies: repos.taskDependencies,
+      milestones: repos.milestones,
       impediments: repos.impediments,
       taskOpens: repos.taskOpens,
       tasks: repos.tasks,
       teamTools: repos.teamTools,
+      projectModules: repos.projectModules,
+      projectSetup: repos.projectSetup,
+      guideProgress: repos.guideProgress,
       timeline: repos.timeline,
       unitOfWork: uow,
       users: repos.users,
@@ -154,11 +164,19 @@ async function backlogItem(c: Ctx, title: string) {
   return c.useCases.backlog.add.execute(ctx(ana), { projectId, title })
 }
 
+/**
+ * Muda os módulos do projeto de teste (ADR-10). `disable` entra em encerramento (`winding_down`);
+ * com `finalize`, o módulo fica desligado. `enable` liga como `active`.
+ */
 async function change(
   c: Ctx,
   input: { enable?: string[]; disable?: string[]; finalize?: string[] },
 ) {
-  return c.useCases.teamTools.applyChange.execute(ctx(manager), input)
+  const states: Partial<Record<ModuleId, ModuleState>> = {}
+  for (const id of input.enable ?? []) states[id as ModuleId] = 'active'
+  for (const id of input.disable ?? [])
+    states[id as ModuleId] = (input.finalize ?? []).includes(id) ? 'disabled' : 'winding_down'
+  await setProjectModules(c.unitOfWork, orgA, projectId, managerId, states)
 }
 
 async function eventsOf(c: Ctx, taskId: string): Promise<readonly TimelineEvent[]> {
@@ -270,6 +288,109 @@ describe('sprints: ciclo completo, do backlog ao replanejamento', () => {
     expect(view.modules.find((module) => module.id === 'sprints')?.config).toEqual({
       maxActiveSprints: 2,
     })
+  })
+})
+
+describe('sprints: limite de sprints ativas por projeto (ADR-10)', () => {
+  const otherProjectId = toProjectId('00000000000000000000000006')
+
+  /** Segundo projeto da organização, com Sprints ligado e as mesmas pessoas do projeto de teste. */
+  async function withOtherProject(c: Ctx) {
+    await c.repos.projects.save(
+      orgA,
+      createProject({
+        id: otherProjectId,
+        organizationId: orgA,
+        name: 'Projeto B',
+        createdBy: anaId,
+        createdAt: NOW,
+      }),
+    )
+    for (const userId of [anaId, managerId])
+      await c.repos.projects.addMember(orgA, {
+        projectId: otherProjectId,
+        userId,
+        addedBy: anaId,
+        addedAt: NOW,
+      })
+    await enableProjectModules(
+      c.unitOfWork,
+      orgA,
+      otherProjectId,
+      managerId,
+      DEFAULT_TEAM_MODULE_IDS,
+    )
+  }
+
+  async function sprintIn(c: Ctx, project: typeof projectId) {
+    const created = await c.useCases.sprints.create.execute(ctx(ana), {
+      projectId: project,
+      name: '',
+      plannedStart: '2026-11-16',
+      plannedEnd: '2026-11-27',
+    })
+    return created.sprint.id
+  }
+
+  it('gestor grava 2 no projeto: dois inícios passam nele com a equipe em 1, e o outro projeto segue em 1', async () => {
+    const c = await setup()
+    await withOtherProject(c)
+    await c.useCases.projectModules.setConfig.execute(ctx(manager), {
+      projectId,
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 2 },
+    })
+    const first = await sprintIn(c, projectId)
+    const second = await sprintIn(c, projectId)
+    await c.useCases.sprints.start.execute(ctx(ana), { sprintId: first })
+    const started = await c.useCases.sprints.start.execute(ctx(ana), { sprintId: second })
+    expect(started.sprint.status).toBe('active')
+
+    const otherFirst = await sprintIn(c, otherProjectId)
+    const otherSecond = await sprintIn(c, otherProjectId)
+    await c.useCases.sprints.start.execute(ctx(ana), { sprintId: otherFirst })
+    expect(
+      await rejectionOf(c.useCases.sprints.start.execute(ctx(ana), { sprintId: otherSecond })),
+    ).toMatchObject({ code: 'CONFLICT' })
+  })
+
+  it('a configuração do projeto vale sobre a da equipe, nos dois sentidos', async () => {
+    const c = await setup()
+    await c.useCases.teamTools.setModuleConfig.execute(ctx(manager), {
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 3 },
+    })
+    await c.useCases.projectModules.setConfig.execute(ctx(manager), {
+      projectId,
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 1 },
+    })
+    const first = await sprintIn(c, projectId)
+    const second = await sprintIn(c, projectId)
+    await c.useCases.sprints.start.execute(ctx(ana), { sprintId: first })
+    expect(
+      await rejectionOf(c.useCases.sprints.start.execute(ctx(ana), { sprintId: second })),
+    ).toMatchObject({ code: 'CONFLICT' })
+  })
+
+  it('objeto vazio no projeto volta a herdar a configuração da equipe', async () => {
+    const c = await setup()
+    await c.useCases.projectModules.setConfig.execute(ctx(manager), {
+      projectId,
+      moduleId: 'sprints',
+      config: { maxActiveSprints: 2 },
+    })
+    await c.useCases.projectModules.setConfig.execute(ctx(manager), {
+      projectId,
+      moduleId: 'sprints',
+      config: {},
+    })
+    const first = await sprintIn(c, projectId)
+    const second = await sprintIn(c, projectId)
+    await c.useCases.sprints.start.execute(ctx(ana), { sprintId: first })
+    expect(
+      await rejectionOf(c.useCases.sprints.start.execute(ctx(ana), { sprintId: second })),
+    ).toMatchObject({ code: 'CONFLICT' })
   })
 })
 

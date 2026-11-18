@@ -23,7 +23,7 @@ import type {
 } from '@agilebox/contract'
 import { toDailyEntryDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
-import { assertModuleUsable } from '../../module-guard'
+import { assertProjectModuleUsable } from '../../module-guard'
 
 export interface SaveDailyInput {
   readonly date: string
@@ -126,10 +126,12 @@ export class SaveDaily {
     )
     // Criar a daily do dia é criar item do módulo (recusado no encerramento). Editar a que já existe segue.
     if (!existing)
-      await assertModuleUsable(this.deps.teamTools, actor.organizationId, {
-        module: 'checkins',
-        creates: true,
-      })
+      await assertProjectModuleUsable(
+        this.deps,
+        actor.organizationId,
+        { module: 'checkins', creates: true, project: 'none' },
+        [],
+      )
     const now = await this.deps.clock.now(actor.organizationId)
     const entry = createDailyEntry({
       id:

@@ -80,10 +80,10 @@ describe('Sprints no menu e nos atalhos, por ferramenta e nível', () => {
     expect(await cardLabel()).not.toMatch(/Sprint/)
   })
 
-  it('Scrum · Básico: sem tela de planejamento, mas o marcador "Sprint 4" no card', async () => {
+  it('Scrum · Básico: o item de menu aparece, sem o filtro Sprint ativa, e o marcador "Sprint 4" no card', async () => {
     const { api } = renderApp(SCRUM, 'basic')
     await settleCapabilities(api)
-    expect(screen.queryByRole('button', { name: 'Sprints' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Sprints' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^Sprint ativa/ })).toBeNull()
     expect(await cardLabel()).toMatch(/Sprint 4/)
     expect(screen.getByText('Sprint 4')).toBeTruthy()

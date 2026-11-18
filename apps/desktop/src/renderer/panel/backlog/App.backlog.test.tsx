@@ -83,10 +83,10 @@ describe('Backlog no menu e nos atalhos, por ferramenta e nível', () => {
     expect(await screen.findByRole('region', { name: 'Backlog' })).toBeTruthy()
   })
 
-  it('Scrum no Básico: sem item de menu e sem tela, mas o marcador de critérios no card segue', async () => {
+  it('Scrum no Básico: o item de menu aparece (o nível não esconde tela), e o marcador de critérios no card segue', async () => {
     const { api } = renderApp(teamToolsView({ modules: SCRUM, level: 'basic', role: 'manager' }))
     await settleCapabilities(api)
-    expect(screen.queryByRole('button', { name: 'Backlog' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Backlog' })).toBeTruthy()
     expect(await screen.findByRole('button', { name: /^AB-118 · .*1\/2 critérios/ })).toBeTruthy()
   })
 })

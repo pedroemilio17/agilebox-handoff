@@ -5,6 +5,7 @@ export { createSqliteBoardSettingsRepository } from './repositories/board-settin
 export { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 export { createSqliteChecklistRepository } from './repositories/checklist-repository.js'
 export { createSqliteDefinitionOfDoneRepository } from './repositories/definition-of-done-repository.js'
+export { createSqliteGuideProgressRepository } from './repositories/guide-progress-repository.js'
 export { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 export { createSqliteCoreRepositories } from './repositories/core-repositories.js'
 export { createSqliteMeetingRepository } from './repositories/meeting-repository.js'

@@ -15,8 +15,14 @@ import { useSessionUsers } from './hooks/use-session-users'
 import type { ProjectDto } from '@agilebox/contract'
 import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
+import { WbsView } from './wbs/WbsView'
+import { MilestonesView } from './milestones/MilestonesView'
+import { ScheduleView } from './schedule/ScheduleView'
+import { TrackingView } from './tracking/TrackingView'
+import { BurndownView } from './burndown/BurndownView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
+import { ModulesView } from './modules/ModulesView'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -25,6 +31,8 @@ import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
+import { GuideCard } from './guide/GuideCard'
+import { WelcomeDialog } from './guide/WelcomeDialog'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
 import { teamWipColumns } from './board/team-board'
@@ -35,14 +43,22 @@ import { PanelCommands } from './commands/PanelCommands'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
+  // O projeto selecionado fica aqui para o Provider decidir os módulos pelo projeto (ADR-10).
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   return (
-    <CapabilitiesProvider>
-      <PanelContent />
+    <CapabilitiesProvider selectedProjectId={selectedProjectId}>
+      <PanelContent selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} />
     </CapabilitiesProvider>
   )
 }
 
-function PanelContent() {
+function PanelContent({
+  selectedProjectId,
+  onSelectProject: setSelectedProjectId,
+}: {
+  readonly selectedProjectId: string | null
+  readonly onSelectProject: (projectId: string | null) => void
+}) {
   const [commandsOpen, setCommandsOpen] = useState(false)
   const api = useApi()
   const capabilities = useCapabilities()
@@ -50,6 +66,16 @@ function PanelContent() {
   const agendaVisible = capabilities.showScreen('agenda')
   // Backlog segue o mesmo caminho: módulo ligado e nível da pessoa; senão a view cai no Quadro.
   const backlogVisible = capabilities.showScreen('backlog')
+  // Entregas (EAP): módulo ligado no projeto selecionado; sem projeto a view cai no Quadro.
+  const wbsVisible = selectedProjectId !== null && capabilities.showScreen('wbs')
+  // Marcos: mesmo caminho (módulo ligado no projeto selecionado; sem projeto cai no Quadro).
+  const milestonesVisible = selectedProjectId !== null && capabilities.showScreen('milestones')
+  // Cronograma: módulo ligado no projeto selecionado; sem projeto a view cai no Quadro.
+  const scheduleVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
+  // Acompanhamento: mesmo módulo do cronograma, com projeto selecionado; senão a view cai no Quadro.
+  const trackingVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
+  // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado; senão a view cai no Quadro.
+  const burndownVisible = selectedProjectId !== null && capabilities.showScreen('burndown')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
@@ -66,14 +92,20 @@ function PanelContent() {
       return 'projects'
     }
   })
+  // Módulos existe só com projeto selecionado; sem ele, a view guardada cai no Quadro.
   const currentView: PanelView =
     (view === 'agenda' && !agendaVisible) ||
     (view === 'backlog' && !backlogVisible) ||
+    (view === 'wbs' && !wbsVisible) ||
+    (view === 'milestones' && !milestonesVisible) ||
+    (view === 'schedule' && !scheduleVisible) ||
+    (view === 'tracking' && !trackingVisible) ||
+    (view === 'burndown' && !burndownVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
-    (view === 'impediments' && !impedimentsVisible)
+    (view === 'impediments' && !impedimentsVisible) ||
+    (view === 'modules' && selectedProjectId === null)
       ? 'projects'
       : view
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus | undefined>()
@@ -85,6 +117,8 @@ function PanelContent() {
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  // Contador: cada "Ver a trilha" da janela de boas-vindas abre o cartão "Primeiros passos".
+  const [trailRequest, setTrailRequest] = useState(0)
   // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
   const [showArchived, setShowArchived] = useState(false)
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
@@ -105,6 +139,7 @@ function PanelContent() {
   const selectedArchived = selectedProject?.archivedAt != null
   const newTaskBlockedReason = selectedArchived ? panelCopy.archivedProjectNewTask : undefined
   const sessionUsers = useSessionUsers()
+  const personName = sessionUsers.data?.find((user) => user.id === actor.actor?.userId)?.name
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, showArchived),
     queryFn: () =>
@@ -398,6 +433,47 @@ function PanelContent() {
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+            onNavigate={setView}
+          />
+        }
+        wbs={
+          <WbsView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        milestones={
+          <MilestonesView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        schedule={
+          <ScheduleView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        tracking={
+          <TrackingView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        burndown={
+          <BurndownView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
           />
         }
         sprints={
@@ -405,6 +481,7 @@ function PanelContent() {
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
@@ -413,6 +490,8 @@ function PanelContent() {
         }
         impediments={
           <ImpedimentsView
+            selectedProjectId={selectedProjectId}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
@@ -421,10 +500,20 @@ function PanelContent() {
         }
         agenda={
           <AgendaView
+            selectedProjectId={selectedProjectId}
+            onNavigate={setView}
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
             }}
+          />
+        }
+        modules={
+          <ModulesView
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            archived={selectedArchived}
+            onNavigate={setView}
           />
         }
         dashboard={
@@ -472,6 +561,19 @@ function PanelContent() {
               />
             ) : (
               <>
+                {/* Guia só com um projeto selecionado; em "Todos os projetos" não aparece. */}
+                <GuideCard
+                  projectId={selectedProjectId}
+                  onNavigate={setView}
+                  openRequest={trailRequest}
+                />
+                {selectedProjectId ? (
+                  <WelcomeDialog
+                    projectId={selectedProjectId}
+                    personName={personName}
+                    onSeeTrail={() => setTrailRequest((count) => count + 1)}
+                  />
+                ) : null}
                 <ScopeAnnouncement message={scopeAnnouncement} />
                 {teamView ? <ScopeBanner>{panelCopy.teamViewBanner}</ScopeBanner> : null}
                 <BoardView

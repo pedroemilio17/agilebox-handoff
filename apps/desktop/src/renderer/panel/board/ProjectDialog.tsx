@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Modal } from '@agilebox/ui'
 import { ApiError, type ProjectDto } from '@agilebox/contract'
-import { useCreateProject } from '../hooks/use-create-project'
+import { useCreateProjectWithSetup } from '../hooks/use-create-project-with-setup'
 import { useArchiveProject, useUnarchiveProject } from '../hooks/use-archive-project'
 import { useRenameProject } from '../hooks/use-rename-project'
 import { SaveError } from '../task-detail/SaveError'
 import { DefinitionOfDoneEditor } from './DefinitionOfDoneEditor'
+import { NewProjectFlow, type NewProjectPayload } from '../new-project/NewProjectFlow'
+import { refusalMessage } from '../backlog/refusal-message'
 import { panelCopy } from '../copy'
 import styles from './ProjectDialog.module.css'
 
@@ -53,11 +55,15 @@ export function ProjectDialog({
 }: ProjectDialogProps) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
+  /** Assistente de novo projeto aberto: ele substitui o diálogo, para não haver dois modais. */
+  const [flowOpen, setFlowOpen] = useState(false)
   const [confirmingArchive, setConfirmingArchive] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameDraft, setRenameDraft] = useState('')
   const [renameMessage, setRenameMessage] = useState<string | null>(null)
-  const createProject = useCreateProject()
+  const createButtonRef = useRef<HTMLButtonElement>(null)
+  const focusCreateOnReturn = useRef(false)
+  const createProject = useCreateProjectWithSetup()
   const archiveProject = useArchiveProject()
   const unarchiveProject = useUnarchiveProject()
   const renameProject = useRenameProject()
@@ -77,9 +83,17 @@ export function ProjectDialog({
   const existing = projects.find((project) => projectNameKey(project.name) === projectNameKey(name))
   const definitionVisible = selectedProject !== undefined
 
+  // Ao cancelar o assistente, o foco volta ao botão "Criar" que o abriu (o diálogo remonta).
+  useEffect(() => {
+    if (flowOpen || !focusCreateOnReturn.current) return
+    focusCreateOnReturn.current = false
+    createButtonRef.current?.focus()
+  }, [flowOpen])
+
   function close() {
     setCreating(false)
     setName('')
+    setFlowOpen(false)
     setConfirmingArchive(false)
     setRenaming(false)
     setRenameDraft('')
@@ -87,6 +101,22 @@ export function ProjectDialog({
     renameProject.reset()
     createProject.reset()
     onClose()
+  }
+
+  function cancelFlow() {
+    createProject.reset()
+    focusCreateOnReturn.current = true
+    setFlowOpen(false)
+  }
+
+  async function createFromFlow(payload: NewProjectPayload) {
+    try {
+      const project = await createProject.mutateAsync(payload)
+      onSelect(project.id)
+      close()
+    } catch {
+      // A mensagem aparece no próprio assistente, que continua aberto.
+    }
   }
 
   function startRename(project: ProjectDto) {
@@ -128,21 +158,32 @@ export function ProjectDialog({
     return panelCopy.renameProjectError
   }
 
-  async function createOrSelect() {
-    const trimmedName = name.trim()
-    if (!trimmedName) return
+  function openFlow() {
+    if (!name.trim()) return
+    // Nome que já existe: seleciona o projeto, sem refazer as perguntas.
     if (existing) {
       onSelect(existing.id)
       close()
       return
     }
-    try {
-      const project = await createProject.mutateAsync(trimmedName)
-      onSelect(project.id)
-      close()
-    } catch {
-      return
-    }
+    createProject.reset()
+    setFlowOpen(true)
+  }
+
+  if (flowOpen) {
+    return (
+      <NewProjectFlow
+        initialName={name.trim()}
+        submitting={createProject.isPending}
+        error={
+          createProject.isError
+            ? refusalMessage(createProject.error, panelCopy.createProjectError)
+            : null
+        }
+        onCancel={cancelFlow}
+        onCreate={createFromFlow}
+      />
+    )
   }
 
   return (
@@ -310,17 +351,18 @@ export function ProjectDialog({
               className={styles.nameField}
               onChange={(event) => setName(event.currentTarget.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && name.trim() && !createProject.isPending) {
+                if (event.key === 'Enter' && name.trim()) {
                   event.preventDefault()
-                  void createOrSelect()
+                  openFlow()
                 }
               }}
               placeholder={panelCopy.projectNamePlaceholder}
               value={name}
             />
             <Button
-              disabled={!name.trim() || createProject.isPending}
-              onClick={() => void createOrSelect()}
+              disabled={!name.trim()}
+              onClick={openFlow}
+              ref={createButtonRef}
               type="button"
               variant="primary"
             >
@@ -332,7 +374,6 @@ export function ProjectDialog({
             <span aria-hidden="true">＋</span> {panelCopy.newProject}
           </Button>
         )}
-        {createProject.isError ? <p role="alert">{panelCopy.createProjectError}</p> : null}
       </div>
     </Modal>
   )

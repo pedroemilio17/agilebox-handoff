@@ -3,6 +3,8 @@ import type { ImpedimentListItemDto } from '@agilebox/contract'
 import { Button, EmptyState, SegmentedControl, TaskKey, Toast } from '@agilebox/ui'
 import type { SegmentedOption } from '@agilebox/ui'
 import { useActor } from '../../shared/session/useActor'
+import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import type { PanelView } from '../layout/PanelShell'
 import { formatDate, formatRelativeDate } from '../../shared/lib/format-date'
 import { useProjects } from '../hooks/use-projects'
 import { AssignDialog, ResolveDialog } from './ImpedimentDialogs'
@@ -21,13 +23,21 @@ const OWNER_OPTIONS: readonly [SegmentedOption<OwnerScope>, SegmentedOption<Owne
 export interface ImpedimentsViewProps {
   /** Abre o detalhe da tarefa do impedimento (AB-n). */
   readonly onOpenTask: (taskId: string) => void
+  /** Projeto selecionado no painel: o botão "Como funciona" usa o estado dele. */
+  readonly selectedProjectId?: string | null
+  /** Leva ao quadro, pelo botão "Rever os primeiros passos". */
+  readonly onNavigate?: (view: PanelView) => void
 }
 
 /**
  * Tela de Impedimentos (Intermediário em diante, com o módulo ligado ou encerrando). Lista os
  * abertos (o padrão do servidor); "Mostrar resolvidos" traz também os resolvidos, com nota.
  */
-export function ImpedimentsView({ onOpenTask }: ImpedimentsViewProps) {
+export function ImpedimentsView({
+  onOpenTask,
+  selectedProjectId = null,
+  onNavigate,
+}: ImpedimentsViewProps) {
   const actor = useActor()
   const userId = actor.actor?.userId
   const projects = useProjects(false)
@@ -75,6 +85,11 @@ export function ImpedimentsView({ onOpenTask }: ImpedimentsViewProps) {
             ))}
           </select>
         </label>
+        <ModuleHelpButton
+          moduleId="impediments"
+          projectId={selectedProjectId}
+          {...(onNavigate ? { onNavigate } : {})}
+        />
         <SegmentedControl<OwnerScope>
           aria-label={impedimentCopy.owner}
           options={OWNER_OPTIONS}

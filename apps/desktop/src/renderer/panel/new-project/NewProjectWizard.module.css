@@ -1,0 +1,333 @@
+/* Assistente de novo projeto: diálogo de vidro sobre o painel, trilho à esquerda (redesign v2). */
+
+.backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-focus-overlay);
+}
+
+.dialog {
+  display: flex;
+  width: min(100%, 880px);
+  height: min(100%, 720px);
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-window);
+  background: var(--glass-popover);
+  backdrop-filter: var(--glass-popover-backdrop);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-popover);
+}
+
+.rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 260px;
+  box-sizing: border-box;
+  padding: var(--space-6);
+  background: rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.railHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+.railName {
+  font-family: var(--font-family-display);
+  font-size: 21px;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-chip);
+}
+
+.current {
+  background: var(--surface-raised);
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--color-hairline-strong);
+  color: var(--color-text-placeholder);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.done .mark {
+  background: rgba(111, 211, 154, 0.18);
+  color: var(--color-status-concluido);
+}
+
+.current .mark {
+  background: var(--color-primary-bg);
+  color: var(--color-on-primary);
+}
+
+.skipped {
+  opacity: 0.55;
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stepLabel {
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+  color: var(--color-text-body);
+}
+
+.current .stepLabel {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.todo .stepLabel,
+.skipped .stepLabel {
+  color: var(--color-text-muted);
+}
+
+.stepAnswer {
+  font-size: var(--font-size-small);
+  color: var(--color-text-placeholder);
+  overflow-wrap: anywhere;
+}
+
+.railNote {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+  color: var(--color-text-placeholder);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-6) var(--space-7);
+  overflow-y: auto;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.counter {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.progressTrack {
+  flex: 0 1 160px;
+  height: 4px;
+  min-width: 80px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-accent-text);
+  transition: width var(--motion-duration-control) var(--ease-ios);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.skip {
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.question {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.hint {
+  margin: 0 0 var(--space-3);
+  max-width: 480px;
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-signal-danger-text);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-placeholder);
+}
+
+.option,
+.optionChecked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-height: var(--size-touch-target);
+  padding: var(--space-4);
+  box-sizing: border-box;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-card);
+  background: var(--surface-panel);
+  cursor: pointer;
+}
+
+.optionChecked {
+  border: 1.5px solid var(--color-accent-text);
+  background: var(--surface-card);
+}
+
+.option:hover {
+  background: var(--surface-card);
+}
+
+.option:has(.radio:focus-visible),
+.optionChecked:has(.radio:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.radio {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--color-accent-text);
+  cursor: pointer;
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.optionLabel {
+  font-size: var(--font-size-title-small);
+  font-weight: 550;
+}
+
+.optionHint {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.remaining {
+  font-size: var(--font-size-small);
+  color: var(--color-text-placeholder);
+}
+
+.skip:focus-visible,
+.dialog button:focus-visible,
+.dialog input:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .option,
+  .optionChecked {
+    transition: none;
+  }
+}

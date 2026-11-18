@@ -2,6 +2,10 @@ import {
   applyTeamToolsUpdate,
   auditRecordsFor,
   ConflictError,
+  MODULE_IDS,
+  toModuleId,
+  toModuleState,
+  toTeamModuleConfig,
   createOrganization,
   createTeamToolsSettings,
   defaultTeamTools,
@@ -20,6 +24,10 @@ import type {
   UserId,
   ChecklistItem,
   DefinitionOfDoneItem,
+  Deliverable,
+  DeliverableId,
+  Milestone,
+  MilestoneId,
   DailyEntry,
   DefinitionOfDoneItemId,
   Contributor,
@@ -31,16 +39,19 @@ import type {
   Participation,
   Project,
   ProjectId,
+  TeamModuleConfig,
   Sprint,
   SprintId,
   SprintStatus,
   SprintTask,
   Task,
+  TaskDependency,
   TaskId,
   TimelineEvent,
   User,
   Impediment,
   ImpedimentId,
+  ModuleId,
 } from '@agilebox/core'
 import type {
   AcceptanceRepository,
@@ -49,25 +60,46 @@ import type {
   ContributorRepository,
   DailyEntryRepository,
   DefinitionOfDoneRepository,
+  DeliverableRepository,
+  GuideProgressEntry,
+  GuideProgressRepository,
   TaskCommentRepository,
   MeetingRepository,
+  MilestoneRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
+  ProjectModuleChange,
+  ProjectModuleSetting,
+  ProjectModulesRepository,
   ImpedimentRepository,
   ImpedimentListFilter,
   ProjectRepository,
+  ProjectSetup,
+  ProjectSetupRepository,
   RetroActionRepository,
   SprintRepository,
   SprintTaskRepository,
+  TaskDependencyRepository,
   TaskOpenRepository,
   TaskRepository,
   TeamToolsRepository,
   TimelineRepository,
   UserRepository,
 } from '../../ports'
+import { assertPlainAnswers } from '../../ports/project-setup-repository'
+import {
+  GUIDE_CARD_KEY,
+  GUIDE_WELCOME_KEY,
+  isReservedGuideKey,
+} from '../../ports/guide-progress-repository'
 
 const taskStatusOrder = ['planning', 'todo', 'in_progress', 'review', 'done'] as const
+
+/** Linha de `project_modules` no fake: a configuração segue o contrato da porta. */
+export interface InMemoryProjectModuleRow extends ProjectModuleSetting {
+  readonly projectId: ProjectId
+}
 
 export interface InMemoryState {
   acceptance: Map<OrganizationId, Map<string, AcceptanceCriterion>>
@@ -81,16 +113,28 @@ export interface InMemoryState {
   retroActions: Map<OrganizationId, Map<string, RetroAction>>
   /** Sprints por id, com o descarte lógico (linha não some; `discarded` marca a exclusão). */
   sprints: Map<OrganizationId, Map<string, InMemorySprintRow>>
+  /** Entregas da EAP por id, dentro da organização. */
+  deliverables: Map<OrganizationId, Map<string, Deliverable>>
+  /** Marcos por id, dentro da organização. */
+  milestones: Map<OrganizationId, Map<string, Milestone>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
+  /** Dependências término→início por predecessora|sucessora, dentro da organização (ADR-10). */
+  taskDependencies: Map<OrganizationId, Map<string, TaskDependency>>
   /** Impedimentos por id (abertos e resolvidos; o histórico não some). */
   impediments: Map<OrganizationId, Map<string, Impediment>>
   participations: Map<OrganizationId, Map<string, Participation>>
   projects: Map<OrganizationId, Map<string, Project>>
+  /** Configuração inicial por projeto (uma linha por projeto), dentro da organização. */
+  projectSetup: Map<OrganizationId, Map<string, ProjectSetup>>
   members: Map<OrganizationId, Map<string, ProjectMember>>
   organizations: Map<OrganizationId, Organization>
   taskOpens: Map<OrganizationId, Map<string, { openedAt: string; count: number }>>
   tasks: Map<OrganizationId, Map<string, Task>>
+  /** Módulos de cada projeto, por projeto e módulo (`projectId|moduleId`), dentro da organização. */
+  projectModules: Map<OrganizationId, Map<string, InMemoryProjectModuleRow>>
+  /** Progresso do guia por pessoa e projeto (`projectId|userId|stepKey`), dentro da organização. */
+  guideProgress: Map<OrganizationId, Map<string, InMemoryGuideProgressRow>>
   /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
   teamPreferences: Map<OrganizationId, TeamPreferenceRow>
   /** Linhas de `team_modules`, por módulo, dentro da organização. */
@@ -117,13 +161,19 @@ export function createInMemoryState(): InMemoryState {
     contributors: new Map(),
     dailyEntries: new Map(),
     definitionOfDone: new Map(),
+    deliverables: new Map(),
+    guideProgress: new Map(),
     meetings: new Map(),
+    milestones: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
     impediments: new Map(),
+    taskDependencies: new Map(),
     participations: new Map(),
     projects: new Map(),
+    projectSetup: new Map(),
+    projectModules: new Map(),
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
@@ -135,6 +185,16 @@ export function createInMemoryState(): InMemoryState {
     timeline: new Map(),
     users: new Map(),
   }
+}
+
+/** Linha de `guide_progress` no fake: a chave composta e o estado da pessoa naquele passo. */
+export interface InMemoryGuideProgressRow {
+  readonly organizationId: OrganizationId
+  readonly projectId: ProjectId
+  readonly userId: UserId
+  readonly stepKey: string
+  readonly doneAt: string | null
+  readonly dismissed: boolean
 }
 
 /** Linha de sprint no fake: a sprint e o descarte lógico (nulos enquanto não descartada). */
@@ -504,6 +564,42 @@ export class InMemoryTaskOpenRepository implements TaskOpenRepository {
   }
 }
 
+/** Dependências no fake: chave `predecessorId|successorId`, por organização. */
+export class InMemoryTaskDependencyRepository implements TaskDependencyRepository {
+  constructor(private readonly state: InMemoryState) {}
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const tasksOfProject = new Set(
+      [...bucket(this.state.tasks, org).values()]
+        .filter((task) => task.projectId === projectId)
+        .map((task) => task.id),
+    )
+    return [...bucket(this.state.taskDependencies, org).values()].filter((dependency) =>
+      tasksOfProject.has(dependency.successorId),
+    )
+  }
+  async listByTask(org: OrganizationId, taskId: TaskId) {
+    await Promise.resolve()
+    return [...bucket(this.state.taskDependencies, org).values()].filter(
+      (dependency) => dependency.predecessorId === taskId || dependency.successorId === taskId,
+    )
+  }
+  async add(org: OrganizationId, dependency: TaskDependency) {
+    await Promise.resolve()
+    const tasksOfOrg = bucket(this.state.tasks, org)
+    if (!tasksOfOrg.has(dependency.predecessorId) || !tasksOfOrg.has(dependency.successorId))
+      throw new ValidationError('Tarefa não encontrada nesta organização')
+    const values = bucket(this.state.taskDependencies, org)
+    const key = `${dependency.predecessorId}|${dependency.successorId}`
+    if (values.has(key)) throw new ConflictError('Esta dependência já existe')
+    values.set(key, dependency)
+  }
+  async remove(org: OrganizationId, predecessorId: TaskId, successorId: TaskId) {
+    await Promise.resolve()
+    bucket(this.state.taskDependencies, org).delete(`${predecessorId}|${successorId}`)
+  }
+}
+
 export class InMemoryTaskRepository implements TaskRepository {
   constructor(private readonly state: InMemoryState) {}
   async findById(org: OrganizationId, id: TaskId) {
@@ -608,6 +704,12 @@ export class InMemoryTaskRepository implements TaskRepository {
   }
   async save(org: OrganizationId, value: Task) {
     await Promise.resolve()
+    if (value.deliverableId !== null) {
+      // Como o SQLite: a entrega precisa existir na organização e no mesmo projeto da tarefa.
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
     bucket(this.state.tasks, org).set(value.id, value)
   }
   private forUser(org: OrganizationId, userId: User['id']) {
@@ -714,6 +816,200 @@ export class InMemoryTeamToolsRepository implements TeamToolsRepository {
     return [...bucket(this.state.teamToolsAudit, organizationId).values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
       .slice(0, limit)
+  }
+}
+
+export class InMemoryProjectSetupRepository implements ProjectSetupRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async get(organizationId: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return bucket(this.state.projectSetup, organizationId).get(projectId) ?? null
+  }
+
+  async save(organizationId: OrganizationId, setup: ProjectSetup) {
+    await Promise.resolve()
+    if (this.state.projects.get(organizationId)?.has(setup.projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+    assertPlainAnswers(setup.answers)
+    bucket(this.state.projectSetup, organizationId).set(setup.projectId, { ...setup })
+  }
+}
+
+export class InMemoryGuideProgressRepository implements GuideProgressRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listForUser(organizationId: OrganizationId, projectId: ProjectId, userId: UserId) {
+    await Promise.resolve()
+    return [...bucket(this.state.guideProgress, organizationId).values()]
+      .filter((row) => row.projectId === projectId && row.userId === userId)
+      .map((row): GuideProgressEntry => ({
+        stepKey: row.stepKey,
+        doneAt: row.doneAt,
+        dismissed: row.dismissed,
+      }))
+  }
+
+  async markDone(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    stepKeys: readonly string[],
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    if (stepKeys.some(isReservedGuideKey))
+      throw new ValidationError('Chave reservada do guia não é um passo')
+    const rows = bucket(this.state.guideProgress, organizationId)
+    for (const stepKey of new Set(stepKeys)) {
+      const key = `${projectId}|${userId}|${stepKey}`
+      const previous = rows.get(key)
+      // Como o SQLite: a regravação preserva o primeiro `done_at` e a dispensa já gravada.
+      rows.set(key, {
+        organizationId,
+        projectId,
+        userId,
+        stepKey,
+        doneAt: previous?.doneAt ?? at,
+        dismissed: previous?.dismissed ?? false,
+      })
+    }
+  }
+
+  async dismissCard(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    // A tabela não guarda o instante da dispensa (schema de `guide_progress`): o parâmetro é aceito
+    // para manter a porta igual à do SQLite, que também não o grava.
+    void at
+    const rows = bucket(this.state.guideProgress, organizationId)
+    const key = `${projectId}|${userId}|${GUIDE_CARD_KEY}`
+    const previous = rows.get(key)
+    rows.set(key, {
+      organizationId,
+      projectId,
+      userId,
+      stepKey: GUIDE_CARD_KEY,
+      doneAt: previous?.doneAt ?? null,
+      dismissed: true,
+    })
+  }
+
+  async resolveWelcome(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    userId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    this.assertOwnership(organizationId, projectId, userId)
+    // Como a dispensa: a tabela não guarda o instante da resposta; `at` fica na assinatura da porta.
+    void at
+    const rows = bucket(this.state.guideProgress, organizationId)
+    const key = `${projectId}|${userId}|${GUIDE_WELCOME_KEY}`
+    const previous = rows.get(key)
+    rows.set(key, {
+      organizationId,
+      projectId,
+      userId,
+      stepKey: GUIDE_WELCOME_KEY,
+      doneAt: previous?.doneAt ?? null,
+      dismissed: true,
+    })
+  }
+
+  /** Projeto e pessoa precisam existir nesta organização (como as chaves estrangeiras do SQLite). */
+  private assertOwnership(organizationId: OrganizationId, projectId: ProjectId, userId: UserId) {
+    if (this.state.projects.get(organizationId)?.has(projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+    if (this.state.users.get(organizationId)?.has(userId) !== true)
+      throw new ValidationError('Pessoa de outra organização')
+  }
+}
+
+/** `null` (apagar) e `undefined` (preservar) passam como estão; objeto é validado como configuração. */
+function parseConfigChange(
+  config: TeamModuleConfig | null | undefined,
+): TeamModuleConfig | null | undefined {
+  return config === undefined || config === null ? config : toTeamModuleConfig(config)
+}
+
+export class InMemoryProjectModulesRepository implements ProjectModulesRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async list(organizationId: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.projectModules, organizationId).values()]
+      .filter((row) => row.projectId === projectId)
+      .map((row) => ({
+        moduleId: row.moduleId,
+        state: row.state,
+        config: row.config,
+        changedBy: row.changedBy,
+        changedAt: row.changedAt,
+      }))
+      .sort((a, b) => MODULE_IDS.indexOf(a.moduleId) - MODULE_IDS.indexOf(b.moduleId))
+  }
+
+  async save(
+    organizationId: OrganizationId,
+    projectId: ProjectId,
+    changes: readonly ProjectModuleChange[],
+    actorId: UserId,
+    at: string,
+  ) {
+    await Promise.resolve()
+    if (this.state.users.get(organizationId)?.has(actorId) !== true)
+      throw new ValidationError('Ator de outra organização')
+    if (this.state.projects.get(organizationId)?.has(projectId) !== true)
+      throw new ValidationError('Projeto não encontrado nesta organização')
+
+    // Valida o pedido inteiro antes da primeira escrita, como o SQLite.
+    const seen = new Set<string>()
+    const parsed = changes.map((change) => {
+      const moduleId = toModuleId(change.moduleId)
+      if (seen.has(moduleId)) throw new ValidationError('Módulo repetido no mesmo pedido')
+      seen.add(moduleId)
+      return {
+        moduleId,
+        state: toModuleState(change.state),
+        config: parseConfigChange(change.config),
+      }
+    })
+
+    const rows = bucket(this.state.projectModules, organizationId)
+    for (const change of parsed) {
+      const key = `${projectId}|${change.moduleId}`
+      const previous = rows.get(key)
+      // undefined: preserva; null: apaga; objeto: grava.
+      const config: TeamModuleConfig | null =
+        change.config !== undefined ? change.config : (previous?.config ?? null)
+      rows.set(key, {
+        projectId,
+        moduleId: change.moduleId,
+        state: change.state,
+        config,
+        changedBy: actorId,
+        changedAt: at,
+      })
+    }
+  }
+
+  async statesAcrossProjects(organizationId: OrganizationId, moduleId: ModuleId) {
+    await Promise.resolve()
+    const live = [...bucket(this.state.projects, organizationId).values()].filter(
+      (project) => project.archivedAt === null,
+    )
+    const rows = bucket(this.state.projectModules, organizationId)
+    return live.map(
+      (project) => rows.get(`${project.id}|${moduleId}`)?.state ?? ('disabled' as const),
+    )
   }
 }
 
@@ -831,6 +1127,124 @@ export class InMemorySprintTaskRepository implements SprintTaskRepository {
 }
 
 /** Impedimentos no fake: um mapa por organização, sem nada apagado. */
+/** Projeto e criador precisam existir na organização (mesma regra do SQLite). */
+function assertProjectAndCreator(
+  state: InMemoryState,
+  org: OrganizationId,
+  projectId: ProjectId,
+  createdBy: User['id'],
+): void {
+  if (!bucket(state.projects, org).has(projectId))
+    throw new ValidationError('Projeto não encontrado nesta organização')
+  if (!bucket(state.users, org).has(createdBy))
+    throw new ValidationError('Pessoa de outra organização')
+}
+
+export class InMemoryDeliverableRepository implements DeliverableRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    // Pai nulo (raiz) vem antes; entre irmãos, pela posição.
+    return [...bucket(this.state.deliverables, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort(
+        (a, b) =>
+          (a.parentId ?? '').localeCompare(b.parentId ?? '') ||
+          a.position - b.position ||
+          a.id.localeCompare(b.id),
+      )
+  }
+  async findById(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return bucket(this.state.deliverables, org).get(deliverableId) ?? null
+  }
+  async save(org: OrganizationId, value: Deliverable) {
+    await Promise.resolve()
+    this.write(org, value)
+  }
+  async saveMany(org: OrganizationId, values: readonly Deliverable[]) {
+    await Promise.resolve()
+    for (const value of values) this.write(org, value)
+  }
+  async countChildren(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.deliverables, org).values()].filter(
+      (item) => item.parentId === deliverableId,
+    ).length
+  }
+  async countTasks(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.tasks, org).values()].filter(
+      (item) => item.deliverableId === deliverableId,
+    ).length
+  }
+  async countMilestones(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    return [...bucket(this.state.milestones, org).values()].filter(
+      (item) => item.deliverableId === deliverableId,
+    ).length
+  }
+  async delete(org: OrganizationId, deliverableId: DeliverableId) {
+    await Promise.resolve()
+    const children = await this.countChildren(org, deliverableId)
+    const tasks = await this.countTasks(org, deliverableId)
+    const milestones = await this.countMilestones(org, deliverableId)
+    if (children + tasks + milestones > 0)
+      throw new ConflictError(
+        'Entrega tem filhos, tarefas ou marcos ligados e não pode ser apagada',
+      )
+    bucket(this.state.deliverables, org).delete(deliverableId)
+  }
+
+  private write(org: OrganizationId, value: Deliverable) {
+    // Id de outra organização não é regravado (como no SQLite).
+    if (usedByOtherOrganization(this.state.deliverables, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.parentId !== null) {
+      const parent = bucket(this.state.deliverables, org).get(value.parentId)
+      if (!parent || parent.projectId !== value.projectId)
+        throw new ValidationError('Entrega pai não encontrada neste projeto')
+    }
+    bucket(this.state.deliverables, org).set(value.id, value)
+  }
+}
+
+export class InMemoryMilestoneRepository implements MilestoneRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.milestones, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort(
+        (a, b) =>
+          a.dueOn.localeCompare(b.dueOn) ||
+          a.title.localeCompare(b.title) ||
+          a.id.localeCompare(b.id),
+      )
+  }
+  async findById(org: OrganizationId, milestoneId: MilestoneId) {
+    await Promise.resolve()
+    return bucket(this.state.milestones, org).get(milestoneId) ?? null
+  }
+  async save(org: OrganizationId, value: Milestone) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.milestones, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.deliverableId !== null) {
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
+    bucket(this.state.milestones, org).set(value.id, value)
+  }
+  async delete(org: OrganizationId, milestoneId: MilestoneId) {
+    await Promise.resolve()
+    bucket(this.state.milestones, org).delete(milestoneId)
+  }
+}
+
 export class InMemoryImpedimentRepository implements ImpedimentRepository {
   constructor(private readonly state: InMemoryState) {}
 

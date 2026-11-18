@@ -262,16 +262,27 @@ export function teamToolsUpdateFromPreset(presetId: TeamPresetId): TeamToolsUpda
 }
 
 /**
- * Padrão transitório para a organização sem linhas gravadas: todo o catálogo, exceto
- * `estimates.points` (conflita com `estimates.hours`; ADR-07) e `integrations` (plug-ins estão fora
+ * Padrão transitório para a organização sem linhas gravadas: o catálogo de antes do ADR-10 (lista
+ * fixa, para os módulos novos nascerem desligados), exceto `estimates.points` (conflita com `estimates.hours`; ADR-07) e `integrations` (plug-ins estão fora
  * do MVP). Nível Avançado. Existe para preservar o que já funciona hoje (WIP, subtarefas, métricas
  * de fluxo, retro e burndown aparecem para todos). Vale até a equipe escolher um preset; a migração
  * 0012 grava esta mesma lista para as organizações que já existiam.
  */
-const DEFAULT_EXCLUDED_MODULE_IDS: readonly ModuleId[] = ['estimates.points', 'integrations']
-export const DEFAULT_TEAM_MODULE_IDS: readonly ModuleId[] = MODULE_IDS.filter(
-  (id) => !DEFAULT_EXCLUDED_MODULE_IDS.includes(id),
-)
+export const DEFAULT_TEAM_MODULE_IDS: readonly ModuleId[] = Object.freeze([
+  'core',
+  'agenda',
+  'backlog',
+  'sprints',
+  'checkins',
+  'impediments',
+  'estimates.hours',
+  'acceptance',
+  'wip',
+  'subtasks',
+  'flowMetrics',
+  'reviewRetro',
+  'burndown',
+])
 export const DEFAULT_TEAM_LEVEL: ExperienceLevel = 'advanced'
 
 export function defaultTeamTools(organizationId: OrganizationId): TeamToolsSettings {

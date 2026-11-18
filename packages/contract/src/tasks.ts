@@ -48,6 +48,10 @@ export const taskDtoSchema = z.object({
   backlogRank: z.number().int().safe().nullable().optional(),
   /** Item de backlog: fora do quadro e das listas padrão. Ausente em respostas antigas: tratar como falso. */
   inBacklog: z.boolean().optional(),
+  /** Entrega da EAP à qual a tarefa aponta (ADR-10). Nulo = sem entrega. Ausente em respostas antigas. */
+  deliverableId: ulidSchema.nullable().optional(),
+  /** Início da tarefa (cronograma, módulo `schedule`). Nulo = sem início. Ausente em respostas antigas. */
+  startsOn: z.iso.date().nullable().optional(),
   /** Estimativa em horas (ADR-07, módulo `estimates.hours`). Nulo = sem estimativa. Ausente em respostas antigas. */
   estimatedHours: z.number().nonnegative().max(ESTIMATE_MAX_HOURS).nullable().optional(),
   /** Horas realizadas: soma das horas das participações. Ausente em respostas antigas: tratar como zero. */
@@ -100,6 +104,8 @@ export const getTaskOutputSchema = taskDtoSchema
     checklist: z.array(checklistItemDtoSchema),
     /** Critérios de aceitação (M3.2), em ordem de posição. Ausente em respostas antigas: tratar como lista vazia. */
     criteria: z.array(acceptanceCriterionDtoSchema).optional(),
+    /** Módulo `cost` ligado no projeto da tarefa. Desligado, custo, total e valor/hora vêm nulos. */
+    costEnabled: z.boolean(),
     /** Custo estimado (estimativa × valor/hora do Responsável). Nulo quando o ator não vê esse valor/hora. */
     estimatedCost: visibleRateSchema.optional(),
     /** Definição de pronto do projeto, para a conferência ao concluir (vazia = sem conferência). */
@@ -190,6 +196,12 @@ export const setTaskEstimateInputSchema = z.object({
   estimatedHours: estimatedHoursSchema,
 })
 export const setTaskEstimateOutputSchema = taskDtoSchema
+/** Ligar a tarefa a uma entrega do mesmo projeto (nulo desliga). Quem edita a tarefa faz isso. */
+export const setTaskDeliverableInputSchema = z.object({
+  taskId: ulidSchema,
+  deliverableId: ulidSchema.nullable(),
+})
+export const setTaskDeliverableOutputSchema = taskDtoSchema
 export const listRecentTasksInputSchema = z.undefined()
 export const listFrequentTasksInputSchema = z.undefined()
 export const listRecentTasksOutputSchema = taskListOutputSchema

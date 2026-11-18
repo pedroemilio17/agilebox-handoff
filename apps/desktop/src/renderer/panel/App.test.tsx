@@ -435,9 +435,9 @@ describe('Painel', () => {
     vi.spyOn(api.projects, 'list').mockImplementation(() =>
       Promise.resolve(hasCreated ? [created] : []),
     )
-    const create = vi.spyOn(api.projects, 'create').mockImplementation(() => {
+    const create = vi.spyOn(api.projects, 'createWithSetup').mockImplementation(() => {
       hasCreated = true
-      return Promise.resolve(created)
+      return Promise.resolve({ ...created, modules: ['core'], startedFromPreset: 'simples' })
     })
     const user = userEvent.setup()
     render(
@@ -456,7 +456,9 @@ describe('Painel', () => {
     await user.click(screen.getByRole('button', { name: 'Novo projeto' }))
     await user.type(screen.getByRole('textbox', { name: 'Nome do novo projeto' }), 'Projeto Novo')
     await user.click(screen.getByRole('button', { name: 'Criar' }))
-    expect(create).toHaveBeenCalledWith({ name: 'Projeto Novo' })
+    // "Criar" abre o assistente com o nome; pular cria o projeto Simples.
+    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
+    expect(create).toHaveBeenCalledWith({ name: 'Projeto Novo', startedFromPreset: 'simples' })
     expect(
       await screen.findByRole('button', { name: 'Projeto atual: Projeto Novo. Trocar de projeto' }),
     ).toBeTruthy()

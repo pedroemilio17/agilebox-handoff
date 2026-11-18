@@ -33,6 +33,7 @@ import type {
   Project,
   RetroAction,
   Impediment,
+  Milestone,
   Sprint,
   SprintTask,
   Task,
@@ -59,6 +60,7 @@ import type {
   ParticipationSummaryDto,
   ProjectDto,
   RetroActionDto,
+  MilestoneDto,
   SprintDto,
   SprintHistoryRowDto,
   SprintRefDto,
@@ -126,11 +128,16 @@ export function toDefinitionOfDoneItemDto(item: DefinitionOfDoneItem): Definitio
   return { id: item.id, projectId: item.projectId, title: item.title, position: item.position }
 }
 
+/**
+ * Valor/hora só sai com o módulo `cost` ligado no projeto (`costEnabled`) e para quem pode ver o
+ * valor daquele envolvido. Horas seguem sempre (são do núcleo).
+ */
 export function toParticipationSummaryDto(
   participation: Participation,
   organizationId: Task['organizationId'],
   actor: Actor,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
+  costEnabled: boolean,
 ): ParticipationSummaryDto {
   const participantName =
     participation.participant.kind === 'user'
@@ -143,9 +150,10 @@ export function toParticipationSummaryDto(
     participantName,
     role: participation.role,
     hours: participation.hoursHundredths / 100,
-    rate: canSeeRate(actor, { organizationId, participant: participation.participant })
-      ? rateInReais(participation.rateCents)
-      : null,
+    rate:
+      costEnabled && canSeeRate(actor, { organizationId, participant: participation.participant })
+        ? rateInReais(participation.rateCents)
+        : null,
   }
 }
 
@@ -189,6 +197,8 @@ export function toTaskDto(
     archivedAt: task.archivedAt,
     backlogRank: task.backlogRank,
     inBacklog: isInBacklog(task),
+    deliverableId: task.deliverableId,
+    startsOn: task.startsOn,
     // Horas, não dinheiro: a comparação estimado × realizado é visível a quem vê a tarefa.
     estimatedHours: hundredthsToHours(task.estimatedHoursHundredths),
     actualHours: spentHundredths(task.participations) / 100,
@@ -265,6 +275,19 @@ export function toSprintRefDto(sprint: Sprint): SprintRefDto {
   return { id: sprint.id, number: sprint.number, name: sprint.name, status: sprint.status }
 }
 
+/** Marco como a interface o mostra (ADR-10). */
+export function toMilestoneDto(milestone: Milestone): MilestoneDto {
+  return {
+    id: milestone.id,
+    projectId: milestone.projectId,
+    title: milestone.title,
+    dueOn: milestone.dueOn,
+    deliverableId: milestone.deliverableId,
+    criterion: milestone.criterion,
+    createdAt: milestone.createdAt,
+  }
+}
+
 export function toSprintDto(sprint: Sprint): SprintDto {
   return {
     id: sprint.id,
@@ -331,11 +354,13 @@ export function toTaskDetailDto(
   sprint: SprintRefDto | null,
   impediment: ImpedimentRefDto | null,
   impedimentHistory: readonly ImpedimentDto[],
+  costEnabled: boolean,
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
-  const cost = canSeeEstimatedCost(actor, task)
-    ? estimatedCostOf(task, responsibleDefaultRateCents)
-    : null
+  const cost =
+    costEnabled && canSeeEstimatedCost(actor, task)
+      ? estimatedCostOf(task, responsibleDefaultRateCents)
+      : null
   return {
     ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint, impediment),
     impedimentHistory: [...impedimentHistory],
@@ -345,11 +370,13 @@ export function toTaskDetailDto(
     projectDefinitionOfDone: definitionOfDone.map(toDefinitionOfDoneItemDto),
     comments: [...comments],
     participations: task.participations.map((participation) =>
-      toParticipationSummaryDto(participation, task.organizationId, actor, names),
+      toParticipationSummaryDto(participation, task.organizationId, actor, names, costEnabled),
     ),
-    total: canSeeTaskTotal(actor, task.organizationId)
-      ? rateInReais(calculateTaskTotal(task.participations))
-      : null,
+    costEnabled,
+    total:
+      costEnabled && canSeeTaskTotal(actor, task.organizationId)
+        ? rateInReais(calculateTaskTotal(task.participations))
+        : null,
     canEdit,
     readOnly: isReadOnlyFor(actor, task, isMember),
     canArchive: canChangeTaskArchive(actor, task),

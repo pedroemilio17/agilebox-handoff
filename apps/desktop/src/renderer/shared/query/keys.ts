@@ -20,6 +20,26 @@ export const queryKeys = {
       ['agilebox', 'tasks', 'team', projectId, includeArchived] as const,
     detail: (taskId: string) => ['agilebox', 'tasks', 'detail', taskId] as const,
   },
+  wbs: {
+    all: ['agilebox', 'wbs'] as const,
+    project: (projectId: string) => ['agilebox', 'wbs', projectId] as const,
+  },
+  milestones: {
+    all: ['agilebox', 'milestones'] as const,
+    project: (projectId: string) => ['agilebox', 'milestones', projectId] as const,
+  },
+  schedule: {
+    all: ['agilebox', 'schedule'] as const,
+    project: (projectId: string) => ['agilebox', 'schedule', projectId] as const,
+  },
+  tracking: {
+    all: ['agilebox', 'tracking'] as const,
+    project: (projectId: string) => ['agilebox', 'tracking', projectId] as const,
+  },
+  burndown: {
+    all: ['agilebox', 'burndown'] as const,
+    project: (projectId: string) => ['agilebox', 'burndown', projectId] as const,
+  },
   backlog: {
     all: ['agilebox', 'backlog'] as const,
     list: (projectId: string) => ['agilebox', 'backlog', 'list', projectId] as const,
@@ -60,6 +80,15 @@ export const queryKeys = {
       ['agilebox', 'daily', 'suggestion', date, timeZone] as const,
   },
   meetings: { all: ['agilebox', 'meetings'] as const },
+  guide: {
+    all: ['agilebox', 'guide'] as const,
+    project: (projectId: string) => ['agilebox', 'guide', projectId] as const,
+  },
+  projectModules: {
+    all: ['agilebox', 'projectModules'] as const,
+    project: (projectId: string) => ['agilebox', 'projectModules', projectId] as const,
+    organization: ['agilebox', 'projectModules', 'organization'] as const,
+  },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },
   teamTools: {

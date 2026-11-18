@@ -216,5 +216,12 @@ describe('seed de demonstração: ferramentas da equipe', () => {
     expect(toActiveModuleIds(settings.modules)).toContain('wip')
     expect(toActiveModuleIds(settings.modules)).not.toContain('estimates.points')
     expect(toActiveModuleIds(settings.modules)).not.toContain('integrations')
+
+    // ADR-10: o guard lê o projeto. Cada projeto da demonstração liga o mesmo padrão.
+    const wipAcrossProjects = await unitOfWork.repositories.projectModules.statesAcrossProjects(
+      organizationId,
+      'wip',
+    )
+    expect(wipAcrossProjects).toEqual(['active', 'active', 'active'])
   })
 })

@@ -13,6 +13,7 @@ export function refreshSprintsEverywhere(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.guide.all })
 }
 
 /** Sprints do projeto (todas as situações; a tela separa por aba). */

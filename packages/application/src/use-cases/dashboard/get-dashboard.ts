@@ -8,7 +8,6 @@ import {
   flowSnapshot,
   isStaleTask,
   isOverdueTask,
-  moduleStateOf,
   moduleUseRefusal,
   recentChanges,
   lastActorUpdate,
@@ -18,6 +17,7 @@ import {
 } from '@agilebox/core'
 import type { Actor, Task, TimelineEvent } from '@agilebox/core'
 import type { DashboardDto } from '@agilebox/contract'
+import { organizationModuleStateOf } from '../../module-guard'
 import { toDashboardDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import { visibleTasks } from '../tasks/task-visibility'
@@ -35,11 +35,11 @@ export class GetDashboard {
     if (actor.role !== 'manager')
       throw new PermissionDeniedError('Somente o gestor pode acessar o dashboard')
 
-    const [allTasks, users, boardSettings, teamTools] = await Promise.all([
+    const [allTasks, users, boardSettings, flowState] = await Promise.all([
       this.deps.tasks.listBoard(actor.organizationId, {}),
       this.deps.users.list(actor.organizationId),
       this.deps.boardSettings.findByOrganization(actor.organizationId),
-      this.deps.teamTools.getSettings(actor.organizationId),
+      organizationModuleStateOf(this.deps, actor.organizationId, 'flowMetrics'),
     ])
     // Dashboard e insights não contam tarefas arquivadas nem as de projeto arquivado.
     const tasks = await visibleTasks(this.deps, actor.organizationId, allTasks)
@@ -57,9 +57,9 @@ export class GetDashboard {
       )
     ).flat()
     // Com `flowMetrics` desligado (regra do guard: `active` ou `winding_down` liberam a leitura),
-    // os insights de fluxo nem são calculados e somem do DTO (PLANO-2.0, regra 6).
-    const flowEnabled =
-      moduleUseRefusal(moduleStateOf(teamTools.modules, 'flowMetrics'), { creates: false }) === null
+    // os insights de fluxo nem são calculados e somem do DTO (PLANO-2.0, regra 6). Painel da
+    // organização: vale o estado do módulo nos projetos ativos (ADR-10).
+    const flowEnabled = moduleUseRefusal(flowState, { creates: false }) === null
     const flow = flowEnabled ? this.flowInsights(tasks, events, weeks, now) : {}
     const aging = tasks.filter((task) => isStaleTask(task, events, today, timeZone))
     const overdue = tasks.filter((task) => isOverdueTask(task, today))

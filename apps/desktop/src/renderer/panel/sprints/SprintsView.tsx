@@ -8,6 +8,8 @@ import { useBacklogProjects } from '../backlog/use-backlog'
 import { ActiveTab } from './ActiveTab'
 import { ClosedTab } from './ClosedTab'
 import { DraftsTab } from './DraftsTab'
+import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import type { PanelView } from '../layout/PanelShell'
 import { sprintCopy } from './sprint-copy'
 import { useSprintList } from './use-sprints'
 import styles from './SprintsView.module.css'
@@ -25,6 +27,8 @@ const TAB_OPTIONS: readonly [
 ]
 
 export interface SprintsViewProps {
+  /** Leva ao quadro, pelo botão "Rever os primeiros passos" do painel "Como funciona". */
+  readonly onNavigate?: (view: PanelView) => void
   /** Projeto que já estava selecionado no painel, se houver. */
   readonly initialProjectId?: string | null
   /** Projetos ativos (arquivados ficam de fora, como no Backlog). */
@@ -42,6 +46,7 @@ export function SprintsView({
   projects,
   isManager,
   onOpenTask,
+  onNavigate,
 }: SprintsViewProps) {
   const capabilities = useCapabilities()
   const actor = useActor()
@@ -96,6 +101,11 @@ export function SprintsView({
             ))}
           </select>
         </label>
+        <ModuleHelpButton
+          moduleId="sprints"
+          projectId={projectId}
+          {...(onNavigate ? { onNavigate } : {})}
+        />
         {projectId === null ? null : (
           <SegmentedControl<SprintTab>
             aria-label={sprintCopy.tabsLabel}

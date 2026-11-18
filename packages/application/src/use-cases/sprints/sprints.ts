@@ -53,9 +53,10 @@ import type {
 } from '@agilebox/contract'
 import { toSprintDto, toSprintHistoryRowDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
-import type { UnitOfWorkRepositories } from '../../ports'
+import type { ProjectModuleSetting, UnitOfWorkRepositories } from '../../ports'
 import { findTaskPrefix } from '../tasks/task-prefix'
 import { toTaskDtos } from '../tasks/list-tasks'
+import { recordGuideEvent } from '../guide/record-guide-event'
 
 type Repositories = UnitOfWorkRepositories
 type ProjectPolicy = (actor: Actor, project: Project, isMember: boolean) => boolean
@@ -109,10 +110,21 @@ async function sprintScope(
   return sprint
 }
 
-function sprintConfigOf(settings: TeamToolsSettings): number {
-  return readSprintsMaxActive(
-    settings.modules.find((module) => module.moduleId === 'sprints')?.config,
-  )
+/**
+ * Limite de sprints ativas do projeto da sprint (ADR-10): a configuração do módulo no projeto vale
+ * primeiro. Sem configuração gravada no projeto (linha sem config, ou objeto vazio), vale a da equipe.
+ */
+function sprintConfigOf(
+  settings: TeamToolsSettings,
+  projectRows: readonly ProjectModuleSetting[],
+): number {
+  const projectConfig = projectRows.find((row) => row.moduleId === 'sprints')?.config
+  const teamConfig = settings.modules.find((module) => module.moduleId === 'sprints')?.config
+  const config =
+    projectConfig !== null && projectConfig !== undefined && Object.keys(projectConfig).length > 0
+      ? projectConfig
+      : teamConfig
+  return readSprintsMaxActive(config)
 }
 
 function isOpen(row: Pick<SprintTask, 'removedAt'>): boolean {
@@ -295,6 +307,7 @@ export class CreateSprint {
         createdAt: now,
       })
       await repos.sprints.save(organizationId, created)
+      await recordGuideEvent(repos, actor, projectId, 'sprint.created', now)
       return created
     })
     return detailOf(this.deps, actor, sprint)
@@ -337,11 +350,12 @@ export class StartSprint {
     const pulled = await this.deps.unitOfWork.run(organizationId, async (repos) => {
       const sprint = await requireSprint(repos, organizationId, input.sprintId)
       const settings = await repos.teamTools.getSettings(organizationId)
+      const projectRows = await repos.projectModules.list(organizationId, sprint.projectId)
       const started = startSprint(
         sprint,
         now,
         await repos.sprints.countActive(organizationId, sprint.projectId),
-        sprintConfigOf(settings),
+        sprintConfigOf(settings, projectRows),
       )
       const events: TimelineEvent[] = []
       const changed: TaskId[] = []
@@ -391,17 +405,18 @@ export class CloseSprint {
       throw new ValidationError('Escolha a sprint seguinte para levar os itens abertos')
     const now = await this.deps.clock.now(organizationId)
     const changed = await this.deps.unitOfWork.run(organizationId, async (repos) => {
-      const settings = await repos.teamTools.getSettings(organizationId)
       const sprint = await requireSprint(repos, organizationId, input.sprintId)
       const policy: SprintClosePolicy =
         input.policy === 'carry_over' && input.nextSprintId !== undefined
           ? { kind: 'carry_over', nextSprintId: toSprintId(input.nextSprintId) }
           : { kind: 'return_to_backlog' }
       // Levar os itens cria linhas novas na sprint seguinte: o módulo em encerramento não cria.
-      if (
-        policy.kind === 'carry_over' &&
-        moduleStateOf(settings.modules, 'sprints') === 'winding_down'
-      )
+      // O estado é o do projeto da sprint (ADR-10).
+      const projectRows =
+        policy.kind === 'carry_over'
+          ? await repos.projectModules.list(organizationId, sprint.projectId)
+          : []
+      if (policy.kind === 'carry_over' && moduleStateOf(projectRows, 'sprints') === 'winding_down')
         throw new ConflictError(
           'Sprints está sendo encerrada: os itens abertos voltam ao backlog ou ficam no quadro',
         )
@@ -558,6 +573,7 @@ export class AddSprintTask {
         changedTasks.push(task.id)
       }
       if (events.length > 0) await repos.timeline.saveMany(organizationId, events)
+      await recordGuideEvent(repos, actor, sprint.projectId, 'sprint.task_added', now)
       return changedTasks
     })
     if (changed.length > 0)

@@ -23,6 +23,7 @@ import { ArchiveControl } from './ArchiveControl'
 import { ChecklistCard } from './ChecklistCard'
 import { CriteriaCard } from './CriteriaCard'
 import { EstimateProperty } from './EstimateProperty'
+import { DeliverableProperty } from './DeliverableProperty'
 import { BacklogControl } from './BacklogControl'
 import { CommentsCard } from './CommentsCard'
 import { useMoveTaskStatus, useTaskDetail, useUpdateTask } from './use-task-detail'
@@ -253,6 +254,8 @@ export function TaskDetailView({
         {capabilities.showScreen('estimates.hours') ? (
           <EstimateProperty task={task!} readOnly={readOnly} />
         ) : null}
+        {/* A regra é do projeto da tarefa (DeliverableProperty), não do projeto selecionado. */}
+        <DeliverableProperty task={task!} readOnly={readOnly} />
       </dl>
       <TaskDescription
         task={task!}

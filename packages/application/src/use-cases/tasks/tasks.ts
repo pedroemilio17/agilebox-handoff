@@ -5,6 +5,8 @@ import {
   validateImpedimentResolution,
   toImpedimentId,
   setEstimatedHours,
+  setTaskDeliverable,
+  deliverableChangeDraft,
   archiveTask,
   blockTask,
   canChangeTaskArchive,
@@ -31,12 +33,14 @@ import {
   parseDateOnly,
   PermissionDeniedError,
   renameTask,
+  scheduleGuideEvent,
   setDeadline,
   setDescription,
   setPriority,
   setStatus,
   setTicket,
   toEventId,
+  toDeliverableId,
   toProjectId,
   toTaskId,
   toParticipationId,
@@ -44,6 +48,7 @@ import {
 import type {
   Actor,
   ContributorId,
+  GuideEventType,
   ImpedimentOwnerCandidate,
   Task,
   TaskId,
@@ -53,6 +58,7 @@ import type {
 } from '@agilebox/core'
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
+import { projectCostEnabled } from '../../module-guard'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
@@ -61,6 +67,7 @@ import { loadCommentDtos } from './comments'
 import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
 import { assertBacklogAccess } from '../backlog/backlog-access'
+import { recordGuideEvent } from '../guide/record-guide-event'
 import {
   loadImpedimentRefs,
   loadImpedimentHistory,
@@ -180,6 +187,7 @@ export class CreateTask {
       )
       await repositories.tasks.save(actor.organizationId, created)
       await repositories.timeline.saveMany(actor.organizationId, [event, ...initialEvents])
+      await recordGuideEvent(repositories, actor, projectId, 'task.created', now)
       return created
     })
     await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
@@ -228,6 +236,8 @@ export class GetTaskDetail {
       task.id,
     )
     const impedimentHistory = await loadImpedimentHistory(this.deps, actor.organizationId, task.id)
+    // Custo e valor/hora seguem o módulo `cost` do projeto da tarefa (não o projeto selecionado).
+    const costEnabled = await projectCostEnabled(this.deps, actor.organizationId, task.projectId)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
@@ -247,6 +257,7 @@ export class GetTaskDetail {
         sprint ?? null,
         impediment ?? null,
         impedimentHistory,
+        costEnabled,
       ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }
@@ -289,6 +300,10 @@ export class GetTaskDetail {
   }
 }
 
+/** Evento do guia de uma edição: fixo, ou calculado a partir de (antes, depois). Nulo não conta. */
+export type GuideEventFor =
+  GuideEventType | null | ((before: Task, after: Task) => GuideEventType | null)
+
 /** Regra de acesso de uma mudança: a própria, ou uma função que recusa (lança) quando não pode. */
 export type ChangeAccess = 'edit' | 'archive' | 'backlog' | ((actor: Actor, task: Task) => void)
 
@@ -307,6 +322,9 @@ export abstract class ChangeTask {
    * Função: regra de acesso própria (o impedimento resolvido por quem é responsável, por exemplo).
    * `impediment`: responsável e nota de resolução, que o impedimento aberto da tarefa leva junto
    * (M5.2a). O impedimento é gravado na mesma transação da tarefa, com a linha do tempo.
+   * `guideEvent`: evento de alimentação do guia (ADR-10), gravado na mesma transação, depois das
+   * demais gravações, para a pessoa que fez a edição. Pode ser uma função de (antes, depois), quando o
+   * evento depende do estado que a edição deixa (ex.: cronograma, início e prazo).
    */
   protected async change(
     actor: Actor,
@@ -317,6 +335,7 @@ export abstract class ChangeTask {
     access: ChangeAccess = 'edit',
     backlogPolicy: BacklogPolicy = canPullFromBacklog,
     impediment: ImpedimentChange = {},
+    guideEvent: GuideEventFor = null,
   ): Promise<TaskDto> {
     const taskId = toTaskId(rawTaskId)
     const task = await this.deps.tasks.findById(actor.organizationId, taskId)
@@ -377,6 +396,8 @@ export abstract class ChangeTask {
       await repositories.tasks.save(actor.organizationId, updated)
       for (const row of sync.saves) await repositories.impediments.save(actor.organizationId, row)
       if (events.length > 0) await repositories.timeline.saveMany(actor.organizationId, events)
+      const guide = typeof guideEvent === 'function' ? guideEvent(task, updated) : guideEvent
+      if (guide !== null) await recordGuideEvent(repositories, actor, task.projectId, guide, now)
     })
     if (events.length > 0)
       await this.deps.changeNotifier.publish(actor.organizationId, { kind: 'task', ids: [task.id] })
@@ -439,6 +460,12 @@ export class UpdateTask extends ChangeTask {
         return updated
       },
       input.changes.progressConfirmed ? [{ type: 'progress_confirmed', payload: {} }] : [],
+      [],
+      'edit',
+      undefined,
+      {},
+      // Prazo com início (ou início com prazo) pela edição conclui o passo "Dê início e fim" (cronograma).
+      scheduleGuideEvent,
     )
   }
 }
@@ -453,7 +480,73 @@ export class SetTaskEstimate extends ChangeTask {
     actor: Actor,
     input: { readonly taskId: string; readonly estimatedHours: number | null },
   ): Promise<TaskDto> {
-    return this.change(actor, input.taskId, (task) => setEstimatedHours(task, input.estimatedHours))
+    return this.change(
+      actor,
+      input.taskId,
+      (task) => setEstimatedHours(task, input.estimatedHours),
+      [],
+      [],
+      'edit',
+      canPullFromBacklog,
+      {},
+      // Limpar a estimativa (nulo) não é definir uma: o passo do guia só conclui ao estimar.
+      input.estimatedHours === null ? null : 'task.estimated',
+    )
+  }
+}
+
+/**
+ * Liga a tarefa a uma entrega da EAP do mesmo projeto (nulo desliga). Quem pode editar a tarefa pode
+ * ligar; projeto arquivado e tarefa arquivada recusam. Gera linha do tempo (com o título dos dois
+ * lados) e, ao ligar, o evento do guia "Quebre cada entrega em tarefas".
+ */
+export class SetTaskDeliverable extends ChangeTask {
+  async execute(
+    actor: Actor,
+    input: { readonly taskId: string; readonly deliverableId: string | null },
+  ): Promise<TaskDto> {
+    const organizationId = actor.organizationId
+    const task = await this.deps.tasks.findById(organizationId, toTaskId(input.taskId))
+    if (!task) throw new NotFoundError('Tarefa não encontrada')
+    // Permissão antes de qualquer consulta à entrega: quem não edita a tarefa não descobre nada dela.
+    assertTaskEditable(actor, task)
+    const project = await this.deps.projects.findById(organizationId, task.projectId)
+    if (project?.archivedAt)
+      throw new ConflictError('Projeto arquivado não aceita mudanças nas entregas das tarefas.')
+
+    const target =
+      input.deliverableId === null
+        ? null
+        : await this.deps.deliverables.findById(
+            organizationId,
+            toDeliverableId(input.deliverableId),
+          )
+    if (input.deliverableId !== null && target === null)
+      throw new NotFoundError('Entrega não encontrada')
+    if (target !== null && target.projectId !== task.projectId)
+      throw new ValidationError('A entrega é de outro projeto')
+
+    const current =
+      task.deliverableId === null
+        ? null
+        : await this.deps.deliverables.findById(organizationId, task.deliverableId)
+    const linkChanged = (target?.id ?? null) !== (task.deliverableId ?? null)
+    const draft = deliverableChangeDraft(
+      current === null ? null : { id: current.id, title: current.title },
+      target === null ? null : { id: target.id, title: target.title },
+    )
+    return this.change(
+      actor,
+      input.taskId,
+      (item) => setTaskDeliverable(item, target?.id ?? null),
+      draft === null ? [] : [draft],
+      [],
+      'edit',
+      undefined,
+      {},
+      // Só ligar a uma entrega conta para o guia; desligar, ou trocar sem mudança, não.
+      target !== null && linkChanged ? 'task.deliverable_set' : null,
+    )
   }
 }
 

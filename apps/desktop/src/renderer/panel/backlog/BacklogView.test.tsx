@@ -75,6 +75,8 @@ interface SetupOptions {
   readonly items?: readonly TaskDto[] | (() => Promise<TaskDto[]>)
   readonly projects?: readonly ProjectDto[]
   readonly members?: Record<string, readonly string[]>
+  /** Guia indisponível: o estado vazio cai nos textos antigos (fallback). */
+  readonly guideFails?: boolean
 }
 
 function setup({
@@ -85,8 +87,10 @@ function setup({
   items = [item(1, 'Revisar integração'), item(2, 'Ajustar relatório'), item(3, 'Trocar ícone')],
   projects = [PROJECT],
   members = {},
+  guideFails = false,
 }: SetupOptions = {}) {
   const api = createFakeApi()
+  if (guideFails) vi.spyOn(api.guide, 'get').mockRejectedValue(new Error('guia indisponível'))
   vi.spyOn(api.teamTools, 'get').mockResolvedValue(
     teamToolsView({ modules: [...modules], level, role, winding: [...winding] }),
   )
@@ -174,9 +178,17 @@ describe('Backlog: lista e criação rápida', () => {
     expect(s.add).not.toHaveBeenCalled()
   })
 
-  it('estado vazio mostra a mensagem do backlog', async () => {
-    setup({ items: [] })
+  it('estado vazio com guia indisponível mostra a mensagem antiga do backlog', async () => {
+    setup({ items: [], guideFails: true })
     expect(await screen.findByText('O backlog deste projeto está vazio.')).toBeTruthy()
+    expect(screen.getByText(/Adicione ideias e pedidos acima/)).toBeTruthy()
+  })
+
+  it('estado vazio com guia carregado mostra o texto do manifesto do backlog', async () => {
+    setup({ items: [] })
+    expect(await screen.findByText('O backlog está vazio.')).toBeTruthy()
+    expect(screen.getByText(/O backlog são as tarefas em Planejamento/)).toBeTruthy()
+    expect(screen.queryByText('O backlog deste projeto está vazio.')).toBeNull()
   })
 
   it('erro ao carregar mostra alerta e tenta de novo', async () => {

@@ -1,8 +1,9 @@
 import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
-import { assertModuleUsable, USE_CASE_MODULES } from './module-guard'
-import type { ModuleUsePolicy, UseCasePath } from './module-guard'
-import type { TeamToolsRepository } from './ports'
+import { assertProjectModuleUsable, USE_CASE_MODULES } from './module-guard'
+import { GetTracking } from './use-cases/tracking/tracking'
+import { GetBurndown } from './use-cases/burndown/burndown'
+import type { ModuleGuardPorts, ModuleUsePolicy, UseCasePath } from './module-guard'
 import { assertTenantContext } from './tenant-context'
 import type { TenantContext } from './tenant-context'
 import {
@@ -15,6 +16,32 @@ import {
   SetTeamModuleConfig,
 } from './use-cases/team-tools/team-tools'
 import {
+  ChangeProjectModules,
+  SetProjectModuleConfig,
+  GetOrganizationModules,
+  GetProjectModules,
+} from './use-cases/project-modules/project-modules'
+import { DismissGuideCard, GetGuide, ResolveWelcome } from './use-cases/guide/guide'
+import {
+  CreateDeliverable,
+  GetWbs,
+  MoveDeliverable,
+  RemoveDeliverable,
+  RenameDeliverable,
+} from './use-cases/wbs/wbs'
+import {
+  CreateMilestone,
+  ListMilestones,
+  RemoveMilestone,
+  UpdateMilestone,
+} from './use-cases/milestones/milestones'
+import {
+  AddTaskDependency,
+  GetSchedule,
+  RemoveTaskDependency,
+  SetTaskStart,
+} from './use-cases/schedule/schedule'
+import {
   AddSprintTask,
   CloseSprint,
   CreateSprint,
@@ -26,6 +53,7 @@ import {
   UpdateSprint,
 } from './use-cases/sprints/sprints'
 import { CreateProject } from './use-cases/projects/create-project'
+import { CreateProjectWithSetup } from './use-cases/projects/create-project-with-setup'
 import { ArchiveProject, UnarchiveProject } from './use-cases/projects/archive-projects'
 import { RenameProject } from './use-cases/projects/rename-project'
 import { ListProjects } from './use-cases/projects/list-projects'
@@ -70,6 +98,7 @@ import {
   CreateTask,
   GetTaskDetail,
   MoveTask,
+  SetTaskDeliverable,
   SetTaskEstimate,
   UnarchiveTask,
   UnblockTask,
@@ -135,9 +164,10 @@ interface UseCaseLike<Input extends unknown[], Output> {
 /**
  * Monta a fronteira `forTenant`: exige o `TenantContext` da sessão e, depois disso, aplica o guard
  * de módulo declarado em `USE_CASE_MODULES` para o caminho do caso de uso. O caminho é tipado pelas
- * chaves do mapa, então um caso de uso novo sem declaração não compila.
+ * chaves do mapa, então um caso de uso novo sem declaração não compila. Os argumentos do caso de
+ * uso são repassados ao guard, que acha o projeto a partir deles (ADR-10).
  */
-function tenantScope(teamTools: TeamToolsRepository) {
+function tenantScope(ports: ModuleGuardPorts) {
   return function forTenant<Path extends UseCasePath, Input extends unknown[], Output>(
     path: Path,
     useCase: UseCaseLike<Input, Output>,
@@ -147,7 +177,7 @@ function tenantScope(teamTools: TeamToolsRepository) {
       execute(context: TenantContext, ...args: Input): Promise<Awaited<Output>> {
         // Contexto inválido falha antes de qualquer consulta, de forma síncrona.
         assertTenantContext(context)
-        return callAfterModuleGuard(teamTools, context, policy, () =>
+        return callAfterModuleGuard(ports, context, policy, args, () =>
           useCase.execute(context.actor, ...args),
         )
       },
@@ -156,18 +186,19 @@ function tenantScope(teamTools: TeamToolsRepository) {
 }
 
 async function callAfterModuleGuard<T>(
-  teamTools: TeamToolsRepository,
+  ports: ModuleGuardPorts,
   context: TenantContext,
   policy: ModuleUsePolicy,
+  args: readonly unknown[],
   call: () => T,
 ): Promise<Awaited<T>> {
-  await assertModuleUsable(teamTools, context.tenantId, policy)
+  await assertProjectModuleUsable(ports, context.tenantId, policy, args)
   const result = await call()
   return result
 }
 
 export function createUseCases(deps: AppDeps) {
-  const forTenant = tenantScope(deps.teamTools)
+  const forTenant = tenantScope(deps)
   return {
     // Exceção: estes dois estabelecem a sessão (quem é o ator atual); não há contexto antes deles.
     session: {
@@ -189,6 +220,7 @@ export function createUseCases(deps: AppDeps) {
         new ListProjects(deps.projects, deps.definitionOfDone),
       ),
       createProject: forTenant('projects.createProject', new CreateProject(deps)),
+      createWithSetup: forTenant('projects.createWithSetup', new CreateProjectWithSetup(deps)),
       listMembers: forTenant('projects.listMembers', new ListProjectMembers(deps)),
       addMember: forTenant('projects.addMember', new AddProjectMember(deps)),
       removeMember: forTenant('projects.removeMember', new RemoveProjectMember(deps)),
@@ -213,6 +245,8 @@ export function createUseCases(deps: AppDeps) {
       archive: forTenant('tasks.archive', new ArchiveTask(deps)),
       unarchive: forTenant('tasks.unarchive', new UnarchiveTask(deps)),
       setEstimate: forTenant('tasks.setEstimate', new SetTaskEstimate(deps)),
+      setDeliverable: forTenant('tasks.setDeliverable', new SetTaskDeliverable(deps)),
+      setStart: forTenant('tasks.setStart', new SetTaskStart(deps)),
       criteria: {
         add: forTenant('tasks.criteria.add', new AddAcceptanceCriterion(deps)),
         toggle: forTenant('tasks.criteria.toggle', new ToggleAcceptanceCriterion(deps)),
@@ -280,6 +314,30 @@ export function createUseCases(deps: AppDeps) {
       addTask: forTenant('sprints.addTask', new AddSprintTask(deps)),
       removeTask: forTenant('sprints.removeTask', new RemoveSprintTask(deps)),
     },
+    wbs: {
+      get: forTenant('wbs.get', new GetWbs(deps)),
+      createDeliverable: forTenant('wbs.createDeliverable', new CreateDeliverable(deps)),
+      renameDeliverable: forTenant('wbs.renameDeliverable', new RenameDeliverable(deps)),
+      moveDeliverable: forTenant('wbs.moveDeliverable', new MoveDeliverable(deps)),
+      removeDeliverable: forTenant('wbs.removeDeliverable', new RemoveDeliverable(deps)),
+    },
+    schedule: {
+      get: forTenant('schedule.get', new GetSchedule(deps)),
+      addDependency: forTenant('schedule.addDependency', new AddTaskDependency(deps)),
+      removeDependency: forTenant('schedule.removeDependency', new RemoveTaskDependency(deps)),
+    },
+    tracking: {
+      get: forTenant('tracking.get', new GetTracking(deps)),
+    },
+    burndown: {
+      get: forTenant('burndown.get', new GetBurndown(deps)),
+    },
+    milestones: {
+      list: forTenant('milestones.list', new ListMilestones(deps)),
+      create: forTenant('milestones.create', new CreateMilestone(deps)),
+      update: forTenant('milestones.update', new UpdateMilestone(deps)),
+      remove: forTenant('milestones.remove', new RemoveMilestone(deps)),
+    },
     backlog: {
       list: forTenant('backlog.list', new ListBacklog(deps)),
       add: forTenant('backlog.add', new AddToBacklog(deps)),
@@ -295,6 +353,20 @@ export function createUseCases(deps: AppDeps) {
       setLevel: forTenant('teamTools.setLevel', new SetTeamLevel(deps)),
       applyPreset: forTenant('teamTools.applyPreset', new ApplyTeamPreset(deps)),
       setModuleConfig: forTenant('teamTools.setModuleConfig', new SetTeamModuleConfig(deps)),
+    },
+    projectModules: {
+      get: forTenant('projectModules.get', new GetProjectModules(deps)),
+      change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
+      setConfig: forTenant('projectModules.setConfig', new SetProjectModuleConfig(deps)),
+      getOrganization: forTenant(
+        'projectModules.getOrganization',
+        new GetOrganizationModules(deps),
+      ),
+    },
+    guide: {
+      get: forTenant('guide.get', new GetGuide(deps)),
+      dismissCard: forTenant('guide.dismissCard', new DismissGuideCard(deps)),
+      resolveWelcome: forTenant('guide.resolveWelcome', new ResolveWelcome(deps)),
     },
     meetings: {
       listRange: forTenant('meetings.listRange', new ListMeetingOccurrences(deps)),

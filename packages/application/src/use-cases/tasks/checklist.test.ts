@@ -16,6 +16,7 @@ import { aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
+import { enableProjectModules } from '../../testing/task-harness'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
@@ -42,8 +43,14 @@ function setup(actor: Actor = owner) {
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
+    projectSetup: unitOfWork.repositories.projectSetup,
+    guideProgress: unitOfWork.repositories.guideProgress,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    taskDependencies: unitOfWork.repositories.taskDependencies,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
@@ -70,7 +77,10 @@ async function seedTask(
 ) {
   const project = aProject().build()
   await unitOfWork.repositories.projects.save(organizationId, project)
-  await unitOfWork.repositories.users.save(organizationId, aUser().build())
+  const user = aUser().build()
+  await unitOfWork.repositories.users.save(organizationId, user)
+  // Subtarefas são módulo do projeto (ADR-10): o projeto da fixture liga o módulo.
+  await enableProjectModules(unitOfWork, organizationId, project.id, user.id, ['subtasks'])
   const task = aTask()
     .inProject(project)
     .with({ number: options.number ?? 1 })

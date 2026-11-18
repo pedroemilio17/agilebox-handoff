@@ -53,6 +53,9 @@ export function registerHandlers(
   register('projects.create', (context, input) =>
     useCases.projects.createProject.execute(context, input),
   )
+  register('projects.createWithSetup', (context, input) =>
+    useCases.projects.createWithSetup.execute(context, input),
+  )
   register('projects.listMembers', (context, input) =>
     useCases.projects.listMembers.execute(context, input),
   )
@@ -121,6 +124,10 @@ export function registerHandlers(
   register('tasks.checklist.move', (context, input) =>
     useCases.tasks.checklist.move.execute(context, input),
   )
+  register('tasks.setDeliverable', (context, input) =>
+    useCases.tasks.setDeliverable.execute(context, input),
+  )
+  register('tasks.setStart', (context, input) => useCases.tasks.setStart.execute(context, input))
   register('tasks.setEstimate', (context, input) =>
     useCases.tasks.setEstimate.execute(context, input),
   )
@@ -164,6 +171,38 @@ export function registerHandlers(
   register('sprints.addTask', (context, input) => useCases.sprints.addTask.execute(context, input))
   register('sprints.removeTask', (context, input) =>
     useCases.sprints.removeTask.execute(context, input),
+  )
+  register('wbs.get', (context, input) => useCases.wbs.get.execute(context, input))
+  register('wbs.createDeliverable', (context, input) =>
+    useCases.wbs.createDeliverable.execute(context, input),
+  )
+  register('wbs.renameDeliverable', (context, input) =>
+    useCases.wbs.renameDeliverable.execute(context, input),
+  )
+  register('wbs.moveDeliverable', (context, input) =>
+    useCases.wbs.moveDeliverable.execute(context, input),
+  )
+  register('wbs.removeDeliverable', (context, input) =>
+    useCases.wbs.removeDeliverable.execute(context, input),
+  )
+  register('milestones.list', (context, input) => useCases.milestones.list.execute(context, input))
+  register('milestones.create', (context, input) =>
+    useCases.milestones.create.execute(context, input),
+  )
+  register('milestones.update', (context, input) =>
+    useCases.milestones.update.execute(context, input),
+  )
+  register('milestones.remove', (context, input) =>
+    useCases.milestones.remove.execute(context, input),
+  )
+  register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
+  register('tracking.get', (context, input) => useCases.tracking.get.execute(context, input))
+  register('burndown.get', (context, input) => useCases.burndown.get.execute(context, input))
+  register('schedule.addDependency', (context, input) =>
+    useCases.schedule.addDependency.execute(context, input),
+  )
+  register('schedule.removeDependency', (context, input) =>
+    useCases.schedule.removeDependency.execute(context, input),
   )
   register('backlog.list', (context, input) => useCases.backlog.list.execute(context, input))
   register('backlog.add', (context, input) => useCases.backlog.add.execute(context, input))
@@ -246,6 +285,25 @@ export function registerHandlers(
   )
   register('daily.suggestSummary', (context, input) =>
     useCases.daily.suggestSummary.execute(context, input),
+  )
+  register('projectModules.get', (context, input) =>
+    useCases.projectModules.get.execute(context, input),
+  )
+  register('projectModules.change', (context, input) =>
+    useCases.projectModules.change.execute(context, input),
+  )
+  register('projectModules.setConfig', (context, input) =>
+    useCases.projectModules.setConfig.execute(context, input),
+  )
+  register('projectModules.getOrganization', (context) =>
+    useCases.projectModules.getOrganization.execute(context),
+  )
+  register('guide.get', (context, input) => useCases.guide.get.execute(context, input))
+  register('guide.dismissCard', (context, input) =>
+    useCases.guide.dismissCard.execute(context, input),
+  )
+  register('guide.resolveWelcome', (context, input) =>
+    useCases.guide.resolveWelcome.execute(context, input),
   )
   register('teamTools.get', (context) => useCases.teamTools.get.execute(context))
   register('teamTools.previewChange', (context, input) =>

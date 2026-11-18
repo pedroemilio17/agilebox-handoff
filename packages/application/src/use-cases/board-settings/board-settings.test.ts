@@ -13,6 +13,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules } from '../../testing/task-harness'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
 
@@ -41,8 +42,14 @@ function depsFor(unitOfWork: InMemoryUnitOfWork, actor: Actor) {
     retroActions: unitOfWork.repositories.retroActions,
     dailyEntries: unitOfWork.repositories.dailyEntries,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
+    projectSetup: unitOfWork.repositories.projectSetup,
+    guideProgress: unitOfWork.repositories.guideProgress,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    taskDependencies: unitOfWork.repositories.taskDependencies,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,
@@ -110,6 +117,8 @@ async function seedUsers(unitOfWork: InMemoryUnitOfWork) {
   for (const user of users) await unitOfWork.repositories.users.save(organizationId, user)
   const project = aProject().build()
   await unitOfWork.repositories.projects.save(organizationId, project)
+  // Limite de WIP é módulo do projeto (ADR-10): a organização só lê o módulo pelos projetos ativos.
+  await enableProjectModules(unitOfWork, organizationId, project.id, managerId, ['wip'])
   return project
 }
 

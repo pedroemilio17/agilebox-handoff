@@ -3,13 +3,21 @@ import type { TenantContext } from '../tenant-context'
 import {
   createOrganization,
   createParticipation,
+  DEFAULT_TEAM_MODULE_IDS,
   toOrganizationId,
   toParticipationId,
   toProjectId,
   toTaskId,
   toUserId,
 } from '@agilebox/core'
-import type { Actor, ModuleId, ModuleState, OrganizationId, UserId } from '@agilebox/core'
+import type {
+  Actor,
+  ModuleId,
+  ModuleState,
+  OrganizationId,
+  ProjectId,
+  UserId,
+} from '@agilebox/core'
 import { createUseCases } from '../create-use-cases'
 import type { ActorSession } from '../ports'
 import { aProject, aTask, aUser } from './builders'
@@ -69,8 +77,14 @@ export function createTaskHarness(initial: Actor = ana) {
     taskOpens: unitOfWork.repositories.taskOpens,
     tasks: unitOfWork.repositories.tasks,
     teamTools: unitOfWork.repositories.teamTools,
+    projectModules: unitOfWork.repositories.projectModules,
+    projectSetup: unitOfWork.repositories.projectSetup,
+    guideProgress: unitOfWork.repositories.guideProgress,
     sprints: unitOfWork.repositories.sprints,
     sprintTasks: unitOfWork.repositories.sprintTasks,
+    deliverables: unitOfWork.repositories.deliverables,
+    taskDependencies: unitOfWork.repositories.taskDependencies,
+    milestones: unitOfWork.repositories.milestones,
     impediments: unitOfWork.repositories.impediments,
     timeline: unitOfWork.repositories.timeline,
     unitOfWork,
@@ -87,6 +101,11 @@ export interface SeedOptions {
   /** Estimativa inicial em centésimos de hora (null = sem estimativa). */
   readonly estimatedHoursHundredths?: number | null
   readonly archived?: boolean
+  /**
+   * Módulos ligados no projeto da fixture (ADR-10: o guard lê o projeto). Padrão: as ferramentas que
+   * a equipe trazia ligadas por padrão, para que os testes partam do mesmo ponto de antes.
+   */
+  readonly projectModules?: readonly ModuleId[]
 }
 
 /** Grava organizações, usuários, projeto e a tarefa de ana, com Apoio de bia (2 h, 30,00 de valor/hora). */
@@ -184,9 +203,16 @@ export async function seedTaskHarness(
     ],
   }
   await repositories.tasks.save(orgA, withSupport)
+  await enableProjectModules(
+    unitOfWork,
+    orgA,
+    projectId,
+    managerId,
+    options.projectModules ?? DEFAULT_TEAM_MODULE_IDS,
+  )
 }
 
-/** Estado de módulos da organização (gestor) para os testes de guard. */
+/** Estado de ferramentas da equipe (gestor). Só a gestão da equipe lê isso; o guard não lê mais (ADR-10). */
 export async function setModules(
   unitOfWork: InMemoryUnitOfWork,
   organizationId: OrganizationId,
@@ -202,5 +228,47 @@ export async function setModules(
     { level: 'advanced', modules },
     actorId,
     NOW,
+  )
+}
+
+/**
+ * Estado de módulos de um projeto (ADR-10): é o que o guard lê. Módulo não citado fica como está;
+ * sem linha conta como desligado. Grava direto no repositório, sem resolver dependências (para isso,
+ * `projectModules.change`).
+ */
+export async function setProjectModules(
+  unitOfWork: InMemoryUnitOfWork,
+  organizationId: OrganizationId,
+  projectId: ProjectId,
+  actorId: UserId,
+  states: Partial<Record<ModuleId, ModuleState>>,
+): Promise<void> {
+  const changes = (Object.keys(states) as ModuleId[]).map((moduleId) => ({
+    moduleId,
+    state: states[moduleId] as ModuleState,
+  }))
+  await unitOfWork.repositories.projectModules.save(
+    organizationId,
+    projectId,
+    changes,
+    actorId,
+    NOW,
+  )
+}
+
+/** Liga, no projeto, os módulos pedidos (estado `active`). */
+export async function enableProjectModules(
+  unitOfWork: InMemoryUnitOfWork,
+  organizationId: OrganizationId,
+  projectId: ProjectId,
+  actorId: UserId,
+  moduleIds: readonly ModuleId[],
+): Promise<void> {
+  await setProjectModules(
+    unitOfWork,
+    organizationId,
+    projectId,
+    actorId,
+    Object.fromEntries(moduleIds.map((id) => [id, 'active' as const])),
   )
 }

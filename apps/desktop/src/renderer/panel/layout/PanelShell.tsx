@@ -15,15 +15,23 @@ import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
 import { sprintCopy } from '../sprints/sprint-copy'
 import { impedimentCopy } from '../impediments/impediment-copy'
+import { trackingCopy } from '../tracking/tracking-screen'
+import { burndownCopy } from '../burndown/burndown-screen'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
   | 'dashboard'
   | 'projects'
   | 'backlog'
+  | 'wbs'
+  | 'milestones'
+  | 'schedule'
+  | 'tracking'
+  | 'burndown'
   | 'sprints'
   | 'impediments'
   | 'agenda'
+  | 'modules'
   | 'plugins'
   | 'settings'
 
@@ -56,7 +64,19 @@ export interface PanelShellProps {
   }
   readonly dashboard?: ReactNode
   readonly agenda?: ReactNode
+  /** Tela "Módulos" do projeto selecionado. O item da barra só aparece com projeto selecionado. */
+  readonly modules?: ReactNode
   readonly backlog?: ReactNode
+  /** Entregas (EAP). O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly wbs?: ReactNode
+  /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly milestones?: ReactNode
+  /** Cronograma do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly schedule?: ReactNode
+  /** Acompanhamento do projeto. O item da barra só aparece com projeto selecionado e o módulo do cronograma ligado. */
+  readonly tracking?: ReactNode
+  /** Burndown e velocidade. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly burndown?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -69,9 +89,15 @@ const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
+  wbs: 'Entregas',
+  milestones: 'Marcos',
+  schedule: 'Cronograma',
+  tracking: trackingCopy.title,
+  burndown: burndownCopy.title,
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
+  modules: 'Módulos',
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
 }
@@ -96,7 +122,13 @@ export function PanelShell({
   onSearch,
   dashboard,
   agenda,
+  modules,
   backlog,
+  wbs,
+  milestones,
+  schedule,
+  tracking,
+  burndown,
   sprints,
   impediments,
   children,
@@ -113,6 +145,26 @@ export function PanelShell({
     ...(capabilities.showScreen('backlog')
       ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
       : []),
+    // Entregas (EAP): só com projeto selecionado e o módulo ligado no projeto.
+    ...(selectedProjectId !== null && capabilities.showScreen('wbs')
+      ? [{ id: 'wbs' as const, label: viewTitles.wbs, icon: '▤' }]
+      : []),
+    // Marcos: com projeto selecionado e o módulo ligado no projeto (sem EAP, a tela continua).
+    ...(selectedProjectId !== null && capabilities.showScreen('milestones')
+      ? [{ id: 'milestones' as const, label: viewTitles.milestones, icon: '◇' }]
+      : []),
+    // Cronograma: com projeto selecionado e o módulo ligado no projeto.
+    ...(selectedProjectId !== null && capabilities.showScreen('schedule')
+      ? [{ id: 'schedule' as const, label: viewTitles.schedule, icon: '≋' }]
+      : []),
+    // Acompanhamento: no mesmo módulo do cronograma (só com projeto selecionado).
+    ...(selectedProjectId !== null && capabilities.showScreen('schedule')
+      ? [{ id: 'tracking' as const, label: viewTitles.tracking, icon: '◔' }]
+      : []),
+    // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado.
+    ...(selectedProjectId !== null && capabilities.showScreen('burndown')
+      ? [{ id: 'burndown' as const, label: viewTitles.burndown, icon: '↘' }]
+      : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
       ? [{ id: 'sprints' as const, label: sprintCopy.title, icon: '◷' }]
@@ -124,6 +176,10 @@ export function PanelShell({
       : []),
     ...(capabilities.showScreen('agenda')
       ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
+      : []),
+    // Módulos: qualquer pessoa vê a lista do projeto selecionado (o colaborador só lê).
+    ...(selectedProjectId !== null
+      ? [{ id: 'modules' as const, label: viewTitles.modules, icon: '⚙' }]
       : []),
     { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
   ]
@@ -165,12 +221,24 @@ export function PanelShell({
             dashboard
           ) : visibleView === 'backlog' && backlog ? (
             backlog
+          ) : visibleView === 'wbs' && wbs ? (
+            wbs
+          ) : visibleView === 'milestones' && milestones ? (
+            milestones
+          ) : visibleView === 'schedule' && schedule ? (
+            schedule
+          ) : visibleView === 'tracking' && tracking ? (
+            tracking
+          ) : visibleView === 'burndown' && burndown ? (
+            burndown
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
             impediments
           ) : visibleView === 'agenda' && agenda ? (
             agenda
+          ) : visibleView === 'modules' && modules ? (
+            modules
           ) : visibleView === 'settings' ? (
             <SettingsView />
           ) : visibleView === 'plugins' ? (
@@ -410,6 +478,11 @@ function NavIcon({ kind }: { readonly kind: string }) {
     impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
     plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
+    modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+    milestones: 'M12 3l8 9-8 9-8-9z',
+    schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
+    tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
+    burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
   }
   return (
     <span aria-hidden="true">

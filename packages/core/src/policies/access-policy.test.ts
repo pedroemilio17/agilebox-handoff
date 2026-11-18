@@ -41,6 +41,8 @@ const task: Task = {
   archivedBy: null,
   backlogRank: null,
   estimatedHoursHundredths: null,
+  deliverableId: null,
+  startsOn: null,
   deadline: null,
   ticket: null,
   searchText: '',
@@ -175,6 +177,17 @@ describe('arquivamento', () => {
     expect(policy.canArchiveProject({ ...collaborator, userId: other }, project)).toBe(true)
     expect(policy.canArchiveProject(collaborator, project)).toBe(false)
     expect(policy.canArchiveProject({ ...manager, organizationId: otherOrg }, project)).toBe(false)
+  })
+  it('projeto: a estrutura (EAP e marcos) segue a regra de arquivar: gestor e criador, nunca outro colaborador', () => {
+    expect(policy.canEditProjectStructure(manager, project)).toBe(true)
+    expect(policy.canEditProjectStructure({ ...collaborator, userId: other }, project)).toBe(true)
+    expect(policy.canEditProjectStructure(collaborator, project)).toBe(false)
+    expect(policy.canEditProjectStructure({ ...manager, organizationId: otherOrg }, project)).toBe(
+      false,
+    )
+    expect(policy.canEditProjectStructure(manager, project)).toBe(
+      policy.canArchiveProject(manager, project),
+    )
   })
   it('projeto: renomear segue a mesma regra de arquivar (gestor e criador)', () => {
     expect(policy.canRenameProject(manager, project)).toBe(true)
