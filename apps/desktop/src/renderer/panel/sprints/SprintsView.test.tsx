@@ -2,7 +2,14 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
-import type { ProjectDto, SprintDetailDto, SprintDto, TaskDto } from '@agilebox/contract'
+import type {
+  MeetingDto,
+  ProjectDto,
+  SprintDetailDto,
+  SprintDto,
+  TaskDto,
+} from '@agilebox/contract'
+import type { ModuleId } from '@agilebox/core'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { presetModules, teamToolsView } from '../../shared/testing/team-tools-fixture'
 import { renderPanel, settleCapabilities } from '../../shared/testing/render-panel'
@@ -98,8 +105,12 @@ interface Options {
   readonly details?: Record<string, SprintDetailDto>
   readonly backlog?: TaskDto[]
   readonly winding?: boolean
-  readonly modules?: readonly string[]
+  readonly modules?: readonly ModuleId[]
   readonly level?: 'basic' | 'intermediate' | 'advanced'
+  /** Quem está logado: gestor (padrão) ou colaborador. */
+  readonly manager?: boolean
+  /** Membros do projeto (um colaborador só vê projeto de que participa). */
+  readonly members?: readonly { readonly id: string }[]
 }
 
 function setup({
@@ -108,13 +119,26 @@ function setup({
   backlog = [],
   winding = false,
   level = 'intermediate',
+  modules,
+  manager = true,
+  members,
 }: Options = {}) {
   const onOpenTask = vi.fn()
   const api = createFakeApi()
+  if (members) {
+    vi.spyOn(api.projects, 'listMembers').mockResolvedValue(
+      members.map((member) => ({
+        ...member,
+        name: 'Pessoa',
+        initials: 'PE',
+        role: 'collaborator',
+      })),
+    )
+  }
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
     userId: MANAGER_ID,
     organizationId: '01J8Y4G2XK8Z1S6M3Q9W0ABCDG',
-    role: 'manager',
+    role: manager ? 'manager' : 'collaborator',
   })
   vi.spyOn(api.sprints, 'list').mockImplementation(() => Promise.resolve([...sprints]))
   vi.spyOn(api.sprints, 'get').mockImplementation(({ sprintId: id }) => {
@@ -126,16 +150,16 @@ function setup({
   vi.spyOn(api.backlog, 'list').mockImplementation(() => Promise.resolve([...backlog]))
   // Em encerramento, `sprints` sai da lista de ativos e entra como `winding_down` (como o servidor faz).
   const tools = teamToolsView({
-    modules: winding ? SCRUM.filter((id) => id !== 'sprints') : [...SCRUM],
+    modules: modules ?? (winding ? SCRUM.filter((id) => id !== 'sprints') : [...SCRUM]),
     level,
-    role: 'manager',
+    role: manager ? 'manager' : 'collaborator',
     winding: winding ? ['sprints'] : [],
   })
   renderPanel(
     <SprintsView
       initialProjectId={PROJECT_ID}
       projects={[PROJECT]}
-      isManager
+      isManager={manager}
       onOpenTask={onOpenTask}
     />,
     { api, tools },
@@ -593,5 +617,155 @@ describe('Módulo encerrando', () => {
     )
     expect(screen.queryByRole('button', { name: sprintCopy.start })).toBeNull()
     expect(screen.queryByRole('region', { name: sprintCopy.backlogPick })).toBeNull()
+  })
+})
+
+describe('Ativa: cerimônias na Agenda (gestor, com Agenda e Cerimônias ligadas)', () => {
+  const active = sprintDto({
+    number: 5,
+    status: 'active',
+    startedAt: '2026-11-03T10:00:00.000Z',
+    plannedStart: '2026-11-02',
+    plannedEnd: '2026-11-15',
+  })
+  const ceremonyModules: ModuleId[] = [...SCRUM, 'reviewRetro']
+  const CEREMONIES = 'Cerimônias'
+
+  const meetingFor = (title: string): MeetingDto => ({
+    id: '01J8Y4G2XK8Z1S6M3Q9W0MEET1',
+    title,
+    date: '2026-11-02',
+    time: '09:00',
+    endTime: null,
+    kind: 'meeting',
+    recurrence: 'none',
+    recurrenceUntil: null,
+    participants: [],
+    createdBy: MANAGER_ID,
+    createdAt: '2026-11-01T12:00:00.000Z',
+    updatedAt: '2026-11-01T12:00:00.000Z',
+  })
+
+  it('o gestor agenda planning com título, data de início e tipo sugeridos', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      modules: ceremonyModules,
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+    })
+    const create = vi
+      .spyOn(api.meetings, 'create')
+      .mockResolvedValue(meetingFor('Planning da Sprint 5'))
+    await ready(api)
+    await goTo(user, 'Ativa')
+    const section = await screen.findByRole('region', { name: CEREMONIES })
+    await user.click(within(section).getByRole('button', { name: 'Agendar planning' }))
+    expect(create).toHaveBeenCalledWith({
+      title: 'Planning da Sprint 5',
+      date: '2026-11-02',
+      time: '09:00',
+      kind: 'meeting',
+      participants: [],
+    })
+    expect(await screen.findByText(`Planning da Sprint 5 agendada na Agenda.`)).toBeTruthy()
+    const done = within(section).getByRole<HTMLButtonElement>('button', {
+      name: 'Planning agendada',
+    })
+    expect(done.disabled).toBe(true)
+  })
+
+  it('review e retro usam o fim da sprint e os tipos de agendamento próprios', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      modules: ceremonyModules,
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+    })
+    const create = vi
+      .spyOn(api.meetings, 'create')
+      .mockResolvedValue(meetingFor('Review da Sprint 5'))
+    await ready(api)
+    await goTo(user, 'Ativa')
+    const section = await screen.findByRole('region', { name: CEREMONIES })
+    await user.click(within(section).getByRole('button', { name: 'Agendar review' }))
+    await user.click(within(section).getByRole('button', { name: 'Agendar retro' }))
+    expect(create).toHaveBeenNthCalledWith(1, {
+      title: 'Review da Sprint 5',
+      date: '2026-11-15',
+      time: '10:00',
+      kind: 'review',
+      participants: [],
+    })
+    expect(create).toHaveBeenNthCalledWith(2, {
+      title: 'Retrospectiva da Sprint 5',
+      date: '2026-11-15',
+      time: '11:00',
+      kind: 'retro',
+      participants: [],
+    })
+  })
+
+  it('mostra a recusa do servidor no próprio bloco, sem perder os botões', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      modules: ceremonyModules,
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+    })
+    vi.spyOn(api.meetings, 'create').mockRejectedValue(
+      new ApiError('VALIDATION', 'Horário indisponível'),
+    )
+    await ready(api)
+    await goTo(user, 'Ativa')
+    const section = await screen.findByRole('region', { name: CEREMONIES })
+    await user.click(within(section).getByRole('button', { name: 'Agendar planning' }))
+    expect(await within(section).findByRole('alert')).toBeTruthy()
+    expect(within(section).getByText('Horário indisponível')).toBeTruthy()
+    expect(
+      within(section).getByRole<HTMLButtonElement>('button', { name: 'Agendar planning' }).disabled,
+    ).toBe(false)
+  })
+
+  it('some quando a ferramenta de cerimônias está desligada', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      modules: [...SCRUM],
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+    })
+    await ready(api)
+    await goTo(user, 'Ativa')
+    await screen.findByRole('group', { name: sprintCopy.tabsLabel })
+    expect(await screen.findByRole('button', { name: sprintCopy.close })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: CEREMONIES })).toBeNull()
+  })
+
+  it('some quando a Agenda está desligada, mesmo com cerimônias ligadas', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      modules: ceremonyModules.filter((id) => id !== 'agenda'),
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+    })
+    await ready(api)
+    await goTo(user, 'Ativa')
+    expect(await screen.findByRole('button', { name: sprintCopy.close })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: CEREMONIES })).toBeNull()
+  })
+
+  it('o colaborador não vê o bloco, nem com as ferramentas ligadas', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      manager: false,
+      modules: ceremonyModules,
+      sprints: [active],
+      details: { [active.id]: detail(active) },
+      // Colaborador só vê projeto de que participa: MANAGER_ID é o id logado.
+      members: [{ id: MANAGER_ID }],
+    })
+    await ready(api)
+    await goTo(user, 'Ativa')
+    expect(await screen.findByRole('button', { name: sprintCopy.close })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: CEREMONIES })).toBeNull()
   })
 })

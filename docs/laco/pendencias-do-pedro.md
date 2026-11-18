@@ -96,3 +96,11 @@
 - Detalhe da tarefa sem custo: o cartão fica só com as horas (título "Horas").
 - Valor/hora padrão de usuário e entidade é global, não por projeto: não alterado.
 - Testes existentes ajustados só para ligar `cost` no setup; nenhuma asserção removida.
+
+## Cerimônias na Agenda (ADR-10, fase 5, B3)
+
+- Na aba Ativa da sprint, o gestor agenda Planning, Review e Retrospectiva com 1 clique (usa `meetings.create`; só aparece com `reviewRetro` e `agenda` ligados; servidor já exige gestor).
+- DECIDIR: Planning não tem tipo próprio (usa `meeting`, identificada pelo título). Um tipo `planning` exige migração do CHECK de `meetings.kind`. Quer?
+- DECIDIR: horários sugeridos 09:00/10:00/11:00 são provisórios.
+- DECIDIR: Planning sugere o início da sprint, que numa sprint já ativa costuma estar no passado. Sugerir hoje?
+- Anti-duplicata só em memória: sair da tela e voltar permite agendar a mesma cerimônia de novo (checar títulos existentes mudaria o comportamento; combinar).

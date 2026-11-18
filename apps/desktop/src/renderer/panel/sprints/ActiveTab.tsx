@@ -3,9 +3,11 @@ import { sprintLabel, TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
 import type { SprintDto, TaskDto } from '@agilebox/contract'
 import { Button, EmptyState, ProgressBar } from '@agilebox/ui'
 import { refusalMessage } from '../backlog/refusal-message'
+import type { PanelView } from '../layout/PanelShell'
 import { CloseSprintDialog, type ClosePolicyChoice } from './CloseSprintDialog'
 import { SprintForm } from './SprintForm'
 import { BacklogPicker, hoursText, SprintItemRow } from './SprintItems'
+import { CeremonyButtons } from './CeremonyButtons'
 import { formatRange, shortDate } from './DraftsTab'
 import { sprintCopy } from './sprint-copy'
 import { carryTargets, groupByStatus, midSprintTaskIds, progressOf, sumHours } from './sprint-rules'
@@ -26,6 +28,9 @@ export interface ActiveTabProps {
   readonly showEstimates: boolean
   readonly onOpenTask: (taskId: string) => void
   readonly onNotify: (message: string) => void
+  /** Gestor com Agenda e Cerimônias ligadas: mostra os atalhos de planning, review e retro. */
+  readonly ceremoniesVisible?: boolean
+  readonly onNavigate?: (view: PanelView) => void
 }
 
 /** Aba Ativa: a sprint em andamento, com progresso, mini-quadro, itens e encerramento. */
@@ -36,6 +41,8 @@ export function ActiveTab({
   showEstimates,
   onOpenTask,
   onNotify,
+  ceremoniesVisible = false,
+  onNavigate,
 }: ActiveTabProps) {
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId = actives.find((sprint) => sprint.id === chosenId)?.id ?? actives[0]?.id ?? null
@@ -209,6 +216,16 @@ export function ActiveTab({
               </p>
             ) : null}
           </div>
+
+          {ceremoniesVisible ? (
+            <CeremonyButtons
+              key={sprint.id}
+              sprint={sprint}
+              projectId={projectId}
+              onNotify={onNotify}
+              {...(onNavigate ? { onNavigate } : {})}
+            />
+          ) : null}
 
           {itemError ? (
             <p role="alert" className={styles.error}>
