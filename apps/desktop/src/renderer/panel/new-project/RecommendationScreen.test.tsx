@@ -166,3 +166,36 @@ describe('RecommendationScreen', () => {
     expect(props.onCancel).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('RecommendationScreen: fidelidade ao design (tela 02)', () => {
+  it('o título traz o método em destaque, e o chip mostra só o nome do preset', () => {
+    setup()
+    const title = screen.getByRole('heading', { level: 1 })
+    expect(title.textContent).toBe('Ágil (Scrum)')
+    expect(within(title).getByText('(Scrum)').className).toContain('method')
+    expect(chip('Ágil').textContent).toContain('recomendado')
+    expect(chip('Ágil').textContent).not.toContain('(Scrum)')
+  })
+
+  it('mostra "Pergunta 6 de 6" no cartão da experiência', () => {
+    setup()
+    expect(screen.getByText('Pergunta 6 de 6')).toBeTruthy()
+  })
+
+  it('o rodapé traz só Voltar e Criar projeto; Esc continua cancelando', async () => {
+    const { user, props } = setup()
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Criar projeto' })).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(props.onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('a nota de módulos ocultos segue o texto do design', () => {
+    setup()
+    expect(
+      screen.getByText(
+        'Critério de pronto e Burndown e velocidade entram quando a equipe já trabalha com Scrum.',
+      ),
+    ).toBeTruthy()
+  })
+})

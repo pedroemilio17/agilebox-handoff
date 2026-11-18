@@ -1,5 +1,10 @@
-/* Recomendação do novo projeto: diálogo de vidro sobre o painel, mesmo padrão do assistente. */
+/*
+ * Recomendação do novo projeto (design `Recomendacao.dc.html`): diálogo de vidro de 1080 x 860 sobre o
+ * app apagado, com a lista de módulos à esquerda e o cartão da pergunta 6 à direita. Valores sem token
+ * exato vêm do design (ver o relatório).
+ */
 
+/* App ao fundo apagado: a camada do canvas (50%) e depois o véu do design. */
 .backdrop {
   position: fixed;
   z-index: 1000;
@@ -7,29 +12,51 @@
   display: grid;
   place-items: center;
   padding: var(--space-6);
+}
+
+.backdrop::before,
+.backdrop::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.backdrop::before {
+  background: var(--surface-canvas);
+  opacity: 0.5;
+}
+
+.backdrop::after {
   background: var(--color-focus-overlay);
 }
 
 .dialog {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: 22px;
   width: min(100%, 1080px);
+  height: min(100%, 860px);
   max-height: 100%;
   box-sizing: border-box;
-  padding: var(--space-6) var(--space-7);
-  border-radius: var(--radius-window);
-  background: var(--glass-popover);
-  backdrop-filter: var(--glass-popover-backdrop);
+  padding: 30px 36px;
+  border-radius: 20px;
+  background: rgba(38, 37, 46, 0.82);
+  backdrop-filter: blur(24px);
   color: var(--color-text-primary);
-  box-shadow: var(--shadow-popover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 40px 80px rgba(0, 0, 0, 0.6);
   overflow-y: auto;
 }
 
 .header {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 .headerText {
@@ -51,16 +78,20 @@
 .title {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: var(--font-size-display);
+  font-size: 40px;
   font-weight: 640;
   line-height: 1;
   letter-spacing: -0.03em;
 }
 
+.method {
+  color: var(--color-accent-text);
+}
+
 .purpose {
   margin: 0;
   max-width: 620px;
-  font-size: var(--font-size-body);
+  font-size: 14.5px;
   line-height: 1.5;
   color: var(--color-text-muted);
 }
@@ -72,6 +103,7 @@
   color: var(--color-text-muted);
 }
 
+/* "Outro ponto de partida": chips de 36 px. */
 .chipRow {
   display: flex;
   flex-wrap: wrap;
@@ -80,7 +112,7 @@
 }
 
 .chipRow .eyebrow {
-  margin-right: var(--space-2);
+  margin-right: 6px;
 }
 
 .chip,
@@ -88,15 +120,15 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--size-touch-target);
-  padding: 0 var(--space-4);
+  height: 36px;
+  padding: 0 14px;
   box-sizing: border-box;
   border: 1px solid var(--color-field-border);
-  border-radius: var(--radius-chip);
+  border-radius: 9px;
   background: var(--surface-panel);
-  color: var(--color-text-body);
+  color: var(--color-text-muted);
   font: inherit;
-  font-size: var(--font-size-body-small);
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -105,7 +137,6 @@
   border: 1.5px solid var(--color-accent-text);
   background: var(--surface-card);
   color: var(--color-text-primary);
-  font-weight: 600;
 }
 
 .tag {
@@ -119,29 +150,35 @@
 
 .grid {
   display: grid;
+  flex: 1;
   grid-template-columns: minmax(0, 1fr) 340px;
-  gap: var(--space-5);
-  align-items: start;
+  gap: var(--space-6);
+  align-items: stretch;
+  min-height: 0;
 }
 
 .modules,
 .experience {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 10px;
   min-width: 0;
+}
+
+.experience {
+  gap: 14px;
 }
 
 .sectionHead {
   display: flex;
   align-items: baseline;
-  gap: var(--space-3);
+  gap: 10px;
 }
 
 .count {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-label);
-  color: var(--color-text-body);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
 }
 
 .moduleList {
@@ -150,7 +187,7 @@
   margin: 0;
   padding: 0;
   border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-card);
+  border-radius: 14px;
   background: var(--surface-panel);
   list-style: none;
 }
@@ -159,14 +196,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-4);
-  min-height: var(--size-touch-target);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  gap: 14px;
+  min-height: 60px;
+  padding: 8px 10px 8px 16px;
   box-sizing: border-box;
 }
 
 .moduleRow + .moduleRow {
-  border-top: 1px solid var(--color-hairline);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .moduleText {
@@ -179,32 +216,31 @@
 .moduleName {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-title-small);
+  gap: 8px;
+  font-size: 14.5px;
   font-weight: 550;
 }
 
 .level {
   padding: 2px 6px;
-  border-radius: var(--radius-badge);
-  background: var(--color-hairline-strong);
-  color: var(--color-text-body);
+  border-radius: 5px;
+  background: var(--color-hairline);
+  color: var(--color-text-muted);
   font-family: var(--font-family-mono);
   font-size: 10.5px;
   font-weight: 500;
 }
 
 .reason {
-  font-size: var(--font-size-body-small);
+  font-size: 13px;
   line-height: 1.45;
   color: var(--color-text-muted);
 }
 
+/* Interruptor: alvo de 44 px, trilho de 36 x 20 e botão de 14 px (design). */
 .switch {
   position: relative;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: var(--size-touch-target);
   height: var(--size-touch-target);
   padding: 0;
@@ -215,66 +251,93 @@
 
 .track,
 .trackOn {
-  position: relative;
-  width: 44px;
-  height: 26px;
-  border-radius: 13px;
-  background: var(--color-control-segment-border);
+  position: absolute;
+  top: 12px;
+  left: 4px;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--color-hairline-strong);
   transition: background var(--motion-duration-control) var(--ease-ios);
 }
 
 .trackOn {
-  background: var(--color-primary-bg);
+  background: var(--color-switch-on);
 }
 
 .thumb {
   position: absolute;
-  top: 2px;
+  top: 3px;
   left: 2px;
-  width: 22px;
-  height: 22px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--color-text-primary);
+  background: var(--color-text-muted);
   transition: transform var(--motion-duration-control) var(--ease-ios);
 }
 
 .trackOn .thumb {
+  background: var(--color-on-primary);
   transform: translateX(18px);
 }
 
+/* Nota tracejada sobre os módulos que entram com a experiência. */
 .note {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border: 1px dashed var(--color-hairline-strong);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-card);
-  font-size: var(--font-size-body-small);
+  font-size: 13px;
   line-height: 1.45;
   color: var(--color-text-muted);
 }
 
+.noteText {
+  flex: 1;
+  min-width: 0;
+}
+
 .status {
-  min-height: 1.4em;
   margin: 0;
   font-size: var(--font-size-small);
   color: var(--color-signal-warning-text);
 }
 
+/* Cartão da pergunta 6. */
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--color-field-border);
+  gap: 14px;
+  padding: 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-card);
   background: var(--surface-card);
   min-width: 0;
 }
 
+.counter {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  color: var(--color-text-muted);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
 .question {
   padding: 0;
-  margin-bottom: var(--space-1);
-  font-size: var(--font-size-title-small);
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -284,7 +347,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: var(--radius-button);
-  background: var(--color-field-bg);
+  background: var(--surface-canvas);
 }
 
 .segment,
@@ -294,10 +357,10 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: var(--size-touch-target);
+  height: 40px;
   border-radius: var(--radius-chip);
-  color: var(--color-text-body);
-  font-size: var(--font-size-body-small);
+  color: var(--color-text-muted);
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -328,7 +391,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--font-size-body-small);
+  font-size: 13px;
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -343,14 +406,24 @@
   color: var(--color-accent-text);
 }
 
+/* Aviso "Mudar depois é barato": fundo de grupo do design, ícone de desfazer. */
 .disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: 12px 14px;
+  box-sizing: border-box;
   border-radius: var(--radius-card);
-  background: var(--surface-panel);
+  background: var(--glass-group);
   font-size: var(--font-size-small);
   line-height: 1.5;
   color: var(--color-text-muted);
+}
+
+.disclaimerIcon {
+  flex: none;
+  margin-top: 2px;
 }
 
 .error {
@@ -363,7 +436,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 10px;
 }
 
 .spacer {
@@ -373,6 +446,20 @@
 .footNote {
   font-size: var(--font-size-small);
   color: var(--color-text-placeholder);
+}
+
+/* Botões do rodapé com as medidas do design (44 px, raio 10), sobre o Button do @agilebox/ui. */
+.secondaryAction {
+  --button-line: var(--color-field-border);
+  padding: 0 18px;
+  font-size: var(--font-size-body);
+  font-weight: 500;
+}
+
+.primaryAction {
+  padding: 0 20px;
+  font-size: var(--font-size-body);
+  font-weight: 600;
 }
 
 .dialog button:focus-visible,

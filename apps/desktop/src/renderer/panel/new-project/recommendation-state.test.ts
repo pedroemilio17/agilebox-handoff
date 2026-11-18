@@ -10,6 +10,7 @@ import {
   experienceQuestion,
   guideBullets,
   hiddenExtrasNote,
+  presetTitleParts,
   moduleRows,
   recommendationResult,
 } from './recommendation-state'
@@ -140,5 +141,15 @@ describe('recommendationResult', () => {
     expect(result.guideLevel).toBe('sometimes')
     expect(result.answers).toEqual({ ...AGIL_ANSWERS, experience: 'sometimes' })
     expect(names(moduleRows(state).on).length).toBeGreaterThan(0)
+  })
+})
+
+describe('presetTitleParts', () => {
+  it('separa o nome do método entre parênteses', () => {
+    expect(presetTitleParts('Ágil (Scrum)')).toEqual({ base: 'Ágil', method: 'Scrum' })
+  })
+
+  it('devolve o rótulo inteiro quando não há método', () => {
+    expect(presetTitleParts('Simples')).toEqual({ base: 'Simples', method: null })
   })
 })

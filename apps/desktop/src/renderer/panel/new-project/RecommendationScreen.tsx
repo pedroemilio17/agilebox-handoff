@@ -18,10 +18,12 @@ import {
   guideBullets,
   hiddenExtrasNote,
   moduleRows,
+  presetTitleParts,
   recommendationResult,
   type ModuleRow,
   type RecommendationResult,
 } from './recommendation-state'
+import { WIZARD_TOTAL_STEPS } from './wizard-steps'
 
 export interface RecommendationScreenProps {
   readonly name: string
@@ -77,6 +79,7 @@ export function RecommendationScreen({
   })
 
   const preset = getProjectPreset(state.preset)
+  const title = presetTitleParts(preset.label)
   const rows = moduleRows(state)
   const note = hiddenExtrasNote(state)
 
@@ -104,9 +107,15 @@ export function RecommendationScreen({
         <header className={styles.header}>
           <div className={styles.headerText}>
             <span className={styles.eyebrow}>Recomendação para {name}</span>
-            <h2 id={titleId} className={styles.title}>
-              {preset.label}
-            </h2>
+            <h1 id={titleId} className={styles.title}>
+              {title.base}
+              {title.method && (
+                <>
+                  {' '}
+                  <span className={styles.method}>({title.method})</span>
+                </>
+              )}
+            </h1>
             <p className={styles.purpose}>{preset.purpose}.</p>
           </div>
           <span className={styles.stage}>Etapa final</span>
@@ -125,7 +134,7 @@ export function RecommendationScreen({
                 aria-pressed={selected}
                 onClick={() => setState((current) => choosePreset(current, item.key))}
               >
-                {item.label}
+                {presetTitleParts(item.label).base}
                 {recommended && <span className={styles.tag}>recomendado</span>}
               </button>
             )
@@ -149,45 +158,70 @@ export function RecommendationScreen({
               </>
             )}
 
-            {note && <p className={styles.note}>{note}</p>}
+            {note && (
+              <div className={styles.note}>
+                <span className={styles.noteText}>{note}</span>
+              </div>
+            )}
             <p role="status" aria-live="polite" className={styles.status}>
               {state.notice ?? ''}
             </p>
           </section>
 
           <section className={styles.experience} aria-label="Experiência da equipe">
-            <fieldset className={styles.card}>
-              <legend className={styles.question}>{experienceQuestion(state.preset)}</legend>
-              <div className={styles.segments}>
-                {EXPERIENCE_OPTIONS.map((option) => {
-                  const checked = state.guideLevel === option.value
-                  return (
-                    <label
-                      key={option.value}
-                      className={checked ? styles.segmentChecked : styles.segment}
-                    >
-                      <input
-                        type="radio"
-                        className={styles.radio}
-                        name={groupName}
-                        value={option.value}
-                        checked={checked}
-                        onChange={() =>
-                          setState((current) => changeExperience(current, option.value))
-                        }
-                      />
-                      {option.label}
-                    </label>
-                  )
-                })}
-              </div>
-              <ul className={styles.bullets}>
-                {guideBullets(state.guideLevel).map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            </fieldset>
-            <p className={styles.disclaimer}>{DISCLAIMER}</p>
+            <div className={styles.card}>
+              <span className={styles.counter}>
+                Pergunta {WIZARD_TOTAL_STEPS} de {WIZARD_TOTAL_STEPS}
+              </span>
+              <fieldset className={styles.fieldset}>
+                <legend className={styles.question}>{experienceQuestion(state.preset)}</legend>
+                <div className={styles.segments}>
+                  {EXPERIENCE_OPTIONS.map((option) => {
+                    const checked = state.guideLevel === option.value
+                    return (
+                      <label
+                        key={option.value}
+                        className={checked ? styles.segmentChecked : styles.segment}
+                      >
+                        <input
+                          type="radio"
+                          className={styles.radio}
+                          name={groupName}
+                          value={option.value}
+                          checked={checked}
+                          onChange={() =>
+                            setState((current) => changeExperience(current, option.value))
+                          }
+                        />
+                        {option.label}
+                      </label>
+                    )
+                  })}
+                </div>
+                <ul className={styles.bullets}>
+                  {guideBullets(state.guideLevel).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+              </fieldset>
+            </div>
+            <p className={styles.disclaimer}>
+              <svg
+                className={styles.disclaimerIcon}
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7" />
+                <path d="M3 4v5h5" />
+              </svg>
+              <span>{DISCLAIMER}</span>
+            </p>
           </section>
         </div>
 
@@ -198,12 +232,14 @@ export function RecommendationScreen({
         )}
 
         <footer className={styles.footer}>
-          <Button onClick={onBack}>Voltar</Button>
-          <Button onClick={onCancel}>Cancelar</Button>
+          <Button className={styles.secondaryAction} onClick={onBack}>
+            Voltar
+          </Button>
           <span className={styles.spacer} />
           <span className={styles.footNote}>Obrigatório foi só o nome.</span>
           <Button
             variant="primary"
+            className={styles.primaryAction}
             disabled={submitting}
             aria-busy={submitting || undefined}
             onClick={() => onCreate(recommendationResult(state))}

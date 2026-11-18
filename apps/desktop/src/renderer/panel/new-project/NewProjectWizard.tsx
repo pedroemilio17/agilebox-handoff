@@ -129,7 +129,7 @@ export function NewProjectWizard({
   }
 
   const counter = question
-    ? `Pergunta ${questionPosition(draft, question.id)} de ${totalSteps(draft)}`
+    ? `Pergunta ${questionPosition(question.id)} de ${totalSteps()}`
     : 'Nome do projeto'
 
   return (
@@ -197,10 +197,14 @@ export function NewProjectWizard({
           <div className={styles.body}>
             {isNameStep ? (
               <>
-                <h2 id={titleId} className={styles.question}>
-                  Qual é o nome do projeto?
-                </h2>
-                <p className={styles.hint}>É o único campo obrigatório. Você pode mudar depois.</p>
+                <div className={styles.head}>
+                  <h1 id={titleId} className={styles.question}>
+                    Qual é o nome do projeto?
+                  </h1>
+                  <p className={styles.hint}>
+                    É o único campo obrigatório. Você pode mudar depois.
+                  </p>
+                </div>
                 <TextField
                   label="Nome do projeto"
                   value={name}
@@ -220,10 +224,12 @@ export function NewProjectWizard({
               </>
             ) : question ? (
               <>
-                <h2 id={titleId} className={styles.question}>
-                  {question.question}
-                </h2>
-                <p className={styles.hint}>{question.hint}</p>
+                <div className={styles.head}>
+                  <h1 id={titleId} className={styles.question}>
+                    {question.question}
+                  </h1>
+                  <p className={styles.hint}>{question.hint}</p>
+                </div>
                 <fieldset className={styles.options}>
                   <legend className={styles.legend}>Escolha uma</legend>
                   {question.options.map((option, index) => {
@@ -267,9 +273,13 @@ export function NewProjectWizard({
 
           <div className={styles.footer}>
             {isNameStep ? (
-              <Button onClick={onCancel}>Cancelar</Button>
+              <Button className={styles.secondaryAction} onClick={onCancel}>
+                Cancelar
+              </Button>
             ) : (
-              <Button onClick={goBack}>Voltar</Button>
+              <Button className={styles.secondaryAction} onClick={goBack}>
+                Voltar
+              </Button>
             )}
             <span className={styles.spacer} />
             {question && (
@@ -277,7 +287,12 @@ export function NewProjectWizard({
                 {remainingLabel(remainingSteps(draft, question.id))}
               </span>
             )}
-            <Button variant="primary" shortcut="Enter" onClick={goForward}>
+            <Button
+              variant="primary"
+              className={styles.primaryAction}
+              shortcut="Enter"
+              onClick={goForward}
+            >
               Continuar
             </Button>
           </div>

@@ -87,6 +87,8 @@
   --color-status-desenvolvendo: #6cb4ff;
   --color-status-revisar: #4fd0c4;
   --color-status-concluido: #6fd39a;
+  --color-status-concluido-text: #8fe0b2; /* NOVO: check de etapa feita (design, 19 telas) */
+  --color-switch-on: #6fa832; /* NOVO: trilho de interruptor ligado (design, 3 telas) */
 
   /* ---------- Sinais: a única cor forte da interface (NOVO) ---------- */
   --color-signal-danger: #ff6b7d; /* bloqueada, vencida */

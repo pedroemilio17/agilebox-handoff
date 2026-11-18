@@ -140,20 +140,28 @@ export function stepOrder(draft: WizardDraft): StepId[] {
   return ['name', ...visibleSteps(draft).map((question) => question.id), 'recommendation']
 }
 
-/** Total exibido em "Pergunta N de T": as perguntas visíveis mais a da recomendação. */
-export function totalSteps(draft: WizardDraft): number {
-  return visibleSteps(draft).length + 1
+/**
+ * Total exibido em "Pergunta N de T": as cinco perguntas mais a recomendação, sempre (design
+ * `Main.dc.html` e `Recomendacao.dc.html`). Uma pergunta que não se aplica continua numerada.
+ */
+export const WIZARD_TOTAL_STEPS = WIZARD_QUESTIONS.length + 1
+
+export function totalSteps(): number {
+  return WIZARD_TOTAL_STEPS
 }
 
-/** Número (1 a T) de uma pergunta neste fluxo; 0 se não for pergunta visível. */
-export function questionPosition(draft: WizardDraft, id: QuestionId): number {
-  const index = visibleSteps(draft).findIndex((question) => question.id === id)
+/** Número fixo (1 a 5) de uma pergunta na lista completa, igual ao do trilho. */
+export function questionPosition(id: QuestionId): number {
+  const index = WIZARD_QUESTIONS.findIndex((question) => question.id === id)
   return index === -1 ? 0 : index + 1
 }
 
-/** Perguntas que faltam depois desta, contando a da recomendação. */
+/** Perguntas visíveis que faltam depois desta, contando a da recomendação. */
 export function remainingSteps(draft: WizardDraft, id: QuestionId): number {
-  return totalSteps(draft) - questionPosition(draft, id)
+  const visible = visibleSteps(draft).map((question) => question.id)
+  const index = visible.indexOf(id)
+  // Perguntas visíveis depois desta, mais a recomendação.
+  return index === -1 ? 0 : visible.length - index
 }
 
 export function remainingLabel(count: number): string {
@@ -164,9 +172,9 @@ export function remainingLabel(count: number): string {
 export function progressPercent(draft: WizardDraft, step: StepId): number {
   if (step === 'name') return 0
   if (step === 'recommendation') return 100
-  const position = questionPosition(draft, step)
+  const position = questionPosition(step)
   if (position === 0) return 0
-  return Math.round(((position - 0.5) / totalSteps(draft)) * 100)
+  return Math.round(((position - 0.5) / totalSteps()) * 100)
 }
 
 /** Próxima etapa. Depois da última pergunta visível, devolve `recommendation`. */
@@ -251,8 +259,8 @@ export function railSteps(draft: WizardDraft, current: StepId, name: string): Ra
         id,
         label: 'Recomendação',
         state,
-        mark: String(visible.length + 1),
-        answer: '',
+        mark: String(WIZARD_TOTAL_STEPS),
+        answer: 'e pergunta 6',
       })
       return
     }
@@ -271,8 +279,10 @@ export function railSteps(draft: WizardDraft, current: StepId, name: string): Ra
 
     const value = draft[id]
     const option = question.options.find((item) => item.value === value)
-    const answer = option?.summary ?? (passed ? 'Não sei' : '')
-    const number = questionPosition(draft, id)
+    // A etapa atual aparece como "Respondendo agora" (design); etapas passadas sem resposta: "Não sei".
+    const answer =
+      index === currentIndex ? 'Respondendo agora' : (option?.summary ?? (passed ? 'Não sei' : ''))
+    const number = questionPosition(id)
     rows.push({
       id,
       label: question.railLabel,

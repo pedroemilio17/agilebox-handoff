@@ -282,6 +282,11 @@ export function hiddenExtras(state: RecommendationState): ModuleId[] {
   )
 }
 
+/**
+ * Nota "Critério de pronto e Burndown entram quando a equipe já trabalha com Scrum." (design
+ * `Recomendacao.dc.html`). O design acrescenta "Os outros 7 ficam em Módulos.", mas o catálogo do
+ * core tem outra contagem (ver pendências): essa frase fica de fora até a regra existir.
+ */
 export function hiddenExtrasNote(state: RecommendationState): string | null {
   const ids = hiddenExtras(state)
   if (ids.length === 0) return null
@@ -291,6 +296,16 @@ export function hiddenExtrasNote(state: RecommendationState): string | null {
     ? `quando a equipe já trabalha com ${method}`
     : 'quando a equipe já organizou projetos assim'
   return `${joinNames(ids)} ${verb} ${context}.`
+}
+
+/**
+ * Rótulo do preset dividido em nome e método: "Ágil (Scrum)" vira "Ágil" e "Scrum". O design mostra o
+ * método em destaque no título e fora do chip.
+ */
+export function presetTitleParts(label: string): { base: string; method: string | null } {
+  const match = /^(.*?)\s*\((.+)\)$/.exec(label)
+  if (!match) return { base: label, method: null }
+  return { base: match[1] ?? label, method: match[2] ?? null }
 }
 
 /** Pergunta 6: cita o preset escolhido. */

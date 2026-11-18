@@ -186,3 +186,10 @@
 - DECIDIR: títulos dos passos devem citar a tela ("Planeje a sprint: abre Sprints")? Textos do design diferem levemente dos do manifesto (vivem no `core`).
 - DECIDIR: experiência "sempre" mantém o card escondido (sem ponte)? Impedimentos deve ter o guia?
 - Nota: `guide-fixtures.ts` usa `doneWhen` antigos que não batem com os eventos reais.
+
+## Fidelidade das telas 01 e 02 (F2)
+
+- Wizard e recomendação refeitos conforme o design (contador fixo "de 6", trilho com "Respondendo agora"/"e pergunta 6", título 32/40 px, interruptor verde, cartão "Pergunta 6 de 6", sem "Cancelar" no rodapé da recomendação; Esc cancela). Tokens novos: `--color-status-concluido-text`, `--color-switch-on`. Não vi rodando.
+- DECIDIR: estado DESLIGADO do interruptor não está no design (usei trilho `hairline-strong` e botão `text-muted`). Seção "Desligados" não existe no design (mantida, é a única forma de religar ali). Botão "Pular" é `<button>`, não `<a>`.
+- Ficaram para o passo F2a (textos do core): propósito do preset e motivos por módulo gerados pelas respostas, nomes "Estimativa"/"Burndown", "Os outros N ficam em Módulos" + "Ver todos", regra de "Algumas vezes".
+- Tokens para a escala tipográfica (13/14.5/15/17/32/40 px) e para o vidro `rgba(38,37,46,…)` se repetem em ~20 telas: criar tokens num passo próprio? (hoje valores literais sem hex nos módulos CSS)
