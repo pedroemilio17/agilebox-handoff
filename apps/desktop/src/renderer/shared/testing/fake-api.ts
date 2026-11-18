@@ -258,6 +258,8 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
         Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),
       // Sem configuração de módulo por projeto, a gravação devolve a visão sem mudança.
       setConfig: (input) => Promise.resolve(hiddenProjectModules(input.projectId)),
+      // Sem mudança registrada, o histórico vem vazio; os testes da tela substituem o que precisam.
+      history: (input) => Promise.resolve({ projectId: input.projectId, events: [] }),
       ...overrides.projectModules,
     },
   }

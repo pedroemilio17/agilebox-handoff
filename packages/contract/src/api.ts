@@ -165,6 +165,8 @@ import {
   getOrganizationModulesInputSchema,
   getProjectModulesInputSchema,
   organizationModulesViewDtoSchema,
+  projectModuleHistoryDtoSchema,
+  projectModuleHistoryInputSchema,
   projectModulesChangeResultDtoSchema,
   projectModulesViewDtoSchema,
 } from './project-modules'
@@ -573,6 +575,10 @@ export const API_SCHEMA_REGISTRY = {
     input: getOrganizationModulesInputSchema,
     output: organizationModulesViewDtoSchema,
   },
+  'projectModules.history': {
+    input: projectModuleHistoryInputSchema,
+    output: projectModuleHistoryDtoSchema,
+  },
   'guide.get': { input: getGuideInputSchema, output: guideViewDtoSchema },
   'guide.dismissCard': {
     input: dismissGuideCardInputSchema,
@@ -647,6 +653,7 @@ export interface AgileBoxApi {
     change: Method<'projectModules.change'>
     setConfig: Method<'projectModules.setConfig'>
     getOrganization: Method<'projectModules.getOrganization'>
+    history: Method<'projectModules.history'>
   }
   guide: {
     get: Method<'guide.get'>

@@ -9,6 +9,7 @@ Tudo o que o laço do Codex faz fica documentado aqui e no git. Nada depende da 
 | `ocorrencias.md`         | script       | bloqueios, falhas e paradas, com o motivo                                 |
 | `RESUMO-FINAL.md`        | script       | quando acabam os passos: marcos e pendências                              |
 | `pendencias-do-pedro.md` | Codex        | o que só o Pedro pode conferir, testar ou decidir                         |
+| `relatorio-adr10.md`     | Claude       | estado do ADR-10 (fases, o que falta, decisões do Pedro)                  |
 
 Fora desta pasta: `PROGRESS.md` (passos e notas), `docs/decisoes/` (decisões técnicas) e as tags git `marco-M2`, `marco-M3`…
 

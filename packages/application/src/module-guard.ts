@@ -219,6 +219,8 @@ export const USE_CASE_MODULES = {
   'projectModules.setConfig': { module: 'core', project: { from: 'projectId' } },
   // Estado dos módulos da organização (barra lateral sem projeto selecionado): só leitura agregada.
   'projectModules.getOrganization': { module: 'core', project: 'none' },
+  // Histórico de mudanças do projeto (ADR-10): leitura por participação, sem módulo a checar.
+  'projectModules.history': { module: 'core', project: { from: 'projectId' } },
 
   // Guia de alimentação (ADR-10): leitura e dispensa do cartão. Sempre no núcleo: o guia nunca
   // bloqueia nada, e a trilha já sai só dos módulos ativos do projeto.

@@ -5,6 +5,7 @@ import type { ProjectModuleDto, ProjectModulesChangeResultDto } from '@agilebox/
 import type { ModuleId } from '@agilebox/core'
 import { useProjectModules } from '../hooks/use-project-modules'
 import { useChangeProjectModules } from '../hooks/use-change-project-modules'
+import { ModuleHistory } from './ModuleHistory'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import {
@@ -259,6 +260,8 @@ export function ModulesView({ projectId, projectName, archived, onNavigate }: Mo
           </div>
         </section>
       ))}
+
+      <ModuleHistory projectId={projectId} />
     </section>
   )
 }

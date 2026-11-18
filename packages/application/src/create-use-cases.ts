@@ -18,6 +18,7 @@ import {
   SetTeamModuleConfig,
 } from './use-cases/team-tools/team-tools'
 import {
+  ListProjectModuleHistory,
   ChangeProjectModules,
   SetProjectModuleConfig,
   GetOrganizationModules,
@@ -374,6 +375,7 @@ export function createUseCases(deps: AppDeps) {
       get: forTenant('projectModules.get', new GetProjectModules(deps)),
       change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
       setConfig: forTenant('projectModules.setConfig', new SetProjectModuleConfig(deps)),
+      history: forTenant('projectModules.history', new ListProjectModuleHistory(deps)),
       getOrganization: forTenant(
         'projectModules.getOrganization',
         new GetOrganizationModules(deps),

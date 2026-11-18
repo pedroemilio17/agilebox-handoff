@@ -8,6 +8,7 @@ import { createSqliteDeliverableRepositories } from './repositories/deliverable-
 import { createSqliteGuideProgressRepository } from './repositories/guide-progress-repository.js'
 import { createSqliteImpedimentRepository } from './repositories/impediment-repository.js'
 import { createSqliteMeetingRepository } from './repositories/meeting-repository.js'
+import { createSqliteProjectModuleEventRepository } from './repositories/project-module-event-repository.js'
 import { createSqliteProjectModulesRepository } from './repositories/project-modules-repository.js'
 import { createSqliteProjectSetupRepository } from './repositories/project-setup-repository.js'
 import { createSqliteRetroActionRepository } from './repositories/retro-action-repository.js'
@@ -42,6 +43,7 @@ export function createSqliteAdaptersForDatabase(database: ReturnType<typeof crea
     impediments: createSqliteImpedimentRepository(database),
     dailyEntries: createSqliteDailyEntryRepository(database),
     teamTools: createSqliteTeamToolsRepository(database),
+    projectModuleEvents: createSqliteProjectModuleEventRepository(database),
     projectModules: createSqliteProjectModulesRepository(database),
     projectSetup: createSqliteProjectSetupRepository(database),
     ...createSqliteDeliverableRepositories(database),

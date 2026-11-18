@@ -82,3 +82,45 @@ export type ProjectModuleDto = z.infer<typeof projectModuleDtoSchema>
 export type ProjectModulesViewDto = z.infer<typeof projectModulesViewDtoSchema>
 export type ProjectModulesChangeResultDto = z.infer<typeof projectModulesChangeResultDtoSchema>
 export type OrganizationModulesViewDto = z.infer<typeof organizationModulesViewDtoSchema>
+
+/** Histórico do projeto: `limit` é opcional (padrão na aplicação); o máximo cabe numa tela. */
+export const projectModuleHistoryInputSchema = z.object({
+  projectId: ulidSchema,
+  limit: z.number().int().min(1).max(200).optional(),
+})
+
+export const projectModuleEventActionSchema = z.enum([
+  'enabled',
+  'disabled',
+  'winding_down',
+  'scheduled_disable',
+  'cancelled',
+])
+
+/**
+ * Uma mudança de módulo no projeto. `auto` marca o que mudou por dependência; `relatedModuleId` é o
+ * módulo que puxou essa mudança ("junto com Sprints"). `actorRole` diz se foi o gestor.
+ */
+export const projectModuleEventDtoSchema = z.object({
+  id: z.number().int(),
+  at: z.string(),
+  action: projectModuleEventActionSchema,
+  moduleId: z.string(),
+  moduleName: z.string(),
+  auto: z.boolean(),
+  relatedModuleId: z.string().nullable(),
+  relatedModuleName: z.string().nullable(),
+  actorId: z.string(),
+  actorName: z.string(),
+  actorRole: z.enum(['collaborator', 'manager']),
+})
+
+export const projectModuleHistoryDtoSchema = z.object({
+  projectId: ulidSchema,
+  /** Do mais recente para o mais antigo. */
+  events: z.array(projectModuleEventDtoSchema),
+})
+
+export type ProjectModuleHistoryInput = z.infer<typeof projectModuleHistoryInputSchema>
+export type ProjectModuleEventDto = z.infer<typeof projectModuleEventDtoSchema>
+export type ProjectModuleHistoryDto = z.infer<typeof projectModuleHistoryDtoSchema>

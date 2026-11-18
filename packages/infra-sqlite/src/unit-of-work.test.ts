@@ -10,6 +10,7 @@ import { createSqliteRetroActionRepository } from './repositories/retro-action-r
 import { createSqliteDailyEntryRepository } from './repositories/daily-entry-repository.js'
 import { createSqliteAcceptanceRepository } from './repositories/acceptance-repository.js'
 import { createSqliteBoardSettingsRepository } from './repositories/board-settings-repository.js'
+import { createSqliteProjectModuleEventRepository } from './repositories/project-module-event-repository.js'
 import { createSqliteProjectModulesRepository } from './repositories/project-modules-repository.js'
 import { createSqliteGuideProgressRepository } from './repositories/guide-progress-repository.js'
 import { createSqliteProjectSetupRepository } from './repositories/project-setup-repository.js'
@@ -45,6 +46,7 @@ describe('SqliteUnitOfWork', () => {
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      projectModuleEvents: createSqliteProjectModuleEventRepository(database),
       projectModules: createSqliteProjectModulesRepository(database),
       projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),
@@ -89,6 +91,7 @@ describe('SqliteUnitOfWork', () => {
       impediments: createSqliteImpedimentRepository(database),
       boardSettings: createSqliteBoardSettingsRepository(database),
       teamTools: createSqliteTeamToolsRepository(database),
+      projectModuleEvents: createSqliteProjectModuleEventRepository(database),
       projectModules: createSqliteProjectModulesRepository(database),
       projectSetup: createSqliteProjectSetupRepository(database),
       ...createSqliteSprintRepositories(database),

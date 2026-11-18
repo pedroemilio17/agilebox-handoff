@@ -142,3 +142,11 @@
 - DECIDIR: projeto criado pelo caminho simples (sem wizard) nasce sem o módulo; o gestor precisa ligar "Critério de pronto" em Módulos. O preset Simples deveria ligá-lo?
 - DECIDIR: a conferência só vale ao entrar em Concluído; o ADR fala em "Concluído/Revisar". Manter?
 - `ListProjects` lê o módulo por projeto (N+1 pequeno).
+
+## Histórico de módulos do projeto (ADR-10, fase 2)
+
+- Migração 0025 (`project_module_events`): cada ligar/desligar grava um evento por módulo, na mesma transação, com quem fez (marca "Gestor") e `auto` quando foi por cascata ("junto com X"). Leitura: `projectModules.history`; tela Módulos ganhou a seção "Histórico".
+- Coluna extra `related_module_id` (não estava no pedido) para mostrar "junto com".
+- DECIDIR: manter `scheduled_disable` no histórico mesmo sem mudança de estado (texto: "nada foi desligado")? Mudança só de configuração não gera evento.
+- `winding_down` e `cancelled` existem no schema, mas nenhum caso de uso os produz (encerramento de módulo do projeto ainda não existe).
+- A parte "ligar/desligar" das pendências "linha do tempo do projeto" e "trilha de módulo" pode ser marcada como resolvida; "gestor propõe, equipe aceita" continua aberta.

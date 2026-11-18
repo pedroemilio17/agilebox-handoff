@@ -58,6 +58,9 @@ import type {
 } from '@agilebox/core'
 import type {
   AcceptanceRepository,
+  NewProjectModuleEvent,
+  ProjectModuleEvent,
+  ProjectModuleEventRepository,
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
@@ -142,6 +145,9 @@ export interface InMemoryState {
   tasks: Map<OrganizationId, Map<string, Task>>
   /** Módulos de cada projeto, por projeto e módulo (`projectId|moduleId`), dentro da organização. */
   projectModules: Map<OrganizationId, Map<string, InMemoryProjectModuleRow>>
+  /** Histórico de mudanças de módulos por projeto, por id numérico (texto); só cresce. */
+  projectModuleEvents: Map<OrganizationId, Map<string, ProjectModuleEvent>>
+  projectModuleEventsNextId: number
   /** Progresso do guia por pessoa e projeto (`projectId|userId|stepKey`), dentro da organização. */
   guideProgress: Map<OrganizationId, Map<string, InMemoryGuideProgressRow>>
   /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
@@ -185,6 +191,8 @@ export function createInMemoryState(): InMemoryState {
     projects: new Map(),
     projectSetup: new Map(),
     projectModules: new Map(),
+    projectModuleEvents: new Map(),
+    projectModuleEventsNextId: 1,
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
@@ -1021,6 +1029,29 @@ export class InMemoryProjectModulesRepository implements ProjectModulesRepositor
     return live.map(
       (project) => rows.get(`${project.id}|${moduleId}`)?.state ?? ('disabled' as const),
     )
+  }
+}
+
+export class InMemoryProjectModuleEventRepository implements ProjectModuleEventRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async append(organizationId: OrganizationId, events: readonly NewProjectModuleEvent[]) {
+    await Promise.resolve()
+    const log = bucket(this.state.projectModuleEvents, organizationId)
+    for (const event of events) {
+      const id = this.state.projectModuleEventsNextId++
+      log.set(String(id), { ...event, id })
+    }
+  }
+
+  async listByProject(organizationId: OrganizationId, projectId: ProjectId, limit: number) {
+    await Promise.resolve()
+    if (!Number.isInteger(limit) || limit < 1)
+      throw new ValidationError('Limite do histórico inválido')
+    return [...bucket(this.state.projectModuleEvents, organizationId).values()]
+      .filter((event) => event.projectId === projectId)
+      .sort((a, b) => (a.at === b.at ? b.id - a.id : a.at < b.at ? 1 : -1))
+      .slice(0, limit)
   }
 }
 

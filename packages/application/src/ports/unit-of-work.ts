@@ -13,6 +13,7 @@ import type { GuideProgressRepository } from './guide-progress-repository'
 import type { MeetingRepository } from './meeting-repository'
 import type { OrganizationRepository } from './organization-repository'
 import type { ParticipationRepository } from './participation-repository'
+import type { ProjectModuleEventRepository } from './project-module-event-repository'
 import type { ProjectModulesRepository } from './project-modules-repository'
 import type { ProjectRepository } from './project-repository'
 import type { ProjectSetupRepository } from './project-setup-repository'
@@ -43,6 +44,7 @@ export interface UnitOfWorkRepositories {
   readonly baselines: BaselineRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
+  readonly projectModuleEvents: ProjectModuleEventRepository
   readonly projectModules: ProjectModulesRepository
   readonly projects: ProjectRepository
   readonly projectSetup: ProjectSetupRepository

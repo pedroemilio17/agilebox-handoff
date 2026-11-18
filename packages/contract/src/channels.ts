@@ -81,6 +81,7 @@ export const API_CHANNELS = [
   'projectModules.change',
   'projectModules.setConfig',
   'projectModules.getOrganization',
+  'projectModules.history',
   'guide.get',
   'guide.dismissCard',
   'guide.resolveWelcome',

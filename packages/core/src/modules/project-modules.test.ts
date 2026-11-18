@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planDisableModules, planEnableModules } from './project-modules'
+import { cascadeAnchorOf, planDisableModules, planEnableModules } from './project-modules'
 
 const IDLE = { hasActiveSprint: false }
 const ACTIVE_SPRINT = { hasActiveSprint: true }
@@ -78,5 +78,25 @@ describe('planDisableModules', () => {
   it('módulo que já está desligado não muda nada', () => {
     const plan = planDisableModules(['core'], ['wip'], IDLE)
     expect(plan).toMatchObject({ ok: true, disableNow: [], scheduled: [], enabled: ['core'] })
+  })
+})
+
+describe('cascadeAnchorOf (histórico: "junto com")', () => {
+  it('ligado por dependência aponta para o módulo que o exige na mesma mudança', () => {
+    expect(cascadeAnchorOf('backlog', 'active', ['backlog', 'sprints'])).toBe('sprints')
+  })
+
+  it('desligado por dependência aponta para o módulo exigido que também caiu', () => {
+    expect(cascadeAnchorOf('sprints', 'disabled', ['backlog', 'sprints', 'burndown'])).toBe(
+      'backlog',
+    )
+    expect(cascadeAnchorOf('burndown', 'disabled', ['backlog', 'sprints', 'burndown'])).toBe(
+      'sprints',
+    )
+  })
+
+  it('sem elo na mesma mudança, não há módulo relacionado', () => {
+    expect(cascadeAnchorOf('sprints', 'active', ['sprints'])).toBeNull()
+    expect(cascadeAnchorOf('burndown', 'disabled', ['burndown'])).toBeNull()
   })
 })

@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@agilebox/contract'
-import type { ProjectModulesChangeResultDto, ProjectModulesViewDto } from '@agilebox/contract'
+import type {
+  ProjectModuleHistoryDto,
+  ProjectModulesChangeResultDto,
+  ProjectModulesViewDto,
+} from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { projectModulesView } from '../../shared/testing/project-modules-fixture'
@@ -27,6 +31,7 @@ interface RenderOptions {
   readonly view?: ProjectModulesViewDto
   readonly get?: () => Promise<ProjectModulesViewDto>
   readonly change?: () => Promise<ProjectModulesChangeResultDto>
+  readonly history?: () => Promise<ProjectModuleHistoryDto>
   readonly projectId?: string | null
   readonly archived?: boolean
 }
@@ -35,6 +40,7 @@ function renderView({
   view = projectModulesView({ enabled: ['backlog'] }),
   get,
   change = () => Promise.resolve(NO_CHANGE),
+  history = () => Promise.resolve({ projectId: PROJECT_ID, events: [] }),
   projectId = PROJECT_ID,
   archived = false,
 }: RenderOptions = {}) {
@@ -47,6 +53,7 @@ function renderView({
       setConfig: (input) =>
         Promise.resolve({ projectId: input.projectId, modules: [], canManage: true }),
       getOrganization: () => Promise.resolve({ modules: [], hasActiveProjects: false }),
+      history: () => history(),
     },
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -61,6 +68,15 @@ function renderView({
 }
 
 const statusText = () => screen.getByRole('status').textContent ?? ''
+
+const HISTORY_ROW_BASE = {
+  at: '2026-11-16T12:00:00.000Z',
+  actorId: '00000000000000000000000012',
+  moduleName: 'Sprints',
+  relatedModuleId: null,
+  relatedModuleName: null,
+  auto: false,
+} as const
 const isDisabled = (element: HTMLElement) => (element as HTMLButtonElement).disabled
 
 describe('ModulesView: lista e contagem', () => {
@@ -267,5 +283,65 @@ describe('ModulesView: permissões e estados', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
     expect(await screen.findByRole('switch', { name: 'Desligar Backlog' })).toBeTruthy()
+  })
+})
+
+describe('ModulesView: histórico de mudanças', () => {
+  it('vem recolhido, com o estado vazio "Nenhuma mudança ainda."', async () => {
+    renderView()
+
+    const empty = await screen.findByText('Nenhuma mudança ainda.')
+    const section = empty.closest('details')
+    expect(section).not.toBeNull()
+    expect(section?.hasAttribute('open')).toBe(false)
+    expect(screen.getByText('Histórico')).toBe(section?.querySelector('summary'))
+  })
+
+  it('mostra quando, o que mudou (com o módulo que puxou) e quem fez, com a marca Gestor', async () => {
+    renderView({
+      history: () =>
+        Promise.resolve({
+          projectId: PROJECT_ID,
+          events: [
+            {
+              ...HISTORY_ROW_BASE,
+              id: 2,
+              action: 'disabled',
+              moduleId: 'burndown',
+              moduleName: 'Burndown',
+              auto: true,
+              relatedModuleId: 'sprints',
+              relatedModuleName: 'Sprints',
+              actorName: 'Gestora Ana',
+              actorRole: 'manager',
+            },
+            {
+              ...HISTORY_ROW_BASE,
+              id: 1,
+              action: 'enabled',
+              moduleId: 'sprints',
+              actorName: 'Bruno',
+              actorRole: 'collaborator',
+            },
+          ],
+        }),
+    })
+
+    const manager = await screen.findByText('Desligou Burndown (junto com Sprints)')
+    const row = manager.closest('li') as HTMLElement
+    within(row).getByText('Gestora Ana')
+    within(row).getByText('Gestor')
+    expect(row.querySelector('time')?.getAttribute('datetime')).toBe(HISTORY_ROW_BASE.at)
+
+    const member = screen.getByText('Ligou Sprints').closest('li') as HTMLElement
+    within(member).getByText('Bruno')
+    expect(within(member).queryByText('Gestor')).toBeNull()
+  })
+
+  it('falha ao carregar mostra aviso dentro da seção, sem derrubar a tela', async () => {
+    renderView({ history: () => Promise.reject(new Error('sem conexão')) })
+
+    await screen.findByText('Não foi possível carregar o histórico deste projeto.')
+    screen.getByRole('switch', { name: 'Desligar Backlog' })
   })
 })

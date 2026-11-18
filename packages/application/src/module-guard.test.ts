@@ -770,7 +770,8 @@ describe('mapa de módulos dos casos de uso', () => {
     // Mais 1: `flowMetrics.get`, as métricas de fluxo por projeto (módulo `flowMetrics`).
     // Mais 4: `risks.list`, `risks.create`, `risks.update` e `risks.remove` (módulo `risks`, ADR-10).
     // Mais 2: `baseline.get` e `baseline.take` (módulo `baseline`, ADR-10).
-    expect(registered).toHaveLength(126)
+    // Mais 1: `projectModules.history`, o histórico de mudanças do projeto (núcleo, lido por participação).
+    expect(registered).toHaveLength(127)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -813,6 +814,10 @@ describe('mapa de módulos dos casos de uso', () => {
     expect(USE_CASE_MODULES['impediments.list'].project).toBe('none')
     expect(USE_CASE_MODULES['meetings.create'].project).toBe('none')
     expect(USE_CASE_MODULES['daily.save'].project).toBe('none')
+    expect(USE_CASE_MODULES['projectModules.history']).toEqual({
+      module: 'core',
+      project: { from: 'projectId' },
+    })
   })
 
   it('o núcleo é o módulo de todos os casos que não dependem de ferramenta', () => {

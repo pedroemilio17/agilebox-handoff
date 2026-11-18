@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createOrganization,
   createUser,
@@ -545,5 +545,172 @@ describe('módulos por projeto: configuração do projeto (ADR-10)', () => {
     })
     expect(configOf(view.modules, 'sprints')).toEqual({ maxActiveSprints: 3 })
     expect(statesOf(view.modules).get('sprints')).toBe('active')
+  })
+})
+
+describe('módulos por projeto: histórico de mudanças (ADR-10)', () => {
+  /** Eventos do histórico, do mais recente para o mais antigo. */
+  async function historyOf(useCases: UseCases, projectId: string, limit?: number) {
+    const { events } = await useCases.projectModules.history.execute(contextManagerA, {
+      projectId,
+      ...(limit === undefined ? {} : { limit }),
+    })
+    return events
+  }
+
+  it('gestor liga Sprints: Sprints entra como pedido direto e Backlog como junto, com quem fez', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+
+    await change(useCases, project.id, { enable: ['sprints'] })
+    const events = await historyOf(useCases, project.id)
+
+    const sprints = events.find((event) => event.moduleId === 'sprints')
+    const backlog = events.find((event) => event.moduleId === 'backlog')
+    expect(events).toHaveLength(2)
+    expect(sprints).toMatchObject({
+      action: 'enabled',
+      auto: false,
+      relatedModuleId: null,
+      relatedModuleName: null,
+      moduleName: 'Sprints',
+      actorId: managerAId,
+      actorName: 'Gestora A',
+      actorRole: 'manager',
+      at: NOW,
+    })
+    expect(backlog).toMatchObject({
+      action: 'enabled',
+      auto: true,
+      relatedModuleId: 'sprints',
+      relatedModuleName: 'Sprints',
+      moduleName: 'Backlog',
+      actorRole: 'manager',
+    })
+  })
+
+  it('desligar Backlog com Sprints e Burndown: cada um marca o módulo que o puxou', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['burndown'] })
+
+    const result = await change(useCases, project.id, { disable: ['backlog'] })
+    const events = await historyOf(useCases, project.id)
+    const disabled = events.filter((event) => event.action === 'disabled')
+
+    expect(result.cascadeDisabled).toEqual(['sprints', 'burndown'])
+    expect(disabled.map((event) => [event.moduleId, event.auto, event.relatedModuleId])).toEqual(
+      expect.arrayContaining([
+        ['backlog', false, null],
+        ['sprints', true, 'backlog'],
+        ['burndown', true, 'sprints'],
+      ]),
+    )
+    expect(disabled.find((event) => event.moduleId === 'burndown')?.relatedModuleName).toBe(
+      'Sprints',
+    )
+  })
+
+  it('com sprint ativa, o desligamento agendado vira evento e nenhum desligado é gravado', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    const sprint = await useCases.sprints.create.execute(contextManagerA, {
+      projectId: project.id,
+      name: 'Sprint 1',
+      plannedStart: '2026-11-16',
+      plannedEnd: '2026-11-27',
+    })
+    await useCases.sprints.start.execute(contextManagerA, { sprintId: sprint.sprint.id })
+    const before = await historyOf(useCases, project.id)
+
+    await change(useCases, project.id, { disable: ['sprints'] })
+    const after = await historyOf(useCases, project.id)
+
+    const added = after.slice(0, after.length - before.length)
+    expect(added).toEqual([
+      expect.objectContaining({
+        action: 'scheduled_disable',
+        moduleId: 'sprints',
+        auto: false,
+        actorRole: 'manager',
+      }),
+    ])
+    expect(after.some((event) => event.action === 'disabled')).toBe(false)
+  })
+
+  it('pedido sem mudança real não grava histórico', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    const before = await historyOf(useCases, project.id)
+
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    expect(await historyOf(useCases, project.id)).toEqual(before)
+  })
+
+  it('a falha ao gravar o histórico desfaz a mudança do módulo (mesma transação)', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    const append = vi
+      .spyOn(unitOfWork.repositories.projectModuleEvents, 'append')
+      .mockRejectedValueOnce(new Error('falha de gravação'))
+
+    await expect(change(useCases, project.id, { enable: ['sprints'] })).rejects.toThrow(
+      'falha de gravação',
+    )
+
+    expect(append).toHaveBeenCalledOnce()
+    const view = await useCases.projectModules.get.execute(contextManagerA, {
+      projectId: project.id,
+    })
+    expect(statesOf(view.modules).get('sprints')).toBe('disabled')
+    expect(await historyOf(useCases, project.id)).toEqual([])
+  })
+
+  it('o histórico segue a leitura do projeto: participante lê, quem não participa é recusado', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    const outsider = await useCases.projects.createProject.execute(contextManagerA, {
+      name: 'Sem a colaboradora',
+    })
+
+    const { events } = await useCases.projectModules.history.execute(contextCollaboratorA, {
+      projectId: project.id,
+    })
+    expect(events).toEqual([])
+    const error = await rejectionOf(
+      useCases.projectModules.history.execute(contextCollaboratorA, { projectId: outsider.id }),
+    )
+    expect(error).toBeInstanceOf(PermissionDeniedError)
+  })
+
+  it('limite: devolve só os mais recentes, e o padrão cobre o restante', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+    await change(useCases, project.id, { enable: ['sprints'] })
+    await change(useCases, project.id, { disable: ['sprints'] })
+    await change(useCases, project.id, { enable: ['sprints'] })
+
+    const latest = await historyOf(useCases, project.id, 1)
+    const all = await historyOf(useCases, project.id)
+
+    expect(latest).toHaveLength(1)
+    expect(latest[0]).toMatchObject({ action: 'enabled', moduleId: 'sprints' })
+    expect(latest[0]!.id).toBe(all[0]!.id)
+    expect(all.map((event) => event.id)).toEqual(
+      [...all.map((event) => event.id)].sort((a, b) => b - a),
+    )
+  })
+
+  it('projeto de outra organização não aparece no histórico', async () => {
+    const { useCases } = await setup()
+    const project = await projectWithCollaborator(useCases)
+
+    const error = await rejectionOf(
+      useCases.projectModules.history.execute(contextManagerB, { projectId: project.id }),
+    )
+    expect(error).toMatchObject({ name: 'NotFoundError' })
   })
 })

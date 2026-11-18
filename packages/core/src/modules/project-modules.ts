@@ -115,3 +115,23 @@ export function planDisableModules(
     enabled: resolution.enabled,
   }
 }
+
+/**
+ * Qual módulo puxou uma mudança por dependência (histórico do projeto: "junto com Sprints").
+ * Ligado por dependência: o primeiro módulo que mudou para ligado e exige este (em ordem do
+ * catálogo). Desligado por dependência: o primeiro módulo exigido por este que também caiu. `null`
+ * quando nenhum módulo da mesma mudança é o elo (ex.: mudança direta, sem cascata).
+ */
+export function cascadeAnchorOf(
+  moduleId: ModuleId,
+  state: 'active' | 'disabled',
+  changedIds: readonly ModuleId[],
+): ModuleId | null {
+  if (state === 'active') {
+    const dependents = catalogOrder(
+      changedIds.filter((id) => id !== moduleId && getManifest(id).requires.includes(moduleId)),
+    )
+    return dependents[0] ?? null
+  }
+  return getManifest(moduleId).requires.find((id) => changedIds.includes(id)) ?? null
+}
