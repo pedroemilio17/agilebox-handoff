@@ -1,6 +1,8 @@
 /* Tela "Acompanhamento" do projeto tradicional. Só tokens do repositório. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-5);

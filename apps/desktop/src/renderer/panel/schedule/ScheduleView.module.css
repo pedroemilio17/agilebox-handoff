@@ -1,6 +1,8 @@
 /* Tela "Cronograma" (Gantt, lista de datas e dependências). Só tokens. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-5);

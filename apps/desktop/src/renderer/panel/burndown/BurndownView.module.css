@@ -1,6 +1,8 @@
 /* Tela "Burndown e velocidade". Só tokens do repositório; o gráfico usa as cores de texto e de destaque. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-5);

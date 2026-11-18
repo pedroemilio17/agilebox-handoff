@@ -104,3 +104,7 @@
 - DECIDIR: horários sugeridos 09:00/10:00/11:00 são provisórios.
 - DECIDIR: Planning sugere o início da sprint, que numa sprint já ativa costuma estar no passado. Sugerir hoje?
 - Anti-duplicata só em memória: sair da tela e voltar permite agendar a mesma cerimônia de novo (checar títulos existentes mudaria o comportamento; combinar).
+
+## Rolagem das telas
+
+- CONFERIR: telas novas (Módulos, EAP, Marcos, Cronograma, Acompanhamento, Burndown, Ajustes) não rolavam porque a raiz `.view` não tinha `overflow-y: auto`; adicionei (como Backlog/Dashboard já faziam). Verificado só por `pnpm check` (jsdom não mede rolagem); veja rodando e me avise se alguma tela ainda não rolar.

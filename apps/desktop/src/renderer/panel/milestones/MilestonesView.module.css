@@ -1,6 +1,8 @@
 /* Tela "Marcos": cabeçalho, formulário inline e lista por data. Só tokens. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-5);
