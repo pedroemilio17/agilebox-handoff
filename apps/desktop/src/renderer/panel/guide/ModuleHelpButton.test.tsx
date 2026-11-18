@@ -135,8 +135,8 @@ describe('ModuleHelpPanel', () => {
     // Sprints requer Backlog: ligado.
     const requer = within(dialog).getByText('Backlog').closest('li')!
     expect(within(requer).getByText('Ligado')).toBeTruthy()
-    // Estimativa em horas não está na lista: desligado.
-    const aproveita = within(dialog).getByText('Estimativa em horas').closest('li')!
+    // Estimativa não está na lista: desligado.
+    const aproveita = within(dialog).getByText('Estimativa').closest('li')!
     expect(within(aproveita).getByText('Desligado')).toBeTruthy()
   })
 
@@ -147,10 +147,10 @@ describe('ModuleHelpPanel', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Como funciona: Backlog' }))
     const dialog = screen.getByRole('dialog', { name: 'Backlog' })
-    // Sprints requer Backlog: aparece em "Alimenta". Backlog aproveita Entregas (EAP): em "Aproveita".
+    // Sprints requer Backlog: aparece em "Alimenta". Backlog aproveita EAP (Entregas): em "Aproveita".
     const alimenta = within(dialog).getByText('Sprints').closest('li')!
     expect(within(alimenta).getByText('Alimenta')).toBeTruthy()
-    const aproveita = within(dialog).getByText('Entregas (EAP)').closest('li')!
+    const aproveita = within(dialog).getByText('EAP (Entregas)').closest('li')!
     expect(within(aproveita).getByText('Aproveita')).toBeTruthy()
     const requer = within(dialog).getByText('Núcleo').closest('li')!
     expect(within(requer).getByText('Requer')).toBeTruthy()

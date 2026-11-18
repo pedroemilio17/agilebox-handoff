@@ -193,3 +193,19 @@
 - DECIDIR: estado DESLIGADO do interruptor não está no design (usei trilho `hairline-strong` e botão `text-muted`). Seção "Desligados" não existe no design (mantida, é a única forma de religar ali). Botão "Pular" é `<button>`, não `<a>`.
 - Ficaram para o passo F2a (textos do core): propósito do preset e motivos por módulo gerados pelas respostas, nomes "Estimativa"/"Burndown", "Os outros N ficam em Módulos" + "Ver todos", regra de "Algumas vezes".
 - Tokens para a escala tipográfica (13/14.5/15/17/32/40 px) e para o vidro `rgba(38,37,46,…)` se repetem em ~20 telas: criar tokens num passo próprio? (hoje valores literais sem hex nos módulos CSS)
+
+### F2a: textos do core e regras da recomendação (feito; revisar)
+
+Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recommendationSummary`), um motivo por módulo em uma frase, nomes do design, extras de equipe experiente só com "Sempre", nota com "Os outros N ficam em Módulos." e "Ver todos". O exemplo do design sai exato nos testes.
+
+- INVENTADO, revisar: fechamentos de Kanban, Tradicional, Híbrido e Simples (`CLOSING` em `wizard.ts`); o Ágil veio do design. Ex.: "Marcos e cronograma mostram o caminho até a data final, passo a passo."
+- INVENTADO, revisar: motivos que o design não mostra: Sprints no Híbrido, Estimativa sem controle de horas, Backlog com escopo definido ou parcial, e os módulos fora do exemplo (Limites WIP, Critério de pronto, Marcos, Cronograma, EAP, Riscos, Linha de base, Métricas de fluxo, Agenda, e demais). Alguns vêm das descrições de `Modulos.dc.html` ("Avisa quando há tarefas demais em andamento.", "Mostra se a sprint vai fechar."), o resto é meu.
+- INVENTADO: frases de "resumo" para trabalho contínuo ("sem começo e fim") e escopo parcial ("com parte do escopo definida"); e a nota no singular ("O outro módulo fica em Módulos.").
+- DECIDIR: "Algumas vezes" não põe os extras na lista; só "Sempre" põe. O ADR-10 (coluna "equipe experiente" e "Regras dos presets") dizia o contrário. Segui o design. O ADR precisa ser atualizado, ou a regra volta.
+- DECIDIR: "Ver todos" abre uma lista inline, só leitura, com os outros módulos. O design leva à tela Módulos, mas a recomendação acontece antes de o projeto existir. Opção: depois de criar, abrir a tela Módulos do projeto.
+- DECIDIR: a Agenda vem junto por dependência das Cerimônias, mas não aparece na lista (o design não a mostra). Continua no payload de criação.
+- DECIDIR: a ordem da lista "Vai ligar" é a do design (Backlog, Sprints, Estimativa, Custo, Cerimônias, Atualização diária), não a do catálogo. Os outros módulos seguem a ordem do catálogo. Qual é a regra?
+- DIVERGÊNCIA: "Os outros N" conta com os 15 módulos de `Modulos.dc.html`. A tela Módulos do app mostra 20 (inclui o grupo "Outros": Agenda, Impedimentos, Critérios de aceitação, Subtarefas, Estimativa em pontos). Com o app atual, a conta daria 12, não 7. Decidir: tirar o grupo "Outros" da tela Módulos (como o design), ou aceitar 12. A lista fica em `MODULES_SCREEN_IDS` (`recommendation-state.ts`).
+- DIVERGÊNCIA: a barra lateral segue "Entregas (EAP)" (como em seis telas do design), e só a tela Módulos e a recomendação usam "EAP (Entregas)". Confirmar qual vale.
+- DIVERGÊNCIA com o ADR: no nível "Nunca" o ADR pede a explicação do jargão ("Entregas (EAP)", "Limite de tarefas em andamento (WIP)"). Os nomes novos ("EAP (Entregas)", "Limites WIP") não trazem a explicação. Não implementado.
+- Nomes alterados (`MODULE_LABELS` e manifestos; ids não mudaram): Estimativa (era "Estimativas em horas"), Atualização diária (era "Check-ins"), Limites WIP, Cerimônias (era "Review e retro"), Burndown e velocidade (era "Burndown e velocity"), EAP (Entregas). Na nota usa-se "Burndown" curto (`MODULE_SHORT_LABELS`).

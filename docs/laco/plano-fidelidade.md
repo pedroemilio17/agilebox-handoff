@@ -19,7 +19,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
 - [x] B1 Arrastar cartões ancorados no ponto do clique (item 4).
 - [x] B2 Botão "+" nos pontos de inclusão (item 3).
 - [x] B3 Guia em todas as telas do passo a passo, com ponte entre funcionalidades (item 2).
-- [ ] F2a Textos do domínio conforme o design nas telas 01/02: propósito do preset e motivo por módulo gerados pelas respostas (como em Recomendacao.dc.html), nomes "Estimativa" e "Burndown", nota "Os outros N ficam em Módulos" com link "Ver todos", regra de "Algumas vezes" (extras fora da lista, só na nota). Mexe no `core`: manter testes, atualizar só o que o design exigir.
+- [x] F2a Textos do domínio conforme o design nas telas 01/02: propósito do preset e motivo por módulo gerados pelas respostas (como em Recomendacao.dc.html), nomes "Estimativa" e "Burndown", nota "Os outros N ficam em Módulos" com link "Ver todos", regra de "Algumas vezes" (extras fora da lista, só na nota). Mexe no `core`: manter testes, atualizar só o que o design exigir.
 - [ ] F2.. Auditoria e ajuste tela a tela contra o canvas, na ordem 01, 02, 03, 04, 05, 06, 07 ... 20. Cada passo: comparar markup do `.dc.html` com a tela do app (medidas, textos, estados), listar divergências, corrigir, atualizar testes sem enfraquecê-los.
   - [x] 01 wizard · [x] 02 recomendação (estrutura e medidas; textos do core em F2a) · [ ] 03 módulos (inclui painel "Proposta" lateral, que depende da regra "gestor propõe, equipe aceita" ainda indefinida: registrar, não inventar) · [ ] 04 primeiros passos · [ ] 05 botão ? · [ ] 06 boas-vindas
   - [ ] 07 planejar sprint · [ ] 08 sprint ativa · [ ] 09 critério de pronto ao concluir · [ ] 10 burndown · [ ] 11 encerrar sprint/retro · [ ] 12 comparação

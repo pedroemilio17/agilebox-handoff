@@ -116,7 +116,7 @@ describe('ModulesView: lista e contagem', () => {
     renderView({ view: projectModulesView({ enabled: ['sprints'] }) })
     const card = (await screen.findByRole('heading', { name: 'Sprints' })).closest('article')!
     expect(within(card).getByText('Trabalhar em ciclos curtos com meta.')).toBeTruthy()
-    expect(within(card).getByText('Requer Backlog · Aproveita Estimativa em horas')).toBeTruthy()
+    expect(within(card).getByText('Requer Backlog · Aproveita Estimativa')).toBeTruthy()
     expect(within(card).getByText('N2')).toBeTruthy()
   })
 
@@ -180,9 +180,7 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Estimativa em pontos' }))
 
-    expect(statusText()).toContain(
-      'Não dá para ligar Estimativa em pontos junto com Estimativa em horas',
-    )
+    expect(statusText()).toContain('Não dá para ligar Estimativa em pontos junto com Estimativa')
     expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeTruthy()
   })
@@ -217,9 +215,7 @@ describe('ModulesView: ligar e desligar com prévia', () => {
         ),
     })
     const user = userEvent.setup()
-    await user.click(
-      await screen.findByRole('switch', { name: 'Ligar Limite de tarefas em andamento (WIP)' }),
-    )
+    await user.click(await screen.findByRole('switch', { name: 'Ligar Limites WIP' }))
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain(

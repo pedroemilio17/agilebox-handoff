@@ -28,8 +28,8 @@ describe('moduleHelp', () => {
   })
 
   it('usa o nome do manifesto quando ele difere do rótulo curto', () => {
-    expect(moduleHelp('wbs', [], null).name).toBe('Entregas (EAP)')
-    expect(moduleHelp('estimates.hours', [], null).name).toBe('Estimativa em horas')
+    expect(moduleHelp('wbs', [], null).name).toBe('EAP (Entregas)')
+    expect(moduleHelp('estimates.hours', [], null).name).toBe('Estimativa')
   })
 
   it('rótulos de nível N1, N2 e N3, e nenhum no núcleo', () => {

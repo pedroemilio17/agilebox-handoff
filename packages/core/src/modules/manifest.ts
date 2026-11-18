@@ -188,7 +188,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     ],
   }),
   manifest('estimates.hours', {
-    name: 'Estimativa em horas',
+    name: 'Estimativa',
     level: 1,
     objective: 'Saber o tamanho do trabalho.',
     enhances: [],
@@ -333,7 +333,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     canDisable: BLOCK_WITH_ACTIVE_SPRINT,
   }),
   manifest('wip', {
-    name: 'Limite de tarefas em andamento (WIP)',
+    name: 'Limites WIP',
     level: 2,
     objective: 'Evitar trabalho demais ao mesmo tempo.',
     enhances: [],

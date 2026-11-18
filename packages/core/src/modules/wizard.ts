@@ -1,14 +1,16 @@
 import { ValidationError } from '../shared/errors'
 import { planEnableModules } from './project-modules'
 import { getProjectPreset, projectPresetModules } from './project-presets'
-import type { ProjectPreset, ProjectPresetKey } from './project-presets'
-import { getModule, MODULE_LABELS } from './registry'
+import type { ProjectPresetKey } from './project-presets'
+import { moduleShortLabel } from './registry'
 import type { ModuleId } from './registry'
 
 /**
  * Assistente de criação de projeto (ADR-10). Função pura: recebe as respostas (ausente = pulou) e
  * devolve o preset recomendado, os módulos ligados e um motivo por módulo. Não grava nada; quem
  * cria o projeto aplica o resultado. Metodologia é dado (`project-presets.ts`), não código.
+ *
+ * Os textos seguem o design `Recomendacao.dc.html`: uma frase por módulo e um resumo do trabalho.
  */
 
 export interface WizardAnswers {
@@ -32,109 +34,69 @@ export interface WizardRecommendation {
 
 type NonCoreModuleId = Exclude<ModuleId, 'core'>
 
-interface ModuleText {
-  /** Concorda com o rótulo do módulo: "ligado", "ligada", "ligados", "ligadas". */
-  readonly participle: string
-  /** Pronome do módulo quando outro módulo precisa dele: "dele", "dela", "deles", "delas". */
-  readonly pronoun: string
-  /** Por que o módulo existe, em uma oração que segue "porque". */
-  readonly clause: string
+interface ReasonInput {
+  readonly preset: ProjectPresetKey
+  readonly answers: WizardAnswers
+  /** Módulos ligados no resultado, com `core`. */
+  readonly enabled: readonly ModuleId[]
 }
 
-const MODULE_TEXT: Readonly<Record<NonCoreModuleId, ModuleText>> = {
-  agenda: {
-    participle: 'ligada',
-    pronoun: 'dela',
-    clause: 'a equipe marca reuniões e compromissos',
+/** Um motivo por módulo: uma frase. Quando a resposta muda o texto, a função olha as respostas. */
+const REASON: Readonly<Record<NonCoreModuleId, (input: ReasonInput) => string>> = {
+  agenda: () => 'A Agenda guarda as reuniões e os compromissos da equipe.',
+  backlog: ({ answers }) => {
+    if (answers.scope === 'will_change') {
+      return 'A entrega vai mudar, então o trabalho precisa de uma fila em ordem.'
+    }
+    if (answers.scope === 'partly') {
+      return 'Parte do escopo vai mudar, então o trabalho precisa de uma fila em ordem.'
+    }
+    return 'O trabalho precisa de uma fila em ordem antes de entrar em sprint.'
   },
-  backlog: {
-    participle: 'ligado',
-    pronoun: 'dele',
-    clause: 'é preciso guardar e ordenar o que ainda não entrou em sprint',
+  sprints: ({ preset }) =>
+    preset === 'hibrido'
+      ? 'Ciclos curtos com meta para tratar os detalhes que mudam dentro da data fixa.'
+      : 'Ciclos curtos com meta para ajustar o rumo sem data fixa.',
+  checkins: () => 'Mantém o quadro em dia pela bandeja, sem reunião diária.',
+  impediments: () => 'Mostra o que bloqueia a equipe, até ser resolvido.',
+  'estimates.hours': ({ answers, enabled }) => {
+    const withSprints = enabled.includes('sprints')
+    if (answers.controlsHoursAndCost === 'yes' && withSprints) {
+      return 'Você quer controlar horas, e as sprints usam horas para a capacidade.'
+    }
+    if (answers.controlsHoursAndCost === 'yes') return 'Você quer controlar horas de cada tarefa.'
+    if (withSprints) {
+      return 'As sprints usam horas para a capacidade, então cada tarefa ganha uma estimativa.'
+    }
+    return 'Cada tarefa ganha uma estimativa de horas para planejar o prazo.'
   },
-  sprints: {
-    participle: 'ligadas',
-    pronoun: 'delas',
-    clause: 'o trabalho é planejado em ciclos curtos',
-  },
-  checkins: { participle: 'ligados', pronoun: 'deles', clause: 'a equipe faz atualização diária' },
-  impediments: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'impedimentos precisam aparecer para serem resolvidos',
-  },
-  'estimates.hours': {
-    participle: 'ligadas',
-    pronoun: 'delas',
-    clause: 'o trabalho é dimensionado em horas',
-  },
-  'estimates.points': {
-    participle: 'ligadas',
-    pronoun: 'delas',
-    clause: 'o trabalho é dimensionado em pontos',
-  },
-  acceptance: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'cada tarefa precisa de critérios claros de aceite',
-  },
-  wip: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'o trabalho em andamento precisa de limite',
-  },
-  subtasks: {
-    participle: 'ligadas',
-    pronoun: 'delas',
-    clause: 'tarefas grandes se dividem em partes com dependências',
-  },
-  integrations: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'a equipe quer avisos de outras ferramentas',
-  },
-  flowMetrics: {
-    participle: 'ligadas',
-    pronoun: 'delas',
-    clause: 'é preciso medir o fluxo de trabalho',
-  },
-  reviewRetro: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'cada sprint fecha com revisão e retrospectiva',
-  },
-  burndown: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'o ritmo da sprint precisa ficar visível',
-  },
-  cost: {
-    participle: 'ligado',
-    pronoun: 'dele',
-    clause: 'é preciso somar o valor das horas de cada tarefa',
-  },
-  milestones: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'há marcos a cumprir ao longo do projeto',
-  },
-  wbs: { participle: 'ligadas', pronoun: 'delas', clause: 'o projeto se divide em entregas' },
-  schedule: { participle: 'ligado', pronoun: 'dele', clause: 'há uma data final fixa' },
-  definitionOfDone: {
-    participle: 'ligado',
-    pronoun: 'dele',
-    clause: 'é preciso combinar quando uma tarefa está pronta',
-  },
-  baseline: {
-    participle: 'ligada',
-    pronoun: 'dela',
-    clause: 'é preciso comparar o plano com o que foi executado',
-  },
-  risks: {
-    participle: 'ligados',
-    pronoun: 'deles',
-    clause: 'é preciso acompanhar o que pode atrasar o projeto',
-  },
+  'estimates.points': () => 'Mede o trabalho em pontos, em vez de horas.',
+  acceptance: () => 'Cada tarefa tem critérios claros para ser aceita.',
+  wip: () => 'Avisa quando há tarefas demais em andamento.',
+  subtasks: () => 'Divide tarefas grandes em partes, com dependências entre elas.',
+  integrations: () => 'Avisa quando outras ferramentas mudam algo do projeto.',
+  flowMetrics: () =>
+    'Mostra quanto tempo as tarefas levam do início ao fim e quantas terminam por semana.',
+  reviewRetro: () => 'Planning, review e retro entram na Agenda no ritmo das sprints.',
+  burndown: () => 'Mostra se a sprint vai fechar.',
+  cost: () => 'Você quer controlar custo: horas × valor/hora de cada pessoa.',
+  milestones: () => 'Mostra as datas que importam para quem está de fora.',
+  wbs: () => 'Divide o escopo em entregas menores.',
+  schedule: () =>
+    'Há uma data final que não pode mudar, então o trabalho precisa de um cronograma.',
+  definitionOfDone: () => 'Combina o que conta como concluído antes de a tarefa ir para Concluído.',
+  baseline: () => 'Compara o planejado com o que foi executado.',
+  risks: () => 'Antecipa o que pode dar errado.',
+}
+
+/** Frase de fechamento do resumo, uma por preset (mesmo tom e tamanho do design). */
+const CLOSING: Readonly<Record<ProjectPresetKey, string>> = {
+  simples: 'Nada para configurar agora: o projeto começa simples e você ajusta depois.',
+  kanban:
+    'O quadro mostra o fluxo do dia a dia, e o limite de tarefas em andamento evita gargalos.',
+  agil: 'Ciclos curtos deixam a equipe ajustar o rumo a cada duas semanas.',
+  tradicional: 'Marcos e cronograma mostram o caminho até a data final, passo a passo.',
+  hibrido: 'Os marcos seguram a data, e as partes que mudam andam em sprints curtas.',
 }
 
 function choosePreset(answers: WizardAnswers): ProjectPresetKey {
@@ -161,81 +123,91 @@ function choosePreset(answers: WizardAnswers): ProjectPresetKey {
   return 'simples'
 }
 
-/** Módulos que as respostas pedem além do preset, com o trecho de motivo de cada um. */
-function answerClauses(answers: WizardAnswers): Map<ModuleId, string> {
-  const clauses = new Map<ModuleId, string>()
-  if (answers.outsiderFollows === 'yes') {
-    clauses.set('milestones', 'quem está de fora acompanha o projeto')
-  }
-  if (answers.controlsHoursAndCost === 'yes') {
-    clauses.set('estimates.hours', 'você controla horas e custo')
-    clauses.set('cost', 'você controla horas e custo')
-  }
-  return clauses
+/** Módulos que as respostas pedem além do preset. */
+function answerExtras(answers: WizardAnswers): ModuleId[] {
+  const extras: ModuleId[] = []
+  if (answers.outsiderFollows === 'yes') extras.push('milestones')
+  if (answers.controlsHoursAndCost === 'yes') extras.push('estimates.hours', 'cost')
+  return extras
 }
 
-function requiresModule(dependent: ModuleId, required: ModuleId): boolean {
-  const definition = getModule(dependent)
-  return (
-    definition.requires.includes(required) ||
-    (definition.requiresAnyOf ?? []).some((alternative) => alternative.includes(required))
-  )
+/** "A, B e C": a última união vira " e ". */
+function joinWithAnd(items: readonly string[]): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`
 }
 
-interface ReasonContext {
-  readonly preset: ProjectPreset
-  readonly experienced: boolean
-  readonly answers: ReadonlyMap<ModuleId, string>
-  readonly enabled: readonly ModuleId[]
+/**
+ * Resumo da recomendação: uma frase com o trabalho (tipo, data e escopo, só o que foi respondido)
+ * e o fechamento do preset escolhido. Com as respostas de `Recomendacao.dc.html` sai exatamente o
+ * texto do design.
+ */
+export function recommendationSummary(answers: WizardAnswers, preset: ProjectPresetKey): string {
+  const parts: string[] = []
+  if (answers.workType === 'finite') parts.push('com começo e fim')
+  else if (answers.workType === 'continuous') parts.push('sem começo e fim')
+  if (answers.fixedDate === 'yes') parts.push('com data fixa')
+  else if (answers.fixedDate === 'no') parts.push('sem data fixa')
+  if (answers.scope === 'defined') parts.push('com escopo definido')
+  else if (answers.scope === 'partly') parts.push('com parte do escopo definida')
+  else if (answers.scope === 'will_change') parts.push('com entrega que vai mudar')
+
+  const opening = parts.length > 0 ? `Trabalho ${joinWithAnd(parts)}.` : null
+  return [opening, CLOSING[preset]].filter((sentence) => sentence !== null).join(' ')
 }
 
-/** Ordem de prioridade: resposta do wizard, depois o preset, depois a experiência, depois a dependência. */
-function reasonFor(moduleId: NonCoreModuleId, context: ReasonContext): string {
-  const text = MODULE_TEXT[moduleId]
-  const head = `${MODULE_LABELS[moduleId]} ${text.participle}`
-
-  const answerClause = context.answers.get(moduleId)
-  if (answerClause) return `${head} porque ${answerClause}`
-
-  if (context.preset.modules.includes(moduleId)) return `${head} porque ${text.clause}`
-
-  if (context.experienced && context.preset.experiencedExtras.includes(moduleId)) {
-    return `${head} porque a equipe é experiente`
+/**
+ * Nota abaixo da lista "Vai ligar": os extras de equipe experiente que ficaram fora (só com
+ * "Sempre" eles entram) e quantos módulos do catálogo ficam em Módulos. Nulo quando não há nada a dizer.
+ */
+export function recommendationNote(input: {
+  readonly preset: ProjectPresetKey
+  readonly hiddenExtras: readonly ModuleId[]
+  readonly others: number
+}): string | null {
+  const sentences: string[] = []
+  if (input.hiddenExtras.length > 0) {
+    const names = joinWithAnd(input.hiddenExtras.map((id) => moduleShortLabel(id)))
+    const verb = input.hiddenExtras.length === 1 ? 'entra' : 'entram'
+    const method = getProjectPreset(input.preset).method
+    const context = method
+      ? `quando a equipe já trabalha com ${method}`
+      : 'quando a equipe já organizou projetos assim'
+    sentences.push(`${names} ${verb} ${context}.`)
   }
-
-  const dependent = context.enabled.find((other) => requiresModule(other, moduleId))
-  if (dependent) {
-    return `${head} porque ${MODULE_LABELS[dependent]} precisa ${text.pronoun}`
-  }
-
-  return `${head} porque ${text.clause}`
+  if (input.others === 1) sentences.push('O outro módulo fica em Módulos.')
+  else if (input.others > 1) sentences.push(`Os outros ${input.others} ficam em Módulos.`)
+  return sentences.length > 0 ? sentences.join(' ') : null
 }
 
 /**
  * Recomenda um preset e os módulos ligados a partir das respostas do wizard (ADR-10).
- * Mesma entrada, mesma saída.
+ * Mesma entrada, mesma saída. Os extras de nível 3 entram só com experiência "Sempre".
  */
 export function recommendPreset(answers: WizardAnswers): WizardRecommendation {
   const preset = getProjectPreset(choosePreset(answers))
-  const experienced = answers.experience === 'sometimes' || answers.experience === 'always'
-  const clauses = answerClauses(answers)
+  const experienced = answers.experience === 'always'
 
-  const plan = planEnableModules(projectPresetModules(preset.key, { experienced }), [
-    ...clauses.keys(),
-  ])
+  const plan = planEnableModules(
+    projectPresetModules(preset.key, { experienced }),
+    answerExtras(answers),
+  )
   if (!plan.ok) throw new ValidationError('Recomendação de projeto inválida')
 
   const enabled = plan.enabled
-  const isNonCore = (id: ModuleId): id is NonCoreModuleId => id !== 'core'
-  const context: ReasonContext = { preset, experienced, answers: clauses, enabled }
+  const reasons: { moduleId: ModuleId; text: string }[] = []
+  for (const moduleId of enabled) {
+    if (moduleId === 'core') continue
+    reasons.push({
+      moduleId,
+      text: REASON[moduleId]({ preset: preset.key, answers, enabled }),
+    })
+  }
 
   return {
     preset: preset.key,
     modules: enabled,
-    reasons: enabled.filter(isNonCore).map((moduleId) => ({
-      moduleId,
-      text: reasonFor(moduleId, context),
-    })),
+    reasons,
     guideLevel: answers.experience ?? 'never',
   }
 }

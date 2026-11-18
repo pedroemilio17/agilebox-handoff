@@ -90,10 +90,10 @@ describe('dependencyText', () => {
   it('lista o que é exigido e o que é aproveitado, com nomes do manifesto', () => {
     expect(dependencyText({ requires: ['backlog'], enhances: [] })).toBe('Requer Backlog')
     expect(dependencyText({ requires: ['core'], enhances: ['wbs'] })).toBe(
-      'Aproveita Entregas (EAP)',
+      'Aproveita EAP (Entregas)',
     )
     expect(dependencyText({ requires: ['backlog'], enhances: ['estimates.hours'] })).toBe(
-      'Requer Backlog · Aproveita Estimativa em horas',
+      'Requer Backlog · Aproveita Estimativa',
     )
   })
 })
@@ -130,7 +130,7 @@ describe('previewToggle', () => {
   it('recusa ligar módulo em conflito, com o texto do que desligar', () => {
     const preview = previewToggle(['core', 'estimates.hours'], 'estimates.points', true)
     expect(preview.refused).toBe(
-      'Não dá para ligar Estimativa em pontos junto com Estimativa em horas: são ferramentas em conflito. Desligue Estimativa em horas antes.',
+      'Não dá para ligar Estimativa em pontos junto com Estimativa: são ferramentas em conflito. Desligue Estimativa antes.',
     )
     expect(previewLines('estimates.points', preview)).toEqual([preview.refused])
   })

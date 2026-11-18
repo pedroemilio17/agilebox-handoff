@@ -255,7 +255,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação
+        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Atualização diária, Impedimentos, Estimativa, Critérios de aceitação
         gestor
         dashboard: Bloqueadas, Paradas
         ajustes (gestor): 4 presets para aplicar; controle de nível
@@ -288,7 +288,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         detalhe: nenhum
         backlog: fora do menu
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
+        ajustes: somente leitura; avisos de nível: Limites WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
         dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
@@ -299,7 +299,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         detalhe: nenhum
         backlog: fora do menu
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
+        ajustes: somente leitura; avisos de nível: Limites WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
         dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
@@ -321,7 +321,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação, Review e retro, Burndown e velocity
+        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Atualização diária, Impedimentos, Estimativa, Critérios de aceitação, Cerimônias, Burndown e velocidade
         gestor
         dashboard: Bloqueadas, Paradas
         ajustes (gestor): 4 presets para aplicar; controle de nível
@@ -332,7 +332,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Review e retro, Burndown e velocity
+        ajustes: somente leitura; avisos de nível: Cerimônias, Burndown e velocidade
         gestor
         dashboard: Bloqueadas, Paradas, daily de hoje
         ajustes (gestor): 4 presets para aplicar; controle de nível

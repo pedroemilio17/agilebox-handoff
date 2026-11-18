@@ -16,10 +16,12 @@ import {
   enableModule,
   experienceQuestion,
   guideBullets,
-  hiddenExtrasNote,
   moduleRows,
+  otherModuleRows,
   presetTitleParts,
+  recommendationNoteFor,
   recommendationResult,
+  summaryFor,
   type ModuleRow,
   type RecommendationResult,
 } from './recommendation-state'
@@ -57,10 +59,12 @@ export function RecommendationScreen({
   onCreate,
 }: RecommendationScreenProps) {
   const [state, setState] = useState(() => createRecommendationState(name, answers))
+  const [showAll, setShowAll] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const focusAfterToggle = useRef<ModuleId | null>(null)
   const titleId = useId()
   const groupName = useId()
+  const moreListId = useId()
 
   useFocusTrap(dialogRef)
   useRestoreFocus()
@@ -80,8 +84,10 @@ export function RecommendationScreen({
 
   const preset = getProjectPreset(state.preset)
   const title = presetTitleParts(preset.label)
+  const summary = summaryFor(state)
   const rows = moduleRows(state)
-  const note = hiddenExtrasNote(state)
+  const note = recommendationNoteFor(state)
+  const others = otherModuleRows(state)
 
   function toggle(row: ModuleRow, on: boolean) {
     focusAfterToggle.current = row.id
@@ -116,7 +122,7 @@ export function RecommendationScreen({
                 </>
               )}
             </h1>
-            <p className={styles.purpose}>{preset.purpose}.</p>
+            <p className={styles.purpose}>{summary}</p>
           </div>
           <span className={styles.stage}>Etapa final</span>
         </header>
@@ -161,7 +167,31 @@ export function RecommendationScreen({
             {note && (
               <div className={styles.note}>
                 <span className={styles.noteText}>{note}</span>
+                {others.length > 0 && (
+                  <button
+                    type="button"
+                    className={styles.more}
+                    aria-expanded={showAll}
+                    aria-controls={moreListId}
+                    onClick={() => setShowAll((current) => !current)}
+                  >
+                    Ver todos
+                  </button>
+                )}
               </div>
+            )}
+            {showAll && others.length > 0 && (
+              <ul id={moreListId} className={styles.moreList} aria-label="Outros módulos">
+                {others.map((row) => (
+                  <li key={row.id} className={styles.moreRow}>
+                    <span className={styles.moduleName}>
+                      {row.name}
+                      {row.level !== null && <span className={styles.level}>N{row.level}</span>}
+                    </span>
+                    <span className={styles.reason}>{row.reason}</span>
+                  </li>
+                ))}
+              </ul>
             )}
             <p role="status" aria-live="polite" className={styles.status}>
               {state.notice ?? ''}

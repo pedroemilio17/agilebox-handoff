@@ -175,7 +175,7 @@ describe('Aplicar preset que desliga módulos não apaga nada', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar' }))
     expect(spies.applyPreset).toHaveBeenCalledWith(expect.objectContaining({ presetId: 'kanban' }))
 
-    for (const name of ['Sprints', 'Subtarefas e dependências', 'Limites de WIP']) {
+    for (const name of ['Sprints', 'Subtarefas e dependências', 'Limites WIP']) {
       expect(within(toolRow(name)).getByText('Encerrando')).toBeTruthy()
     }
     // Ferramenta em encerramento ainda existe: o que já está nela segue visível e editável.
