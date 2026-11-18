@@ -39,3 +39,12 @@ Migrações novas: 0018 a 0025.
 - O CLAUDE.md pede explicar cada etapa e esperar confirmação. Neste laço a ordem do Pedro (`/loop`) autorizou seguir etapas sem confirmação, mas as decisões de produto acima ficaram registradas para revisão.
 - Rolagem: telas novas ganharam `overflow-y: auto` na raiz `.view` (corrigido em `9b9b479`); só `pnpm check` verificou, ver rodando.
 - Nenhum PR foi criado.
+
+## Passe de fidelidade ao design e correções de uso (concluído)
+
+Plano e estado em `plano-fidelidade.md`; decisões e lacunas por tela em `pendencias-do-pedro.md`.
+
+- Barra lateral, wizard e recomendação, Módulos, guia (04–06), Sprints (07–08), critério de pronto/burndown/encerrar (09–11), EAP/Cronograma/Acompanhamento (13–16), Plano híbrido (17–18) e Dashboard (19–20) refeitos conforme o canvas. A tela 12 é quadro explicativo (nada a implementar).
+- Correções de uso: cartão arrastado ancorado no ponteiro (B1), botão "+" nos pontos de inclusão (B2), guia presente em todas as telas do fluxo com ponte para cada passo (B3), rolagem das telas novas.
+- Nada foi visto rodando no Electron: a conferência visual (1280/1440 px, rolagem, hover, cores) é do Pedro.
+- O que o design mostra e o app não tem dado/regra para sustentar (votação "gestor propõe, equipe aceita", capacidade por pessoa/sprint, aceite pendente, previsão de burndown, aprovadores de marco, trilha tradicional de 6 passos, período por entrega) ficou como pendência, não implementado.
