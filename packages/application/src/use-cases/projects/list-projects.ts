@@ -6,6 +6,7 @@ import type {
   DefinitionOfDoneRepository,
   ProjectModulesRepository,
   ProjectRepository,
+  ProjectSetupRepository,
 } from '../../ports'
 
 export class ListProjects {
@@ -13,6 +14,8 @@ export class ListProjects {
     private readonly projects: ProjectRepository,
     private readonly definitionOfDone: DefinitionOfDoneRepository,
     private readonly projectModules: ProjectModulesRepository,
+    /** Preset de partida ("começou como") de cada projeto, para o rótulo da barra lateral. */
+    private readonly projectSetup: ProjectSetupRepository,
   ) {}
 
   /** Padrão: projetos arquivados ficam de fora; `includeArchived` mostra todos. */
@@ -44,7 +47,8 @@ export class ListProjects {
           moduleStateOf(modules, 'definitionOfDone') === 'disabled'
             ? 0
             : (counts.get(project.id) ?? 0)
-        return toProjectDto(project, inForce)
+        const setup = await this.projectSetup.get(actor.organizationId, project.id)
+        return toProjectDto(project, inForce, setup?.startedFromPreset ?? null)
       }),
     )
     return visible.filter((project): project is ProjectDto => project !== null)

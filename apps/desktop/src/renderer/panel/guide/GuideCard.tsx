@@ -3,7 +3,7 @@ import { Button, ProgressBar } from '@agilebox/ui'
 import { useDismissGuideCard } from '../hooks/use-dismiss-guide-card'
 import { useGuide } from '../hooks/use-guide'
 import type { PanelView } from '../layout/PanelShell'
-import { getGuideCardState, type GuideCardState } from './guide-card-state'
+import { getGuideCardState, initialOpenOnScreen, type GuideCardState } from './guide-card-state'
 import { guideCopy } from './guide-copy'
 import styles from './GuideCard.module.css'
 
@@ -11,28 +11,45 @@ export interface GuideCardProps {
   readonly projectId: string | null
   /** Leva à tela do passo (backlog, sprints, agenda). A troca de tela fica com o App. */
   readonly onNavigate: (view: PanelView) => void
+  /** Abre a bandeja (o passo "Atualize pela bandeja"). Sem ele, o passo mostra só a orientação. */
+  readonly onOpenTray?: (() => void) | undefined
+  /**
+   * Tela em que o cartão está. Sem ela, vale a intensidade do projeto (uso avulso). Com ela, o
+   * cartão abre só quando o passo atual se realiza nesta tela (ver `initialOpenOnScreen`).
+   */
+  readonly view?: PanelView | undefined
   /**
    * Contador de pedidos para abrir o cartão (ex.: "Ver a trilha" da janela de boas-vindas). Cada
    * mudança abre o cartão, se ele estiver visível; não reabre um cartão dispensado.
    */
-  readonly openRequest?: number
+  readonly openRequest?: number | undefined
 }
 
 /**
  * Cartão "Primeiros passos" no topo do quadro de um projeto. Se a consulta do guia falhar ou não
  * houver nada a mostrar, não renderiza nada: o guia nunca atrapalha o trabalho.
  */
-export function GuideCard({ projectId, onNavigate, openRequest }: GuideCardProps) {
+export function GuideCard({
+  projectId,
+  onNavigate,
+  onOpenTray,
+  view,
+  openRequest,
+}: GuideCardProps) {
   const guide = useGuide(projectId)
   const state = getGuideCardState(projectId, guide.data)
   if (!state.visible || projectId === null) return null
+  const initiallyOpen = view === undefined ? state.initiallyOpen : initialOpenOnScreen(state, view)
   // A chave por projeto reinicia o estado local (aberto, dispensado) ao trocar de projeto.
   return (
     <GuideSection
       key={projectId}
       projectId={projectId}
       state={state}
+      initiallyOpen={initiallyOpen}
+      view={view}
       onNavigate={onNavigate}
+      onOpenTray={onOpenTray}
       openRequest={openRequest}
     />
   )
@@ -41,14 +58,25 @@ export function GuideCard({ projectId, onNavigate, openRequest }: GuideCardProps
 interface GuideSectionProps {
   readonly projectId: string
   readonly state: GuideCardState
+  readonly initiallyOpen: boolean
+  readonly view: PanelView | undefined
   readonly onNavigate: (view: PanelView) => void
+  readonly onOpenTray: (() => void) | undefined
   readonly openRequest: number | undefined
 }
 
-function GuideSection({ projectId, state, onNavigate, openRequest }: GuideSectionProps) {
+function GuideSection({
+  projectId,
+  state,
+  initiallyOpen,
+  view,
+  onNavigate,
+  onOpenTray,
+  openRequest,
+}: GuideSectionProps) {
   const headingId = useId()
   const bodyId = useId()
-  const [open, setOpen] = useState(state.initiallyOpen)
+  const [open, setOpen] = useState(initiallyOpen)
   const [dismissed, setDismissed] = useState(false)
   const dismiss = useDismissGuideCard()
   // Só o que chega depois da montagem conta: um pedido antigo não reabre o cartão.
@@ -81,10 +109,19 @@ function GuideSection({ projectId, state, onNavigate, openRequest }: GuideSectio
           total={state.total}
           label={guideCopy.progressLabel}
         />
-        <span className={styles.hint}>{guideCopy.hint}</span>
+        {/* Recolhido, o cabeçalho diz em que passo está; aberto, a regra de cada passo. */}
+        {expanded || state.current === null ? (
+          <span className={styles.hint}>{guideCopy.hint}</span>
+        ) : (
+          <span className={styles.hint}>
+            {guideCopy.collapsedHint}{' '}
+            <span className={styles.hintStrong}>{state.current.step.title}</span>
+          </span>
+        )}
         <span className={styles.spacer} />
         {state.complete ? null : (
           <Button
+            className={styles.toggle}
             aria-expanded={open}
             aria-controls={expanded ? bodyId : undefined}
             onClick={() => setOpen((value) => !value)}
@@ -121,44 +158,59 @@ function GuideSection({ projectId, state, onNavigate, openRequest }: GuideSectio
                 <span className={styles.mark} aria-hidden="true">
                   {item.status === 'done' ? '✓' : index + 1}
                 </span>
-                <span className={styles.stepText}>
-                  <span className={styles.stepTitle}>
-                    <span className={styles.srOnly}>{stepStatusLabel(item.status)}: </span>
-                    {item.step.title}
-                  </span>
-                  <span className={styles.stepModule}>{item.step.moduleName}</span>
+                <span className={styles.stepTitle}>
+                  <span className={styles.srOnly}>{stepStatusLabel(item.status)}: </span>
+                  {item.step.title}
                 </span>
+                <span className={styles.stepModule}>{item.step.moduleName}</span>
               </li>
             ))}
           </ol>
 
           <div className={styles.detail}>
             {state.complete ? (
-              <div className={styles.block}>
-                <h3 className={styles.blockTitle}>{guideCopy.completeTitle}</h3>
+              <div className={styles.complete}>
+                <h3 className={styles.completeTitle}>{guideCopy.completeTitle}</h3>
                 <p className={styles.text}>{guideCopy.completeText}</p>
               </div>
             ) : state.current ? (
               <>
-                <span className={styles.eyebrow}>{guideCopy.currentStep(currentPosition)}</span>
-                <div className={styles.block}>
-                  <h3 className={styles.blockLabel}>{guideCopy.whyLabel}</h3>
-                  <p className={styles.text}>{state.current.step.why}</p>
+                <div className={styles.heading}>
+                  <span className={styles.position}>{guideCopy.currentStep(currentPosition)}</span>
+                  <h3 className={styles.stepHeading}>{state.current.step.title}</h3>
                 </div>
-                <div className={styles.block}>
-                  <h3 className={styles.blockLabel}>{guideCopy.doNowLabel}</h3>
-                  <p className={styles.text}>{state.current.step.title}</p>
-                  {action?.kind === 'navigate' ? (
-                    <Button variant="primary" onClick={() => onNavigate(action.view)}>
-                      {action.label}
-                    </Button>
-                  ) : action?.kind === 'note' ? (
-                    <p className={styles.note}>{action.text}</p>
-                  ) : null}
-                </div>
-                <div className={styles.block}>
-                  <h3 className={styles.blockLabel}>{guideCopy.nextLabel}</h3>
-                  <p className={styles.text}>{state.nextTitle ?? guideCopy.lastStep}</p>
+                <div className={styles.columns}>
+                  <div className={styles.column}>
+                    <h4 className={styles.label}>{guideCopy.whyLabel}</h4>
+                    <p className={styles.text}>{state.current.step.why}</p>
+                  </div>
+                  <div className={`${styles.column} ${styles.columnAction}`}>
+                    <h4 className={styles.label}>{guideCopy.doNowLabel}</h4>
+                    {action?.kind === 'navigate' && action.view === view ? (
+                      <p className={styles.note}>{guideCopy.onThisScreen}</p>
+                    ) : action?.kind === 'navigate' ? (
+                      <Button
+                        variant="primary"
+                        className={styles.action}
+                        onClick={() => onNavigate(action.view)}
+                      >
+                        {action.label}
+                      </Button>
+                    ) : action?.kind === 'tray' ? (
+                      <>
+                        <p className={styles.note}>{action.note}</p>
+                        {onOpenTray ? (
+                          <Button variant="primary" className={styles.action} onClick={onOpenTray}>
+                            {action.label}
+                          </Button>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                  <div className={styles.column}>
+                    <h4 className={styles.label}>{guideCopy.nextLabel}</h4>
+                    <p className={styles.text}>{state.nextTitle ?? guideCopy.lastStep}</p>
+                  </div>
                 </div>
               </>
             ) : null}

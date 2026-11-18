@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { ChecklistItemDto, GetTaskDto } from '@agilebox/contract'
-import { IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
+import { AddButton, IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import {
   useAddChecklistItem,
@@ -126,18 +126,23 @@ export function ChecklistCard({ task, readOnly }: ChecklistCardProps) {
       {!closed && limitReached ? <p className={styles.helper}>{panelCopy.checklistLimit}</p> : null}
       {!closed && !limitReached ? (
         <form noValidate onSubmit={submitAdd}>
-          <TextField
-            id={addFieldId}
-            label={panelCopy.checklistAddLabel}
-            disabled={readOnly}
-            value={draft}
-            aria-invalid={addError !== null}
-            aria-describedby={addError ? `${addFieldId}-error` : undefined}
-            onChange={(event) => {
-              setDraft(event.currentTarget.value)
-              if (addError) setAddError(validateChecklistTitle(event.currentTarget.value))
-            }}
-          />
+          <div className={styles.addRow}>
+            <TextField
+              id={addFieldId}
+              label={panelCopy.checklistAddLabel}
+              disabled={readOnly}
+              value={draft}
+              aria-invalid={addError !== null}
+              aria-describedby={addError ? `${addFieldId}-error` : undefined}
+              onChange={(event) => {
+                setDraft(event.currentTarget.value)
+                if (addError) setAddError(validateChecklistTitle(event.currentTarget.value))
+              }}
+            />
+            <AddButton type="submit" disabled={readOnly}>
+              {panelCopy.checklistAddLabel}
+            </AddButton>
+          </div>
           {addError ? (
             <p id={`${addFieldId}-error`} role="alert" className={styles.blockError}>
               {addError}

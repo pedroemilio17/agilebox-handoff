@@ -15,12 +15,12 @@ export interface GuideStepItem {
 }
 
 /**
- * O que a seção "O que fazer agora" mostra além do texto do passo: um botão que leva à tela certa,
- * ou só uma orientação (para passos que acontecem fora do painel).
+ * O que a seção "O que fazer agora" mostra além do texto do passo: um botão que leva à tela do
+ * passo. O passo que acontece na bandeja (`daily.answer`) leva à bandeja, com a orientação de quando.
  */
 export type GuideStepAction =
   | { readonly kind: 'navigate'; readonly view: PanelView; readonly label: string }
-  | { readonly kind: 'note'; readonly text: string }
+  | { readonly kind: 'tray'; readonly label: string; readonly note: string }
 
 export interface GuideCardState {
   readonly visible: boolean
@@ -52,11 +52,65 @@ const NAVIGATE_ACTIONS: Readonly<Record<string, { view: PanelView; label: string
   'ceremonies.planning': { view: 'agenda', label: guideCopy.openAgenda },
 }
 
-/** Destino da ação de um passo. `daily.answer` acontece pela bandeja, então só tem orientação. */
+/** Destino da ação de um passo. `daily.answer` acontece pela bandeja. */
 export function guideStepAction(stepKey: string): GuideStepAction | null {
-  if (stepKey === 'daily.answer') return { kind: 'note', text: guideCopy.dailyNote }
+  if (stepKey === 'daily.answer')
+    return { kind: 'tray', label: guideCopy.openTray, note: guideCopy.dailyNote }
   const target = NAVIGATE_ACTIONS[stepKey]
   return target ? { kind: 'navigate', view: target.view, label: target.label } : null
+}
+
+/** Tela do passo (onde ele se realiza), ou `null` quando acontece fora do painel (bandeja). */
+export function guideStepView(stepKey: string): PanelView | null {
+  return NAVIGATE_ACTIONS[stepKey]?.view ?? null
+}
+
+/**
+ * Telas do projeto em que o cartão aparece (ADR-10, 3.8.1). Painel de projeto: quadro, backlog,
+ * sprints, entregas, marcos, cronograma, acompanhamento, linha de base, burndown, métricas, riscos e
+ * módulos. Fora: dashboard (visão da organização), ajustes e plug-ins. A agenda entra só quando um
+ * passo pendente se realiza nela (ver `guideOnScreen`).
+ */
+const GUIDE_SCREENS: ReadonlySet<PanelView> = new Set<PanelView>([
+  'projects',
+  'backlog',
+  'sprints',
+  'wbs',
+  'milestones',
+  'schedule',
+  'tracking',
+  'baseline',
+  'burndown',
+  'flowMetrics',
+  'risks',
+  'modules',
+])
+
+/**
+ * A tela pode mostrar o cartão? Antes de consultar o guia: telas fora do fluxo nem leem o guia. A
+ * agenda pode, mas depende da trilha (ver `guideOnScreen`).
+ */
+export function guideMayShowOn(view: PanelView): boolean {
+  return GUIDE_SCREENS.has(view) || view === 'agenda'
+}
+
+/** O cartão aparece nesta tela? Só com o guia ativo (chamador confere projeto e trilha). */
+export function guideOnScreen(view: PanelView, guide: GuideViewDto | undefined): boolean {
+  if (GUIDE_SCREENS.has(view)) return true
+  if (view === 'agenda')
+    return (guide?.trail ?? []).some((step) => !step.done && guideStepView(step.key) === 'agenda')
+  return false
+}
+
+/**
+ * Aberto ou recolhido ao entrar numa tela. No quadro segue a intensidade do projeto. Nas demais,
+ * abre só quando o passo atual se realiza nela; nas outras telas fica recolhido, com o passo atual
+ * no cabeçalho. Trilha concluída fica sempre aberta (ver `GuideCard`).
+ */
+export function initialOpenOnScreen(state: GuideCardState, view: PanelView): boolean {
+  if (!state.visible) return false
+  if (view === 'projects') return state.initiallyOpen
+  return state.current !== null && guideStepView(state.current.step.key) === view
 }
 
 const HIDDEN_STATE: GuideCardState = {

@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import type { DefinitionOfDoneItemDto } from '@agilebox/contract'
-import { Button, ReadOnlyBadge, Toast } from '@agilebox/ui'
+import { AddButton, ReadOnlyBadge, Toast } from '@agilebox/ui'
 import {
   definitionLimitReached,
   definitionTitleError,
@@ -104,9 +104,9 @@ export function DefinitionOfDoneEditor({ projectId, canEdit }: DefinitionOfDoneE
             placeholder={panelCopy.definitionNewPlaceholder}
             value={draft}
           />
-          <Button type="submit" disabled={limitReached || busy}>
+          <AddButton type="submit" disabled={limitReached || busy}>
             {panelCopy.definitionAdd}
-          </Button>
+          </AddButton>
           {addError ? (
             <p id={addErrorId} role="alert" className={styles.error}>
               {addError}

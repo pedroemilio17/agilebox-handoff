@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import type { ScheduleViewDto } from '@agilebox/contract'
+import type { BaselineTaskDto, ScheduleTaskDto, ScheduleViewDto } from '@agilebox/contract'
 import styles from './ScheduleView.module.css'
 import {
   barLabel,
@@ -8,6 +8,7 @@ import {
   buildTimeScale,
   DAY_WIDTH,
   dependencyLines,
+  groupSpan,
   hasBar,
   milestoneCenter,
   NAME_COLUMN_WIDTH,
@@ -25,6 +26,7 @@ export const ganttCopy = {
   nameHead: 'Entrega ou tarefa',
   noDates: 'sem datas',
   milestoneLabel: (title: string, dueOn: string) => `Marco: ${title}, ${shortDate(dueOn)}`,
+  today: 'hoje',
 } as const
 
 export interface ScheduleGanttProps {
@@ -33,6 +35,23 @@ export interface ScheduleGanttProps {
   readonly scale: ScheduleScale
   readonly groups: readonly ScheduleGroup[]
   readonly view: ScheduleViewDto
+  /**
+   * Tarefas da linha de base por id, quando a comparação está ligada (módulo `baseline` com foto).
+   * Nulo: sem linha de base na tela.
+   */
+  readonly baseline: ReadonlyMap<string, BaselineTaskDto> | null
+}
+
+/** Rótulo à direita da barra: "+7 dias" quando atrasou frente à base; senão o progresso. */
+export function barTrailText(
+  task: ScheduleTaskDto,
+  baselineTask: BaselineTaskDto | undefined,
+): { readonly text: string; readonly late: boolean } {
+  if (baselineTask?.status === 'late' && baselineTask.delayDays !== null) {
+    const days = baselineTask.delayDays
+    return { text: `+${days} ${days === 1 ? 'dia' : 'dias'}`, late: true }
+  }
+  return { text: `${task.progress}%`, late: false }
 }
 
 /** Caminho das setas: reta do fim da predecessora até o início da sucessora, em ângulos retos. */
@@ -47,7 +66,7 @@ function pathOf(points: readonly { readonly x: number; readonly y: number }[]): 
  * marco, traço de "hoje" e setas de dependência. As setas e o traço são decorativos (aria-hidden):
  * a lista abaixo da tela traz a mesma informação.
  */
-export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGanttProps) {
+export function ScheduleGantt({ range, today, scale, groups, view, baseline }: ScheduleGanttProps) {
   const markerId = `schedule-arrow-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const ts = buildTimeScale(range, scale)
   const rows: ScheduleRow[] = buildRows(groups, view.milestones)
@@ -59,6 +78,20 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
   const fraction = (day: number) => ((day - ts.start) / span) * 100
   const gridTemplate = `${NAME_COLUMN_WIDTH}px ${timelineWidth}px`
   const innerWidth = NAME_COLUMN_WIDTH + timelineWidth
+
+  /** Barra fina da entrega: do início menor ao prazo maior das tarefas dela. */
+  function groupBar(key: string) {
+    const group = groups.find((item) => item.key === key)
+    const span = group ? groupSpan(group.tasks) : null
+    if (span === null) return null
+    const geometry = ts.barGeometry(span.start, span.end)
+    return (
+      <span
+        className={styles.groupBar}
+        style={{ left: `${geometry.left * 100}%`, width: `${geometry.width * 100}%` }}
+      />
+    )
+  }
 
   return (
     <section aria-label={ganttCopy.section} className={styles.ganttCard}>
@@ -92,7 +125,12 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
               />
             ))}
             {todayX === null ? null : (
-              <span className={styles.todayLine} style={{ left: `${todayX * 100}%` }} />
+              <>
+                <span className={styles.todayLine} style={{ left: `${todayX * 100}%` }} />
+                <span className={styles.todayLabel} style={{ left: `${todayX * 100}%` }}>
+                  {ganttCopy.today}
+                </span>
+              </>
             )}
             <svg
               className={styles.depSvg}
@@ -159,28 +197,24 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
                       {row.code ? <span className={styles.code}>{row.code}</span> : null}
                       <span>{row.title}</span>
                     </div>
-                    <div className={styles.timeline} />
+                    <div className={styles.timeline} style={{ width: timelineWidth }}>
+                      {groupBar(row.key)}
+                    </div>
                   </>
                 ) : row.kind === 'task' ? (
                   <>
                     <div
                       className={`${styles.nameCell} ${row.indented ? styles.nameTaskIndent : styles.nameTask}`}
                     >
-                      <span className={styles.key}>{row.task.key}</span>
                       <span>{row.task.title}</span>
                     </div>
                     <div className={styles.timeline} style={{ width: timelineWidth }}>
                       {hasBar(row.task) ? (
-                        <span
-                          role="img"
-                          aria-label={barLabel(row.task)}
-                          title={barLabel(row.task)}
-                          className={styles.bar}
-                          data-state={barState(row.task, today) ?? 'future'}
-                          style={{
-                            left: `${ts.barGeometry(row.task.startsOn, row.task.deadline).left * 100}%`,
-                            width: `${ts.barGeometry(row.task.startsOn, row.task.deadline).width * 100}%`,
-                          }}
+                        <TaskBar
+                          task={row.task}
+                          today={today}
+                          ts={ts}
+                          baselineTask={baseline?.get(row.task.taskId)}
                         />
                       ) : (
                         <span className={styles.noDates}>{ganttCopy.noDates}</span>
@@ -190,6 +224,9 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
                 ) : (
                   <>
                     <div className={styles.nameCell}>
+                      <span aria-hidden="true" className={styles.nameDiamond}>
+                        ◆
+                      </span>
                       <span>{row.milestone.title}</span>
                     </div>
                     <div className={styles.timeline} style={{ width: timelineWidth }}>
@@ -208,7 +245,7 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
                             className={styles.milestoneLabel}
                             style={{ left: `${milestoneX * 100}%` }}
                           >
-                            {shortDate(row.milestone.dueOn)}
+                            {row.milestone.title}
                           </span>
                         </>
                       )}
@@ -221,5 +258,50 @@ export function ScheduleGantt({ range, today, scale, groups, view }: ScheduleGan
         </div>
       </div>
     </section>
+  )
+}
+
+interface TaskBarProps {
+  readonly task: ScheduleTaskDto & { readonly startsOn: string; readonly deadline: string }
+  readonly today: string
+  readonly ts: ReturnType<typeof buildTimeScale>
+  readonly baselineTask: BaselineTaskDto | undefined
+}
+
+/** Barra de uma tarefa, a linha da linha de base por baixo e o rótulo à direita. */
+function TaskBar({ task, today, ts, baselineTask }: TaskBarProps) {
+  const geometry = ts.barGeometry(task.startsOn, task.deadline)
+  const state = barState(task, today, baselineTask?.status === 'late') ?? 'future'
+  const label = barLabel(task)
+  const trail = barTrailText(task, baselineTask)
+  const planned =
+    baselineTask?.plannedStartsOn && baselineTask.plannedEndsOn
+      ? ts.barGeometry(baselineTask.plannedStartsOn, baselineTask.plannedEndsOn)
+      : null
+  return (
+    <>
+      {planned ? (
+        <span
+          aria-hidden="true"
+          className={styles.baselineLine}
+          style={{ left: `${planned.left * 100}%`, width: `${planned.width * 100}%` }}
+        />
+      ) : null}
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className={styles.bar}
+        data-state={state}
+        style={{ left: `${geometry.left * 100}%`, width: `${geometry.width * 100}%` }}
+      />
+      <span
+        className={styles.barLabel}
+        data-tone={trail.late ? 'late' : undefined}
+        style={{ left: `${(geometry.left + geometry.width) * 100}%` }}
+      >
+        {trail.text}
+      </span>
+    </>
   )
 }

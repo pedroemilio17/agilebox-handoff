@@ -53,11 +53,9 @@ export const sprintCopy = {
   removeItem: (title: string) => `Remover ${title} da sprint`,
   removeItemError: 'Não foi possível remover o item.',
   openItem: (title: string) => `Abrir ${title}`,
-  estimatedTotal: (hours: string) => `Estimado: ${hours}`,
   backlogPick: 'Adicionar do backlog',
   backlogPickEmpty: 'Nenhum item no backlog deste projeto.',
   backlogAdd: (title: string) => `Adicionar ${title} à sprint`,
-  backlogAddButton: 'Adicionar',
   backlogBusy: (label: string) => `Já está na ${label}`,
   addItemError: 'Não foi possível adicionar o item.',
   addedMidSprint: 'adicionado no meio da sprint',
@@ -93,11 +91,17 @@ export const sprintCopy = {
   ceremonyError: 'Não foi possível agendar a cerimônia.',
 
   // Encerrar
-  closeTitle: 'Encerrar sprint',
-  closeSummary: (done: number, open: number, started: number) =>
-    `Concluídos: ${done}. Abertos: ${open}. Já iniciados: ${started}.`,
-  closePolicyLegend: 'O que fazer com os itens abertos',
-  policyReturn: 'Devolver ao backlog',
+  closeTitle: 'Encerrar a sprint',
+  closeTileItems: 'Itens',
+  closeTileHours: 'Horas concluídas',
+  closeOpenItems: (count: number) =>
+    count === 1
+      ? '1 item não terminou. Para onde vai?'
+      : `${count} itens não terminaram. Para onde vão?`,
+  closeDestination: 'Destino dos itens abertos',
+  closeVelocity: (number: number, hours: string) =>
+    `A velocidade da Sprint ${number} fica registrada como ${hours} h.`,
+  policyReturn: 'Voltar ao backlog',
   policyReturnHelp:
     'Itens ainda não iniciados voltam ao backlog. Os já iniciados ficam no quadro, sem sprint.',
   policyCarry: 'Levar para a próxima sprint',
@@ -105,6 +109,10 @@ export const sprintCopy = {
   nextSprintLabel: 'Sprint seguinte',
   noDraftForCarry: 'Não há rascunho neste projeto. Crie um em Planejamento para usar esta opção.',
   closeConfirm: 'Encerrar sprint',
+  retroTitle: 'Retrospectiva',
+  retroLoading: 'Carregando a retrospectiva…',
+  retroError: 'Não foi possível carregar a retrospectiva.',
+  retroNone: 'Nenhuma retrospectiva agendada para esta sprint.',
   closeError: 'Não foi possível encerrar a sprint.',
   closed: 'Sprint encerrada.',
 
@@ -139,4 +147,34 @@ export const sprintCopy = {
     'Sprints em encerramento: não há criação nem novos itens. O que existe segue editável.',
   windingDownNoCreate: 'Criar e iniciar sprints está desligado enquanto o módulo encerra.',
   forbidden: 'Você não tem permissão para fazer isso.',
+
+  // Layout do design (Planejar sprint e Sprint ativa)
+  planningTitle: (label: string) => `Planejar ${label}`,
+  draftTag: 'Rascunho',
+  goalTitle: 'Meta da sprint',
+  noGoal: 'Sem meta definida.',
+  periodTitle: 'Período',
+  workingDays: (count: number) => `${count} ${count === 1 ? 'dia útil' : 'dias úteis'}`,
+  estimatedTitle: 'Estimado nesta sprint',
+  velocityNote: (hours: string, count: number) =>
+    `Média de ${count} ${count === 1 ? 'sprint encerrada' : 'sprints encerradas'}: ${hours}.`,
+  noVelocity: 'Sem sprint encerrada para comparar.',
+  backlogTitle: 'Backlog',
+  backlogOrder: (count: number) => `em ordem · ${count} ${count === 1 ? 'item' : 'itens'}`,
+  noEstimateCount: (count: number) => `${count} sem estimativa`,
+  backlogDragHint: 'Arraste para a sprint ou use +. A ordem do backlog não muda.',
+  sprintColumnMeta: (count: number, hours: string | null) =>
+    `${count} ${count === 1 ? 'item' : 'itens'}${hours ? ` · ${hours}` : ''}`,
+  dayTitle: 'Dia',
+  ofTotal: (total: string | number) => `de ${total}`,
+  remainingTitle: 'Restante',
+  behindIdeal: (days: number) => `${days} ${days === 1 ? 'dia atrás' : 'dias atrás'}`,
+  goalShort: 'Meta',
+  summaryLabel: 'Resumo da sprint',
+  onIdeal: 'No ideal',
+  openBurndown: 'Abrir burndown',
+  newTask: 'Nova tarefa',
+  cardInReview: 'em revisão',
+  cardRemaining: (hours: string) => `${hours} restantes`,
+  noEstimate: 'sem estimativa',
 } as const

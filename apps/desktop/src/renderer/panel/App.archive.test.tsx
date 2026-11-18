@@ -41,6 +41,9 @@ const emptyDashboard: DashboardDto = {
   insights: {
     updatedAt: '2026-11-01T12:00:00Z',
     weekStart: '2026-10-26',
+    projects: [],
+    needs: [],
+    updates: [],
     upToDatePercentage: null,
     agingCount: 0,
     overdueCount: 0,

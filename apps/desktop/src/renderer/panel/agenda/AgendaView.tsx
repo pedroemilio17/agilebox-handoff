@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import type { MeetingOccurrenceDto } from '@agilebox/contract'
-import { Button, SegmentedControl, Skeleton } from '@agilebox/ui'
+import { AddButton, SegmentedControl, Skeleton } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { monthKey, shiftMonth, addDays } from '../../shared/lib/calendar-grid'
 import { todayDateOnly } from '../../shared/lib/today'
@@ -270,14 +270,14 @@ export function AgendaView({
             />
           </div>
         ) : null}
-        <Button
+        <AddButton
           type="button"
           variant="primary"
           disabled={!canManage}
           onClick={() => setForm({ mode: 'create' })}
         >
           {panelCopy.newMeeting}
-        </Button>
+        </AddButton>
         {canManage ? null : <p className={styles.helper}>{panelCopy.managerOnly}</p>}
         <div className={`${styles.formWrap} ${open ? styles.formOpen : ''}`} aria-hidden={!open}>
           <div className={styles.formInner}>

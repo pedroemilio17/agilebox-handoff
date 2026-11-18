@@ -150,3 +150,188 @@
 - DECIDIR: manter `scheduled_disable` no histórico mesmo sem mudança de estado (texto: "nada foi desligado")? Mudança só de configuração não gera evento.
 - `winding_down` e `cancelled` existem no schema, mas nenhum caso de uso os produz (encerramento de módulo do projeto ainda não existe).
 - A parte "ligar/desligar" das pendências "linha do tempo do projeto" e "trilha de módulo" pode ser marcada como resolvida; "gestor propõe, equipe aceita" continua aberta.
+
+## Barra lateral conforme o design (F1 do plano de fidelidade)
+
+- Barra reestruturada no padrão do `Modulos.dc.html`: Início, Agenda e Dashboard no topo; seção "Projeto" com a metodologia de partida à direita; subitens do projeto; "Outros projetos" com "Todos os projetos", "Novo projeto" e Ajustes/usuário no rodapé. Recolher continua em 52 px.
+- A metodologia usa o preset de partida (`startedFromPreset`), agora exposto em `ProjectDto` por `projects.list`. Projeto criado sem o assistente não mostra rótulo.
+- DECIDIR: a ordem dos subitens. Os mockups não concordam entre si (Ágil põe Quadro primeiro; Tradicional põe Quadro depois de Acompanhamento). Adotei: Quadro, Backlog, Sprints (S4), Burndown, Entregas (EAP), Marcos, Cronograma, Acompanhamento, Linha de base, Métricas de fluxo, Riscos, Impedimentos, Módulos (contagem), Plug-ins.
+- DECIDIR: sem projeto selecionado, Backlog, Sprints e Impedimentos (telas da organização, hoje alcançáveis) aparecem em "Todos os projetos". O design não mostra esse estado.
+- DECIDIR: a contagem de tarefas por projeto saiu da barra (o design mostra a metodologia no lugar). Restaurar, se quiser.
+- DECIDIR: a linha de projeto selecionado leva ao quadro dele. Os mockups não definem essa ação.
+- Divergências deliberadas: o fundo da barra usa o token translúcido `--color-rail-bg` (o mockup usa `#0d0c11` sólido), por causa do vidro; os quadradinhos seguem a cor derivada do id (`ProjectSwatch`), porque o projeto não guarda cor, e o rosa `#e58fd0` do mockup não tem token (usei o mais próximo da paleta); o rótulo "Entregas" virou "Entregas (EAP)", como no design; "Navegação principal" ficou como nome do menu, em vez de "Principal".
+- Alvos: os itens seguem as medidas do mockup (36 px de topo, 34 px de subitem), abaixo dos 44 px do token de toque. Confirmar se quer 44 px.
+- Não há tela para "Plano" (`HibPlano`) nem para o gerenciamento de metodologia; ficou fora.
+- DECIDIR: o rodapé mostra só o papel ("Gestor"). O design pede "Gestor · Time".
+
+## Arrastar cartões (B1)
+
+- Causa: o `DragOverlay` do dnd-kit é `position: fixed` dentro de ancestrais com `backdrop-filter` e animações com `fill-mode: both` (que mantêm `transform`), então o cartão saía deslocado do ponteiro. Correção: overlay em portal no `body`, origem da rotação no ponto do clique, animações `windowOpen`/`viewEnter`/`cardEnter` com `backwards`.
+- CONFERIR rodando: cartão sob o ponteiro com rolagem e janela de vários tamanhos; cartões da coluna agora devem abrir espaço ao arrastar (antes `cardEnter both` anulava o transform do dnd-kit).
+- DECIDIR: a inclinação de 2° do cartão arrastado não está no design (lá só `opacity: .45`); mantida, remover se não quiser.
+- Outros `position: fixed` dentro de `.window` (menus, tooltips) podem sofrer do mesmo backdrop-filter; não vi sintoma.
+
+## Botão "+" nos pontos de inclusão (B2)
+
+- Novo `AddButton` em `packages/ui` ("+" do design + rótulo em texto) em 14 pontos: Backlog, subtarefa, critério de aceite, definição de pronto, combinados da retro, envolvidos, membros, entrega, marco, risco, sprint, agendamento, dependência, nova tarefa. Backlog, subtarefa e critério só tinham campo + Enter e ganharam botão.
+- DECIDIR: altura 44 px (padrão do app) ou 40 px (design `btn2`)? Hoje 44 px.
+- DECIDIR: rótulos "Adicionar item" (definição de pronto) e "Adicionar combinado" (retro); no Backlog o campo e o botão repetem "Adicionar ao backlog".
+- Não alterados: criação rápida da bandeja (já tem "+"), comentários, "Levar à sprint" (move item existente), "Criar" dentro dos formulários. Incluir também?
+
+## Guia em todas as telas do passo a passo (B3)
+
+- O card "Primeiros passos" agora aparece no topo das telas do projeto no fluxo (Quadro, Backlog, Sprints, Entregas, Marcos, Cronograma, Acompanhamento, Linha de base, Burndown, Métricas, Riscos, Módulos; Agenda só com a planning pendente). Cada passo tem botão que leva à tela dele (o passo diário leva à bandeja) e o card avança sozinho (corrigi invalidações no backlog e no cronograma). Expandido na tela do passo atual, recolhido (com "Passo atual: …") nas outras. Não aparece em Dashboard, Ajustes, Plug-ins, Impedimentos nem sem projeto.
+- CONFERIR rodando: layout da faixa no topo e rolagem em janela pequena.
+- DECIDIR: a trilha do design da tela 16 (tradicional, 6 passos) difere da trilha gerada pelos módulos (uma só); implementar trilha por metodologia?
+- DECIDIR: títulos dos passos devem citar a tela ("Planeje a sprint: abre Sprints")? Textos do design diferem levemente dos do manifesto (vivem no `core`).
+- DECIDIR: experiência "sempre" mantém o card escondido (sem ponte)? Impedimentos deve ter o guia?
+- Nota: `guide-fixtures.ts` usa `doneWhen` antigos que não batem com os eventos reais.
+
+## Fidelidade das telas 01 e 02 (F2)
+
+- Wizard e recomendação refeitos conforme o design (contador fixo "de 6", trilho com "Respondendo agora"/"e pergunta 6", título 32/40 px, interruptor verde, cartão "Pergunta 6 de 6", sem "Cancelar" no rodapé da recomendação; Esc cancela). Tokens novos: `--color-status-concluido-text`, `--color-switch-on`. Não vi rodando.
+- DECIDIR: estado DESLIGADO do interruptor não está no design (usei trilho `hairline-strong` e botão `text-muted`). Seção "Desligados" não existe no design (mantida, é a única forma de religar ali). Botão "Pular" é `<button>`, não `<a>`.
+- Ficaram para o passo F2a (textos do core): propósito do preset e motivos por módulo gerados pelas respostas, nomes "Estimativa"/"Burndown", "Os outros N ficam em Módulos" + "Ver todos", regra de "Algumas vezes".
+- Tokens para a escala tipográfica (13/14.5/15/17/32/40 px) e para o vidro `rgba(38,37,46,…)` se repetem em ~20 telas: criar tokens num passo próprio? (hoje valores literais sem hex nos módulos CSS)
+
+### F2a: textos do core e regras da recomendação (feito; revisar)
+
+Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recommendationSummary`), um motivo por módulo em uma frase, nomes do design, extras de equipe experiente só com "Sempre", nota com "Os outros N ficam em Módulos." e "Ver todos". O exemplo do design sai exato nos testes.
+
+- INVENTADO, revisar: fechamentos de Kanban, Tradicional, Híbrido e Simples (`CLOSING` em `wizard.ts`); o Ágil veio do design. Ex.: "Marcos e cronograma mostram o caminho até a data final, passo a passo."
+- INVENTADO, revisar: motivos que o design não mostra: Sprints no Híbrido, Estimativa sem controle de horas, Backlog com escopo definido ou parcial, e os módulos fora do exemplo (Limites WIP, Critério de pronto, Marcos, Cronograma, EAP, Riscos, Linha de base, Métricas de fluxo, Agenda, e demais). Alguns vêm das descrições de `Modulos.dc.html` ("Avisa quando há tarefas demais em andamento.", "Mostra se a sprint vai fechar."), o resto é meu.
+- INVENTADO: frases de "resumo" para trabalho contínuo ("sem começo e fim") e escopo parcial ("com parte do escopo definida"); e a nota no singular ("O outro módulo fica em Módulos.").
+- DECIDIR: "Algumas vezes" não põe os extras na lista; só "Sempre" põe. O ADR-10 (coluna "equipe experiente" e "Regras dos presets") dizia o contrário. Segui o design. O ADR precisa ser atualizado, ou a regra volta.
+- DECIDIR: "Ver todos" abre uma lista inline, só leitura, com os outros módulos. O design leva à tela Módulos, mas a recomendação acontece antes de o projeto existir. Opção: depois de criar, abrir a tela Módulos do projeto.
+- DECIDIR: a Agenda vem junto por dependência das Cerimônias, mas não aparece na lista (o design não a mostra). Continua no payload de criação.
+- DECIDIR: a ordem da lista "Vai ligar" é a do design (Backlog, Sprints, Estimativa, Custo, Cerimônias, Atualização diária), não a do catálogo. Os outros módulos seguem a ordem do catálogo. Qual é a regra?
+- DIVERGÊNCIA: "Os outros N" conta com os 15 módulos de `Modulos.dc.html`. A tela Módulos do app mostra 20 (inclui o grupo "Outros": Agenda, Impedimentos, Critérios de aceitação, Subtarefas, Estimativa em pontos). Com o app atual, a conta daria 12, não 7. Decidir: tirar o grupo "Outros" da tela Módulos (como o design), ou aceitar 12. A lista fica em `MODULES_SCREEN_IDS` (`recommendation-state.ts`).
+- DIVERGÊNCIA: a barra lateral segue "Entregas (EAP)" (como em seis telas do design), e só a tela Módulos e a recomendação usam "EAP (Entregas)". Confirmar qual vale.
+- DIVERGÊNCIA com o ADR: no nível "Nunca" o ADR pede a explicação do jargão ("Entregas (EAP)", "Limite de tarefas em andamento (WIP)"). Os nomes novos ("EAP (Entregas)", "Limites WIP") não trazem a explicação. Não implementado.
+- Nomes alterados (`MODULE_LABELS` e manifestos; ids não mudaram): Estimativa (era "Estimativas em horas"), Atualização diária (era "Check-ins"), Limites WIP, Cerimônias (era "Review e retro"), Burndown e velocidade (era "Burndown e velocity"), EAP (Entregas). Na nota usa-se "Burndown" curto (`MODULE_SHORT_LABELS`).
+
+## Fidelidade da tela 03 Módulos (F2)
+
+- Tela refeita conforme o design: h1 "Módulos", selo "Começou como <metodologia>", "N de 15 ligados" (só os 15 do design), 3 grupos com descrições e dependências do design, cartões, interruptor 36x20, selos, painel lateral. Grupo "Outros" ao final para os módulos que o design não mostra (Agenda, Impedimentos etc.), sem contagem. Tokens novos só desta tela: `--color-switch-off`, `--color-status-desligado`, `--surface-module-on`, `--color-signal-advanced-text`, `--color-signal-advanced-bg`. Não vi rodando.
+- NÃO feito (sem regra/backend): aceite da equipe, votos, "Retirar proposta", "Desligamento proposto", "aguardando a equipe". O painel lateral mostra a mudança pendente com "Liga junto/Sai junto", "O que acontece" (do plano do core), aviso de sprint ativa (depois da resposta do servidor) e Confirmar/Cancelar.
+- DECIDIR: o design diz que Cerimônias "Requer Sprints", mas o catálogo exige Sprints e Agenda; Burndown "Requer Sprints, Estimativa" mas aceita horas OU pontos. Mantive o texto do design.
+- DECIDIR: painel abre para toda mudança pendente (não só com efeitos). Prefere confirm inline quando não há efeitos?
+- DECIDIR: "Começou como Tradicional" (nome completo) vs "Trad." da barra lateral.
+
+## Fidelidade das telas 04, 05 e 06 (F2, passos 04/05/06)
+
+- Feito: cartão "Primeiros passos" no design (superfície sólida, cabeçalho, barra de 140 x 4 px na cor de ação, lista de passos com marcas de 20 px, passo atual em três colunas: por que existe, o que fazer agora, o que vem depois); textos de passos do core alinhados ao design ("Estime os primeiros itens", "Crie a primeira sprint", "Leve itens para a sprint", "Marque a planning", "Atualize pela bandeja", "Ordene pela importância" com o "por que" do design); botão "?" como ícone de 36 px; painel "Como funciona" com medidas, título de 28 px, tag de nível, botão Fechar em ícone e "Rever os primeiros passos de <módulo>"; boas-vindas com título de 30 px, trilha em bloco, passos numerados sem círculo e botões do design. Tokens novos: `--glass-dialog`, `--glass-dialog-backdrop`, `--shadow-dialog`.
+- DECIDIR (04): o quadro vazio do design mostra 4 colunas e "O quadro mostra a sprint em andamento". O quadro do app tem 5 estados (CLAUDE.md, com Planejamento) e mostra todas as tarefas, não só a sprint. Não foi trocado. Falta também o balão "Primeira vez" (depende de `firstTimeHints`, que não tem tela) e a legenda "Você chega aqui no passo 4" (precisa da posição no guia).
+- DECIDIR (04): o design traz, por passo, um texto de "O que fazer agora" e um "por que" mais longo. Só o passo 2 tem esse texto; não foi inventado para os outros. Hoje a coluna mostra o botão e a orientação de quando (bandeja).
+- DECIDIR (04): o design usa "Diária" como etiqueta do passo da bandeja; o app mostra "Atualização diária" (nome do módulo na Módulos).
+- DECIDIR (04): botões do cabeçalho e da ação com 36/40 px (design). O padrão do app é 44 px (`--size-touch-target`); mantido o do design, confirmar.
+- DECIDIR (05): "O fluxo de cada sprint" com descrição por etapa ("Meta e itens do backlog" etc.) e o título "Palavras que você vai ver" (glossário): não existem nos manifestos. Ficaram de fora; o rótulo genérico é "Fluxo" e as etapas mostram só o nome.
+- DECIDIR (05): "Desligado · ligar" (link para ligar o módulo daqui) e "Mudar para mim" (nível por pessoa) não existem. O véu escurece a janela inteira; o design só a área à direita da barra lateral (depende do estado recolhido da barra).
+- DECIDIR (06): "Agora / Com você / Meta" (sprint atual, tarefas do usuário, meta) e a trilha própria do design não têm dado no backend; seguem as decisões de ADR-10 (item de boas-vindas acima). A descrição da metodologia ("sprints de 2 semanas", "atualização diária pela bandeja") também não existe no app; mantido "Este projeto começou como …".
+- DECIDIR (06): o design posiciona a janela em (456, 150); o app centraliza a janela na tela. Mantido centrado.
+- Texto removido por não ter fonte: "Leva uns 2 minutos" (o design afirma o tempo; nada no app calcula). Contagem de passos agora "N passos, ajustados ao que já existe aqui.".
+- Não visto rodando no Electron (só testes e tipos).
+
+## Fidelidade das telas 07 e 08 (sprints) (F2)
+
+- Planejar sprint: cabeçalho "Planejar Sprint N" com Rascunho/período/dias úteis, faixa meta/período/estimativa, Backlog × Sprint lado a lado com arrastar para levar item. Sprint ativa: cabeçalho com datas, Editar, Encerrar sprint, Nova tarefa; faixa Meta / Dia X de Y / Restante / miniatura do burndown; quadro de 4 colunas (Planejamento só se houver item); cartões com chave, título e horas. Não vi rodando.
+- Mantido fora do design (função não pode sumir): abas Planejamento/Ativa/Encerradas e seletor de projeto, "Editar", cerimônias (B3), "Adicionar do backlog". DECIDIR se mantém as abas.
+- NÃO implementado (sem dado/regra): capacidade da sprint e por pessoa ("62 h de 80 h", "Carga por pessoa"), avatar do responsável e "3 de 4 atualizaram hoje", "Parada 3d", linha "Planning · seg 24/11, 9:00" (sprint sem vínculo com a Agenda), atalho N. Quer entrar no backlog de produto como pendências de domínio?
+- Textos novos meus: "Sem meta definida.", "Estimado nesta sprint", "Média de N sprints encerradas: X h.", "Sem sprint encerrada para comparar.", "sem estimativa", "No ideal".
+- DECIDIR: "Nova tarefa" na sprint ativa cria no backlog (não entra direto na sprint). Ícone de remover só no hover/foco. Quatro colunas vs cinco fixas.
+- Dado do mockup: "seg 24/11 → sex 05/12, 10 dias úteis" não bate com o calendário de 2026 (24/11 é terça, 05/12 é sábado; 9 dias úteis). O app usa o calendário real.
+
+## Fidelidade das telas 09, 10 e 11 (F2)
+
+- 09 Critério de pronto ao concluir: diálogo "Antes de concluir" com rótulo da tarefa, contador x/y, "Voltar para <estado de origem>". NÃO feito: "Concluir mesmo assim" / "aceite pendente" (o servidor recusa concluir sem confirmar), linha de critérios de aceite da tarefa, nota "editado em Módulos". DECIDIR: quer a regra de aceite pendente no domínio (e no dashboard)?
+- 10 Burndown: cabeçalho "Sprint N · dia X de Y", 4 cartões do design onde há dado, gráfico 760x300 com previsão de fim/hoje, velocidade em colunas com média. NÃO feito (sem regra/dado): cartões "Ritmo real", "Previsão", "Para fechar no dia 10", barras "Comprometido" por sprint, "O que está segurando". DECIDIR: regras de ritmo/previsão e horas comprometidas por sprint no DTO; eixo X em data (como está) ou número do dia (design)?
+- 11 Encerrar sprint e retro: diálogo em duas colunas (resumo, itens abertos, destino, velocidade registrada; retro com os combinados da sprint). NÃO feito: "A meta foi atingida? Sim/Em parte/Não" (sem persistência), destino por item (política é por sprint), colunas Manter/Melhorar/Tentar com votos, "ações viram tarefa no backlog", "4 de 4 participaram". DECIDIR cada uma.
+- Modal em `packages/ui` ganhou `surface` (glass) e `size` (wide). O véu do Modal escurece a janela inteira; o design é painel flutuante sem véu. Textos novos meus: "Falta/Faltam N itens para concluir.", "Nenhuma retrospectiva agendada para esta sprint." e variações.
+
+## Telas 13 a 16, tradicional (F2, telas 13 a 16 do design)
+
+- Feito: EAP (13) em tabela com códigos, barras, marcos com data, aviso de atraso e resumo; cronograma (14) com interruptor de linha de base, barras de atraso frente à base e legenda do design; acompanhamento (15) unindo marcos, linha de base e riscos (matriz 3 × 3 e lista); primeiros passos da EAP vazia (16) com o exemplo ao lado do passo 1.
+- DECIDIR: a tela 15 mostra marcos, linha de base e riscos como leitura, e os botões "Tirar nova foto" e "Novo risco" abrem as telas próprias. As telas Marcos, Riscos e Linha de base continuam na barra lateral. O design 13 a 16 não lista essas três entradas na barra: manter ou sair da barra?
+- DECIDIR: as ações de linha da EAP (subir, descer, renomear, subentrega, remover) aparecem ao passar o mouse ou focar a linha, numa barra flutuante. O design não mostra ações; a alternativa é deixá-las sempre visíveis (a tabela fica mais larga).
+- DECIDIR: "Nova entrega" continua com o "+" (pedido do item 3). O design mostra o botão sem o ícone.
+- DECIDIR: a linha de base vale como atraso quando a tarefa atrasou frente à foto (âmbar), e também quando o prazo passou sem concluir. Antes, o atraso por prazo era vermelho; o design só tem a legenda "Atrasada em relação à base". Manter o âmbar para os dois casos?
+- DECIDIR: "Atrasada N dias" usa o prazo (tarefa sem concluir com prazo antes de hoje). Não há um atraso por tarefa separado disso.
+- DECIDIR: os riscos "R1", "R2" são a posição na lista (ordenada por pontuação), então mudam quando a pontuação muda. Precisa de código fixo por risco? Riscos encerrados entram na matriz e na lista.
+- DECIDIR: a legenda do cronograma perdeu "Futura" e "Dependência com conflito", como no design; o conflito continua no aviso "Atenção" abaixo do gráfico.
+- Não implementado (sem dado ou regra no app):
+  - EAP: "Período" (início e fim) de entrega e tarefa. O WBS não traz datas de início. Usar o cronograma para isso marcaria o passo "Acompanhe pelo cronograma" do guia, então não foi feito.
+  - EAP: "Prazo final" do projeto. Não existe data de fim do projeto (o cronograma só tem o intervalo das tarefas).
+  - EAP e cronograma: progresso parcial de tarefa (%). O app só tem 0% e 100%; a tarefa mostra o estado.
+  - EAP: passo do guia "Importar de planilha". Sem a funcionalidade.
+  - EAP: "Projeto novo · Tradicional" no cabeçalho vazio. Não há conceito de "projeto novo" na tela.
+  - Guia da EAP vazia: o design diz que o passo se conclui com 2 entregas; a regra do servidor é 1 entrega. O texto ficou com a regra atual. Trilha de 6 passos do tradicional: ver a pendência "trilha do design da tela 16" da seção Guia.
+  - Acompanhamento: "Exportar relatório de status".
+  - Acompanhamento: "a base previa 38% até hoje · −4 pts" e o gráfico de avanço planejado × real. Falta série semanal na linha de base.
+  - Acompanhamento: "quem aprova cada um" nos marcos e "Aprova: Diretoria (entidade)". Não há aprovadores por marco; o app mostra o critério do marco no lugar.
+  - Acompanhamento: "Propor nova base" e "Uma nova base passa pelo aceite da equipe". Não há aceite; o app tira a foto direto (só gestor) e o botão diz "Tirar nova foto".
+- Textos do design que mudaram: "Enter para a próxima" (no lugar de "Enter cria e vai para o próximo"), "Horas: de 590 h previstas no projeto", a frase da EAP "...aparecem no quadro e no cronograma".
+- CONFERIR na tela: 1280 e 1440 px, tabela da EAP com ações flutuantes, matriz de riscos e cores de calor, interruptor da linha de base, rolagem da raiz das quatro telas.
+
+## Telas 17 e 18, híbrido (plano e sprint dentro da entrega)
+
+- Feito: "Plano" (17) na barra do projeto, antes do Quadro, com a EAP e as sprints ligadas (o gate é o mesmo da EAP e das Sprints). Linha do tempo com entregas (faixas que se sobrepõem vão para outra linha), marcos e sprints; entrega atual com marco, sprints que a atravessam e o que falta; próximas entregas; painel "Como o híbrido funciona" com o texto do design. Sprint dentro da entrega (18): trilha da entrega, título, datas com dia útil, contexto (progresso, marco e meta), selo E# em cada cartão, aviso de item que não é da entrega com "Devolver ao backlog", e o quadro da sprint reaproveitado.
+- DECIDIR: a faixa da entrega vai da primeira à última sprint que tem tarefas dela. O app não tem data de início nem de fim por entrega, então isso é derivado. Entrega sem nenhuma sprint não tem faixa no tempo.
+- DECIDIR: "Abrir Sprint N" usa a sprint ativa e a entrega que tem mais itens nela. Sprint também abre pelo número na entrega atual.
+- DECIDIR: "Plano" aparece em qualquer projeto com EAP e sprints ligadas, não só no híbrido (é o gate pedido). Quer um filtro pelo preset?
+- DECIDIR: a regra "item novo fora da entrega pede aprovação" está no painel do design, mas o app não tem aprovação. O texto ficou como no design. Quer a regra no domínio?
+- DECIDIR: "Mover para a Entrega 2" e "Propor incluir na Entrega 1" (18) não foram feitos. Mover direto burla a aprovação acima. Só "Devolver ao backlog" existe.
+- DECIDIR: os itens das sprints vêm do detalhe de cada sprint (uma consulta por sprint). Para colaborador, o detalhe pode trazer só as tarefas dele, enquanto a EAP traz todas. Os números podem não bater. Conferir.
+- NÃO implementado (sem dado ou regra no app):
+  - "Prazo final · sex 27/02/2027" no cabeçalho do plano: não há data de fim do projeto.
+  - "Ocupa toda a capacidade da Sprint 2 (30 h)" e "30 h de 30 h de capacidade": não há capacidade de sprint.
+  - "Carla trouxe AB-212 ... passa a capacidade em 8 h": o app não guarda quem trouxe o item para a sprint nessa tela. O alerta é genérico.
+  - "Sprint 1 concluída · esta é a última sprint da entrega": a última sprint da entrega não é um dado. A tela mostra "Sprints desta entrega: S1, S2".
+  - Avatares dos cartões da sprint (design mostra as iniciais de quem faz). O quadro da 08 não tem avatar.
+  - Atalho N em "Nova tarefa" (já pendente na Sprint).
+- Textos novos meus (revisar): "Sprints desta entrega: S1, S2", "Sem sprint com itens desta entrega.", "Sem entrega: os itens desta sprint não estão ligados à EAP.", "X h planejadas nesta sprint", "Itens fora da entrega" (plural), "N itens estão na sprint, mas não são desta entrega. Eles não estão nas entregas planejadas.", "Planejada", "termina em dd/mm", "N dias atrás", "Sem marco ligado a esta entrega.", "Nenhuma outra entrega em aberto.", "Cadastre as entregas na EAP para ver o plano.", "Escolha um projeto para ver o plano.".
+- Dado do design: "sex 28/11" não bate com 2026. 28/11/2026 é sábado, e a dia 17/11 até 28/11 são 9 dias úteis (o design diz 10). O app usa o calendário real ("sáb 28/11", "dia 2 de 9").
+- Próximas entregas: o design diz "12 itens no backlog, 3 sem estimativa". O app mostra "N itens, M sem estimativa" dos itens da entrega, porque não separa o backlog por entrega nessa tela.
+- Quadro da sprint (18): as quatro colunas do design; se houver item em Planejamento, aparece a quinta coluna (regra da tela 08).
+- Tokens novos: `--color-deliverable*` (entrega: barra, marco e selo E#) e `--surface-column` (#141318, que antes estava literal em Sprints, EAP e Plano; mesmo valor).
+- Literais no CSS do plano: cores de status das sprints na faixa (`#22352b` fechada, `#2d3f5c` ativa). Só o plano usa. Virar token se outra tela precisar.
+- CONFERIR: 1280 e 1440 px; faixas que se sobrepõem em duas linhas; "Abrir Sprint" sem sprint ativa; sprint 18 de uma entrega sem itens; entrega atual sem sprint (só marco e falta); o colaborador vendo o plano.
+
+## Telas 19 e 20, dashboard do gestor e Atualizações (F2)
+
+- Feito: dashboard (19) no layout do desenho: cabeçalho com "Semana N · dd–dd mês" e quatro filtros (Projetos, Metodologia e Pessoa funcionam; Mini-equipe é estático), "Precisa de você", cartões por projeto com a forma de medir da metodologia, "Equipe em todos os projetos". Atualizações (20) como página: filtros à esquerda (visões, tipos, projeto, pessoa, "Agrupar por tarefa", "Mostrar minhas edições") e feed por dia. Os cartões e os sinais saem dos casos de uso que já existiam (acompanhamento, burndown, linha de base, fluxo, marcos, WIP, critérios de aceite e linha do tempo), respeitando o módulo ligado em cada projeto.
+- DECIDIR (regra provisória, `core/rules/dashboard-health.ts`): o design mostra Em dia, Atenção e Risco com motivo, mas nenhum documento diz quando cada um vale. Usei: Risco com tarefa vencida, marco em risco ou coluna acima do limite de WIP; Atenção com tarefa parada há mais de 4 dias, tarefa bloqueada ou fim previsto depois da linha de base; Em dia no resto. Confirme ou mude.
+- DECIDIR: "Precisa de você" mostra WIP acima do limite, marco em risco e aceite pendente (tarefa concluída com critério não atendido). Ficaram de fora "Fora da entrega" (falta a regra: item de sprint fora da entrega) e "Proposta" (falta a regra "gestor propõe, equipe aceita").
+- DECIDIR: a coluna "Carga da semana" mostra as horas estimadas das tarefas abertas da pessoa, sem barra. O desenho mostra "h / 40 h": não há capacidade por pessoa no app (mesma pendência de "Carga por pessoa" da tela 07).
+- DECIDIR: removi do dashboard o seletor de semana, "Quadro em dia", "Fluxo de seis semanas" e os cartões de exceções (bloqueadas, paradas, vencidas), porque o desenho não tem. Os números continuam no contrato e no resumo exportado. Quer algum deles de volta em outra tela?
+- DECIDIR: o botão "Exportar resumo" ficou no cabeçalho, fora do desenho. O botão "Ver" da daily também ficou, ao lado de "✓ respondida" (o desenho não tem o botão).
+- DECIDIR: as cores dos projetos são as da barra lateral (derivadas do id), não as do desenho (que são de dados de exemplo). O rótulo "Concluído contra a base" aparece quando há linha de base.
+- DECIDIR: o desenho usa "Semana 47 · 17–21 nov" (segunda a sexta). O app mostra segunda a sexta da semana do painel, com o número da semana ISO.
+- NÃO implementado (sem dado ou regra no app):
+  - Visões de Atualizações "Commits sem tarefa" (plug-in, fora do MVP) e "Escopo e módulos" (sem evento de módulo na linha do tempo). Omitidas.
+  - Tipos "Fora da entrega", "Propostas de módulo", "Commit via plug-in" e "Diária" (sem evento na linha do tempo). Omitidos da barra lateral de Atualizações.
+  - "Salvar como visão" e "Marcar como vistas": não há visões salvas nem marca de leitura. Omitidos.
+  - "Mini-equipe" (visão Equipe): estático, como combinado.
+  - Cartão de Ágil: "previsão: termina no dia 12". O app mostra "termina em dd/mm" (o fim planejado da sprint), sem previsão.
+  - Cartão de Tradicional: "de 38%" (o planejado até hoje). A linha de base não tem avanço planejado por dia. O app mostra só o concluído e a semana.
+  - Gráfico pequeno (linha tracejada e real): só onde há série (sprint com burndown e Kanban com vazão semanal). Tradicional e híbrido sem série.
+  - Sinal "Parada 3d" usa os dias desde a última mudança de estado; "+7 dias no ERP" virou "+N dias de atraso" (sem nome de projeto, pela largura).
+  - "Desenvolvendo está com 4 de 3 há 2 dias": o app não diz há quantos dias a coluna passou do limite.
+- Textos novos meus (revisar): "Nenhum sinal pede decisão agora.", "Nenhum sinal de atenção.", "Fim previsto N dias depois da linha de base", "marco venceu há N dias", "marco hoje", "termina em dd/mm", "N tarefas concluídas na semana", "pendente", "N aceites pendentes", "N bloqueadas", "Em aberto" (título dos sinais sem horário), "Outras edições" (tipo genérico), "Filtrar por projeto/metodologia/pessoa" (nome do controle), "foi concluída sem “…”".
+- Texto do desenho mantido, mas descreve tipos que ainda não existem (proposta, commit, parada há 3 dias, diária sem resposta): "Exige ação junta o que só você resolve: …". DECIDIR se fica assim até os tipos existirem.
+- Atualizações: "Mostrar minhas edições" esconde as edições marcadas como Gestor. Com um gestor só, é a mesma coisa; com mais de um, ficaria a dúvida.
+- Atualizações: a janela são os últimos sete dias corridos (até 200 movimentos); "9 de 63 nesta semana" do desenho vira "visíveis de total". "Hoje" e "Ontem" são contados a partir do horário do dado.
+- Custo: o cartão Tradicional mostra "R$ gastos" só para o gestor, com o módulo `cost` ligado no projeto (regra do acompanhamento).
+- Desempenho: o dashboard agora chama, para cada projeto, os casos de uso de acompanhamento, burndown, linha de base e fluxo (cada um relê tarefas e linha do tempo). Com muitos projetos, medir o tempo de resposta.
+- Arquivos de componentes sem uso removidos: `CollaboratorTable.tsx`, `StatCard.tsx`, `StackedBar.tsx`, `status-colors.ts`.
+- Tokens novos: `--color-signal-ok`, `--color-signal-ok-text`, `--color-signal-ok-bg` (Em dia), `--surface-aside` (coluna de filtros de Atualizações).
+- CONFERIR rodando no Electron: 1280 e 1440 px, rolagem da raiz (`min-height: 0`, `overflow-y: auto`) nas duas telas, tabela da equipe com rolagem horizontal abaixo de 900 px e o aside da tela 20 empilhado abaixo de 900 px.
+- Revisão desta etapa (fidelidade das telas 19 e 20, retomada):
+  - Atualizações: "Mudança de estado", "Comentários" e "Outras edições" começam desmarcados, como no desenho (que deixa esses dois de fora). "Outras edições" é do app (não está no desenho) e segue o mesmo padrão.
+  - Atualizações: sinal com hora (WIP, aceite) entra no dia dele ("Hoje"/"Ontem"), como no desenho. Marco sem hora fica em "Em aberto" (título do app, não está no desenho).
+  - Atualizações: "Marcar como vistas" e "Salvar como visão" aparecem desabilitados (botões do desenho sem dado no backend). Mesmo critério do "Mini-equipe".
+  - Atualizações: o filtro de WIP por ferramenta agora vale também nesta tela (antes só o painel aplicava).
+  - Equipe: todos os sinais usam o tom de atenção do desenho (antes o overdue e o bloqueio eram vermelhos).
+  - Equipe: a coluna "Carga da semana" e a legenda "Carga soma as estimativas…" só aparecem com `estimates.hours` ligado. O Básico não tem estimativa e o termo "estimativas" está na lista de termos proibidos do Básico. DECIDIR: a legenda some no Básico, como feito, ou fica sem a palavra "estimativas" (texto novo).
+  - Equipe: o botão "Ver" da diária continua (não está no desenho). DECIDIR: manter ou tirar (sem ele, a diária só se vê pela bandeja).
+  - Tokens novos (`packages/ui/src/styles/tokens.css`): `--color-tint-faint`, `--color-tint-soft`, `--color-tint-chip`, `--color-tint-tag`, `--color-divider`, `--color-control-border`. Substituem `rgba(255,255,255,…)` repetidos nos módulos do dashboard.
+  - Testes ajustados ao desenho (sem asserts enfraquecidos): `App.manager` (seletor de semana e cartões de exceção trocados pelos sinais da equipe e por "Precisa de você"); `App.basic-flow`, `App.scrum-basic` (mesmas checagens de ausência, nos seletores novos); `App.tools-audit` (sondas do painel nos elementos novos; a linha "fluxo de seis semanas" saiu do snapshot, porque a seção não existe mais; o fluxo chega pelos cartões, e a regra dele é coberta em `get-dashboard.test.ts`); `updates-feed.test`, `UpdatesView.test` (dia dos sinais e tipos padrão). Fixture `managerDashboard` ganhou um WIP em "Precisa de você" e uma parada na equipe, para o relatório de níveis medir essas linhas.

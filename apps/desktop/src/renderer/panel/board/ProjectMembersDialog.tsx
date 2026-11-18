@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ProjectDto } from '@agilebox/contract'
-import { Button, Modal } from '@agilebox/ui'
+import { AddButton, Button, Modal } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { panelCopy } from '../copy'
@@ -85,14 +85,14 @@ export function ProjectMembersDialog({ project, onClose }: ProjectMembersDialogP
               </option>
             ))}
           </select>
-          <Button
+          <AddButton
             type="button"
             variant="primary"
             disabled={!selected || add.isPending}
             onClick={() => add.mutate(selected)}
           >
-            {panelCopy.add}
-          </Button>
+            {panelCopy.addMember}
+          </AddButton>
         </div>
         {add.isError || remove.isError ? <p role="alert">{panelCopy.membersError}</p> : null}
       </div>

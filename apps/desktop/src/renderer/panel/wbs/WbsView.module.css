@@ -5,9 +5,9 @@
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: var(--space-5);
+  gap: var(--space-4);
   min-width: 0;
-  padding: var(--space-5) var(--space-6) var(--space-7);
+  padding: var(--space-4) var(--space-6) var(--space-6);
 }
 
 .header {
@@ -24,19 +24,21 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-title);
+  font-size: var(--font-size-heading);
   font-weight: 620;
   letter-spacing: var(--letter-spacing-display);
 }
 
 .tag {
-  padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
   border-radius: var(--radius-badge);
   background: var(--glass-control);
   color: var(--color-text-muted);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-chip);
-  line-height: 22px;
+  font-size: 11.5px;
 }
 
 .project {
@@ -86,20 +88,20 @@
   border: 0;
 }
 
-/* Resumo: quatro medidas em linha, a última com a barra. */
+/* Resumo: quatro medidas em linha, a última com a barra. Cartão sólido, como no design. */
 .summary {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-5);
-  padding: var(--space-3) var(--space-4);
-  border: var(--glass-group-border);
-  border-radius: var(--radius-group);
-  background: var(--glass-group);
+  gap: 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  background: var(--surface-panel);
 }
 
 .metric {
   display: grid;
-  gap: var(--space-1);
+  gap: 2px;
   min-width: 0;
 }
 
@@ -109,23 +111,23 @@
 }
 
 .metricLabel {
-  color: var(--color-text-muted);
+  color: var(--color-text-subtle);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-label);
+  font-size: var(--font-size-chip);
   letter-spacing: var(--letter-spacing-eyebrow);
   text-transform: uppercase;
 }
 
 .metricValue {
   font-family: var(--font-family-display);
-  font-size: var(--font-size-metric);
+  font-size: 22px;
   font-weight: 620;
 }
 
 .progressLine {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 /* Barra de progresso: 100% é concluído; zero fica sem cor. */
@@ -135,8 +137,13 @@
   height: 8px;
   min-width: 80px;
   border-radius: 4px;
-  background: var(--color-hairline-strong);
+  background: var(--glass-control);
   overflow: hidden;
+}
+
+.trackSummary {
+  height: 8px;
+  border-radius: 4px;
 }
 
 .fill {
@@ -147,19 +154,21 @@
   transition: width var(--motion-duration-control) var(--ease-ios);
 }
 
+/* Em andamento: azul do estado Desenvolvendo. Concluído: verde. Resumo: sempre verde (design). */
 .fill[data-tone='started'] {
-  background: var(--color-primary-bg);
+  background: var(--color-status-desenvolvendo);
 }
 
-.fill[data-tone='done'] {
+.fill[data-tone='done'],
+.fill.fillSummary {
   background: var(--color-status-concluido);
 }
 
 .card {
   min-width: 0;
-  border: var(--glass-group-border);
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
-  background: var(--glass-group);
+  background: var(--surface-panel);
 }
 
 .tableWrap {
@@ -168,14 +177,14 @@
 
 .table {
   width: 100%;
-  min-width: 880px;
+  min-width: 940px;
   border-collapse: collapse;
   font-size: var(--font-size-body-small);
 }
 
 .table th,
 .table td {
-  padding: 0 var(--space-3);
+  padding: 0 12px;
   border-top: 1px solid var(--color-hairline);
   text-align: left;
   vertical-align: middle;
@@ -186,31 +195,81 @@
   border-top: 0;
   color: var(--color-text-muted);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-label);
+  font-size: var(--font-size-chip);
   font-weight: 400;
   letter-spacing: var(--letter-spacing-eyebrow);
   text-transform: uppercase;
 }
 
+.table th:first-child,
+.table td:first-child {
+  padding-left: 10px;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 16px;
+}
+
 .colCode {
-  width: 72px;
+  width: 56px;
 }
 
 .colResp {
-  width: 170px;
+  width: 44px;
 }
 
 .colNum {
+  width: 64px;
+  text-align: right;
+}
+
+.colCost {
   width: 92px;
   text-align: right;
 }
 
 .colProgress {
-  width: 180px;
+  width: 160px;
 }
 
+/* Coluna de ações: não ocupa espaço; a barra de ações flutua sobre a linha no hover ou no foco. */
 .colActions {
-  width: 360px;
+  width: 0;
+}
+
+.actions {
+  position: relative;
+  width: 0;
+  padding: 0 !important;
+}
+
+.actionOverlay {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  gap: 4px;
+  min-width: max-content;
+  padding: 4px;
+  border-radius: var(--radius-field);
+  background: var(--surface-card);
+  box-shadow:
+    0 0 0 1px var(--color-hairline-strong),
+    0 12px 30px rgba(0, 0, 0, 0.45);
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-card-hover) var(--ease-ios);
+}
+
+.deliverableRow:hover .actionOverlay,
+.deliverableRow:focus-within .actionOverlay,
+.taskRow:hover .actionOverlay,
+.taskRow:focus-within .actionOverlay {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .deliverableRow td,
@@ -221,8 +280,9 @@
   height: 46px;
 }
 
-.deliverableRow {
-  background: var(--surface-raised);
+/* Entregas de topo ganham um tom sutil; subentregas e tarefas ficam no fundo do cartão. */
+.deliverableRow[data-level='1'] {
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .code {
@@ -248,29 +308,49 @@
 
 .deliverableTitle {
   min-width: 0;
-  font-size: var(--font-size-body);
+  font-size: 13.5px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.deliverableRow[data-level='1'] .deliverableTitle {
+  font-size: 14.5px;
+}
+
 .taskTitle {
   min-width: 0;
+  font-size: 13.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Botão de recolher: alvo de 44 px; o ícone fica no centro. */
+/* Aviso de atraso da tarefa, no mesmo tom do aviso de atenção. */
+.warn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Botão de recolher: 28 px, como no design; o ícone fica no centro. */
 .expander {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--size-touch-target);
-  height: var(--size-touch-target);
-  margin: 0 calc(var(--space-2) * -1) 0 calc(var(--space-2) * -1);
+  width: 28px;
+  height: 28px;
+  margin: 0 0 0 -6px;
   padding: 0;
   border: 0;
   border-radius: var(--radius-chip);
@@ -294,7 +374,7 @@
 
 .expanderSpacer {
   flex: none;
-  width: 28px;
+  width: 22px;
 }
 
 .chevron {
@@ -311,11 +391,11 @@
   align-items: center;
   gap: 6px;
   height: 22px;
-  padding: 0 var(--space-2);
+  padding: 0 8px;
   border-radius: var(--radius-chip);
-  background: var(--surface-raised);
+  background: var(--glass-control);
   color: var(--color-text-body);
-  font-size: var(--font-size-small);
+  font-size: 11.5px;
   white-space: nowrap;
 }
 
@@ -328,6 +408,7 @@
 
 .resp {
   color: var(--color-text-muted);
+  text-align: center;
 }
 
 .person {
@@ -359,7 +440,7 @@
 
 .num {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-small);
+  font-size: 12.5px;
   text-align: right;
   white-space: nowrap;
 }
@@ -367,13 +448,13 @@
 .progress {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
 }
 
 .percent {
-  width: 40px;
+  width: 36px;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-small);
+  font-size: 12px;
   text-align: right;
 }
 
@@ -388,7 +469,7 @@
 }
 
 .statusDot {
-  margin: 0 var(--space-1);
+  margin: 0 8px 0 4px;
 }
 
 .statusDot[data-status='planning'],
@@ -423,10 +504,6 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
   white-space: nowrap;
-}
-
-.actions {
-  white-space: normal;
 }
 
 .actionList {
@@ -517,13 +594,21 @@
 }
 
 /* Passo 1 (estado vazio que ensina). */
+.startGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
 .start {
   display: grid;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border: var(--glass-group-border);
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
-  background: var(--glass-group);
+  background: var(--surface-panel);
 }
 
 .startHead {
@@ -542,8 +627,9 @@
 .startTitle {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: var(--font-size-title);
+  font-size: var(--font-size-heading);
   font-weight: 620;
+  letter-spacing: -0.015em;
 }
 
 .startText {
@@ -556,35 +642,40 @@
 
 .startFields {
   display: grid;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
+/* Campo do passo: 48 px; o primeiro, onde se digita agora, tem a borda de destaque. */
 .startField {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: var(--size-touch-target);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-field-border);
+  gap: 12px;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-field);
-  background: var(--color-field-bg);
+  background: var(--surface-canvas);
+}
+
+.startField[data-first='true'] {
+  border: 1.5px solid var(--color-accent-text);
 }
 
 .startNumber {
   color: var(--color-text-muted);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-small);
+  font-size: 12px;
 }
 
 .startInput {
   flex: 1;
   min-width: 0;
-  height: var(--size-touch-target);
+  height: 100%;
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
   font: inherit;
-  font-size: var(--font-size-body);
+  font-size: 14.5px;
   font-weight: 500;
 }
 
@@ -607,20 +698,20 @@
 
 .tip {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  border-radius: var(--radius-field);
-  background: var(--surface-sunken);
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .tipTitle {
-  font-size: var(--font-size-body-small);
+  font-size: 13px;
   font-weight: 600;
 }
 
 .tipText {
   color: var(--color-text-muted);
-  font-size: var(--font-size-small);
+  font-size: 12.5px;
   line-height: 1.45;
 }
 
@@ -628,13 +719,81 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
+  gap: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--color-hairline);
 }
 
 .startFooter .muted {
   flex: 1;
+  font-size: 12.5px;
+  color: var(--color-text-subtle);
+}
+
+/* Exemplo ao lado do passo 1: texto fixo do design, sem dados do projeto. */
+.example {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-column);
+}
+
+.exampleTitle {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  font-weight: 400;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+
+.exampleList {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exampleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.exampleRow[data-level='0'] {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.exampleRow[data-level='1'] {
+  padding-left: 18px;
+}
+
+.exampleCode {
+  width: 34px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+}
+
+.exampleNote {
+  margin: 6px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 960px) {
+  .startGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .footer {
@@ -644,7 +803,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .fill,
-  .chevron {
+  .chevron,
+  .actionOverlay {
     transition: none;
   }
 }

@@ -64,7 +64,7 @@ describe('NewProjectWizard: perguntas 1 a 5', () => {
     )
   })
 
-  it('trabalho contínuo pula data e escopo e o contador acompanha', async () => {
+  it('trabalho contínuo pula data e escopo, mantém o total de 6 e o contador segue o trilho', async () => {
     const { user } = setup()
     await startWith(user)
     expect(screen.getByText('Pergunta 1 de 6')).toBeTruthy()
@@ -74,7 +74,7 @@ describe('NewProjectWizard: perguntas 1 a 5', () => {
     await user.click(continueButton())
 
     expect(question('Alguém de fora acompanha por entregas e datas?')).toBeTruthy()
-    expect(screen.getByText('Pergunta 2 de 4')).toBeTruthy()
+    expect(screen.getByText('Pergunta 4 de 6')).toBeTruthy()
     expect(screen.getByText('Faltam 2 perguntas')).toBeTruthy()
     const rail = screen.getByRole('list')
     expect(within(rail).getAllByText('Não se aplica')).toHaveLength(2)

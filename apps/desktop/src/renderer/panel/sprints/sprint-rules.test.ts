@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import type { SprintDto, SprintHistoryRowDto, TaskDto } from '@agilebox/contract'
 import {
+  arrowRange,
   carryTargets,
   closeSummary,
   groupByStatus,
   heldByOtherSprint,
   midSprintTaskIds,
+  paceAgainstIdeal,
   progressOf,
+  remainingHours,
   replanDates,
   sprintMarker,
   sumHours,
   validateSprintForm,
+  weekdayDate,
+  workingDays,
 } from './sprint-rules'
 import { parseDateOnly } from '@agilebox/core'
 
@@ -214,5 +219,51 @@ describe('replanejamento e destinos do encerramento', () => {
       sprint({ id: '01J8Y4G2XK8Z1S6M3Q9W0S004', status: 'active' }),
     ]
     expect(carryTargets(list, PROJECT, SPRINT_A).map((item) => item.id)).toEqual([SPRINT_B])
+  })
+})
+
+describe('Layout do design: horas restantes, dias úteis e datas', () => {
+  it('remainingHours soma a estimativa do que não está concluído (sem estimativa conta zero)', () => {
+    const items = [
+      { status: 'todo', estimatedHours: 8 },
+      { status: 'in_progress', estimatedHours: 6 },
+      { status: 'done', estimatedHours: 10 },
+      { status: 'review', estimatedHours: null },
+    ] as unknown as TaskDto[]
+    expect(remainingHours(items)).toBe(14)
+    expect(remainingHours([])).toBe(0)
+  })
+
+  it('workingDays conta de segunda a sexta, com as duas pontas', () => {
+    // 24/11/2026 é terça e 05/12/2026 é sábado: 9 dias úteis.
+    expect(workingDays('2026-11-24', '2026-12-05')).toBe(9)
+    expect(workingDays('2026-11-21', '2026-11-21')).toBe(0)
+    expect(workingDays('2026-11-16', '2026-11-20')).toBe(5)
+  })
+
+  it('weekdayDate e arrowRange seguem o calendário real', () => {
+    expect(weekdayDate('2026-11-24')).toBe('ter 24/11')
+    expect(arrowRange('2026-11-10', '2026-11-21')).toBe('10/11 → 21/11')
+  })
+
+  it('paceAgainstIdeal diz quantos dias a sprint está atrás da linha ideal', () => {
+    // Ideal cai 2,8 h por dia; no dia 8 (índice 7) o restante é 16 h, igual ao ideal do dia 6.
+    const days = Array.from({ length: 11 }, (_, index) => ({
+      date: `2026-11-${String(10 + index).padStart(2, '0')}`,
+      idealHours: 28 - 2.8 * index,
+      remainingHours: index <= 7 ? [28, 26, 24, 22, 20, 18, 16, 16][index]! : null,
+    }))
+    expect(paceAgainstIdeal(days, '2026-11-17')).toEqual({ day: 8, total: 11, lagDays: 2 })
+    // No dia 1, restante igual ao ideal: no prazo.
+    expect(paceAgainstIdeal(days, '2026-11-10')).toEqual({ day: 1, total: 11, lagDays: 0 })
+  })
+
+  it('paceAgainstIdeal sem medição do dia não inventa atraso', () => {
+    const days = [
+      { date: '2026-11-10', idealHours: 10, remainingHours: null },
+      { date: '2026-11-11', idealHours: 5, remainingHours: null },
+    ]
+    expect(paceAgainstIdeal(days, '2026-11-10')).toEqual({ day: 1, total: 2, lagDays: null })
+    expect(paceAgainstIdeal([], '2026-11-10')).toBeNull()
   })
 })

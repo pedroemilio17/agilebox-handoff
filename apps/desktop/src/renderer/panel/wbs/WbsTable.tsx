@@ -6,8 +6,11 @@ import {
   canHaveSubdeliverable,
   expandableIds,
   formatCost,
+  dayMonthText,
   formatHours,
   initialsOf,
+  overdueDays,
+  overdueText,
   progressTone,
   siblingMove,
   taskStatusText,
@@ -31,6 +34,8 @@ export interface WbsTableProps {
   readonly canEdit: boolean
   /** Módulo `cost` ligado no projeto. Desligado, a coluna de custo não aparece. */
   readonly costEnabled: boolean
+  /** Hoje (AAAA-MM-DD): tarefa com prazo antes dele, sem concluir, ganha o aviso de atraso. */
+  readonly today: string
   readonly onToggle: (id: string) => void
   readonly onRename: (id: string, title: string) => Promise<boolean>
   readonly onCreateChild: (parentId: string, title: string) => Promise<boolean>
@@ -43,7 +48,7 @@ export interface WbsTableProps {
  * `aria-expanded`, e as ações por entrega aparecem só para quem pode editar.
  */
 export function WbsTable(props: WbsTableProps) {
-  const { rows, allRows, collapsed, canEdit, costEnabled } = props
+  const { rows, allRows, collapsed, canEdit, costEnabled, today } = props
   const [editing, setEditing] = useState<Editing | null>(null)
   const idPrefix = useId()
   const expandable = new Set(expandableIds(allRows))
@@ -79,7 +84,7 @@ export function WbsTable(props: WbsTableProps) {
               Horas
             </th>
             {costEnabled ? (
-              <th scope="col" className={styles.colNum}>
+              <th scope="col" className={styles.colCost}>
                 Custo
               </th>
             ) : null}
@@ -102,6 +107,7 @@ export function WbsTable(props: WbsTableProps) {
                   row={row}
                   canEdit={canEdit}
                   costEnabled={costEnabled}
+                  today={today}
                 />
               )
             }
@@ -232,7 +238,7 @@ function DeliverableRows(props: DeliverableRowsProps) {
             {milestones.map((milestone) => (
               <span key={milestone.id} className={styles.milestone}>
                 <span className={styles.diamond} aria-hidden="true" />
-                {milestone.title}
+                {`${milestone.title} · ${dayMonthText(milestone.dueOn)}`}
               </span>
             ))}
           </div>
@@ -245,62 +251,64 @@ function DeliverableRows(props: DeliverableRowsProps) {
         </td>
         {canEdit ? (
           <td className={styles.actions}>
-            <div className={styles.actionList}>
-              {canHaveSubdeliverable(row.level) ? (
+            <div className={styles.actionOverlay}>
+              <div className={styles.actionList}>
+                {canHaveSubdeliverable(row.level) ? (
+                  <button
+                    type="button"
+                    id={props.triggerId('child')}
+                    className={styles.action}
+                    aria-label={`${wbsCopy.subdeliverable} em ${row.title}`}
+                    onClick={props.onStartChild}
+                  >
+                    {wbsCopy.subdeliverable}
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  id={props.triggerId('child')}
                   className={styles.action}
-                  aria-label={`${wbsCopy.subdeliverable} em ${row.title}`}
-                  onClick={props.onStartChild}
+                  aria-label={`${wbsCopy.moveUp} ${row.title}`}
+                  disabled={!props.canMoveUp}
+                  onClick={() => props.onMove('up')}
                 >
-                  {wbsCopy.subdeliverable}
+                  {wbsCopy.moveUp}
                 </button>
+                <button
+                  type="button"
+                  className={styles.action}
+                  aria-label={`${wbsCopy.moveDown} ${row.title}`}
+                  disabled={!props.canMoveDown}
+                  onClick={() => props.onMove('down')}
+                >
+                  {wbsCopy.moveDown}
+                </button>
+                <button
+                  type="button"
+                  id={props.triggerId('rename')}
+                  className={styles.action}
+                  aria-label={`${wbsCopy.rename} ${row.title}`}
+                  onClick={props.onStartRename}
+                >
+                  {wbsCopy.rename}
+                </button>
+                <button
+                  type="button"
+                  id={props.triggerId('remove')}
+                  className={`${styles.action} ${styles.danger}`}
+                  aria-label={`${wbsCopy.remove} ${row.title}`}
+                  onClick={props.onStartRemove}
+                >
+                  {wbsCopy.remove}
+                </button>
+              </div>
+              {props.removeEditing ? (
+                <RemoveConfirm
+                  title={row.title}
+                  onConfirm={props.onRemove}
+                  onCancel={() => props.onCancel('remove')}
+                />
               ) : null}
-              <button
-                type="button"
-                className={styles.action}
-                aria-label={`${wbsCopy.moveUp} ${row.title}`}
-                disabled={!props.canMoveUp}
-                onClick={() => props.onMove('up')}
-              >
-                {wbsCopy.moveUp}
-              </button>
-              <button
-                type="button"
-                className={styles.action}
-                aria-label={`${wbsCopy.moveDown} ${row.title}`}
-                disabled={!props.canMoveDown}
-                onClick={() => props.onMove('down')}
-              >
-                {wbsCopy.moveDown}
-              </button>
-              <button
-                type="button"
-                id={props.triggerId('rename')}
-                className={styles.action}
-                aria-label={`${wbsCopy.rename} ${row.title}`}
-                onClick={props.onStartRename}
-              >
-                {wbsCopy.rename}
-              </button>
-              <button
-                type="button"
-                id={props.triggerId('remove')}
-                className={`${styles.action} ${styles.danger}`}
-                aria-label={`${wbsCopy.remove} ${row.title}`}
-                onClick={props.onStartRemove}
-              >
-                {wbsCopy.remove}
-              </button>
             </div>
-            {props.removeEditing ? (
-              <RemoveConfirm
-                title={row.title}
-                onConfirm={props.onRemove}
-                onCancel={() => props.onCancel('remove')}
-              />
-            ) : null}
           </td>
         ) : null}
       </tr>
@@ -343,29 +351,30 @@ function TaskRow({
   row,
   canEdit,
   costEnabled,
+  today,
 }: {
   readonly row: WbsTaskRow
   readonly canEdit: boolean
   readonly costEnabled: boolean
+  readonly today: string
 }) {
   const style = { '--level': 2 } as CSSProperties
+  const late = overdueDays(row.deadline, row.done, today)
   return (
     <tr className={styles.taskRow}>
       <td className={styles.code}>{row.key}</td>
       <th scope="row" className={styles.titleCell}>
         <div className={styles.titleInner} style={style}>
-          <span className={styles.expanderSpacer} aria-hidden="true" />
           <span className={styles.statusDot} data-status={row.status} aria-hidden="true" />
           <span className={styles.taskTitle}>{row.title}</span>
+          {late === null ? null : <span className={styles.warn}>{overdueText(late)}</span>}
         </div>
       </th>
       <td className={styles.resp}>
         {row.responsibleName ? (
-          <span className={styles.person}>
-            <span className={styles.avatar} aria-hidden="true">
-              {initialsOf(row.responsibleName)}
-            </span>
-            <span className={styles.personName}>{row.responsibleName}</span>
+          <span className={styles.avatar} title={row.responsibleName}>
+            <span aria-hidden="true">{initialsOf(row.responsibleName)}</span>
+            <span className={styles.srOnly}>{row.responsibleName}</span>
           </span>
         ) : (
           '—'

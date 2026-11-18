@@ -1,7 +1,96 @@
 import { z } from 'zod'
 import { userSummaryDtoSchema } from './shared-schemas'
 import { isoDateTimeSchema, ulidSchema } from './shared-schemas'
+import { projectPresetKeySchema } from './projects'
 import { taskStatusSchema } from './tasks'
+
+/** Data `AAAA-MM-DD`. */
+const dateOnlySchema = z.iso.date()
+/** Contagem não negativa e inteira. */
+const countSchema = z.number().int().nonnegative()
+
+/** Indicador principal do cartão do projeto. A forma depende da metodologia (ou do que o projeto tem). */
+export const dashboardSprintSummarySchema = z.object({
+  number: z.number().int().min(1),
+  day: z.number().int().min(1),
+  totalDays: z.number().int().min(1),
+  remainingHours: z.number().min(0),
+  endsOn: dateOnlySchema,
+})
+export const dashboardKpiSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('sprint'), sprint: dashboardSprintSummarySchema }),
+  z.object({
+    kind: z.literal('progress'),
+    /** Concluído: horas estimadas (acompanhamento) ou contagem de tarefas, de 0 a 100. */
+    percent: z.number().int().min(0).max(100),
+    done: countSchema,
+    total: countSchema,
+    /** Semana do cronograma, quando o projeto tem módulo `schedule`. */
+    week: z.object({ current: z.number().int().min(1), total: z.number().int().min(1) }).nullable(),
+    /** Custo realizado em reais: nulo sem módulo `cost` ou para quem não é gestor. */
+    spentCost: z.number().nullable(),
+    /** Dias de atraso (positivo) ou adiantamento (negativo) do fim frente à linha de base; nulo sem foto. */
+    baselineDeviationDays: z.number().int().nullable(),
+  }),
+  z.object({
+    kind: z.literal('milestone'),
+    title: z.string().min(1),
+    daysLeft: z.number().int(),
+    percent: z.number().int().min(0).max(100),
+    sprint: dashboardSprintSummarySchema.nullable(),
+  }),
+  z.object({
+    kind: z.literal('flow'),
+    leadDays: z.number().min(0).nullable(),
+    completedLastWeek: countSchema,
+  }),
+])
+
+export const dashboardProjectSchema = z.object({
+  id: ulidSchema,
+  name: z.string().min(1),
+  /** Preset em que o projeto começou ("começou como"); nulo sem assistente. */
+  method: projectPresetKeySchema.nullable(),
+  /** Resumo em Em dia, Atenção ou Risco, com o motivo (regra provisória em `core/rules/dashboard-health.ts`). */
+  health: z.enum(['ok', 'attention', 'risk']),
+  healthReason: z.string().min(1),
+  kpi: dashboardKpiSchema,
+  /** Série do gráfico pequeno: referência (linha tracejada) e real. Nula quando o projeto não tem série. */
+  trend: z
+    .object({
+      reference: z.array(z.number().min(0)).nullable(),
+      actual: z.array(z.number().min(0).nullable()),
+    })
+    .nullable(),
+})
+
+/** Item de "Precisa de você": só sinais que o domínio já calcula. */
+export const dashboardNeedSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['wip', 'milestone', 'acceptance']),
+  projectId: ulidSchema,
+  projectName: z.string().min(1),
+  taskId: ulidSchema.nullable(),
+  text: z.string().min(1),
+  /** Quando o sinal aconteceu (último evento relevante); nulo quando o dado não tem hora. */
+  at: isoDateTimeSchema.nullable(),
+})
+
+/** Movimento da linha do tempo (Atualizações). `category` agrupa para o filtro de tipo. */
+export const dashboardUpdateSchema = z.object({
+  id: ulidSchema,
+  taskId: ulidSchema,
+  taskTitle: z.string(),
+  projectId: ulidSchema,
+  projectName: z.string().min(1),
+  projectMethod: projectPresetKeySchema.nullable(),
+  actorUserId: ulidSchema,
+  actorName: z.string(),
+  asManager: z.boolean(),
+  at: isoDateTimeSchema,
+  category: z.enum(['status', 'estimate', 'deadline', 'comment', 'other']),
+  text: z.string(),
+})
 
 export const taskStatusDistributionSchema = z
   .object({
@@ -53,6 +142,12 @@ export const dashboardInsightsSchema = z.object({
       }),
     )
     .optional(),
+  /** Cartões dos projetos ativos (todos os visíveis ao gestor). */
+  projects: z.array(dashboardProjectSchema),
+  /** "Precisa de você": sinais de WIP, marco em risco e aceite pendente de todos os projetos. */
+  needs: z.array(dashboardNeedSchema),
+  /** Linha do tempo dos últimos sete dias (tela Atualizações), da mais recente para a mais antiga. */
+  updates: z.array(dashboardUpdateSchema),
   recentChanges: z.array(
     z.object({
       id: ulidSchema,
@@ -76,6 +171,16 @@ export const dashboardInsightsSchema = z.object({
       overdueCount: z.number().int().nonnegative(),
       blockedCount: z.number().int().nonnegative(),
       lastUpdatedAt: isoDateTimeSchema.nullable(),
+      /** Projetos ativos em que a pessoa participa (chips da tabela). */
+      projects: z.array(z.object({ id: ulidSchema, name: z.string().min(1) })),
+      /** Maior número de dias parada entre as tarefas dela; nulo sem tarefa parada. */
+      staleDays: countSchema.nullable(),
+      /** Maior número de dias vencida entre as tarefas dela; nulo sem tarefa vencida. */
+      overdueDays: countSchema.nullable(),
+      /** Tarefas concluídas em que ela participa com critério de aceite pendente. */
+      acceptancePendingCount: countSchema,
+      /** Estimativa das tarefas abertas em que ela participa, em horas. */
+      loadHours: z.number().min(0),
     }),
   ),
 })

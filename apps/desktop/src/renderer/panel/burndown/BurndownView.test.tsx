@@ -57,10 +57,7 @@ function renderBurndown({
 } = {}) {
   const api = createFakeApi()
   vi.spyOn(api.burndown, 'get').mockResolvedValue(data)
-  renderPanel(
-    <BurndownView projectId={projectId} projectName="Implantação ERP" onNavigate={onNavigate} />,
-    { api },
-  )
+  renderPanel(<BurndownView projectId={projectId} onNavigate={onNavigate} />, { api })
   return { api, onNavigate }
 }
 
@@ -73,16 +70,14 @@ describe('BurndownView', () => {
     renderBurndown()
 
     expect(await screen.findByRole('heading', { name: 'Burndown', level: 2 })).toBeTruthy()
-    expect(screen.getByText('Implantação ERP · Sprint 4 · Ativa · 01/01 a 03/01')).toBeTruthy()
+    expect(screen.getByText('Sprint 4 · dia 2 de 3')).toBeTruthy()
 
-    const remaining = card('Horas restantes')
+    const remaining = card('Restante')
     expect(within(remaining).getByText('8 h')).toBeTruthy()
-    expect(within(remaining).getByText(/de 12 h estimadas/)).toBeTruthy()
+    expect(within(remaining).getByText(/de 12 h comprometidas/)).toBeTruthy()
 
-    const velocity = card('Velocidade média')
-    // "4 h" aparece no valor médio e na linha da Sprint 3.
-    expect(within(velocity).getAllByText('4 h')).toHaveLength(2)
-    expect(within(velocity).getByText('média de 1 sprint encerrada')).toBeTruthy()
+    const velocity = screen.getByRole('region', { name: 'Velocidade' })
+    expect(within(velocity).getByText('média 4 h')).toBeTruthy()
     expect(within(velocity).getByText('Sprint 3')).toBeTruthy()
   })
 
@@ -125,12 +120,12 @@ describe('BurndownView', () => {
       .spyOn(api.burndown, 'get')
       .mockRejectedValueOnce(new Error('falha'))
       .mockResolvedValue(view())
-    renderPanel(<BurndownView projectId={PROJECT_ID} projectName={null} />, { api })
+    renderPanel(<BurndownView projectId={PROJECT_ID} />, { api })
 
     expect(await screen.findByRole('alert')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(2))
-    expect(await screen.findByRole('region', { name: 'Horas restantes' })).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Restante' })).toBeTruthy()
   })
 })
 

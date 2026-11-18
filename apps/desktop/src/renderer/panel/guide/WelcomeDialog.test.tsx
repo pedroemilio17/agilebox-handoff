@@ -89,7 +89,8 @@ describe('WelcomeDialog', () => {
     ).getAllByRole('listitem')
     expect(steps).toHaveLength(7)
     expect(steps[0]?.textContent).toContain('Liste o que precisa ser feito')
-    expect(steps[0]?.textContent).toContain('Backlog')
+    // O design da janela mostra só o título de cada passo (sem o nome do módulo).
+    expect(steps[0]?.textContent).toBe('1Liste o que precisa ser feito')
     expect(within(dialog).getByText('Dá para abrir depois pelo ? de qualquer tela.')).not.toBeNull()
   })
 

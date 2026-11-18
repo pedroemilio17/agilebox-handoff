@@ -6,6 +6,8 @@ import {
   planEnableModules,
   projectPresetModules,
   recommendPreset,
+  recommendationNote,
+  recommendationSummary,
 } from '@agilebox/core'
 import type { GuideExperience, ModuleId, ProjectPresetKey, WizardAnswers } from '@agilebox/core'
 
@@ -14,6 +16,44 @@ import type { GuideExperience, ModuleId, ProjectPresetKey, WizardAnswers } from 
  * a tela. Ligar e desligar seguem as dependências do catálogo (`planEnableModules` e
  * `planDisableModules`); nenhum módulo do núcleo entra na lista.
  */
+
+/**
+ * Módulos que a tela Módulos mostra no design (`Modulos.dc.html`, 15 itens). Só deles se conta
+ * "Os outros N ficam em Módulos". A tela do app ainda mostra também o grupo "Outros" (Agenda,
+ * Impedimentos, Critérios, Subtarefas, Estimativa em pontos): divergência em pendências.
+ */
+const MODULES_SCREEN_IDS: readonly ModuleId[] = [
+  'backlog',
+  'wbs',
+  'definitionOfDone',
+  'risks',
+  'sprints',
+  'estimates.hours',
+  'milestones',
+  'schedule',
+  'wip',
+  'checkins',
+  'cost',
+  'reviewRetro',
+  'burndown',
+  'flowMetrics',
+  'baseline',
+]
+
+/**
+ * Ordem da lista "Vai ligar" no design: Backlog, Sprints, Estimativa, Custo, Cerimônias, Atualização
+ * diária. O resto segue a ordem do catálogo. A Agenda não entra na lista: o design não a mostra, e
+ * ela só vem junto porque as Cerimônias a exigem.
+ */
+const LIST_ORDER: readonly ModuleId[] = [
+  'backlog',
+  'sprints',
+  'estimates.hours',
+  'cost',
+  'reviewRetro',
+  'checkins',
+]
+const IMPLICIT_IDS: readonly ModuleId[] = ['agenda']
 
 export interface RecommendationState {
   readonly name: string
@@ -47,14 +87,6 @@ export interface ModuleRow {
 }
 
 const NO_ACTIVE_SPRINT = { hasActiveSprint: false } as const
-
-/** Nome do método em frases como "a equipe já trabalha com Scrum". Simples não tem método. */
-const METHOD_NAMES: Partial<Record<ProjectPresetKey, string>> = {
-  agil: 'Scrum',
-  kanban: 'Kanban',
-  tradicional: 'método tradicional',
-  hibrido: 'método híbrido',
-}
 
 const GUIDE_BULLETS: Readonly<Record<GuideExperience, readonly string[]>> = {
   never: [
@@ -111,13 +143,13 @@ function answerExtras(answers: WizardAnswers): ModuleId[] {
   return extras
 }
 
-/** Módulos de um preset escolhido à mão, com as dependências puxadas. Sem núcleo. */
+/** Módulos de um preset escolhido à mão, com as dependências puxadas. Sem núcleo. Extras só com "Sempre". */
 function presetModules(
   key: ProjectPresetKey,
   answers: WizardAnswers,
   guideLevel: GuideExperience,
 ): ModuleId[] {
-  const base = projectPresetModules(key, { experienced: guideLevel !== 'never' })
+  const base = projectPresetModules(key, { experienced: guideLevel === 'always' })
   const plan = planEnableModules(base, answerExtras(answers))
   if (!plan.ok) throw new Error(`Preset ${key} não fecha com as respostas`)
   return withoutCore(plan.enabled)
@@ -230,8 +262,9 @@ export function disableModule(state: RecommendationState, id: ModuleId): Recomme
 }
 
 /**
- * Muda a experiência. Ela troca os bullets do guia e liga ou desliga os extras de nível 3 do preset
- * (`experiencedExtras`): com experiência, entram na lista; sem, saem e viram só a nota.
+ * Muda a experiência. Ela troca os bullets do guia e liga ou desliga os extras do preset
+ * (`experiencedExtras`): só com "Sempre" entram na lista; com "Nunca" ou "Algumas vezes" saem e
+ * viram só a nota (design `Recomendacao.dc.html`).
  */
 export function changeExperience(
   state: RecommendationState,
@@ -243,7 +276,7 @@ export function changeExperience(
   let modules = [...state.modules]
   let off = [...state.off]
 
-  if (level === 'never') {
+  if (level !== 'always') {
     const onExtras = extras.filter((id) => modules.includes(id))
     const plan = planDisableModules(withCore(modules), onExtras, NO_ACTIVE_SPRINT)
     if (plan.ok && plan.scheduled.length === 0) modules = withoutCore(plan.enabled)
@@ -258,23 +291,37 @@ export function changeExperience(
   return { ...state, guideLevel: level, modules, off, notice: null }
 }
 
-/** Linhas da lista "Vai ligar" (ligados) e "Desligados" (desligados nesta tela). */
-export function moduleRows(state: RecommendationState): { on: ModuleRow[]; off: ModuleRow[] } {
-  const row = (id: ModuleId): ModuleRow => {
-    const manifest = getManifest(id)
-    return {
-      id,
-      name: manifest.name,
-      level: manifest.level,
-      reason: state.reasons[id] ?? manifest.objective,
-    }
+function listRank(id: ModuleId): number {
+  const index = LIST_ORDER.indexOf(id)
+  return index === -1 ? LIST_ORDER.length : index
+}
+
+function rowOf(state: RecommendationState, id: ModuleId): ModuleRow {
+  const manifest = getManifest(id)
+  return {
+    id,
+    name: manifest.name,
+    level: manifest.level,
+    reason: state.reasons[id] ?? manifest.objective,
   }
-  return { on: state.modules.map(row), off: state.off.map(row) }
 }
 
 /**
- * Extras de nível 3 do preset que não estão ligados nem desligados pela pessoa. Ficam só no texto
- * "entram quando a equipe já trabalha com ...", fora da lista.
+ * Linhas da lista "Vai ligar" (ligados, na ordem do design) e "Desligados" (desligados nesta tela).
+ * A Agenda vem junto por dependência e fica fora da lista.
+ */
+export function moduleRows(state: RecommendationState): { on: ModuleRow[]; off: ModuleRow[] } {
+  const on = state.modules
+    .filter((id) => !IMPLICIT_IDS.includes(id))
+    .map((id, index) => ({ id, index }))
+    .sort((a, b) => listRank(a.id) - listRank(b.id) || a.index - b.index)
+    .map(({ id }) => rowOf(state, id))
+  return { on, off: state.off.map((id) => rowOf(state, id)) }
+}
+
+/**
+ * Extras de equipe experiente que não estão ligados nem desligados pela pessoa. Ficam só na nota
+ * ("... entram quando a equipe já trabalha com ..."), fora da lista.
  */
 export function hiddenExtras(state: RecommendationState): ModuleId[] {
   return getProjectPreset(state.preset).experiencedExtras.filter(
@@ -282,20 +329,49 @@ export function hiddenExtras(state: RecommendationState): ModuleId[] {
   )
 }
 
-export function hiddenExtrasNote(state: RecommendationState): string | null {
-  const ids = hiddenExtras(state)
-  if (ids.length === 0) return null
-  const method = METHOD_NAMES[state.preset]
-  const verb = ids.length === 1 ? 'entra' : 'entram'
-  const context = method
-    ? `quando a equipe já trabalha com ${method}`
-    : 'quando a equipe já organizou projetos assim'
-  return `${joinNames(ids)} ${verb} ${context}.`
+/**
+ * Módulos do catálogo da tela Módulos que não estão na lista, nem desligados, nem entre os extras
+ * da nota. É o "Os outros N" e o "Ver todos".
+ */
+export function otherModules(state: RecommendationState): ModuleId[] {
+  const extras = getProjectPreset(state.preset).experiencedExtras
+  return MODULES_SCREEN_IDS.filter(
+    (id) => !state.modules.includes(id) && !state.off.includes(id) && !extras.includes(id),
+  )
+}
+
+/** Linhas do "Ver todos": os outros módulos, com o objetivo de cada um. Só leitura. */
+export function otherModuleRows(state: RecommendationState): ModuleRow[] {
+  return otherModules(state).map((id) => rowOf(state, id))
+}
+
+/** Nota abaixo da lista (texto do core): extras que ficaram fora e os outros módulos. */
+export function recommendationNoteFor(state: RecommendationState): string | null {
+  return recommendationNote({
+    preset: state.preset,
+    hiddenExtras: hiddenExtras(state),
+    others: otherModules(state).length,
+  })
+}
+
+/** Resumo do trabalho e do preset, mostrado sob o título. */
+export function summaryFor(state: RecommendationState): string {
+  return recommendationSummary(state.answers, state.preset)
+}
+
+/**
+ * Rótulo do preset dividido em nome e método: "Ágil (Scrum)" vira "Ágil" e "Scrum". O design mostra o
+ * método em destaque no título e fora do chip.
+ */
+export function presetTitleParts(label: string): { base: string; method: string | null } {
+  const match = /^(.*?)\s*\((.+)\)$/.exec(label)
+  if (!match) return { base: label, method: null }
+  return { base: match[1] ?? label, method: match[2] ?? null }
 }
 
 /** Pergunta 6: cita o preset escolhido. */
 export function experienceQuestion(preset: ProjectPresetKey): string {
-  const method = METHOD_NAMES[preset]
+  const method = getProjectPreset(preset).method
   return method ? `A equipe já trabalhou com ${method}?` : 'A equipe já organizou projetos assim?'
 }
 

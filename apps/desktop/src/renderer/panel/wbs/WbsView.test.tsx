@@ -127,7 +127,7 @@ describe('árvore da EAP', () => {
     expect(within(table).getByText('100 h')).toBeTruthy()
     expect(within(table).getByText('12,5 h')).toBeTruthy()
     expect(within(table).getByText(/R\$\s1\.800,00/)).toBeTruthy()
-    expect(within(table).getByText('Diagnóstico pronto')).toBeTruthy()
+    expect(within(table).getByText(/Diagnóstico pronto · \d{2}\/\d{2}/)).toBeTruthy()
 
     const summary = screen.getByRole('region', { name: 'Resumo' })
     expect(within(summary).getByText('4 · 10 tarefas')).toBeTruthy()

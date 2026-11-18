@@ -215,11 +215,12 @@ describe('Fluxo diário do gestor · Kanban simples · Básico', () => {
     const { user } = renderPanel({ role: 'manager', dashboard: managerDashboard() })
 
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    expect(await screen.findByRole('region', { name: 'Quadro em dia' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^Bloqueadas/ })).toBeNull()
-    expect(screen.queryByRole('region', { name: 'Fluxo de seis semanas' })).toBeNull()
-    expect(screen.queryByRole('list', { name: 'Colunas acima do limite' })).toBeNull()
-    expect(screen.queryByText(/Daily de hoje/)).toBeNull()
+    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
+    // Sem a ferramenta de impedimentos, o sinal de bloqueio da equipe não aparece.
+    expect(within(team).queryByText(/bloqueada/)).toBeNull()
+    expect(screen.queryByText(/está com \d+ de \d+\./)).toBeNull()
+    expect(screen.queryByText('Lead time médio')).toBeNull()
+    expect(within(team).queryByText('Diária de hoje')).toBeNull()
     expectNoScrumTerms()
   })
 

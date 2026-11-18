@@ -12,12 +12,14 @@ export const burndownCopy = {
   loadError: 'Não foi possível carregar o burndown deste projeto.',
   retry: 'Tentar de novo',
   noSprint: 'Nenhuma sprint ativa ou encerrada.',
-  remaining: 'Horas restantes',
-  velocity: 'Velocidade média',
+  remaining: 'Restante',
+  committedCaption: (total: string) => `de ${total} comprometidas`,
+  chartTitle: 'Horas restantes por dia',
+  velocity: 'Velocidade',
+  averageLabel: (average: string) => `média ${average}`,
   noVelocity: 'Nenhuma sprint encerrada ainda.',
-  velocityCaption: (count: number) =>
-    count === 1 ? 'média de 1 sprint encerrada' : `média de ${count} sprints encerradas`,
-  velocityList: 'Sprints encerradas usadas na média',
+  velocityChartLabel: 'Horas concluídas por sprint encerrada',
+  doneLegend: 'Concluído',
   unestimated: (count: number) =>
     count === 1
       ? '1 tarefa sem estimativa (conta zero)'
@@ -25,6 +27,9 @@ export const burndownCopy = {
   noScope: 'Nenhuma tarefa nesta sprint ainda.',
   chartLabel: 'Gráfico de burndown',
   chartTableSummary: 'Ver os valores dia a dia',
+  todayLabel: 'hoje',
+  sprintEnd: 'fim da sprint',
+  velocityTableSummary: 'Ver as horas de cada sprint',
   day: 'Dia',
   ideal: 'Ideal',
   actual: 'Restante',
@@ -54,8 +59,12 @@ export function dayLabel(date: string): string {
 export function headerSubtitle(view: BurndownViewDto): string {
   const sprint = view.sprint
   if (!sprint) return ''
-  const status = sprint.status === 'active' ? burndownCopy.activeStatus : burndownCopy.closedStatus
-  return `Sprint ${sprint.number} · ${status} · ${dayLabel(sprint.plannedStart)} a ${dayLabel(sprint.plannedEnd)}`
+  if (sprint.status === 'closed') {
+    return `Sprint ${sprint.number} · ${burndownCopy.closedStatus} · ${dayLabel(sprint.plannedStart)} a ${dayLabel(sprint.plannedEnd)}`
+  }
+  const index = view.days.findIndex((day) => day.date === view.today)
+  if (index < 0) return `Sprint ${sprint.number} · ${burndownCopy.activeStatus}`
+  return `Sprint ${sprint.number} · dia ${index + 1} de ${view.days.length}`
 }
 
 /** Último dia da sprint que já chegou (até hoje). Antes do início, vale o primeiro dia. */
@@ -86,13 +95,23 @@ export function burndownSummary(view: BurndownViewDto): string {
   return `${base} ${comparison}`
 }
 
+/** Geometria do burndown (design: 760 × 300). */
 export const CHART = {
-  width: 640,
-  height: 260,
-  left: 44,
-  right: 16,
-  top: 16,
-  bottom: 36,
+  width: 760,
+  height: 300,
+  left: 50,
+  right: 40,
+  top: 24,
+  bottom: 40,
+} as const
+
+/** Geometria do gráfico de velocidade (design: 380 × 210, barras de 34 px). */
+export const VELOCITY_CHART = {
+  width: 380,
+  height: 210,
+  baseline: 180,
+  barWidth: 34,
+  plotTop: 36,
 } as const
 
 export interface ChartPoint {
@@ -149,7 +168,53 @@ export function chartSeries(view: BurndownViewDto) {
     idealPath: linePath(ideal),
     actualPath: linePath(actual),
     actualPoints: actual,
-    ticks: [0, max / 2, max].map((value) => ({ value, y: yAt(value, max) })),
+    ticks: [0, 1, 2, 3, 4].map((step) => {
+      const value = (max * step) / 4
+      return { value, y: yAt(value, max) }
+    }),
     labels: view.days.map((day, index) => ({ label: dayLabel(day.date), x: xAt(index, count) })),
+  }
+}
+
+export interface VelocityBar {
+  readonly name: string
+  readonly value: string
+  readonly x: number
+  readonly y: number
+  readonly height: number
+  readonly labelY: number
+  readonly centerX: number
+}
+
+/**
+ * Barras de velocidade (horas concluídas por sprint encerrada) e a linha da média. A altura é
+ * proporcional ao maior valor, com piso de 1 h para o gráfico não colapsar.
+ */
+export function velocityBars(
+  sprints: readonly { readonly number: number; readonly hours: number }[],
+  average: number | null,
+): { bars: VelocityBar[]; averageY: number | null; max: number } {
+  const { width, baseline, barWidth, plotTop } = VELOCITY_CHART
+  const plotHeight = baseline - plotTop
+  const max = Math.max(1, ...sprints.map((sprint) => sprint.hours), average ?? 0)
+  const slot = sprints.length > 0 ? width / sprints.length : width
+  const barY = (hours: number) => baseline - (hours / max) * plotHeight
+  const bars = sprints.map((sprint, index) => {
+    const x = index * slot + (slot - barWidth) / 2
+    const y = barY(sprint.hours)
+    return {
+      name: `S${sprint.number}`,
+      value: formatHours(sprint.hours),
+      x,
+      y,
+      height: baseline - y,
+      labelY: y - 8,
+      centerX: x + barWidth / 2,
+    }
+  })
+  return {
+    bars,
+    averageY: average === null ? null : barY(average),
+    max,
   }
 }

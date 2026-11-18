@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import type { RiskListItemDto } from '@agilebox/contract'
-import { Button, EmptyState } from '@agilebox/ui'
+import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { ModuleEmptyState } from '../guide/ModuleEmptyState'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
@@ -156,9 +156,9 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
           />
           <span className={styles.spacer} />
           {canEdit && !empty && !adding ? (
-            <Button type="button" variant="primary" onClick={() => setAdding(true)}>
+            <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {riskCopy.newRisk}
-            </Button>
+            </AddButton>
           ) : null}
         </div>
         {canEdit ? null : (
@@ -192,9 +192,9 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
           fallbackTitle="Nenhum risco registrado."
         >
           {canEdit ? (
-            <Button type="button" variant="primary" onClick={() => setAdding(true)}>
+            <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {riskCopy.newRisk}
-            </Button>
+            </AddButton>
           ) : null}
         </ModuleEmptyState>
       ) : null}

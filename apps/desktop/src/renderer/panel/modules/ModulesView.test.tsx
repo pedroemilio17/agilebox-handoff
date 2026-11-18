@@ -34,6 +34,7 @@ interface RenderOptions {
   readonly history?: () => Promise<ProjectModuleHistoryDto>
   readonly projectId?: string | null
   readonly archived?: boolean
+  readonly startedFromPreset?: 'agil' | null
 }
 
 function renderView({
@@ -43,6 +44,7 @@ function renderView({
   history = () => Promise.resolve({ projectId: PROJECT_ID, events: [] }),
   projectId = PROJECT_ID,
   archived = false,
+  startedFromPreset = 'agil',
 }: RenderOptions = {}) {
   const getMock = vi.fn(get ?? (() => Promise.resolve(view)))
   const changeMock = vi.fn(change)
@@ -60,7 +62,12 @@ function renderView({
   render(
     <ApiProvider api={api}>
       <QueryClientProvider client={queryClient}>
-        <ModulesView projectId={projectId} projectName="Projeto Aurora" archived={archived} />
+        <ModulesView
+          projectId={projectId}
+          projectName="Projeto Aurora"
+          startedFromPreset={startedFromPreset}
+          archived={archived}
+        />
       </QueryClientProvider>
     </ApiProvider>,
   )
@@ -68,6 +75,7 @@ function renderView({
 }
 
 const statusText = () => screen.getByRole('status').textContent ?? ''
+const panel = () => screen.getByRole('complementary', { name: 'Mudança em andamento' })
 
 const HISTORY_ROW_BASE = {
   at: '2026-11-16T12:00:00.000Z',
@@ -107,17 +115,36 @@ describe('ModulesView: lista e contagem', () => {
     renderView({
       view: projectModulesView({ enabled: ['backlog', 'sprints'], winding: ['cost'] }),
     })
-    expect(await screen.findByText('3 de 20 ligados')).toBeTruthy()
+    expect(await screen.findByText('3 de 15 ligados')).toBeTruthy()
     expect(screen.getByText('N1 essencial · N2 intermediário · N3 avançado')).toBeTruthy()
     expect(screen.getByText('Projeto · Projeto Aurora')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Módulos' })).toBeTruthy()
+  })
+
+  it('mostra o selo "Começou como" com o nome completo da metodologia', async () => {
+    renderView({ startedFromPreset: 'agil' })
+    expect(await screen.findByText('Começou como Ágil')).toBeTruthy()
+  })
+
+  it('sem preset, não mostra o selo', async () => {
+    renderView({ startedFromPreset: null })
+    await screen.findByRole('switch', { name: 'Desligar Backlog' })
+    expect(screen.queryByText(/Começou como/)).toBeNull()
   })
 
   it('usa o objetivo, a dependência e o sinal de cada cartão', async () => {
     renderView({ view: projectModulesView({ enabled: ['sprints'] }) })
     const card = (await screen.findByRole('heading', { name: 'Sprints' })).closest('article')!
-    expect(within(card).getByText('Trabalhar em ciclos curtos com meta.')).toBeTruthy()
-    expect(within(card).getByText('Requer Backlog · Aproveita Estimativa em horas')).toBeTruthy()
+    expect(within(card).getByText('Ciclos curtos com meta e capacidade.')).toBeTruthy()
+    expect(within(card).getByText('Requer Backlog')).toBeTruthy()
     expect(within(card).getByText('N2')).toBeTruthy()
+  })
+
+  it('mostra o selo "Avançado" (N3) com o tom do design, e não há painel lateral sem mudança', async () => {
+    renderView()
+    const risks = (await screen.findByRole('heading', { name: 'Riscos' })).closest('article')!
+    expect(within(risks).getByText('Avançado').getAttribute('data-tone')).toBe('adv')
+    expect(screen.queryByRole('complementary', { name: 'Mudança em andamento' })).toBeNull()
   })
 
   it('põe o botão "Como funciona" em cada cartão', async () => {
@@ -136,8 +163,11 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Sprints' }))
 
-    expect(screen.getByText('Ligar Sprints?')).toBeTruthy()
-    expect(statusText()).toContain('Sprints precisa de Backlog. Ligamos junto?')
+    expect(within(panel()).getByRole('heading', { name: 'Ligar Sprints' })).toBeTruthy()
+    expect(within(panel()).getByText('Liga junto, porque Sprints precisa:')).toBeTruthy()
+    // "Backlog" aparece no chip de "Liga junto" e na linha de "O que acontece".
+    expect(within(panel()).getAllByText('Backlog')).toHaveLength(2)
+    expect(within(panel()).getByText('ligado junto')).toBeTruthy()
     expect(changeMock).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
@@ -153,10 +183,10 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Desligar Backlog' }))
 
-    expect(statusText()).toContain(
-      'Sai junto, porque depende de Backlog: Sprints, Burndown e velocidade.',
-    )
-    expect(statusText()).toContain('Nada é apagado. Religar restaura os dados.')
+    expect(within(panel()).getByText('Sai junto, porque depende de Backlog:')).toBeTruthy()
+    expect(within(panel()).getAllByText('Sprints')).toHaveLength(2)
+    expect(within(panel()).getAllByText('Burndown e velocidade')).toHaveLength(2)
+    expect(within(panel()).getByText('Nada é apagado. Religar restaura os dados.')).toBeTruthy()
     expect(changeMock).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
@@ -171,7 +201,7 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
 
     expect(changeMock).not.toHaveBeenCalled()
-    expect(screen.queryByText('Ligar Sprints?')).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Mudança em andamento' })).toBeNull()
     expect(document.activeElement).toBe(screen.getByRole('switch', { name: 'Ligar Sprints' }))
   })
 
@@ -180,9 +210,9 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Estimativa em pontos' }))
 
-    expect(statusText()).toContain(
-      'Não dá para ligar Estimativa em pontos junto com Estimativa em horas',
-    )
+    expect(
+      within(panel()).getByText(/Não dá para ligar Estimativa em pontos junto com Estimativa/),
+    ).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeTruthy()
   })
@@ -201,11 +231,14 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     await waitFor(() =>
-      expect(statusText()).toBe(
-        'Não dá para desligar Sprints agora: há uma sprint ativa. Termine a sprint antes.',
-      ),
+      expect(
+        within(panel()).getByText(
+          'Não dá para desligar Sprints agora: há uma sprint ativa. Termine a sprint antes.',
+        ),
+      ).toBeTruthy(),
     )
-    expect(statusText()).not.toMatch(/agendad/i)
+    expect(panel().textContent).not.toMatch(/agendad/i)
+    expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
     expect(changeMock).toHaveBeenCalledWith({ projectId: PROJECT_ID, disable: ['sprints'] })
   })
 
@@ -217,9 +250,7 @@ describe('ModulesView: ligar e desligar com prévia', () => {
         ),
     })
     const user = userEvent.setup()
-    await user.click(
-      await screen.findByRole('switch', { name: 'Ligar Limite de tarefas em andamento (WIP)' }),
-    )
+    await user.click(await screen.findByRole('switch', { name: 'Ligar Limites WIP' }))
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain(

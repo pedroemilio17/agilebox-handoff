@@ -24,17 +24,23 @@ import { BaselineView } from './baseline/BaselineView'
 import { BurndownView } from './burndown/BurndownView'
 import { FlowMetricsView } from './flow-metrics/FlowMetricsView'
 import { SprintsView } from './sprints/SprintsView'
+import { PlanView } from './plan/PlanView'
+import { PlanSprintView } from './plan/PlanSprintView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
+import { summarizeModules } from './modules/modules-screen'
+import { useProjectModules } from './hooks/use-project-modules'
+import { useSprintList } from './sprints/use-sprints'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
+import { UpdatesView } from './dashboard/UpdatesView'
 import { ManagerBanner } from './board/ManagerBanner'
 import { ProjectMembersDialog } from './board/ProjectMembersDialog'
 import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
-import { GuideCard } from './guide/GuideCard'
+import { GuideDock } from './guide/GuideDock'
 import { WelcomeDialog } from './guide/WelcomeDialog'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
@@ -87,10 +93,20 @@ function PanelContent({
   const risksVisible = selectedProjectId !== null && capabilities.showScreen('risks')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
+  // Plano (híbrido, tela 17): precisa da EAP e das sprints ligadas no projeto selecionado.
+  const planVisible =
+    selectedProjectId !== null &&
+    capabilities.showScreen('wbs') &&
+    capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
   const impedimentsVisible = capabilities.showScreen('impediments')
   const flowFetch = capabilities.canFetch('flowMetrics:screen')
   const queryClient = useQueryClient()
+  // Sprint aberta a partir do plano (tela 18): a sprint e a entrega em que ela está aberta.
+  const [planSprint, setPlanSprint] = useState<{
+    readonly sprintId: string
+    readonly deliverableId: string | null
+  } | null>(null)
   const [view, setView] = useState<PanelView>(() => {
     // Depois de trocar Translúcido/Opaco as janelas são recriadas: o painel volta em Ajustes.
     try {
@@ -114,6 +130,8 @@ function PanelContent({
     (view === 'flowMetrics' && !flowMetricsVisible) ||
     (view === 'risks' && !risksVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
+    (view === 'plan' && !planVisible) ||
+    (view === 'planSprint' && (!planVisible || planSprint === null)) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
       ? 'projects'
@@ -195,18 +213,14 @@ function PanelContent({
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
       }),
   })
-  const allTasks = useQuery({
-    queryKey: queryKeys.tasks.board(undefined, viewingUser?.id),
-    queryFn: () => api.tasks.listBoard(viewingUser ? { forUserId: viewingUser.id } : {}),
-  })
-  const projectCounts = allTasks.data
-    ? Object.fromEntries(
-        (projects.data ?? []).map((project) => [
-          project.id,
-          allTasks.data.tasks.filter((task) => task.projectId === project.id).length,
-        ]),
-      )
-    : undefined
+  // Barra lateral: sprint ativa (S4) e quantos módulos estão ligados no projeto selecionado.
+  const projectModules = useProjectModules(selectedProjectId)
+  const projectModuleCount = projectModules.data
+    ? summarizeModules(projectModules.data.modules).enabled
+    : null
+  const sprintList = useSprintList(selectedProjectId)
+  const activeSprintNumber =
+    sprintList.data?.find((sprint) => sprint.status === 'active')?.number ?? null
   const definitionGate = useDefinitionOfDoneGate()
   const moveTask = useMutation({
     mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
@@ -248,6 +262,8 @@ function PanelContent({
       // Concluir passa pela conferência da definição de pronto (drag, seletor e detalhe).
       definitionGate.conclude({
         projectId: task.projectId,
+        taskLabel: `${task.key} · ${task.title}`,
+        returnTo: TASK_STATUS_LABELS[task.status],
         definitionOfDoneCount:
           projects.data?.find((project) => project.id === task.projectId)?.definitionOfDoneCount ??
           0,
@@ -314,6 +330,9 @@ function PanelContent({
       return queryClient.invalidateQueries()
     },
   })
+  function openTray() {
+    window.agilebox.shell.toggleTray()
+  }
   function openTask(id: string) {
     setTaskFullScreen(false)
     setActiveTaskId(id)
@@ -428,13 +447,27 @@ function PanelContent({
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
         newTaskBlockedReason={newTaskBlockedReason}
-        {...(projectCounts ? { projectCounts } : {})}
+        activeSprintNumber={activeSprintNumber}
+        projectModuleCount={projectModuleCount}
         onProjectSelect={(id) => {
           setSelectedProjectId(id)
           setActiveTaskId(null)
           setView('projects')
         }}
-        onOpenTray={() => window.agilebox.shell.toggleTray()}
+        onNewProject={() => setProjectDialogOpen(true)}
+        onOpenTray={openTray}
+        // O guia vai no topo de cada tela do projeto (ver GuideDock). Na tarefa em tela cheia, não.
+        guide={
+          activeTaskId && taskFullScreen ? null : (
+            <GuideDock
+              projectId={selectedProjectId}
+              view={currentView}
+              onNavigate={setView}
+              onOpenTray={openTray}
+              openRequest={trailRequest}
+            />
+          )
+        }
         account={{
           users: sessionUsers.data ?? [],
           currentUserId: actor.actor?.userId,
@@ -455,6 +488,37 @@ function PanelContent({
             projectName={selectedProject?.name ?? null}
             onNavigate={setView}
           />
+        }
+        plan={
+          <PlanView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onOpenSprint={(sprintId, deliverableId) => {
+              setPlanSprint({ sprintId, deliverableId })
+              setView('planSprint')
+            }}
+          />
+        }
+        planSprint={
+          selectedProjectId !== null && planSprint !== null ? (
+            <PlanSprintView
+              key={planSprint.sprintId}
+              projectId={selectedProjectId}
+              sprintId={planSprint.sprintId}
+              deliverableId={planSprint.deliverableId}
+              showEstimates={capabilities.can('estimates.hours:passive')}
+              onBack={() => setView('plan')}
+              onOpenTask={(id) => {
+                openTask(id)
+                setView('projects')
+              }}
+              onNewTask={() => {
+                setNewTaskStatus(undefined)
+                setNewTaskDialogOpen(true)
+              }}
+            />
+          ) : null
         }
         risks={
           <RisksView
@@ -500,7 +564,6 @@ function PanelContent({
           <BurndownView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
-            projectName={selectedProject?.name ?? null}
             onNavigate={setView}
           />
         }
@@ -521,6 +584,10 @@ function PanelContent({
             onOpenTask={(id) => {
               openTask(id)
               setView('projects')
+            }}
+            onNewTask={() => {
+              setNewTaskStatus(undefined)
+              setNewTaskDialogOpen(true)
             }}
           />
         }
@@ -548,6 +615,7 @@ function PanelContent({
           <ModulesView
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
+            startedFromPreset={selectedProject?.startedFromPreset ?? null}
             archived={selectedArchived}
             onNavigate={setView}
           />
@@ -566,12 +634,35 @@ function PanelContent({
               openTask(id)
               setView('projects')
             }}
+            onOpenProject={(projectId, screen) => {
+              setBoardException(null)
+              setViewingUser(null)
+              setActiveTaskId(null)
+              setSelectedProjectId(projectId)
+              setView(screen === 'board' ? 'projects' : 'schedule')
+            }}
+            onOpenUpdates={() => setView('updates')}
             onOpenProjects={(user) => {
               setBoardException(null)
               setViewingUser({ id: user.id, name: user.name })
               setSelectedProjectId(null)
               setActiveTaskId(null)
               setView('projects')
+            }}
+          />
+        }
+        updates={
+          <UpdatesView
+            onOpenTask={(id) => {
+              openTask(id)
+              setView('projects')
+            }}
+            onOpenProject={(projectId, screen) => {
+              setBoardException(null)
+              setViewingUser(null)
+              setActiveTaskId(null)
+              setSelectedProjectId(projectId)
+              setView(screen === 'board' ? 'projects' : 'schedule')
             }}
           />
         }
@@ -597,12 +688,6 @@ function PanelContent({
               />
             ) : (
               <>
-                {/* Guia só com um projeto selecionado; em "Todos os projetos" não aparece. */}
-                <GuideCard
-                  projectId={selectedProjectId}
-                  onNavigate={setView}
-                  openRequest={trailRequest}
-                />
                 {selectedProjectId ? (
                   <WelcomeDialog
                     projectId={selectedProjectId}

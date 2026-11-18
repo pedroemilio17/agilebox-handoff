@@ -221,7 +221,12 @@ export function createUseCases(deps: AppDeps) {
     projects: {
       listProjects: forTenant(
         'projects.listProjects',
-        new ListProjects(deps.projects, deps.definitionOfDone, deps.projectModules),
+        new ListProjects(
+          deps.projects,
+          deps.definitionOfDone,
+          deps.projectModules,
+          deps.projectSetup,
+        ),
       ),
       createProject: forTenant('projects.createProject', new CreateProject(deps)),
       createWithSetup: forTenant('projects.createWithSetup', new CreateProjectWithSetup(deps)),

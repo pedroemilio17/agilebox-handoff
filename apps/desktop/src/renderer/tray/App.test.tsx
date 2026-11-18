@@ -392,7 +392,7 @@ describe('Bandeja: conferência da definição de pronto ao concluir', () => {
     const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
 
     await openToDone(user)
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    const dialog = await screen.findByRole('dialog', { name: /^AB-\d+ · / })
     expect(move).not.toHaveBeenCalled()
     const confirm = within(dialog).getByRole<HTMLButtonElement>('button', { name: 'Concluir' })
     await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
@@ -417,10 +417,10 @@ describe('Bandeja: conferência da definição de pronto ao concluir', () => {
     const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
 
     await openToDone(user)
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+    const dialog = await screen.findByRole('dialog', { name: /^AB-\d+ · / })
+    await user.click(within(dialog).getByRole('button', { name: 'Voltar para A fazer' }))
 
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: /^AB-\d+ · / })).toBeNull()
     expect(move).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Status' }).textContent).toContain('A fazer')
     expect(screen.queryByRole('alert')).toBeNull()

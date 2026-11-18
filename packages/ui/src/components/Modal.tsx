@@ -7,9 +7,20 @@ export interface ModalProps {
   readonly title: string
   readonly onClose: () => void
   readonly children: ReactNode
+  /** `glass`: vidro de conferência (440 px), como o diálogo "Antes de concluir". */
+  readonly surface?: 'default' | 'glass'
+  /** `wide`: duas colunas, como o encerramento de sprint. */
+  readonly size?: 'default' | 'wide'
 }
 
-export function Modal({ open, title, onClose, children }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  surface = 'default',
+  size = 'default',
+}: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   useFocusTrap(dialogRef, open)
@@ -40,7 +51,14 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
     >
       <div
         ref={dialogRef}
-        className={`${styles.dialog} motion-modal-enter`}
+        className={[
+          styles.dialog,
+          surface === 'glass' ? styles.glass : null,
+          size === 'wide' ? styles.sizeWide : null,
+          'motion-modal-enter',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         role="dialog"
         aria-modal="true"
         aria-label={title}

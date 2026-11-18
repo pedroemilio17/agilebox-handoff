@@ -1,20 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { addDays, differenceInCalendarDays, format, getISOWeek, parseISO } from 'date-fns'
-import { TASK_STATUS_LABELS } from '@agilebox/core'
+import { addDays, format, getISOWeek, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { ApiError } from '@agilebox/contract'
 import type { DashboardSummaryFormat } from '@agilebox/contract'
-import {
-  Avatar,
-  BarChart,
-  DailyStatusBadge,
-  Eyebrow,
-  ExportMenu,
-  MetricTile,
-  SignalBadge,
-  Skeleton,
-  Sparkline,
-} from '@agilebox/ui'
+import { ExportMenu, Skeleton } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { todayDateOnly } from '../../shared/lib/today'
@@ -22,13 +12,23 @@ import { panelCopy } from '../copy'
 import { DailyDialog } from './DailyDialog'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { useNoticeOnError } from './use-notice-on-error'
-import type { CollaboratorStat } from './types'
+import { METHOD_NAMES } from './dashboard-format'
+import type { DashboardInsights } from './dashboard-format'
+import { NeedsList } from './NeedsList'
+import { ProjectCard } from './ProjectCard'
+import { TeamTable } from './TeamTable'
+import type { DashboardException } from './TeamTable'
+import { feedEntries } from './updates-feed'
+import type { FeedActionHandlers } from './updates-feed'
+import { swatchIndexOf } from '../../shared/lib/project-swatch'
 import styles from './Dashboard.module.css'
 
-export interface DashboardViewProps {
-  readonly onOpenProjects: (user: CollaboratorStat['user']) => void
-  readonly onOpenException?: (exception: 'aging' | 'overdue' | 'blocked') => void
-  readonly onOpenTask?: (taskId: string) => void
+export interface DashboardViewProps extends FeedActionHandlers {
+  readonly onOpenProjects: (user: DashboardInsights['team'][number]['user']) => void
+  /** Selo de parada, vencida ou bloqueada da equipe: abre o quadro com o filtro. */
+  readonly onOpenException?: (exception: DashboardException) => void
+  /** Botão "Ver todas as atualizações" da seção "Precisa de você". */
+  readonly onOpenUpdates: () => void
   /** Avisos do painel (toast): resumo salvo ou falha na exportação. */
   readonly onNotice?: (message: string, tone?: 'default' | 'warning') => void
 }
@@ -37,24 +37,36 @@ const SUMMARY_FORMATS: readonly { value: DashboardSummaryFormat; label: string }
   { value: 'md', label: panelCopy.exportSummaryMarkdown },
   { value: 'csv', label: panelCopy.exportSummaryCsv },
 ]
-const days = (value: number | null) =>
-  value === null ? '—' : `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d`
+
+const ALL = 'all'
+
+/** "Semana 47 · 17–21 nov": de segunda a sexta, como no desenho. */
+function weekLabel(weekStart: string): string {
+  const start = parseISO(weekStart)
+  const end = addDays(start, 4)
+  const month = format(end, 'MMM', { locale: ptBR }).replace('.', '')
+  return `Semana ${getISOWeek(start)} · ${format(start, 'dd')}–${format(end, 'dd')} ${month}`
+}
 
 export function DashboardView({
   onOpenProjects,
   onOpenException,
+  onOpenProject,
   onOpenTask,
+  onOpenUpdates,
   onNotice,
 }: DashboardViewProps) {
-  const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
+  const [projectFilter, setProjectFilter] = useState<string>(ALL)
+  const [methodFilter, setMethodFilter] = useState<string>(ALL)
+  const [personFilter, setPersonFilter] = useState<string>(ALL)
   const [dailyOf, setDailyOf] = useState<{ userId: string; name: string } | null>(null)
   const api = useApi()
   const capabilities = useCapabilities()
   const dailyVisible = capabilities.can('checkins:screen')
   const dailyFetch = capabilities.canFetch('checkins:screen')
   const blockedVisible = capabilities.can('impediments:passive')
+  const loadVisible = capabilities.can('estimates.hours:passive')
   const wipVisible = capabilities.can('wip:passive')
-  const flowVisible = capabilities.can('flowMetrics:screen')
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
@@ -93,289 +105,151 @@ export function DashboardView({
   if (dashboard.isError || !dashboard.data.insights)
     return <p role="alert">{panelCopy.dashboardError}</p>
   const data = dashboard.data.insights
-  // Sem `flowMetrics` (ferramenta desligada) o backend não envia as semanas nem os indicadores de fluxo.
-  const hasFlow = data.weeks !== undefined
-  const weeks = data.weeks ?? []
-  const period = weeks.find((item) => item.start === selectedWeek)
-  const adherence = period ? (period.upToDatePercentage ?? null) : (data.upToDatePercentage ?? null)
-  const cycle = period ? (period.cycleDays ?? null) : (data.cycleDays ?? null)
-  const lead = period ? (period.leadDays ?? null) : (data.leadDays ?? null)
-  const throughput = period?.throughput ?? data.throughput ?? 0
-  const index = period ? weeks.indexOf(period) : weeks.length - 1
-  const previous = weeks[index - 1]?.upToDatePercentage
-  const delta = adherence !== null && previous != null ? Math.round(adherence - previous) : null
+  const methods = [
+    ...new Set(data.projects.map((project) => project.method).filter((m) => m !== null)),
+  ]
+  const projects = data.projects.filter(
+    (project) =>
+      (projectFilter === ALL || project.id === projectFilter) &&
+      (methodFilter === ALL || project.method === methodFilter),
+  )
+  const needs = feedEntries(data).needs.filter(
+    (entry) =>
+      (projectFilter === ALL || entry.projectId === projectFilter) &&
+      (wipVisible || entry.filter !== 'wip'),
+  )
+  const team = data.team.filter((member) => personFilter === ALL || member.user.id === personFilter)
   const dailyDone = new Map((dailyStatus.data ?? []).map((item) => [item.userId, item.done]))
-  const teamDone = data.team.filter((person) => dailyDone.get(person.user.id) === true).length
   return (
     <div className={styles.view}>
-      <header className={styles.period}>
-        {hasFlow ? (
+      <header className={styles.header}>
+        <h1 className={styles.title}>Dashboard</h1>
+        <span className={styles.week}>{weekLabel(data.weekStart)}</span>
+        <span className={styles.spacer} />
+        <label className={styles.chip}>
+          Projetos:
           <select
-            aria-label="Semana do dashboard"
-            className={styles.weekSelect}
-            value={period?.start ?? data.weekStart}
-            onChange={(event) => setSelectedWeek(event.currentTarget.value)}
+            aria-label="Filtrar por projeto"
+            className={styles.chipSelect}
+            value={projectFilter}
+            onChange={(event) => setProjectFilter(event.currentTarget.value)}
           >
-            {weeks.map((item) => (
-              <option key={item.start} value={item.start}>
-                Semana {getISOWeek(parseISO(item.start))} · {format(parseISO(item.start), 'dd/MM')}–
-                {format(addDays(parseISO(item.start), 6), 'dd/MM')}
+            <option value={ALL}>todos</option>
+            {data.projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
               </option>
             ))}
           </select>
-        ) : null}
-        <div className={styles.periodActions}>
-          <span>dados do quadro · atualizado às {format(parseISO(data.updatedAt), 'HH:mm')}</span>
-          <ExportMenu
-            label={panelCopy.exportSummary}
-            ariaLabel={panelCopy.exportSummaryAria}
-            options={SUMMARY_FORMATS}
-            busy={saveSummary.isPending}
-            busyLabel={panelCopy.exportSummaryBusy}
-            onSelect={(format) =>
-              saveSummary.mutate({ format, period: period?.start ?? data.weekStart })
-            }
-          />
-        </div>
+          <span className={styles.chipCount}>{data.projects.length}</span>
+        </label>
+        <label className={styles.chip}>
+          Metodologia:
+          <select
+            aria-label="Filtrar por metodologia"
+            className={styles.chipSelect}
+            value={methodFilter}
+            onChange={(event) => setMethodFilter(event.currentTarget.value)}
+          >
+            <option value={ALL}>todas</option>
+            {methods.map((method) => (
+              <option key={method} value={method}>
+                {METHOD_NAMES[method]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.chip}>
+          Pessoa:
+          <select
+            aria-label="Filtrar por pessoa"
+            className={styles.chipSelect}
+            value={personFilter}
+            onChange={(event) => setPersonFilter(event.currentTarget.value)}
+          >
+            <option value={ALL}>todas</option>
+            {data.team.map((member) => (
+              <option key={member.user.id} value={member.user.id}>
+                {member.user.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {/* Visão de equipe ainda não tem dado: o chip fica estático, como no desenho. */}
+        <button type="button" className={styles.chip} disabled>
+          Mini-equipe: todas
+        </button>
+        <ExportMenu
+          label={panelCopy.exportSummary}
+          ariaLabel={panelCopy.exportSummaryAria}
+          options={SUMMARY_FORMATS}
+          busy={saveSummary.isPending}
+          busyLabel={panelCopy.exportSummaryBusy}
+          onSelect={(format) => saveSummary.mutate({ format, period: data.weekStart })}
+        />
       </header>
-      <div className={styles.overview}>
-        {hasFlow ? (
-          <section className={styles.panel} aria-label="Quadro em dia">
-            <Eyebrow>Quadro em dia</Eyebrow>
-            <p className={styles.adoption}>
-              {adherence === null ? (
-                '—'
-              ) : (
-                <>
-                  {Math.round(adherence)}
-                  <span>%</span>
-                </>
-              )}
-            </p>
-            <Sparkline
-              label="Quadro em dia nas últimas seis semanas"
-              data={weeks.slice(0, index + 1).map((item) => ({
-                label: `S${getISOWeek(parseISO(item.start))}`,
-                value: item.upToDatePercentage ?? null,
-              }))}
-            />
-            <p className={styles.caption}>
-              das tarefas ativas foram atualizadas nas últimas 48h
-              {delta !== null && ` · ${delta > 0 ? '+' : ''}${delta} pts vs. semana passada`}
-            </p>
-          </section>
-        ) : null}
-        <div className={styles.exceptions}>
-          {wipVisible && data.overWipColumns.length > 0 ? (
-            <ul className={styles.wipExceptions} aria-label="Colunas acima do limite">
-              {data.overWipColumns.map((column) => (
-                <li key={column.status}>
-                  <SignalBadge variant="wip">
-                    {panelCopy.wipOverLabel(
-                      TASK_STATUS_LABELS[column.status],
-                      column.count,
-                      column.limit,
-                    )}
-                  </SignalBadge>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {blockedVisible ? (
-            <MetricTile
-              label="Bloqueadas"
-              value={data.blockedCount}
-              caption="com motivo registrado"
-              signal="danger"
-              onClick={() => onOpenException?.('blocked')}
-            />
-          ) : null}
-          <MetricTile
-            label="Paradas"
-            value={data.agingCount}
-            caption="há mais de 4 dias"
-            onClick={() => onOpenException?.('aging')}
-          />
-          <MetricTile
-            label="Vencidas"
-            value={data.overdueCount}
-            caption="prazo de entrega passou"
-            signal="danger"
-            onClick={() => onOpenException?.('overdue')}
-          />
+
+      <section aria-labelledby="needs-title" className={styles.needs}>
+        <div className={styles.needsHead}>
+          <h2 id="needs-title" className={styles.sectionTitle}>
+            Precisa de você
+          </h2>
+          <span className={styles.count}>{needs.length}</span>
+          <span className={styles.spacer} />
+          <button type="button" className={styles.linkButton} onClick={onOpenUpdates}>
+            Ver todas as atualizações
+          </button>
         </div>
-      </div>
-      <div className={styles.overview}>
-        {/* Métricas de fluxo (ciclo, pedido à entrega, vazão): só com a ferramenta ligada, como no quadro. */}
-        {flowVisible && hasFlow ? (
-          <section className={styles.panel} aria-label="Fluxo de seis semanas">
-            <Eyebrow>Fluxo · 6 semanas</Eyebrow>
-            <div className={styles.flowMetrics}>
-              <p>
-                <strong>{days(cycle)}</strong>
-                <span>tempo de ciclo médio</span>
-              </p>
-              <p>
-                <strong>{days(lead)}</strong>
-                <span>do pedido à entrega</span>
-              </p>
-              <p>
-                <strong>{throughput === 0 ? '—' : throughput}</strong>
-                <span>concluídas nesta semana</span>
-              </p>
-            </div>
-            {cycle === null && <p className={styles.caption}>sem movimentação nesta semana</p>}
-            <BarChart
-              label="Concluídas por semana"
-              data={weeks.map((item) => ({
-                label: `S${getISOWeek(parseISO(item.start))}`,
-                value: item.throughput,
-              }))}
-            />
-          </section>
-        ) : null}
-        <section className={styles.panel} aria-label="Mudou desde ontem">
-          <Eyebrow>Mudou desde ontem</Eyebrow>
-          {data.recentChanges.length === 0 ? (
-            <p className={styles.caption}>Nenhuma mudança desde ontem.</p>
-          ) : (
-            <ul className={styles.changeList}>
-              {data.recentChanges.map((event) => (
-                <li key={event.id}>
-                  <button
-                    className={styles.change}
-                    onClick={() => onOpenTask?.(event.taskId)}
-                    type="button"
-                  >
-                    <Avatar name={event.actorName} />
-                    <span>
-                      <strong>{event.taskTitle}</strong>
-                      <span>
-                        {event.actorName}
-                        {event.asManager ? ' · Gestor' : ''} {event.text}
-                      </span>
-                    </span>
-                    <time dateTime={event.at}>{format(parseISO(event.at), 'HH:mm')}</time>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-      <section className={styles.panel} aria-label="Equipe">
-        <Eyebrow>Equipe</Eyebrow>
-        <div className={styles.teamScroll}>
-          <div className={`${styles.teamHeader} ${dailyVisible ? '' : styles.teamNoDaily}`}>
-            <span>Pessoa</span>
-            <span>Em andamento</span>
-            <span>Sinais</span>
-            {dailyVisible ? (
-              dailyStatus.data ? (
-                <span
-                  role="group"
-                  aria-label={panelCopy.dailyCountAria(teamDone, data.team.length)}
-                >
-                  {panelCopy.dailyCount(teamDone, data.team.length)}
-                </span>
-              ) : (
-                <span>{panelCopy.dailyColumn}</span>
-              )
-            ) : null}
-            <span>Última atualização</span>
-          </div>
-          {data.team.length === 0 ? (
-            <p className={styles.caption}>Nenhuma tarefa ainda.</p>
-          ) : (
-            data.team.map((person) => {
-              const name = person.user.name
-              const done = dailyDone.get(person.user.id)
-              return (
-                <div
-                  className={`${styles.teamRow} ${dailyVisible ? '' : styles.teamNoDaily}`}
-                  key={person.user.id}
-                >
-                  <button
-                    type="button"
-                    className={styles.teamRowLink}
-                    aria-label={panelCopy.openProjectsOf(name)}
-                    onClick={() => onOpenProjects(person.user)}
-                  />
-                  <span className={styles.person}>
-                    <Avatar name={name} />
-                    {name}
-                  </span>
-                  <span className={styles.figure}>{person.inProgress}</span>
-                  <span className={styles.signals}>
-                    {person.agingCount > 0 && (
-                      <SignalBadge variant="aging">
-                        {person.agingCount} {person.agingCount === 1 ? 'parada' : 'paradas'}
-                      </SignalBadge>
-                    )}
-                    {person.overdueCount > 0 && (
-                      <SignalBadge variant="overdue">
-                        {person.overdueCount} {person.overdueCount === 1 ? 'vencida' : 'vencidas'}
-                      </SignalBadge>
-                    )}
-                    {blockedVisible && person.blockedCount > 0 && (
-                      <SignalBadge variant="blocked">
-                        {person.blockedCount}{' '}
-                        {person.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}
-                      </SignalBadge>
-                    )}
-                    {person.agingCount === 0 &&
-                      person.overdueCount === 0 &&
-                      (!blockedVisible || person.blockedCount === 0) &&
-                      '—'}
-                  </span>
-                  {dailyVisible ? (
-                    <span className={styles.dailyCell}>
-                      {dailyStatus.isPending ? (
-                        <span className={styles.muted}>{panelCopy.dailyLoading}</span>
-                      ) : done === undefined ? (
-                        <span className={styles.muted}>—</span>
-                      ) : (
-                        <>
-                          <DailyStatusBadge done={done} />
-                          {done && (
-                            <button
-                              type="button"
-                              className={styles.inlineButton}
-                              aria-label={panelCopy.dailyViewOf(name)}
-                              onClick={() => setDailyOf({ userId: person.user.id, name })}
-                            >
-                              {panelCopy.dailyView}
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </span>
-                  ) : null}
-                  <span
-                    className={`${styles.figure} ${person.lastUpdatedAt && differenceInCalendarDays(parseISO(data.updatedAt), parseISO(person.lastUpdatedAt)) > 2 ? styles.aging : ''}`}
-                  >
-                    {person.lastUpdatedAt
-                      ? format(parseISO(person.lastUpdatedAt), 'dd/MM HH:mm')
-                      : '—'}
-                  </span>
-                </div>
-              )
-            })
-          )}
-        </div>
-        {dailyStatus.isError ? (
-          <p className={styles.caption}>
-            {panelCopy.dailyListError}{' '}
-            <button
-              type="button"
-              className={styles.inlineButton}
-              onClick={() => void dailyStatus.refetch()}
-            >
-              {panelCopy.dailyRetry}
-            </button>
-          </p>
-        ) : null}
+        <NeedsList
+          entries={needs}
+          projectSwatch={swatchIndexOf}
+          onOpenProject={onOpenProject}
+          onOpenTask={onOpenTask}
+        />
       </section>
+
+      <section aria-labelledby="projects-title" className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2 id="projects-title" className={styles.sectionTitle}>
+            Projetos
+          </h2>
+          <span className={styles.caption}>
+            Cada um medido pela sua metodologia e resumido em Em dia, Atenção ou Risco, sempre com o
+            motivo.
+          </span>
+        </div>
+        {projects.length === 0 ? (
+          <p className={styles.emptyLine}>{panelCopy.dashboardEmpty}</p>
+        ) : (
+          <div className={styles.projects}>
+            {projects.map((card) => (
+              <ProjectCard key={card.id} card={card} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <TeamTable
+        team={team}
+        daily={{ visible: dailyVisible, loading: dailyStatus.isPending, done: dailyDone }}
+        blockedVisible={blockedVisible}
+        loadVisible={loadVisible}
+        onOpenProjects={onOpenProjects}
+        onOpenException={onOpenException}
+        onOpenDaily={(userId, name) => setDailyOf({ userId, name })}
+      />
+      {dailyStatus.isError ? (
+        <p className={styles.caption}>
+          {panelCopy.dailyListError}{' '}
+          <button
+            type="button"
+            className={styles.inlineButton}
+            onClick={() => void dailyStatus.refetch()}
+          >
+            {panelCopy.dailyRetry}
+          </button>
+        </p>
+      ) : null}
       {dailyOf && dailyVisible ? (
         <DailyDialog
           userId={dailyOf.userId}

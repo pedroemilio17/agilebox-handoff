@@ -6,11 +6,15 @@ import { queryKeys } from '../../shared/query/keys'
 import type { BacklogMove } from './backlog-order'
 import { applyMove } from './backlog-order'
 
-/** Backlog, quadro, detalhe e dashboard mudam juntos quando um item entra, sai ou muda de lugar. */
+/**
+ * Backlog, quadro, detalhe, dashboard e guia mudam juntos quando um item entra, sai ou muda de
+ * lugar. O guia entra porque ordenar o backlog conclui o passo "Ordene pela importância".
+ */
 export function refreshBacklogAndBoard(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.guide.all })
 }
 
 export function useBacklogList(projectId: string | null) {

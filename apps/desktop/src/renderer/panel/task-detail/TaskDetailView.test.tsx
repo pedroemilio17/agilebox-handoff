@@ -408,7 +408,7 @@ describe('Card Envolvidos', () => {
     expect(screen.getByRole<HTMLOptionElement>('option', { name: 'Responsável' }).disabled).toBe(
       true,
     )
-    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar envolvido' }))
     await waitFor(() =>
       expect(add).toHaveBeenCalledWith({
         taskId: TASK_ID,
@@ -645,6 +645,17 @@ describe('Subtarefas no detalhe', () => {
     )
     await waitFor(() => expect(field.value).toBe(''))
     expect(document.activeElement).toBe(field)
+  })
+
+  it('botão "Adicionar subtarefa" inclui a subtarefa, sem precisar de Enter', async () => {
+    const { api, user } = setup({ detail: WITH_ITEMS() })
+    const add = vi.spyOn(api.tasks.checklist, 'add').mockResolvedValue(WITH_ITEMS())
+    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    await user.type(field, 'Revisar com o time')
+    await user.click(screen.getByRole('button', { name: 'Adicionar subtarefa' }))
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith({ taskId: TASK_ID, title: 'Revisar com o time' }),
+    )
   })
 
   it('não adiciona título vazio nem com 201 caracteres', async () => {

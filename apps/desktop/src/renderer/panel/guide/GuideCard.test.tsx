@@ -56,6 +56,19 @@ describe('GuideCard', () => {
     expect(done?.getAttribute('aria-current')).toBeNull()
   })
 
+  it('o passo atual tem cabeçalho "Passo N" e três colunas: por que, o que fazer agora e o que vem depois', async () => {
+    renderCard({ doneCount: 1 })
+    const heading = await screen.findByRole('heading', {
+      level: 3,
+      name: 'Ordene pela importância',
+    })
+    expect(heading.previousElementSibling?.textContent).toBe('Passo 2')
+    expect(screen.getByRole('heading', { level: 4, name: 'Por que existe' })).not.toBeNull()
+    expect(screen.getByRole('heading', { level: 4, name: 'O que fazer agora' })).not.toBeNull()
+    expect(screen.getByRole('heading', { level: 4, name: 'O que vem depois' })).not.toBeNull()
+    expect(screen.getByText('Estime os primeiros itens')).not.toBeNull()
+  })
+
   it('o botão do passo atual leva à tela certa', async () => {
     const user = userEvent.setup()
     const { onNavigate } = renderCard({ doneCount: 1 })

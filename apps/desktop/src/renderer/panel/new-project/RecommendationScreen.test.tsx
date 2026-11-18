@@ -46,7 +46,7 @@ describe('RecommendationScreen', () => {
     for (const name of [
       'Backlog',
       'Sprints',
-      'Estimativa em horas',
+      'Estimativa',
       'Custo',
       'Cerimônias',
       'Atualização diária',
@@ -54,11 +54,11 @@ describe('RecommendationScreen', () => {
       expect(switchOf(`Desligar ${name}`).getAttribute('aria-checked')).toBe('true')
     }
     expect(
-      screen.getByText(
-        'Backlog ligado porque é preciso guardar e ordenar o que ainda não entrou em sprint',
-      ),
+      screen.getByText('A entrega vai mudar, então o trabalho precisa de uma fila em ordem.'),
     ).toBeTruthy()
-    expect(screen.getByText(/Custo ligado porque você controla horas e custo/)).toBeTruthy()
+    expect(
+      screen.getByText('Você quer controlar custo: horas × valor/hora de cada pessoa.'),
+    ).toBeTruthy()
   })
 
   it('trocar o chip para Tradicional troca a lista de módulos', async () => {
@@ -68,7 +68,7 @@ describe('RecommendationScreen', () => {
 
     expect(chip('Tradicional').getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByRole('switch', { name: 'Desligar Sprints' })).toBeNull()
-    expect(switchOf('Desligar Entregas (EAP)').getAttribute('aria-checked')).toBe('true')
+    expect(switchOf('Desligar EAP (Entregas)').getAttribute('aria-checked')).toBe('true')
     expect(switchOf('Desligar Cronograma')).toBeTruthy()
   })
 
@@ -164,5 +164,75 @@ describe('RecommendationScreen', () => {
 
     await user.keyboard('{Escape}')
     expect(props.onCancel).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('RecommendationScreen: fidelidade ao design (tela 02)', () => {
+  it('o título traz o método em destaque, e o chip mostra só o nome do preset', () => {
+    setup()
+    const title = screen.getByRole('heading', { level: 1 })
+    expect(title.textContent).toBe('Ágil (Scrum)')
+    expect(within(title).getByText('(Scrum)').className).toContain('method')
+    expect(chip('Ágil').textContent).toContain('recomendado')
+    expect(chip('Ágil').textContent).not.toContain('(Scrum)')
+  })
+
+  it('mostra "Pergunta 6 de 6" no cartão da experiência', () => {
+    setup()
+    expect(screen.getByText('Pergunta 6 de 6')).toBeTruthy()
+  })
+
+  it('o rodapé traz só Voltar e Criar projeto; Esc continua cancelando', async () => {
+    const { user, props } = setup()
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Criar projeto' })).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(props.onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('a nota de módulos ocultos segue o texto do design', () => {
+    setup()
+    expect(
+      screen.getByText(
+        'Critério de pronto e Burndown entram quando a equipe já trabalha com Scrum. Os outros 7 ficam em Módulos.',
+      ),
+    ).toBeTruthy()
+  })
+})
+
+describe('RecommendationScreen: exemplo do design (Algumas vezes)', () => {
+  const DESIGN_ANSWERS: WizardAnswers = { ...AGIL_ANSWERS, experience: 'sometimes' }
+
+  it('o resumo do trabalho vem do core, com a frase do design', () => {
+    setup({ answers: DESIGN_ANSWERS })
+    expect(
+      screen.getByText(
+        'Trabalho com começo e fim, sem data fixa e com entrega que vai mudar. Ciclos curtos deixam a equipe ajustar o rumo a cada duas semanas.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('a lista tem seis módulos e o botão "Ver todos" abre os outros sete', async () => {
+    const { user } = setup({ answers: DESIGN_ANSWERS })
+
+    expect(screen.getByText('6 módulos')).toBeTruthy()
+    expect(screen.queryByRole('switch', { name: 'Desligar Agenda' })).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'Desligar Burndown e velocidade' })).toBeNull()
+
+    const more = screen.getByRole('button', { name: 'Ver todos' })
+    expect(more.getAttribute('aria-expanded')).toBe('false')
+    await user.click(more)
+
+    expect(more.getAttribute('aria-expanded')).toBe('true')
+    const list = screen.getByRole('list', { name: 'Outros módulos' })
+    expect(within(list).getAllByRole('listitem')).toHaveLength(7)
+    expect(within(list).getByText('Limites WIP')).toBeTruthy()
+    expect(within(list).getByText('Linha de base')).toBeTruthy()
+  })
+
+  it('o título e o chip de Scrum seguem o preset recomendado', () => {
+    setup({ answers: DESIGN_ANSWERS })
+    expect(screen.getByRole('heading', { name: 'Ágil (Scrum)' })).toBeTruthy()
+    expect(screen.getByText('Pergunta 6 de 6')).toBeTruthy()
   })
 })

@@ -29,30 +29,42 @@ export const MODULE_IDS = [
 
 export type ModuleId = (typeof MODULE_IDS)[number]
 
-/** Nome de cada ferramenta na interface (pt-BR), como aparece nos presets do PLANO-2.0. */
+/**
+ * Nome de cada ferramenta na interface (pt-BR), como no design (`Modulos.dc.html` e
+ * `Recomendacao.dc.html`). Os ids ficam em inglês; só o rótulo é do produto.
+ */
 export const MODULE_LABELS: Readonly<Record<ModuleId, string>> = {
   core: 'Núcleo',
   agenda: 'Agenda',
   backlog: 'Backlog',
   sprints: 'Sprints',
-  checkins: 'Check-ins',
+  checkins: 'Atualização diária',
   impediments: 'Impedimentos',
-  'estimates.hours': 'Estimativas em horas',
+  'estimates.hours': 'Estimativa',
   'estimates.points': 'Estimativas em pontos',
   acceptance: 'Critérios de aceitação',
-  wip: 'Limites de WIP',
+  wip: 'Limites WIP',
   subtasks: 'Subtarefas e dependências',
   integrations: 'Plug-ins',
   flowMetrics: 'Métricas de fluxo',
-  reviewRetro: 'Review e retro',
-  burndown: 'Burndown e velocity',
+  reviewRetro: 'Cerimônias',
+  burndown: 'Burndown e velocidade',
   cost: 'Custo',
   milestones: 'Marcos',
-  wbs: 'Entregas (EAP)',
+  wbs: 'EAP (Entregas)',
   schedule: 'Cronograma',
   definitionOfDone: 'Critério de pronto',
   baseline: 'Linha de base',
   risks: 'Riscos',
+}
+
+/** Nome curto onde o nome inteiro pesa demais (a nota da recomendação): "Burndown" em vez de "Burndown e velocidade". */
+export const MODULE_SHORT_LABELS: Partial<Record<ModuleId, string>> = {
+  burndown: 'Burndown',
+}
+
+export function moduleShortLabel(id: ModuleId): string {
+  return MODULE_SHORT_LABELS[id] ?? MODULE_LABELS[id]
 }
 
 export interface ModuleDefinition {

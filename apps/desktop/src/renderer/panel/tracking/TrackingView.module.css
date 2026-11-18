@@ -1,13 +1,14 @@
-/* Tela "Acompanhamento" do projeto tradicional. Só tokens do repositório. */
+/* Tela "Acompanhamento" (tela 15 do design): cartões-resumo, marcos, linha de base e riscos. Só tokens;
+   valores fora da escala ficam literais, como no design. */
 
 .view {
   min-height: 0;
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: var(--space-5);
+  gap: var(--space-4);
   min-width: 0;
-  padding: var(--space-5) var(--space-6) var(--space-7);
+  padding: var(--space-4) var(--space-6) var(--space-6);
 }
 
 .header {
@@ -24,18 +25,43 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-title);
+  font-size: var(--font-size-heading);
   font-weight: 620;
   letter-spacing: var(--letter-spacing-display);
 }
 
-.subtitle {
-  font-size: var(--font-size-small);
-  color: var(--color-text-subtle);
+.subtitle,
+.muted {
+  color: var(--color-text-muted);
+  font-size: 13px;
 }
 
-.muted {
-  color: var(--color-text-subtle);
+.text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.textMuted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-body-small);
 }
 
 .errorBox {
@@ -44,96 +70,165 @@
   gap: var(--space-3);
 }
 
-.error {
-  margin: 0;
-  color: var(--color-signal-danger-text);
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
+/* Cartões-resumo: grade que quebra linha, como o design (mínimo de 210 px). */
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 .card {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
-  padding: var(--space-4);
+  padding: 14px 16px;
   border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-group);
+  border-radius: 14px;
   background: var(--surface-panel);
 }
 
 .cardRisk {
-  border-color: var(--color-signal-warning);
+  border-color: rgba(242, 180, 90, 0.35);
 }
 
 .label {
   margin: 0;
+  color: var(--color-text-subtle);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-chip);
   letter-spacing: var(--letter-spacing-eyebrow);
   text-transform: uppercase;
-  color: var(--color-text-subtle);
 }
 
 .value {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: var(--font-size-heading);
+  font-size: 32px;
   font-weight: 620;
-  letter-spacing: var(--letter-spacing-display);
-  overflow-wrap: anywhere;
+  line-height: 1.1;
 }
 
 .caption {
-  margin: 0;
-  font-size: var(--font-size-small);
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
+  font-size: 12.5px;
 }
 
 .nextTitle {
   margin: 0;
-  font-size: var(--font-size-title-small);
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.25;
 }
 
+.nextMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Barra de progresso do cartão Concluído: verde no concluído, azul em andamento. */
 .bar {
-  height: 8px;
-  border-radius: var(--radius-badge);
-  background: var(--surface-raised);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-hairline-strong);
   overflow: hidden;
 }
 
 .barFill {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: var(--color-accent-text);
-  transition: width var(--motion-duration-card) var(--ease-ios);
+  border-radius: 3px;
+  background: var(--color-status-desenvolvendo);
+  transition: width var(--motion-duration-control) var(--ease-ios);
+}
+
+/* Colunas: esquerda (marcos e linha de base) e direita (riscos), que quebram em telas estreitas. */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.column {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
 }
 
 .panel {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 16px 18px;
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
   background: var(--surface-panel);
 }
 
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
 .panelTitle {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-title-small);
+  margin: 0;
+  flex: 1;
+  font-size: 15px;
   font-weight: 600;
 }
 
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-badge);
+  background: var(--glass-control);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+}
+
+.panelFoot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.link {
+  align-self: flex-start;
+  min-height: var(--size-touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
 .list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -142,18 +237,22 @@
 .item {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) auto;
-  gap: var(--space-3);
+  gap: 12px;
   align-items: start;
-  padding: var(--space-3) 0;
+  padding: 10px 0;
   border-top: 1px solid var(--color-hairline);
+}
+
+.item:first-child {
+  border-top: 0;
 }
 
 .diamond {
   width: 10px;
   height: 10px;
   margin: 5px 0 0 4px;
+  background: var(--color-text-primary);
   transform: rotate(45deg);
-  background: var(--color-status-desenvolvendo);
 }
 
 .diamond[data-tone='done'] {
@@ -166,82 +265,174 @@
 
 .itemBody {
   display: grid;
-  gap: var(--space-1);
+  gap: 3px;
   min-width: 0;
 }
 
 .itemTitle {
-  font-size: var(--font-size-body);
+  font-size: 14px;
   font-weight: 550;
-  overflow-wrap: anywhere;
 }
 
 .itemMeta {
-  font-size: var(--font-size-small);
-  color: var(--color-text-subtle);
-  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
 }
 
 .itemSide {
   display: grid;
   justify-items: end;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .date {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-label);
   color: var(--color-text-muted);
-  white-space: nowrap;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
 }
 
+/* Estado do marco: texto e ícone; a cor só reforça. */
 .status {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
   height: 22px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
+  padding: 0 8px;
+  border-radius: var(--radius-chip);
+  background: var(--glass-control);
+  color: var(--color-text-body);
   font-size: 11.5px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .status[data-tone='done'] {
-  color: var(--color-status-concluido);
-  background: color-mix(in srgb, var(--color-status-concluido) 14%, transparent);
+  background: rgba(111, 211, 154, 0.14);
+  color: var(--color-status-concluido-text);
 }
 
 .status[data-tone='risk'] {
-  color: var(--color-signal-warning-text);
   background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
 }
 
-.status[data-tone='track'] {
-  color: var(--color-status-desenvolvendo);
-  background: color-mix(in srgb, var(--color-status-desenvolvendo) 14%, transparent);
+/* Matriz de riscos: 3 × 3 com cabeçalhos; o calor vem do nível de pontuação. */
+.matrix {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
 }
 
-.link {
-  min-height: 44px;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-radius: var(--radius-button);
-  background: transparent;
-  color: var(--color-accent-text);
-  font: inherit;
+.matrixRow {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  align-items: stretch;
+}
+
+.matrixHead {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.matrixSide {
+  align-self: center;
+  padding-right: 8px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.matrixCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 58px;
+  border-radius: var(--radius-chip);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.matrixCell[data-heat='1'] {
+  background: rgba(242, 180, 90, 0.1);
+}
+
+.matrixCell[data-heat='2'] {
+  background: rgba(242, 180, 90, 0.2);
+}
+
+.matrixCell[data-heat='3'] {
+  background: rgba(255, 107, 125, 0.22);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  font-weight: 600;
+}
+
+.riskList {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.riskItem {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.riskCode {
+  padding-top: 1px;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+}
+
+.riskBody {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.riskTitle {
+  font-size: 13.5px;
   font-weight: 500;
-  cursor: pointer;
-  justify-self: start;
 }
 
-.link:hover {
-  background: var(--surface-raised);
-}
-
-.link:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-avatar-bg);
+  color: var(--color-text-primary);
+  font-size: 9.5px;
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

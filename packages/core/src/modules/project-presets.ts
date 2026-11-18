@@ -14,6 +14,8 @@ export type ProjectPresetKey = (typeof PROJECT_PRESET_KEYS)[number]
 export interface ProjectPreset {
   readonly key: ProjectPresetKey
   readonly label: string
+  /** Método citado em frases ("já trabalha com Scrum"). Nulo no Simples, que não tem método. */
+  readonly method: string | null
   /** Para quê, em uma frase. */
   readonly purpose: string
   /** Módulos ligados, sem o núcleo (sempre ligado) e sem o que eles exigem (o resolvedor acrescenta). */
@@ -28,6 +30,7 @@ export const PROJECT_PRESETS: readonly ProjectPreset[] = Object.freeze(
       {
         key: 'simples',
         label: 'Simples',
+        method: null,
         purpose: 'Quem não quer decidir agora',
         modules: [],
         experiencedExtras: ['checkins'],
@@ -35,6 +38,7 @@ export const PROJECT_PRESETS: readonly ProjectPreset[] = Object.freeze(
       {
         key: 'kanban',
         label: 'Kanban',
+        method: 'Kanban',
         purpose: 'Trabalho contínuo',
         modules: ['wip', 'definitionOfDone', 'checkins'],
         experiencedExtras: ['flowMetrics'],
@@ -42,6 +46,7 @@ export const PROJECT_PRESETS: readonly ProjectPreset[] = Object.freeze(
       {
         key: 'agil',
         label: 'Ágil (Scrum)',
+        method: 'Scrum',
         purpose: 'Escopo que muda',
         modules: ['backlog', 'estimates.hours', 'sprints', 'reviewRetro', 'checkins'],
         experiencedExtras: ['definitionOfDone', 'burndown'],
@@ -49,6 +54,7 @@ export const PROJECT_PRESETS: readonly ProjectPreset[] = Object.freeze(
       {
         key: 'tradicional',
         label: 'Tradicional',
+        method: 'método tradicional',
         purpose: 'Prazo e escopo fixos',
         modules: ['wbs', 'milestones', 'schedule', 'estimates.hours'],
         experiencedExtras: ['cost', 'baseline', 'risks'],
@@ -56,6 +62,7 @@ export const PROJECT_PRESETS: readonly ProjectPreset[] = Object.freeze(
       {
         key: 'hibrido',
         label: 'Híbrido',
+        method: 'método híbrido',
         purpose: 'Prazo fixo com detalhes que mudam',
         modules: ['wbs', 'milestones', 'backlog', 'estimates.hours', 'sprints'],
         experiencedExtras: ['schedule', 'burndown'],

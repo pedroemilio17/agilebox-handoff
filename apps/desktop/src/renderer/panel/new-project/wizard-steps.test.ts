@@ -62,15 +62,14 @@ describe('perguntas visíveis', () => {
 })
 
 describe('contagem e progresso', () => {
-  it('conta a recomendação no total: seis no caminho com fim, quatro no contínuo', () => {
-    expect(totalSteps({})).toBe(6)
-    expect(totalSteps(CONTINUOUS)).toBe(4)
+  it('conta a recomendação no total: seis no caminho com fim e também no contínuo (design)', () => {
+    expect(totalSteps()).toBe(6)
   })
 
-  it('numera a pergunta pela posição no fluxo visível', () => {
-    expect(questionPosition(FINITE, 'scope')).toBe(3)
-    expect(questionPosition(CONTINUOUS, 'outsiderFollows')).toBe(2)
-    expect(questionPosition(CONTINUOUS, 'scope')).toBe(0)
+  it('numera a pergunta pela posição fixa na lista, como o trilho do design', () => {
+    expect(questionPosition('scope')).toBe(3)
+    expect(questionPosition('outsiderFollows')).toBe(4)
+    expect(questionPosition('workType')).toBe(1)
   })
 
   it('calcula as perguntas que faltam, contando a recomendação', () => {
@@ -83,7 +82,7 @@ describe('contagem e progresso', () => {
   it('mostra progresso de 0 a 100 e fica no meio do passo atual', () => {
     expect(progressPercent({}, 'name')).toBe(0)
     expect(progressPercent(FINITE, 'scope')).toBe(42)
-    expect(progressPercent(CONTINUOUS, 'outsiderFollows')).toBe(38)
+    expect(progressPercent(CONTINUOUS, 'outsiderFollows')).toBe(58)
     expect(progressPercent(FINITE, 'recommendation')).toBe(100)
     for (const step of stepOrder({})) {
       const value = progressPercent({}, step)
@@ -157,8 +156,8 @@ describe('respostas', () => {
       ['Data final', 'Não se aplica'],
       ['Entrega', 'Não se aplica'],
       ['Quem acompanha', 'Sim'],
-      ['Horas e custo', ''],
-      ['Recomendação', ''],
+      ['Horas e custo', 'Respondendo agora'],
+      ['Recomendação', 'e pergunta 6'],
     ])
     const current = rows.find((row) => row.state === 'current')
     expect(current?.label).toBe('Horas e custo')

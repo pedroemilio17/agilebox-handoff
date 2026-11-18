@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   DndContext,
   DragOverlay,
@@ -19,6 +20,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import type { KeyboardEventHandler, PointerEventHandler, ReactNode } from 'react'
+import { anchorStyle, dragAnchorPoint, isPointerPoint } from './drag-anchor'
+import type { AnchorPoint } from './drag-anchor'
 import {
   deadlineLabel,
   diffInDays,
@@ -30,6 +33,7 @@ import type { TaskDto, WipColumnDto } from '@agilebox/contract'
 import { formatHours } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import {
+  AddButton,
   Avatar,
   Button,
   ChecklistProgress,
@@ -134,7 +138,11 @@ export function BoardView({
     const timer = setInterval(() => setNow(Date.now()), 30_000)
     return () => clearInterval(timer)
   }, [])
-  const [activeTask, setActiveTask] = useState<{ task: TaskDto; width: number } | null>(null)
+  const [activeTask, setActiveTask] = useState<{
+    task: TaskDto
+    width: number
+    anchor: AnchorPoint | null
+  } | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const lastDroppedId = useRef<string | null>(null)
   const pendingLanding = useRef<PendingLanding | null>(null)
@@ -188,9 +196,15 @@ export function BoardView({
       </p>
     )
 
-  const handleDragStart = ({ active }: DragStartEvent) => {
+  const handleDragStart = ({ active, activatorEvent }: DragStartEvent) => {
     const task = (tasks ?? []).find((item) => item.id === active.id)
-    if (task) setActiveTask({ task, width: active.rect.current.initial?.width ?? 240 })
+    const initial = active.rect.current.initial
+    if (!task) return
+    // O cartão flutuante gira em torno do ponto em que foi pego (mouse), não do centro.
+    const anchor = initial
+      ? dragAnchorPoint(isPointerPoint(activatorEvent) ? activatorEvent : null, initial)
+      : null
+    setActiveTask({ task, width: initial?.width ?? 240, anchor })
   }
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     lastDroppedId.current = String(active.id)
@@ -325,7 +339,7 @@ export function BoardView({
               })}
           action={
             !readOnlyScope && onNewTask ? (
-              <Button
+              <AddButton
                 variant="primary"
                 shortcut="N"
                 onClick={onNewTask}
@@ -333,7 +347,7 @@ export function BoardView({
                 title={newTaskBlockedReason}
               >
                 Nova tarefa
-              </Button>
+              </AddButton>
             ) : null
           }
         />
@@ -353,18 +367,29 @@ export function BoardView({
           <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
             {columns()}
           </div>
-          {/* O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro. */}
-          <DragOverlay dropAnimation={null}>
-            {activeTask ? (
-              <div className={styles.overlay} style={{ width: activeTask.width }}>
-                <TaskCard
-                  onOpen={() => undefined}
-                  responsibleName={undefined}
-                  task={activeTask.task}
-                />
-              </div>
-            ) : null}
-          </DragOverlay>
+          {/*
+            O card "sai" da coluna enquanto é arrastado: esta cópia flutua livre sobre o quadro.
+            Vai para o body porque position: fixed só é relativo à janela fora de ancestrais com
+            transform ou backdrop-filter (a janela do painel tem os dois); dentro deles o cartão
+            ficava deslocado em relação ao ponteiro.
+          */}
+          {createPortal(
+            <DragOverlay dropAnimation={null}>
+              {activeTask ? (
+                <div
+                  className={styles.overlay}
+                  style={{ width: activeTask.width, ...anchorStyle(activeTask.anchor) }}
+                >
+                  <TaskCard
+                    onOpen={() => undefined}
+                    responsibleName={undefined}
+                    task={activeTask.task}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body,
+          )}
         </DndContext>
       )}
     </>

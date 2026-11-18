@@ -1,0 +1,374 @@
+.view {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+.projectName {
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+}
+
+.errorBox {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+/* Linha do tempo: a borda do cartão rola na horizontal quando a janela é estreita. */
+.timeline {
+  padding: 16px 18px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+  overflow-x: auto;
+}
+
+.timelineBody {
+  position: relative;
+  min-width: 980px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  row-gap: 10px;
+}
+
+.axis {
+  position: relative;
+  height: 20px;
+}
+
+.month {
+  position: absolute;
+  top: 0;
+  height: 20px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.lane {
+  align-self: center;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.track {
+  position: relative;
+  min-height: 64px;
+}
+
+.trackSmall {
+  position: relative;
+  height: 40px;
+}
+
+.bar {
+  position: absolute;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-deliverable-border);
+  border-radius: 10px;
+  background: var(--color-deliverable-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.barCurrent {
+  border-color: var(--color-deliverable-border-current);
+  background: var(--color-deliverable-bg-current);
+}
+
+.barName {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.barMeta {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.milestone {
+  position: absolute;
+  top: 4px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.diamond {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: var(--color-text-primary);
+}
+
+.milestoneText {
+  display: flex;
+  flex-direction: column;
+}
+
+.milestoneTitle {
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.milestoneDate {
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+.sprintChip {
+  position: absolute;
+  top: 0;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-chip);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-card);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.chipDone {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--surface-sprint-closed);
+}
+
+.chipCurrent {
+  border-color: var(--color-status-desenvolvendo);
+  background: var(--surface-sprint-active);
+}
+
+.chipFuture {
+  color: var(--color-text-subtle);
+}
+
+.todayLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-primary-bg);
+  pointer-events: none;
+}
+
+/* Painel inferior: entrega atual, próximas e o como funciona, em colunas que quebram sozinhas. */
+.lower {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 16px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.currentCard {
+  border-color: var(--color-deliverable-border-current);
+}
+
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: 22px;
+  font-weight: 620;
+}
+
+.progressLine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.track2 {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-deliverable);
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+  font-size: 13px;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.factLabel {
+  color: var(--color-text-muted);
+}
+
+.factValue {
+  margin: 0;
+  text-align: right;
+}
+
+.sprintButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-accent-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sprintButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.nextTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.nextItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nextName {
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.nextText {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.how {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 16px 18px;
+  border: 1px dashed var(--color-hairline-strong);
+  border-radius: var(--radius-group);
+  background: var(--surface-column);
+}
+
+.howStep {
+  display: flex;
+  gap: 10px;
+}
+
+.howNumber {
+  font-family: var(--font-family-mono);
+  color: var(--color-accent-text);
+}
+
+.howText {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.howLead {
+  font-weight: 600;
+}

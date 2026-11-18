@@ -49,6 +49,9 @@ function project(overrides: Partial<ProjectDto>): ProjectDto {
   }
 }
 
+/** O diálogo leva o nome da tarefa ("AB-118 · Revisar integração"), como no design. */
+const DIALOG_NAME = /^AB-\d+ · /
+
 function item(id: string, title: string, position: number, projectId = AURORA) {
   return { id, projectId, title, position } satisfies DefinitionOfDoneItemDto
 }
@@ -90,6 +93,9 @@ const dashboard: DashboardDto = {
   insights: {
     updatedAt: '2026-11-01T12:00:00Z',
     weekStart: '2026-10-26',
+    projects: [],
+    needs: [],
+    updates: [],
     upToDatePercentage: 75,
     agingCount: 0,
     overdueCount: 0,
@@ -199,8 +205,9 @@ describe('Conferência da definição de pronto ao concluir pelo quadro', () => 
     const move = vi.spyOn(api.tasks, 'move').mockResolvedValue({ ...reviewTask, status: 'done' })
 
     await selectDone(user, reviewTask.title)
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
-    expect(within(dialog).getByText('Confirme cada item para concluir esta tarefa.')).toBeTruthy()
+    const dialog = await screen.findByRole('dialog', { name: DIALOG_NAME })
+    expect(within(dialog).getByText('0/2')).toBeTruthy()
+    expect(within(dialog).getByText('Faltam 2 itens para concluir.')).toBeTruthy()
     const confirm = within(dialog).getByRole<HTMLButtonElement>('button', { name: 'Concluir' })
     expect(confirm.disabled).toBe(true)
 
@@ -217,7 +224,7 @@ describe('Conferência da definição de pronto ao concluir pelo quadro', () => 
         confirmedDefinitionItemIds: [ITEM_TESTS, ITEM_REVIEW],
       }),
     )
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: DIALOG_NAME })).toBeNull()
   })
 
   it('cancelar não muda a tarefa, não chama a API e não mostra erro', async () => {
@@ -225,10 +232,10 @@ describe('Conferência da definição de pronto ao concluir pelo quadro', () => 
     const move = vi.spyOn(api.tasks, 'move')
 
     await selectDone(user, reviewTask.title)
-    await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    await screen.findByRole('dialog', { name: DIALOG_NAME })
     await user.keyboard('{Escape}')
 
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: DIALOG_NAME })).toBeNull()
     expect(move).not.toHaveBeenCalled()
     const review = screen.getByRole('region', { name: 'Revisar, tarefas' })
     expect(
@@ -247,7 +254,7 @@ describe('Conferência da definição de pronto ao concluir pelo quadro', () => 
     await selectDone(user, emptyTask.title)
 
     await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: emptyTask.id, status: 'done' }))
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: DIALOG_NAME })).toBeNull()
   })
 
   it('conferência recusada pelo servidor reabre o diálogo com os itens atuais', async () => {
@@ -271,7 +278,7 @@ describe('Conferência da definição de pronto ao concluir pelo quadro', () => 
     ])
 
     await selectDone(user, reviewTask.title)
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    const dialog = await screen.findByRole('dialog', { name: DIALOG_NAME })
     expect(within(dialog).getByText(/A definição de pronto mudou/)).toBeTruthy()
     expect(within(dialog).getByRole('checkbox', { name: 'Documentação atualizada' })).toBeTruthy()
 
@@ -340,10 +347,10 @@ describe('Conferência ao arrastar o card para Concluído', () => {
     await user.keyboard(' ')
     await user.keyboard('{ArrowRight}')
     await user.keyboard(' ')
-    await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    await screen.findByRole('dialog', { name: DIALOG_NAME })
     await user.keyboard('{Escape}')
 
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: DIALOG_NAME })).toBeNull()
     expect(move).not.toHaveBeenCalled()
     const review = screen.getByRole('region', { name: 'Revisar, tarefas' })
     expect(
@@ -363,7 +370,7 @@ describe('Conferência ao arrastar o card para Concluído', () => {
     await user.keyboard('{ArrowRight}')
     await user.keyboard(' ')
 
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    const dialog = await screen.findByRole('dialog', { name: DIALOG_NAME })
     expect(move).not.toHaveBeenCalled()
     await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
     await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
@@ -388,7 +395,7 @@ describe('Conferência ao concluir pelo detalhe e pela criação', () => {
     await user.click(await screen.findByRole('button', { name: 'Status' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'Concluído' }))
 
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    const dialog = await screen.findByRole('dialog', { name: DIALOG_NAME })
     expect(move).not.toHaveBeenCalled()
     await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
     await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
@@ -413,7 +420,7 @@ describe('Conferência ao concluir pelo detalhe e pela criação', () => {
     await user.type(within(newTask).getByLabelText('Título'), 'Entregar relatório')
     await user.click(within(newTask).getByRole('button', { name: 'Criar tarefa' }))
 
-    const dialog = await screen.findByRole('dialog', { name: 'Definição de pronto' })
+    const dialog = await screen.findByRole('dialog', { name: 'Entregar relatório' })
     expect(create).not.toHaveBeenCalled()
     await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
     await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
@@ -471,6 +478,24 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
       expect(add).toHaveBeenCalledWith({ projectId: BOREAL, title: 'Testes passando' }),
     )
     expect(await screen.findByText('Testes passando')).toBeTruthy()
+  })
+
+  it('botão "Adicionar item" inclui o item da definição de pronto, sem precisar de Enter', async () => {
+    const { api, user } = setup(MANAGER, { definition: { [BOREAL]: [] } })
+    const add = vi
+      .spyOn(api.projects.definitionOfDone, 'add')
+      .mockResolvedValue([item(ITEM_TESTS, 'Revisão feita', 0, BOREAL)])
+    await openProject(user, 'Projeto Boreal')
+
+    await screen.findByText('Nenhum item. A tarefa conclui sem conferência.')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Novo item da definição de pronto' }),
+      'Revisão feita',
+    )
+    await user.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith({ projectId: BOREAL, title: 'Revisão feita' }),
+    )
   })
 
   it('renomear: vazio e 201 caracteres mostram erro e não gravam; 200 grava', async () => {
@@ -618,7 +643,7 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     await selectDone(user, emptyTask.title)
 
     await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: emptyTask.id, status: 'done' }))
-    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: DIALOG_NAME })).toBeNull()
   })
 
   it('o criador do projeto também edita; colaborador comum só lê', async () => {

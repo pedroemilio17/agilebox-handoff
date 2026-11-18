@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { formatHours } from '@agilebox/core'
 import type { ProjectDto, TaskDto } from '@agilebox/contract'
 import {
+  AddButton,
   Button,
   Drawer,
   EmptyState,
@@ -202,18 +203,23 @@ export function BacklogView({
             <p className={styles.helper}>{panelCopy.backlogWindingDown}</p>
           ) : (
             <form className={styles.addForm} noValidate onSubmit={submitAdd}>
-              <TextField
-                id={addFieldId}
-                label={panelCopy.backlogAddLabel}
-                value={draft}
-                aria-invalid={addError !== null}
-                aria-describedby={addError ? `${addFieldId}-error` : `${addFieldId}-hint`}
-                disabled={add.isPending}
-                onChange={(event) => {
-                  setDraft(event.currentTarget.value)
-                  if (addError) setAddError(null)
-                }}
-              />
+              <div className={styles.addRow}>
+                <TextField
+                  id={addFieldId}
+                  label={panelCopy.backlogAddLabel}
+                  value={draft}
+                  aria-invalid={addError !== null}
+                  aria-describedby={addError ? `${addFieldId}-error` : `${addFieldId}-hint`}
+                  disabled={add.isPending}
+                  onChange={(event) => {
+                    setDraft(event.currentTarget.value)
+                    if (addError) setAddError(null)
+                  }}
+                />
+                <AddButton type="submit" disabled={add.isPending}>
+                  {panelCopy.backlogAddLabel}
+                </AddButton>
+              </div>
               <p id={`${addFieldId}-hint`} className={styles.hint}>
                 {panelCopy.backlogAddHint}
               </p>

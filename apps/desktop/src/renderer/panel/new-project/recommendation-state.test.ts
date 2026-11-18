@@ -9,9 +9,12 @@ import {
   enableModule,
   experienceQuestion,
   guideBullets,
-  hiddenExtrasNote,
   moduleRows,
+  otherModuleRows,
+  presetTitleParts,
+  recommendationNoteFor,
   recommendationResult,
+  summaryFor,
 } from './recommendation-state'
 
 const AGIL_ANSWERS: WizardAnswers = {
@@ -35,13 +38,76 @@ describe('createRecommendationState', () => {
     )
     expect(state.modules).toContain('agenda')
     expect(state.modules).not.toContain('core')
-    expect(state.reasons.backlog).toContain('Backlog ligado')
+    expect(state.reasons.backlog).toBe(
+      'A entrega vai mudar, então o trabalho precisa de uma fila em ordem.',
+    )
   })
 
-  it('usa a experiência das respostas quando ela existe', () => {
-    const state = createRecommendationState('App', { ...AGIL_ANSWERS, experience: 'sometimes' })
-    expect(state.guideLevel).toBe('sometimes')
-    expect(state.modules).toContain('burndown')
+  it('usa a experiência das respostas; só "Sempre" põe os extras na lista', () => {
+    const sometimes = createRecommendationState('App', { ...AGIL_ANSWERS, experience: 'sometimes' })
+    expect(sometimes.guideLevel).toBe('sometimes')
+    expect(sometimes.modules).not.toContain('burndown')
+
+    const always = createRecommendationState('App', { ...AGIL_ANSWERS, experience: 'always' })
+    expect(always.modules).toEqual(expect.arrayContaining(['burndown', 'definitionOfDone']))
+  })
+})
+
+describe('exemplo do design (Recomendacao.dc.html)', () => {
+  const DESIGN: WizardAnswers = { ...AGIL_ANSWERS, experience: 'sometimes' }
+
+  it('o resumo é a frase do design', () => {
+    const state = createRecommendationState('App de Chamados', DESIGN)
+    expect(summaryFor(state)).toBe(
+      'Trabalho com começo e fim, sem data fixa e com entrega que vai mudar. Ciclos curtos deixam a equipe ajustar o rumo a cada duas semanas.',
+    )
+  })
+
+  it('a lista "Vai ligar" tem os seis módulos, nesta ordem, sem a Agenda', () => {
+    const state = createRecommendationState('App de Chamados', DESIGN)
+    expect(names(moduleRows(state).on)).toEqual([
+      'Backlog',
+      'Sprints',
+      'Estimativa',
+      'Custo',
+      'Cerimônias',
+      'Atualização diária',
+    ])
+    expect(moduleRows(state).on.map((row) => row.reason)).toEqual([
+      'A entrega vai mudar, então o trabalho precisa de uma fila em ordem.',
+      'Ciclos curtos com meta para ajustar o rumo sem data fixa.',
+      'Você quer controlar horas, e as sprints usam horas para a capacidade.',
+      'Você quer controlar custo: horas × valor/hora de cada pessoa.',
+      'Planning, review e retro entram na Agenda no ritmo das sprints.',
+      'Mantém o quadro em dia pela bandeja, sem reunião diária.',
+    ])
+  })
+
+  it('a nota diz "Algumas vezes" com os dois extras fora da lista e "Os outros 7"', () => {
+    const state = createRecommendationState('App de Chamados', DESIGN)
+    expect(recommendationNoteFor(state)).toBe(
+      'Critério de pronto e Burndown entram quando a equipe já trabalha com Scrum. Os outros 7 ficam em Módulos.',
+    )
+  })
+
+  it('"Ver todos" lista os sete outros módulos, na ordem da tela Módulos', () => {
+    const state = createRecommendationState('App de Chamados', DESIGN)
+    expect(names(otherModuleRows(state))).toEqual([
+      'EAP (Entregas)',
+      'Riscos',
+      'Marcos',
+      'Cronograma',
+      'Limites WIP',
+      'Métricas de fluxo',
+      'Linha de base',
+    ])
+  })
+
+  it('com "Sempre" os extras entram na lista e a nota só conta os outros', () => {
+    const always = changeExperience(createRecommendationState('App de Chamados', DESIGN), 'always')
+    expect(names(moduleRows(always).on)).toContain('Burndown e velocidade')
+    expect(names(moduleRows(always).on)).toContain('Critério de pronto')
+    expect(recommendationNoteFor(always)).toBe('Os outros 7 ficam em Módulos.')
   })
 })
 
@@ -109,17 +175,22 @@ describe('changeExperience', () => {
     expect(guideBullets(always.guideLevel)[2]).toBe('Sem dicas de primeira vez')
   })
 
-  it('com experiência, os extras entram na lista; sem ela, viram só a nota', () => {
+  it('só com "Sempre" os extras entram na lista; sem ela, viram só a nota', () => {
     const state = createRecommendationState('App', AGIL_ANSWERS)
-    expect(hiddenExtrasNote(state)).toBe(
-      'Critério de pronto e Burndown e velocidade entram quando a equipe já trabalha com Scrum.',
+    expect(recommendationNoteFor(state)).toBe(
+      'Critério de pronto e Burndown entram quando a equipe já trabalha com Scrum. Os outros 7 ficam em Módulos.',
     )
 
     const sometimes = changeExperience(state, 'sometimes')
-    expect(sometimes.modules).toEqual(expect.arrayContaining(['definitionOfDone', 'burndown']))
-    expect(hiddenExtrasNote(sometimes)).toBeNull()
+    expect(sometimes.modules).not.toContain('burndown')
+    expect(sometimes.modules).not.toContain('definitionOfDone')
+    expect(recommendationNoteFor(sometimes)).toContain('Critério de pronto e Burndown entram')
 
-    const never = changeExperience(sometimes, 'never')
+    const always = changeExperience(sometimes, 'always')
+    expect(always.modules).toEqual(expect.arrayContaining(['definitionOfDone', 'burndown']))
+    expect(always.off).not.toContain('burndown')
+
+    const never = changeExperience(always, 'never')
     expect(never.modules).not.toContain('burndown')
     expect(never.off).not.toContain('burndown')
   })
@@ -140,5 +211,15 @@ describe('recommendationResult', () => {
     expect(result.guideLevel).toBe('sometimes')
     expect(result.answers).toEqual({ ...AGIL_ANSWERS, experience: 'sometimes' })
     expect(names(moduleRows(state).on).length).toBeGreaterThan(0)
+  })
+})
+
+describe('presetTitleParts', () => {
+  it('separa o nome do método entre parênteses', () => {
+    expect(presetTitleParts('Ágil (Scrum)')).toEqual({ base: 'Ágil', method: 'Scrum' })
+  })
+
+  it('devolve o rótulo inteiro quando não há método', () => {
+    expect(presetTitleParts('Simples')).toEqual({ base: 'Simples', method: null })
   })
 })

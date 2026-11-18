@@ -100,10 +100,11 @@ describe('guideStepAction', () => {
     })
   })
 
-  it('o passo diário não tem botão, só orientação', () => {
+  it('o passo diário leva à bandeja, com a orientação de quando', () => {
     expect(guideStepAction('daily.answer')).toEqual({
-      kind: 'note',
-      text: guideCopy.dailyNote,
+      kind: 'tray',
+      label: guideCopy.openTray,
+      note: guideCopy.dailyNote,
     })
     expect(guideCopy.dailyNote).toBe('Pela bandeja, no fim do dia')
   })

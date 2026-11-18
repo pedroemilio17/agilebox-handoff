@@ -9,7 +9,7 @@
   box-shadow: var(--glass-window-highlight), var(--shadow-window);
   color: var(--color-text-primary);
   backdrop-filter: var(--glass-window-backdrop);
-  animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) both;
+  animation: windowOpen var(--motion-duration-window-open) var(--ease-ios) backwards;
 }
 
 :global(:root[data-glass='compositor']) .window,
@@ -31,15 +31,16 @@
   box-shadow: none;
 }
 
+/* Barra lateral (design: Modulos.dc.html). 232 px aberta, 52 px recolhida. */
 .rail {
   z-index: 1;
   display: flex;
   flex: 0 0 52px;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
   box-sizing: border-box;
   width: 52px;
-  padding: var(--space-3) var(--space-1);
+  padding: 12px 4px;
   border-right: 1px solid var(--color-rail-border);
   background: var(--color-rail-bg);
   transition:
@@ -50,23 +51,121 @@
 .expanded {
   flex-basis: 232px;
   width: 232px;
+  padding: 16px 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 4px 8px 14px;
+  font-family: var(--font-family-display);
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--color-primary-bg);
+  color: var(--color-on-primary);
+}
+
+.brandName {
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  white-space: nowrap;
+  transition:
+    max-width 420ms var(--ease-ios),
+    opacity 300ms ease;
+}
+
+.expanded .brandName {
+  max-width: 140px;
+  opacity: 1;
+}
+
+/* Recolher/expandir: linha discreta logo abaixo da marca. */
+.expand {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: none;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--color-text-placeholder);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.expand:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-text-primary);
+}
+
+.rail:not(.expanded) .expand {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Buscar ou criar: campo com a dica Ctrl K, como no design. */
+.search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  margin-bottom: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 9px;
+  background: var(--surface-panel);
+  color: var(--color-text-placeholder);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search .railLabel {
+  flex: 1;
+}
+
+.expanded .search .railLabel {
+  margin-left: 0;
+}
+
+.kbd {
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
 }
 
 .railItem {
   position: relative;
   display: flex;
-  flex: 0 0 var(--size-touch-target);
+  flex: 0 0 auto;
   align-items: center;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: var(--size-touch-target);
-  padding: 0 var(--space-3);
+  height: 36px;
+  padding: 0 10px;
   overflow: hidden;
   border: 0;
-  border-radius: var(--radius-field);
+  border-radius: 9px;
   background: transparent;
   color: var(--color-text-muted);
+  font-size: 13.5px;
   text-align: left;
   cursor: pointer;
   transition:
@@ -91,6 +190,33 @@
   color: var(--color-text-primary);
 }
 
+.railItem:focus-visible,
+.expand:focus-visible,
+.search:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.navItem {
+  gap: 10px;
+}
+
+/* Subitem do projeto: 34 px, recuo de 30 px, texto só (sem ícone) quando aberta. */
+.subItem {
+  height: 34px;
+  padding: 0 10px 0 30px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.subIcon {
+  display: block;
+}
+
+.expanded .subIcon {
+  display: none;
+}
+
 .selected {
   background: var(--color-rail-selected);
   color: var(--color-text-primary);
@@ -100,7 +226,7 @@
   max-width: 0;
   margin-left: 0;
   overflow: hidden;
-  font-size: var(--font-size-body);
+  font-size: inherit;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -112,9 +238,35 @@
 }
 
 .expanded .railLabel {
-  max-width: 140px;
-  margin-left: var(--space-3);
+  max-width: 160px;
   opacity: 1;
+}
+
+.expanded .navItem .railLabel,
+.expanded .subItem .railLabel,
+.expanded .search .railLabel {
+  margin-left: 0;
+}
+
+/* Recolhida: só ícones e quadradinhos, centralizados; o texto some. */
+.rail:not(.expanded) .railItem {
+  justify-content: center;
+  height: 36px;
+  padding: 0;
+  gap: 0;
+}
+
+.rail:not(.expanded) .search {
+  justify-content: center;
+  padding: 0;
+}
+
+.rail:not(.expanded) .sectionLabel,
+.rail:not(.expanded) .count,
+.rail:not(.expanded) .methodology,
+.rail:not(.expanded) .archivedLabel,
+.rail:not(.expanded) .kbd {
+  display: none;
 }
 
 .soon {
@@ -146,6 +298,101 @@
   transform: translateY(-50%);
 }
 
+/* Área de navegação do projeto e da organização: rola se a janela for baixa. */
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.topGroup,
+.subGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Rótulos de seção: mono, caixa alta, cor de metadado (design: .lbl). */
+.sectionLabel {
+  display: block;
+  padding: 18px 10px 6px;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.projectRow {
+  padding-right: 10px;
+}
+
+.projectPressed {
+  color: var(--color-text-primary);
+}
+
+.expanded .projectRow .projectName {
+  flex: 1 1 auto;
+  max-width: none;
+  margin-left: 0;
+}
+
+.projectName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Metodologia à direita do nome: mono pequeno, como no design. */
+.methodology {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+.archivedLabel {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* Contagem à direita do subitem (S4, 6). Fica fora do nome acessível. */
+.count {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+.allProjects {
+  gap: 10px;
+}
+
+.allProjects[aria-pressed='true'] {
+  color: var(--color-text-primary);
+}
+
+.allProjectsMark {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--color-text-subtle);
+  border-radius: 2px;
+}
+
+.newProject {
+  color: var(--color-text-placeholder);
+}
+
 .spacer {
   flex: 1;
 }
@@ -153,12 +400,23 @@
 .divider {
   flex: none;
   height: 1px;
-  margin: 6px var(--space-2);
+  margin: 6px 0 0;
   background: var(--color-rail-border);
 }
 
 .account {
-  padding: 0 var(--space-2);
+  height: auto;
+  padding: 10px 8px;
+  gap: 10px;
+  border-top: 1px solid var(--color-rail-border);
+  border-radius: 0;
+  margin-top: 6px;
+}
+
+.rail:not(.expanded) .account {
+  justify-content: center;
+  height: auto;
+  padding: 10px 0;
 }
 
 .avatar {
@@ -170,7 +428,7 @@
   border-radius: 50%;
   background: var(--color-account-avatar);
   color: var(--color-text-primary);
-  font-size: var(--font-size-chip);
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -257,7 +515,7 @@
   gap: var(--space-4);
   min-height: 0;
   padding: var(--space-1) var(--space-6) var(--space-6);
-  animation: viewEnter var(--motion-duration-view) var(--ease-ios) both;
+  animation: viewEnter var(--motion-duration-view) var(--ease-ios) backwards;
 }
 
 @keyframes windowOpen {
@@ -289,11 +547,34 @@
   .expanded {
     flex-basis: 52px;
     width: 52px;
+    padding: 12px 4px;
+  }
+
+  .rail .railItem {
+    justify-content: center;
+    height: 36px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .rail .search {
+    justify-content: center;
+    padding: 0;
   }
 
   .railLabel,
-  .soon {
+  .soon,
+  .brandName,
+  .sectionLabel,
+  .count,
+  .methodology,
+  .archivedLabel,
+  .kbd {
     display: none;
+  }
+
+  .subIcon {
+    display: block;
   }
 
   .segmented {
@@ -306,81 +587,10 @@
   .content,
   .rail,
   .railItem,
-  .railLabel {
+  .railLabel,
+  .brandName {
     animation: none;
     transition-duration: 0.01ms;
-  }
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 8px;
-  font-family: var(--font-family-display);
-  font-size: 17px;
-  font-weight: 600;
-}
-.mark {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--color-primary-bg);
-  color: var(--color-on-primary);
-}
-.selected::after {
-  content: '';
-  position: absolute;
-  right: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary-bg);
-}
-.projectList {
-  display: none;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px 8px;
-}
-.expanded .projectList {
-  display: grid;
-  gap: 4px;
-}
-.projectItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--radius-chip);
-  background: transparent;
-  color: var(--color-text-muted);
-  text-align: left;
-  cursor: pointer;
-}
-.projectItem:hover,
-.projectItem[aria-pressed='true'] {
-  background: var(--color-rail-selected);
-  color: var(--color-text-primary);
-}
-.projectName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.count {
-  margin-left: auto;
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-}
-@media (max-width: 1100px) {
-  .expanded .projectList {
-    display: none;
   }
 }
 
@@ -394,12 +604,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.archivedLabel {
-  flex: none;
-  font-size: 11px;
-  color: var(--color-text-muted);
 }
 
 .newTask:disabled {

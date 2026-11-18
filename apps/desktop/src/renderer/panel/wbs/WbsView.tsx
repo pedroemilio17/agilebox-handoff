@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, EmptyState } from '@agilebox/ui'
+import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import {
   useCreateDeliverable,
   useMoveDeliverable,
@@ -9,7 +9,8 @@ import {
 } from '../hooks/use-wbs'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
-import { GuidedStart, NewDeliverableForm, wbsCopy } from './WbsForms'
+import { todayDateOnly } from '../../shared/lib/today'
+import { GuidedExample, GuidedStart, NewDeliverableForm, wbsCopy } from './WbsForms'
 import { WbsTable } from './WbsTable'
 import {
   actionErrorText,
@@ -20,7 +21,6 @@ import {
   formatCost,
   formatHours,
   isWbsEmpty,
-  progressTone,
   summaryCountText,
   visibleRows,
 } from './wbs-screen'
@@ -35,9 +35,9 @@ const copy = {
   readOnly: 'Só o gestor ou quem criou o projeto edita a EAP.',
   empty: 'Nenhuma entrega cadastrada.',
   footnote:
-    'O último nível de cada entrega são tarefas: elas aparecem no quadro. Horas, custo e progresso sobem somando os filhos. Custo = horas × valor/hora de cada responsável.',
+    'O último nível de cada entrega são tarefas: elas aparecem no quadro e no cronograma. Horas, custo e progresso sobem somando os filhos. Custo = horas × valor/hora de cada responsável.',
   footnoteNoCost:
-    'O último nível de cada entrega são tarefas: elas aparecem no quadro. Horas e progresso sobem somando os filhos.',
+    'O último nível de cada entrega são tarefas: elas aparecem no quadro e no cronograma. Horas e progresso sobem somando os filhos.',
   summary: 'Resumo',
   structure: 'Estrutura de entregas',
 } as const
@@ -45,7 +45,8 @@ const copy = {
 export interface WbsViewProps {
   /** Projeto selecionado no painel. Sem ele, a tela pede para escolher um. */
   readonly projectId: string | null
-  readonly projectName: string | null
+  /** Nome do projeto: a barra lateral já o mostra, então o cabeçalho da tela não repete. */
+  readonly projectName?: string | null
   /** Leva a outra tela, pelo botão "Abrir as entregas" do guia e pelo painel de ajuda. */
   readonly onNavigate?: (view: PanelView) => void
 }
@@ -54,7 +55,7 @@ export interface WbsViewProps {
  * Entregas (EAP) do projeto: estrutura em árvore, totais por entrega e criação direta. Quem não
  * pode editar vê tudo em leitura. Toda ação espera o servidor: nada é alterado só na tela.
  */
-export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
+export function WbsView({ projectId, onNavigate }: WbsViewProps) {
   const query = useWbs(projectId)
   const create = useCreateDeliverable()
   const rename = useRenameDeliverable()
@@ -158,7 +159,6 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{copy.title}</h2>
           <span className={styles.tag}>EAP</span>
-          {projectName ? <span className={styles.project}>{projectName}</span> : null}
           <ModuleHelpButton
             moduleId="wbs"
             projectId={projectId}
@@ -171,14 +171,14 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             </Button>
           ) : null}
           {canEdit && !showGuided ? (
-            <Button
+            <AddButton
               type="button"
               variant="primary"
               onClick={() => setAdding(true)}
               disabled={adding}
             >
               {wbsCopy.newDeliverable}
-            </Button>
+            </AddButton>
           ) : null}
         </div>
         {canEdit ? null : (
@@ -216,10 +216,9 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             <span className={styles.metricLabel}>Concluído</span>
             <span className={styles.progressLine}>
               <span className={styles.metricValue}>{summary.progress}%</span>
-              <span className={styles.track} aria-hidden="true">
+              <span className={`${styles.track} ${styles.trackSummary}`} aria-hidden="true">
                 <span
-                  className={styles.fill}
-                  data-tone={progressTone(summary.progress)}
+                  className={`${styles.fill} ${styles.fillSummary}`}
                   style={{ width: `${summary.progress}%` }}
                 />
               </span>
@@ -229,14 +228,17 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
       ) : null}
 
       {showGuided ? (
-        <GuidedStart
-          onCreate={async (title) => {
-            const created = await createDeliverable(null, title)
-            if (created) setGuidedOpen(true)
-            return created
-          }}
-          {...(empty ? {} : { onDone: () => setGuidedOpen(false) })}
-        />
+        <div className={empty ? styles.startGrid : undefined}>
+          <GuidedStart
+            onCreate={async (title) => {
+              const created = await createDeliverable(null, title)
+              if (created) setGuidedOpen(true)
+              return created
+            }}
+            {...(empty ? {} : { onDone: () => setGuidedOpen(false) })}
+          />
+          {empty ? <GuidedExample /> : null}
+        </div>
       ) : null}
 
       {adding && canEdit && !showGuided ? (
@@ -257,6 +259,7 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             collapsed={collapsed}
             canEdit={canEdit}
             costEnabled={costEnabled}
+            today={todayDateOnly()}
             onToggle={(id) =>
               setCollapsed((current) => {
                 const next = new Set(current)

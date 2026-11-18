@@ -71,6 +71,9 @@ const dashboard: DashboardDto = {
   insights: {
     updatedAt: '2026-11-01T12:00:00Z',
     weekStart: '2026-10-26',
+    projects: [],
+    needs: [],
+    updates: [],
     upToDatePercentage: 75,
     agingCount: 1,
     overdueCount: 0,
@@ -94,6 +97,11 @@ const dashboard: DashboardDto = {
         overdueCount: 0,
         blockedCount: 0,
         lastUpdatedAt: '2026-10-31T12:00:00Z',
+        projects: [],
+        staleDays: null,
+        overdueDays: null,
+        acceptancePendingCount: 0,
+        loadHours: 0,
       },
     ],
   },
@@ -178,20 +186,11 @@ describe('Perfis e permissões na tela', () => {
 })
 
 describe('Dashboard do gestor', () => {
-  it('seleciona semana e mostra o histórico de adesão e fluxo correspondente', async () => {
+  it('mostra a semana no cabeçalho, sem seletor de semana (desenho, tela 19)', async () => {
     const { user } = setup(MANAGER)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Semana do dashboard' }),
-      '2026-10-19',
-    )
-    expect(screen.getByText('50')).toBeTruthy()
-    expect(screen.getByText('6d')).toBeTruthy()
-    expect(
-      screen
-        .getByRole('img', { name: /Quadro em dia nas últimas seis semanas/ })
-        .getAttribute('aria-label'),
-    ).toContain('50')
+    expect(await screen.findByText('Semana 44 · 26–30 out')).toBeTruthy()
+    expect(screen.queryByRole('combobox', { name: 'Semana do dashboard' })).toBeNull()
   })
 
   it('mostra as bloqueadas no dashboard e abre o quadro com o filtro', async () => {
@@ -212,8 +211,7 @@ describe('Dashboard do gestor', () => {
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
     const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
       .parentElement as HTMLElement
-    expect(within(row).getByText('1 bloqueada')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /Bloqueadas.*com motivo registrado/ }))
+    await user.click(within(row).getByRole('button', { name: '1 bloqueada' }))
     const filter = await screen.findByRole('button', { name: 'Bloqueadas · 1' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
     expect(
@@ -222,24 +220,32 @@ describe('Dashboard do gestor', () => {
   })
 
   it('abre o quadro com o filtro da métrica selecionada', async () => {
-    const { user } = setup(MANAGER, [{ ...task, agingDays: 5, overdue: false }])
+    const insights = dashboard.insights!
+    const agingDashboard: DashboardDto = {
+      ...dashboard,
+      insights: {
+        ...insights,
+        team: insights.team.map((person) => ({ ...person, staleDays: 5 })),
+      },
+    }
+    const { user } = setup(MANAGER, [{ ...task, agingDays: 5, overdue: false }], agingDashboard)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    await user.click(await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ }))
+    const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
+      .parentElement as HTMLElement
+    await user.click(within(row).getByRole('button', { name: 'Parada 5d' }))
     const filter = await screen.findByRole('button', { name: 'Paradas · 1' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByRole('button', { name: `${task.key} · ${task.title}` })).toBeTruthy()
   })
 
-  it('mostra adesão, fluxo e sinais e abre os projetos de um colaborador', async () => {
+  it('mostra a equipe com em andamento e carga, e abre os projetos de um colaborador', async () => {
     const { listBoard, user } = setup(MANAGER)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    expect(await screen.findByRole('region', { name: 'Quadro em dia' })).toBeTruthy()
-    expect(screen.getByText('75')).toBeTruthy()
-    expect(screen.getByRole('img', { name: /Concluídas por semana/ })).toBeTruthy()
-    const row = screen.getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
+    const row = within(team).getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
       .parentElement as HTMLElement
     expect(within(row).getByText('2')).toBeTruthy()
-    expect(within(row).getByText('1 parada')).toBeTruthy()
+    expect(within(row).getByText('0 h')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
     expect(await screen.findByRole('status', { name: 'Tarefas de Bruno Lima' })).toBeTruthy()
@@ -285,7 +291,7 @@ describe('Membros do projeto', () => {
     expect(await screen.findByText('Ana Souza', { selector: 'span' })).toBeTruthy()
 
     await user.selectOptions(screen.getByLabelText('Adicionar membro'), 'Bruno Lima')
-    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar membro' }))
     await waitFor(() =>
       expect(addMember).toHaveBeenCalledWith({ projectId: projects[1]!.id, userId: BRUNO }),
     )
@@ -419,44 +425,50 @@ describe('Erros de permissão', () => {
     expect(screen.queryByText(/passou do limite/)).toBeNull()
   })
 
-  it('dashboard mostra a coluna acima do limite nas exceções', async () => {
+  it('dashboard mostra o WIP acima do limite em Precisa de você', async () => {
     const insights = dashboard.insights!
     const overDashboard: DashboardDto = {
       ...dashboard,
       insights: {
         ...insights,
-        overWipColumns: [{ status: 'in_progress', count: 5, limit: 3 }],
+        needs: [
+          {
+            id: `wip:${projects[0]!.id}:in_progress`,
+            kind: 'wip',
+            projectId: projects[0]!.id,
+            projectName: projects[0]!.name,
+            taskId: null,
+            text: 'Desenvolvendo está com 5 de 3.',
+            at: '2026-11-01T10:00:00Z',
+          },
+        ],
       },
     }
     const { user } = setup(MANAGER, [task], overDashboard)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
 
-    expect(await screen.findByText('Desenvolvendo acima do limite: 5/3')).toBeTruthy()
+    const needs = await screen.findByRole('list', { name: 'Precisa de você' })
+    expect(within(needs).getByText('Desenvolvendo está com 5 de 3.')).toBeTruthy()
   })
 
-  it('dashboard sem coluna acima do limite não mostra a linha de exceção', async () => {
+  it('dashboard sem sinal de WIP não mostra a linha', async () => {
     const { user } = setup(MANAGER, [task], dashboard)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
 
-    await screen.findByRole('button', { name: /Paradas.*há mais de 4 dias/ })
-    expect(screen.queryByRole('list', { name: 'Colunas acima do limite' })).toBeNull()
+    expect(await screen.findByText('Nenhum sinal pede decisão agora.')).toBeTruthy()
     expect(screen.queryByText(/acima do limite/)).toBeNull()
   })
 })
 
 describe('Exportar resumo do dashboard', () => {
-  it('gestor exporta o resumo da semana escolhida e vê "Resumo salvo."', async () => {
+  it('gestor exporta o resumo da semana do cabeçalho e vê "Resumo salvo."', async () => {
     const { api, user } = setup(MANAGER)
     const saveSummary = vi.spyOn(api.dashboard, 'saveSummary').mockResolvedValue({ saved: true })
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Semana do dashboard' }),
-      '2026-10-19',
-    )
     await user.click(screen.getByRole('button', { name: 'Exportar resumo do dashboard' }))
     await user.click(screen.getByRole('menuitem', { name: 'Planilha (.csv)' }))
 
-    expect(saveSummary).toHaveBeenCalledWith({ format: 'csv', period: '2026-10-19' })
+    expect(saveSummary).toHaveBeenCalledWith({ format: 'csv', period: '2026-10-26' })
     expect(await screen.findByText('Resumo salvo.')).toBeTruthy()
   })
 

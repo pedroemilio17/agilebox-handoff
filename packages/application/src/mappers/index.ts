@@ -1,3 +1,4 @@
+import type { ProjectPresetKey } from '@agilebox/core'
 import {
   canSeeEstimatedCost,
   estimatedCostOf,
@@ -115,7 +116,11 @@ export function toContributorDto(contributor: Contributor, actor: Actor): Contri
   }
 }
 
-export function toProjectDto(project: Project, definitionOfDoneCount: number): ProjectDto {
+export function toProjectDto(
+  project: Project,
+  definitionOfDoneCount: number,
+  startedFromPreset: ProjectPresetKey | null = null,
+): ProjectDto {
   return {
     id: project.id,
     name: project.name,
@@ -123,6 +128,7 @@ export function toProjectDto(project: Project, definitionOfDoneCount: number): P
     createdAt: project.createdAt,
     definitionOfDoneCount,
     archivedAt: project.archivedAt,
+    startedFromPreset,
   }
 }
 

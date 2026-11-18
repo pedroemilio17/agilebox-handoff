@@ -131,6 +131,19 @@ describe('casos de uso de projetos', () => {
     ).toHaveLength(2)
   })
 
+  it('a lista traz o preset de partida ("começou como") de cada projeto', async () => {
+    const { useCases } = setup()
+    const context = createTenantContext(actor)
+    const started = await useCases.projects.createWithSetup.execute(context, {
+      name: 'Com assistente',
+      startedFromPreset: 'agil',
+    })
+    const plain = await useCases.projects.createProject.execute(context, { name: 'Sem assistente' })
+    const listed = await useCases.projects.listProjects.execute(context)
+    expect(listed.find((project) => project.id === started.id)?.startedFromPreset).toBe('agil')
+    expect(listed.find((project) => project.id === plain.id)?.startedFromPreset).toBeNull()
+  })
+
   it('permite ao criador adicionar e remover membro, com notificações', async () => {
     const { useCases, unitOfWork, notifier } = setup()
     const project = aProject().build()

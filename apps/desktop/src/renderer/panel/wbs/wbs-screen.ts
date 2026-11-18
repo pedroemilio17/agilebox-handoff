@@ -167,3 +167,31 @@ export function actionErrorText(error: unknown): string {
   if (error instanceof ApiError && error.message.trim() !== '') return error.message
   return 'Não foi possível salvar a alteração. Tente de novo.'
 }
+
+const DAY_MS = 86_400_000
+
+function utcDayOf(dateOnly: string): number {
+  const [year, month, day] = dateOnly.split('-').map(Number)
+  return Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1) / DAY_MS
+}
+
+/**
+ * Dias de atraso de uma tarefa sem concluir, com o prazo antes de hoje. Sem prazo, concluída ou no
+ * prazo: `null`, e a linha não ganha o aviso.
+ */
+export function overdueDays(deadline: string | null, done: boolean, today: string): number | null {
+  if (done || deadline === null) return null
+  const days = utcDayOf(today) - utcDayOf(deadline)
+  return days > 0 ? days : null
+}
+
+/** Aviso de atraso da tarefa: "7 dias atrás", ou "1 dia atrás". */
+export function overdueText(days: number): string {
+  return `${days} ${days === 1 ? 'dia' : 'dias'} atrás`
+}
+
+/** Dia e mês de uma data `AAAA-MM-DD`: "18/12". */
+export function dayMonthText(dateOnly: string): string {
+  const [, month, day] = dateOnly.split('-')
+  return `${day}/${month}`
+}

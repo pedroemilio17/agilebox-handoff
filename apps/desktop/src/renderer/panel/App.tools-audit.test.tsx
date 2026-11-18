@@ -36,12 +36,18 @@ const CARD = /^AB-118 · /
 const LEVELS: ExperienceLevel[] = ['basic', 'intermediate', 'advanced']
 
 /** Itens da barra lateral: botões diretos da navegação (sem a lista de projetos). */
+/**
+ * Itens do menu da barra, na ordem da tela. Projetos (botões com aria-pressed), a conta e o
+ * "Novo projeto" não são itens de menu e ficam de fora.
+ */
 function railItems(): string {
   const nav = screen.getByRole('navigation', { name: 'Navegação principal' })
-  const names = Array.from(nav.children)
-    .filter((element): element is HTMLButtonElement => element.tagName === 'BUTTON')
+  const names = Array.from(nav.querySelectorAll<HTMLButtonElement>('button'))
+    .filter(
+      (button) => !button.hasAttribute('aria-pressed') && !button.hasAttribute('aria-haspopup'),
+    )
     .map((button) => button.getAttribute('aria-label') ?? button.textContent ?? '')
-    .filter((name) => !/^(Recolher|Expandir|Início|Buscar ou criar)/.test(name))
+    .filter((name) => !/^(Recolher|Expandir|Início|Buscar ou criar|Novo projeto)/.test(name))
   return names.map((name) => name.replace(', Em breve', ' (em breve)')).join(', ')
 }
 
@@ -157,20 +163,15 @@ async function auditManager(user: ReturnType<typeof userEvent.setup>): Promise<s
   await screen.findByRole('region', { name: 'Concluído, tarefas' })
   const lines: string[] = []
   await user.click(screen.getByRole('button', { name: 'Dashboard' }))
-  await screen.findByRole('region', { name: 'Quadro em dia' })
+  // Sinais da equipe (Bloqueadas, Paradas, Diária de hoje) e "Precisa de você" (WIP); fluxo nos cartões.
+  const dashTeam = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
   lines.push(
     `  dashboard: ${present([
-      ['Bloqueadas', screen.queryByRole('button', { name: /^Bloqueadas/ }) !== null],
-      ['Paradas', screen.queryByRole('button', { name: /^Paradas/ }) !== null],
-      [
-        'colunas acima do limite',
-        screen.queryByRole('list', { name: 'Colunas acima do limite' }) !== null,
-      ],
-      [
-        'fluxo de seis semanas',
-        screen.queryByRole('region', { name: 'Fluxo de seis semanas' }) !== null,
-      ],
-      ['daily de hoje', screen.queryByText(/Daily de hoje/) !== null],
+      ['Bloqueadas', within(dashTeam).queryByText(/^\d+ bloqueadas?$/) !== null],
+      ['Paradas', within(dashTeam).queryByText(/^Parada \d+d$/) !== null],
+      ['colunas acima do limite', screen.queryByText(/está com \d+ de \d+\./) !== null],
+      ['lead time nos cartões', screen.queryByText('Lead time médio') !== null],
+      ['daily de hoje', within(dashTeam).queryByText('Diária de hoje') !== null],
     ])}`,
   )
   await user.click(screen.getByRole('button', { name: 'Ajustes' }))
@@ -211,7 +212,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
     expect(report.join('\n')).toMatchInlineSnapshot(`
       "Kanban simples · Básico
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
         backlog: fora do menu
@@ -222,7 +223,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Kanban simples · Intermediário
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
         backlog: fora do menu
@@ -233,7 +234,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Kanban simples · Avançado
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: badge parada no card
         detalhe: nenhum
         backlog: fora do menu
@@ -244,18 +245,18 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Básico
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação
+        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Atualização diária, Impedimentos, Estimativa, Critérios de aceitação
         gestor
         dashboard: Bloqueadas, Paradas
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Intermediário
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
@@ -266,7 +267,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum · Avançado
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
@@ -277,62 +278,62 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Kanban com fluxo · Básico
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: badge parada no card, progresso de subtarefas no card
         detalhe: nenhum
         backlog: fora do menu
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
+        ajustes: somente leitura; avisos de nível: Limites WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
         dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Kanban com fluxo · Intermediário
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: badge parada no card, progresso de subtarefas no card
         detalhe: nenhum
         backlog: fora do menu
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Limites de WIP, Subtarefas e dependências, Métricas de fluxo
+        ajustes: somente leitura; avisos de nível: Limites WIP, Subtarefas e dependências, Métricas de fluxo
         gestor
         dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Kanban com fluxo · Avançado
         colaborador
-        menu: Quadro, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Plug-ins (em breve), Ajustes
         quadro: filtro Paradas, badge parada no card, medidor WIP, ciclo médio, progresso de subtarefas no card
         detalhe: Subtarefas
         backlog: fora do menu
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
-        dashboard: Paradas, colunas acima do limite, fluxo de seis semanas
+        dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Básico
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Check-ins, Impedimentos, Estimativas em horas, Critérios de aceitação, Review e retro, Burndown e velocity
+        ajustes: somente leitura; avisos de nível: Backlog, Sprints, Atualização diária, Impedimentos, Estimativa, Critérios de aceitação, Cerimônias, Burndown e velocidade
         gestor
         dashboard: Bloqueadas, Paradas
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Intermediário
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto
         agenda: aberta
-        ajustes: somente leitura; avisos de nível: Review e retro, Burndown e velocity
+        ajustes: somente leitura; avisos de nível: Cerimônias, Burndown e velocidade
         gestor
         dashboard: Bloqueadas, Paradas, daily de hoje
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Avançado
         colaborador
-        menu: Quadro, Backlog, Sprints, Impedimentos, Agenda, Plug-ins (em breve), Ajustes
+        menu: Agenda, Quadro, Backlog, Sprints, Impedimentos, Plug-ins (em breve), Ajustes
         quadro: filtro Bloqueadas, badge parada no card, filtro Sprint ativa, marcador de bloqueio no card, marcador de critérios no card, estimativa no card
         detalhe: motivo do bloqueio, Resolver impedimento, Histórico de impedimentos, Critérios de aceitação, Estimativa (h)
         backlog: aberto

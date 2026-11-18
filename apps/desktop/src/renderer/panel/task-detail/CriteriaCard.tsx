@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { AcceptanceCriterionDto, GetTaskDto } from '@agilebox/contract'
-import { IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
+import { AddButton, IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import {
   useAddCriterion,
@@ -131,17 +131,20 @@ export function CriteriaCard({ task, readOnly, windingDown }: CriteriaCardProps)
       ) : null}
       {creating ? (
         <form noValidate onSubmit={submitAdd}>
-          <TextField
-            id={addFieldId}
-            label={panelCopy.criteriaAddLabel}
-            value={draft}
-            aria-invalid={addError !== null}
-            aria-describedby={addError ? `${addFieldId}-error` : undefined}
-            onChange={(event) => {
-              setDraft(event.currentTarget.value)
-              if (addError) setAddError(validateCriterionText(event.currentTarget.value))
-            }}
-          />
+          <div className={styles.addRow}>
+            <TextField
+              id={addFieldId}
+              label={panelCopy.criteriaAddLabel}
+              value={draft}
+              aria-invalid={addError !== null}
+              aria-describedby={addError ? `${addFieldId}-error` : undefined}
+              onChange={(event) => {
+                setDraft(event.currentTarget.value)
+                if (addError) setAddError(validateCriterionText(event.currentTarget.value))
+              }}
+            />
+            <AddButton type="submit">{panelCopy.criteriaAddLabel}</AddButton>
+          </div>
           {addError ? (
             <p id={`${addFieldId}-error`} role="alert" className={styles.blockError}>
               {addError}

@@ -219,11 +219,15 @@ describe('Painel', () => {
       </ApiProvider>,
     )
     const nav = within(screen.getByRole('navigation'))
-    const project = await nav.findByRole('button', { name: /Projeto Boreal/ })
-    await userEvent.click(project)
+    await userEvent.click(await nav.findByRole('button', { name: /Projeto Boreal/ }))
     expect(listBoard).toHaveBeenLastCalledWith({ projectId: projects[1]!.id })
-    expect(project.getAttribute('aria-pressed')).toBe('true')
-    expect(nav.getByRole('button', { name: /Projeto Aurora/ }).textContent).toContain('1')
+    // Ao ser escolhido, o projeto sobe para a seção "Projeto" (o botão é outro nó na tela).
+    expect(nav.getByRole('button', { name: /Projeto Boreal/ }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
+    expect(nav.getByRole('button', { name: /Projeto Aurora/ }).getAttribute('aria-pressed')).toBe(
+      'false',
+    )
     expect(nav.getByRole('button', { name: /Plug-ins/ }).hasAttribute('disabled')).toBe(true)
   })
 
@@ -453,7 +457,10 @@ describe('Painel', () => {
         name: 'Projeto atual: Todos os projetos. Trocar de projeto',
       }),
     )
-    await user.click(screen.getByRole('button', { name: 'Novo projeto' }))
+    // "Novo projeto" também existe na barra lateral; aqui vale o botão do seletor aberto.
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Novo projeto' }),
+    )
     await user.type(screen.getByRole('textbox', { name: 'Nome do novo projeto' }), 'Projeto Novo')
     await user.click(screen.getByRole('button', { name: 'Criar' }))
     // "Criar" abre o assistente com o nome; pular cria o projeto Simples.
@@ -534,7 +541,10 @@ describe('Painel', () => {
         name: 'Projeto atual: Todos os projetos. Trocar de projeto',
       }),
     )
-    await user.click(screen.getByRole('button', { name: 'Novo projeto' }))
+    // "Novo projeto" também existe na barra lateral; aqui vale o botão do seletor aberto.
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Novo projeto' }),
+    )
     await user.type(
       screen.getByRole('textbox', { name: 'Nome do novo projeto' }),
       '  projeto aurora  ',

@@ -18,8 +18,8 @@ export interface ModuleHelpPanelProps {
 }
 
 /**
- * Painel "Como funciona" de um módulo: vidro à direita, com o objetivo, o porquê, o fluxo do
- * manifesto e as ligações com outros módulos no estado do projeto. O foco fica preso no painel e
+ * Painel "Como funciona" de um módulo (design: Tutorial.dc.html): vidro à direita, com o objetivo, o
+ * porquê, o fluxo do manifesto e as ligações com outros módulos no estado do projeto. O foco fica preso no painel e
  * volta ao botão "?" ao fechar. Esc e o botão Fechar fecham.
  */
 export function ModuleHelpPanel({
@@ -73,9 +73,26 @@ export function ModuleHelpPanel({
             </div>
             <p className={styles.objective}>{help.objective}</p>
           </div>
-          <Button className={styles.close} onClick={onClose}>
-            {moduleHelpCopy.close}
-          </Button>
+          <button
+            type="button"
+            className={styles.close}
+            aria-label={moduleHelpCopy.close}
+            onClick={onClose}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12" />
+              <path d="M18 6L6 18" />
+            </svg>
+          </button>
         </header>
 
         <section className={styles.section}>
@@ -126,14 +143,13 @@ export function ModuleHelpPanel({
         <footer className={styles.footer}>
           {onNavigate ? (
             <Button
-              variant="primary"
               className={styles.review}
               onClick={() => {
                 onClose()
                 onNavigate('projects')
               }}
             >
-              {moduleHelpCopy.reviewSteps}
+              {moduleHelpCopy.reviewSteps(help.name)}
             </Button>
           ) : null}
           {help.experience ? (

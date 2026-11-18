@@ -4,64 +4,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { format, parseISO } from 'date-fns'
 import { ApiError } from '@agilebox/contract'
 import type { AgileBoxApi } from '@agilebox/contract'
-import type { DailyEntryDto, DashboardDto } from '@agilebox/contract'
+import type { DailyEntryDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { QueryProvider } from '../../shared/query/QueryProvider'
 import { todayDateOnly } from '../../shared/lib/today'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { DashboardView } from './DashboardView'
+import { ANA, BRUNO, dashboardFixture } from './dashboard-fixtures'
 
 afterEach(cleanup)
 
 const TODAY = todayDateOnly()
 const TODAY_LABEL = format(parseISO(TODAY), 'dd/MM/yyyy')
-const BRUNO = '01HZBRUNO0000000000000000A'
-const ANA = '01HZANA00000000000000000B'
-
-const insights = {
-  updatedAt: '2026-11-04T12:00:00Z',
-  weekStart: '2026-11-02',
-  upToDatePercentage: 75,
-  agingCount: 0,
-  overdueCount: 0,
-  blockedCount: 0,
-  overWipColumns: [],
-  cycleDays: 3,
-  leadDays: 5,
-  throughput: 2,
-  weeks: [
-    { start: '2026-11-02', throughput: 2, cycleDays: 3, leadDays: 5, upToDatePercentage: 75 },
-  ],
-  recentChanges: [],
-  team: [
-    {
-      user: { id: BRUNO, name: 'Bruno Lima', initials: 'BL', role: 'collaborator' as const },
-      taskCount: 3,
-      completedPercentage: 25,
-      inProgress: 2,
-      agingCount: 0,
-      overdueCount: 0,
-      blockedCount: 0,
-      lastUpdatedAt: '2026-11-04T10:00:00Z',
-    },
-    {
-      user: { id: ANA, name: 'Ana Souza', initials: 'AS', role: 'collaborator' as const },
-      taskCount: 2,
-      completedPercentage: 0,
-      inProgress: 1,
-      agingCount: 0,
-      overdueCount: 0,
-      blockedCount: 0,
-      lastUpdatedAt: '2026-11-04T09:00:00Z',
-    },
-  ],
-}
-
-const dashboard: DashboardDto = {
-  insights,
-  distribution: { planning: 0, todo: 0, in_progress: 0, review: 0, done: 0 },
-  collaborators: [],
-}
+const dashboard = dashboardFixture()
 
 const entry: DailyEntryDto = {
   id: '01HZENTRY000000000000000001',
@@ -112,7 +67,13 @@ function setup(
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <DashboardView onOpenProjects={onOpenProjects} onNotice={onNotice} />
+        <DashboardView
+          onOpenProjects={onOpenProjects}
+          onOpenProject={vi.fn()}
+          onOpenTask={vi.fn()}
+          onOpenUpdates={vi.fn()}
+          onNotice={onNotice}
+        />
       </QueryProvider>
     </ApiProvider>,
   )
@@ -120,17 +81,17 @@ function setup(
 }
 
 describe('coluna Daily de hoje no dashboard', () => {
-  it('mostra Feita e Pendente com texto e ícone, e o contador de feitas', async () => {
+  it('mostra "✓ respondida" e "pendente" na coluna Diária de hoje, sem contador (desenho, tela 19)', async () => {
     setup()
-    expect(await screen.findByText('Feita')).toBeTruthy()
-    expect(screen.getByText('Pendente')).toBeTruthy()
-    expect(screen.getByText('Daily de hoje · 1 de 2')).toBeTruthy()
-    expect(screen.getByRole('group', { name: '1 de 2 dailies feitas hoje' })).toBeTruthy()
+    expect(await screen.findByText('✓ respondida')).toBeTruthy()
+    expect(screen.getByText('pendente')).toBeTruthy()
+    expect(screen.getByText('Diária de hoje')).toBeTruthy()
+    expect(screen.queryByText(/dailies feitas hoje/)).toBeNull()
   })
 
   it('só quem tem daily ganha o botão Ver, com nome na etiqueta', async () => {
     setup()
-    await screen.findByText('Feita')
+    await screen.findByText('✓ respondida')
     expect(screen.getByRole('button', { name: 'Ver a daily de Bruno Lima' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Ver a daily de Ana Souza' })).toBeNull()
   })
@@ -143,7 +104,7 @@ describe('coluna Daily de hoje no dashboard', () => {
 
   it('pede a lista da data de hoje', async () => {
     const { api } = setup()
-    await screen.findByText('Feita')
+    await screen.findByText('✓ respondida')
     expect(api.daily.listForDate).toHaveBeenCalledWith({ date: TODAY })
   })
 })
@@ -232,7 +193,7 @@ describe('falha ao listar as dailies', () => {
       { userId: BRUNO, userName: 'Bruno Lima', done: true },
     ])
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-    expect(await screen.findByText('Feita')).toBeTruthy()
+    expect(await screen.findByText('✓ respondida')).toBeTruthy()
     expect(onNotice).toHaveBeenCalledTimes(1)
   })
 })

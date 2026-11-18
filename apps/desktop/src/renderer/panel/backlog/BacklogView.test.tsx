@@ -166,6 +166,17 @@ describe('Backlog: lista e criação rápida', () => {
     await waitFor(() => expect((field as HTMLInputElement).value).toBe(''))
   })
 
+  it('botão "Adicionar ao backlog" inclui o item pelo backlog.add, sem precisar de Enter', async () => {
+    const user = userEvent.setup()
+    const s = setup()
+    const field = await screen.findByRole('textbox', { name: 'Adicionar ao backlog' })
+    await user.type(field, 'Ideia pelo botão')
+    await user.click(screen.getByRole('button', { name: 'Adicionar ao backlog' }))
+    await waitFor(() =>
+      expect(s.add).toHaveBeenCalledWith({ projectId: PROJECT_ID, title: 'Ideia pelo botão' }),
+    )
+  })
+
   it('título vazio não chama o servidor e avisa', async () => {
     const user = userEvent.setup()
     const s = setup()

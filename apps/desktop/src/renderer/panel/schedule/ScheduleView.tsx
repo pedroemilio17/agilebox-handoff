@@ -5,11 +5,13 @@ import { ModuleEmptyState } from '../guide/ModuleEmptyState'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useWbs } from '../hooks/use-wbs'
+import { useBaseline } from '../hooks/use-baseline'
 import { useSchedule } from '../hooks/use-schedule'
 import { ScheduleDependencies } from './ScheduleDependencies'
 import { ScheduleGantt } from './ScheduleGantt'
 import { ScheduleTaskTable } from './ScheduleTaskTable'
 import {
+  baselineDayMonth,
   conflictSummary,
   fullDate,
   groupTasks,
@@ -20,6 +22,8 @@ import styles from './ScheduleView.module.css'
 
 export const scheduleCopy = {
   title: 'Cronograma',
+  baselineSwitch: 'Linha de base de',
+  alertNote: 'Ver acompanhamento',
   noProject: 'Escolha um projeto para ver o cronograma.',
   loading: 'Carregando o cronograma…',
   loadError: 'Não foi possível carregar o cronograma deste projeto.',
@@ -28,11 +32,10 @@ export const scheduleCopy = {
   legend: 'Legenda',
   inProgress: 'Em andamento',
   done: 'Concluída',
-  future: 'Futura',
-  late: 'Atrasada',
+  late: 'Atrasada em relação à base',
+  baseline: 'Linha de base',
   milestone: 'Marco',
   today: 'Hoje',
-  conflict: 'Dependência com conflito',
   alert: 'Conflitos de dependência',
   alertTag: 'Atenção',
   emptyFallback: 'Nenhuma tarefa com datas ainda.',
@@ -41,7 +44,8 @@ export const scheduleCopy = {
 export interface ScheduleViewProps {
   /** Projeto selecionado no painel. Sem ele, a tela pede para escolher um. */
   readonly projectId: string | null
-  readonly projectName: string | null
+  /** Nome do projeto: a barra lateral já o mostra, então o cabeçalho da tela não repete. */
+  readonly projectName?: string | null
   /** Leva a outra tela, pelo painel de ajuda. */
   readonly onNavigate?: (view: PanelView) => void
 }
@@ -50,13 +54,22 @@ export interface ScheduleViewProps {
  * Cronograma do projeto: Gantt com escala Semanas ou Meses, lista de datas e dependências. Só quem
  * pode editar a tarefa altera as datas e as dependências dela. Toda ação espera o servidor.
  */
-export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleViewProps) {
+export function ScheduleView({ projectId, onNavigate }: ScheduleViewProps) {
   const capabilities = useCapabilities()
   // A EAP só agrupa o Gantt quando o módulo `wbs` está ligado no projeto selecionado.
   const wbsOn = capabilities.showScreen('wbs')
   const query = useSchedule(projectId)
   const wbs = useWbs(wbsOn ? projectId : null)
+  // Linha de base: só com o módulo `baseline` ligado e uma foto tirada. Liga e desliga na tela.
+  const baselineOn = capabilities.showScreen('baseline')
+  const baselineQuery = useBaseline(baselineOn ? projectId : null)
   const [scale, setScale] = useState<ScheduleScale>('weeks')
+  const [showBaseline, setShowBaseline] = useState(true)
+  const baselinePhoto = baselineQuery.data?.baseline ?? null
+  const baselineMap =
+    showBaseline && baselinePhoto !== null
+      ? new Map((baselineQuery.data?.tasks ?? []).map((task) => [task.taskId, task] as const))
+      : null
 
   if (projectId === null) {
     return (
@@ -101,7 +114,6 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
       <header className={styles.header}>
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{scheduleCopy.title}</h2>
-          {projectName ? <span className={styles.project}>{projectName}</span> : null}
           {view.range ? (
             <span className={styles.range}>
               {fullDate(view.range.start)} → {fullDate(view.range.end)}
@@ -126,6 +138,20 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
               </button>
             ))}
           </div>
+          {baselinePhoto !== null ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBaseline}
+              className={styles.switch}
+              onClick={() => setShowBaseline((current) => !current)}
+            >
+              <span className={styles.track} data-on={showBaseline} aria-hidden="true">
+                <span className={styles.knob} />
+              </span>
+              {`${scheduleCopy.baselineSwitch} ${baselineDayMonth(baselinePhoto.takenAt)}`}
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -139,12 +165,12 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
           {scheduleCopy.done}
         </li>
         <li>
-          <span className={`${styles.swatch} ${styles.swatchFuture}`} aria-hidden="true" />
-          {scheduleCopy.future}
-        </li>
-        <li>
           <span className={`${styles.swatch} ${styles.swatchLate}`} aria-hidden="true" />
           {scheduleCopy.late}
+        </li>
+        <li>
+          <span className={`${styles.swatch} ${styles.swatchLine}`} aria-hidden="true" />
+          {scheduleCopy.baseline}
         </li>
         <li>
           <span className={`${styles.swatch} ${styles.swatchDiamond}`} aria-hidden="true" />
@@ -153,10 +179,6 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
         <li>
           <span className={`${styles.swatch} ${styles.swatchToday}`} aria-hidden="true" />
           {scheduleCopy.today}
-        </li>
-        <li>
-          <span className={`${styles.swatch} ${styles.swatchLine}`} aria-hidden="true" />
-          {scheduleCopy.conflict}
         </li>
       </ul>
 
@@ -173,6 +195,7 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
           scale={scale}
           groups={groups}
           view={view}
+          baseline={baselineMap}
         />
       )}
 
@@ -185,7 +208,12 @@ export function ScheduleView({ projectId, projectName, onNavigate }: ScheduleVie
       {conflict ? (
         <section aria-label={scheduleCopy.alert} className={styles.alert}>
           <span className={styles.alertTag}>{scheduleCopy.alertTag}</span>
-          <p className={styles.note}>{conflict}</p>
+          <p className={styles.alertText}>{conflict}</p>
+          {onNavigate ? (
+            <Button type="button" onClick={() => onNavigate('tracking')}>
+              {scheduleCopy.alertNote}
+            </Button>
+          ) : null}
         </section>
       ) : null}
     </section>
