@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import type { MilestoneListItemDto } from '@agilebox/contract'
-import { Button, EmptyState } from '@agilebox/ui'
+import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { todayDateOnly } from '../../shared/lib/today'
 import { ModuleEmptyState } from '../guide/ModuleEmptyState'
@@ -164,9 +164,9 @@ export function MilestonesView({ projectId, projectName, onNavigate }: Milestone
           />
           <span className={styles.spacer} />
           {canEdit && !empty && !adding ? (
-            <Button type="button" variant="primary" onClick={() => setAdding(true)}>
+            <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {copy.newMilestone}
-            </Button>
+            </AddButton>
           ) : null}
         </div>
         {canEdit ? null : (
@@ -199,9 +199,9 @@ export function MilestonesView({ projectId, projectName, onNavigate }: Milestone
           fallbackTitle="Nenhum marco ainda."
         >
           {canEdit ? (
-            <Button type="button" variant="primary" onClick={() => setAdding(true)}>
+            <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {copy.newMilestone}
-            </Button>
+            </AddButton>
           ) : null}
         </ModuleEmptyState>
       ) : null}

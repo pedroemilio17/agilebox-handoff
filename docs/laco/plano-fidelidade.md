@@ -17,7 +17,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
 
 - [x] F1 Barra lateral conforme o design (estrutura do projeto, subitens, rótulos, contagens, ícones, medidas).
 - [x] B1 Arrastar cartões ancorados no ponto do clique (item 4).
-- [ ] B2 Botão "+" nos pontos de inclusão (item 3).
+- [x] B2 Botão "+" nos pontos de inclusão (item 3).
 - [ ] B3 Guia em todas as telas do passo a passo, com ponte entre funcionalidades (item 2).
 - [ ] F2.. Auditoria e ajuste tela a tela contra o canvas, na ordem 01, 02, 03, 04, 05, 06, 07 ... 20. Cada passo: comparar markup do `.dc.html` com a tela do app (medidas, textos, estados), listar divergências, corrigir, atualizar testes sem enfraquecê-los.
   - [ ] 01 wizard · [ ] 02 recomendação · [ ] 03 módulos (inclui painel "Proposta" lateral, que depende da regra "gestor propõe, equipe aceita" ainda indefinida: registrar, não inventar) · [ ] 04 primeiros passos · [ ] 05 botão ? · [ ] 06 boas-vindas

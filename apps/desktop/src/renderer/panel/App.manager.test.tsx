@@ -285,7 +285,7 @@ describe('Membros do projeto', () => {
     expect(await screen.findByText('Ana Souza', { selector: 'span' })).toBeTruthy()
 
     await user.selectOptions(screen.getByLabelText('Adicionar membro'), 'Bruno Lima')
-    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar membro' }))
     await waitFor(() =>
       expect(addMember).toHaveBeenCalledWith({ projectId: projects[1]!.id, userId: BRUNO }),
     )

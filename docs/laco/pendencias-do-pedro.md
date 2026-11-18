@@ -170,3 +170,10 @@
 - CONFERIR rodando: cartão sob o ponteiro com rolagem e janela de vários tamanhos; cartões da coluna agora devem abrir espaço ao arrastar (antes `cardEnter both` anulava o transform do dnd-kit).
 - DECIDIR: a inclinação de 2° do cartão arrastado não está no design (lá só `opacity: .45`); mantida, remover se não quiser.
 - Outros `position: fixed` dentro de `.window` (menus, tooltips) podem sofrer do mesmo backdrop-filter; não vi sintoma.
+
+## Botão "+" nos pontos de inclusão (B2)
+
+- Novo `AddButton` em `packages/ui` ("+" do design + rótulo em texto) em 14 pontos: Backlog, subtarefa, critério de aceite, definição de pronto, combinados da retro, envolvidos, membros, entrega, marco, risco, sprint, agendamento, dependência, nova tarefa. Backlog, subtarefa e critério só tinham campo + Enter e ganharam botão.
+- DECIDIR: altura 44 px (padrão do app) ou 40 px (design `btn2`)? Hoje 44 px.
+- DECIDIR: rótulos "Adicionar item" (definição de pronto) e "Adicionar combinado" (retro); no Backlog o campo e o botão repetem "Adicionar ao backlog".
+- Não alterados: criação rápida da bandeja (já tem "+"), comentários, "Levar à sprint" (move item existente), "Criar" dentro dos formulários. Incluir também?

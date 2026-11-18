@@ -61,6 +61,19 @@ describe('Critérios de aceitação no detalhe', () => {
     ).toBeTruthy()
   })
 
+  it('botão "Adicionar critério" inclui o critério pelo criteria.add, sem precisar de Enter', async () => {
+    const user = userEvent.setup()
+    const spies = setup(detail([]))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Adicionar critério' }),
+      'Pagamento confirma',
+    )
+    await user.click(screen.getByRole('button', { name: 'Adicionar critério' }))
+    await waitFor(() =>
+      expect(spies.add).toHaveBeenCalledWith({ taskId: TASK_ID, text: 'Pagamento confirma' }),
+    )
+  })
+
   it('Enter adiciona o critério pelo criteria.add e limpa o campo', async () => {
     const user = userEvent.setup()
     const spies = setup(detail([]))

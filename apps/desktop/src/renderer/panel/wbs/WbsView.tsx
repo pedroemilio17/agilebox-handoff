@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, EmptyState } from '@agilebox/ui'
+import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import {
   useCreateDeliverable,
   useMoveDeliverable,
@@ -171,14 +171,14 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             </Button>
           ) : null}
           {canEdit && !showGuided ? (
-            <Button
+            <AddButton
               type="button"
               variant="primary"
               onClick={() => setAdding(true)}
               disabled={adding}
             >
               {wbsCopy.newDeliverable}
-            </Button>
+            </AddButton>
           ) : null}
         </div>
         {canEdit ? null : (

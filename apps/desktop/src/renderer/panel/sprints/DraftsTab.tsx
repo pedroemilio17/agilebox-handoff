@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sprintLabel } from '@agilebox/core'
 import type { SprintDto, TaskDto } from '@agilebox/contract'
-import { Button, EmptyState, Modal } from '@agilebox/ui'
+import { AddButton, Button, EmptyState, Modal } from '@agilebox/ui'
 import { refusalMessage } from '../backlog/refusal-message'
 import { SprintForm } from './SprintForm'
 import { BacklogPicker, hoursText, SprintItemRow } from './SprintItems'
@@ -164,7 +164,7 @@ export function DraftsTab({
       <div className={styles.toolbarRow}>
         <h2 className={styles.sectionHeading}>{sprintCopy.draftsTitle}</h2>
         {windingDown ? null : (
-          <Button
+          <AddButton
             type="button"
             onClick={() => {
               setFormError(null)
@@ -172,7 +172,7 @@ export function DraftsTab({
             }}
           >
             {sprintCopy.newSprint}
-          </Button>
+          </AddButton>
         )}
       </div>
 

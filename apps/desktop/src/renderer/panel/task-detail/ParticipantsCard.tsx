@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { GetTaskDto, Participant } from '@agilebox/contract'
-import { Avatar, Button } from '@agilebox/ui'
+import { AddButton, Avatar } from '@agilebox/ui'
 import { useSessionUsers } from '../hooks/use-session-users'
 import { panelCopy } from '../copy'
 import { PropertyRow } from './PropertyRow'
@@ -136,9 +136,9 @@ export function ParticipantsCard({ task, readOnly }: ParticipantsCardProps) {
                 {panelCopy.responsible}
               </option>
             </select>
-            <Button type="button" disabled={!participant || add.isPending} onClick={submitAdd}>
-              {panelCopy.add}
-            </Button>
+            <AddButton type="button" disabled={!participant || add.isPending} onClick={submitAdd}>
+              {panelCopy.addParticipant}
+            </AddButton>
             <input
               aria-label={panelCopy.newEntityName}
               className={styles.select}
@@ -146,13 +146,13 @@ export function ParticipantsCard({ task, readOnly }: ParticipantsCardProps) {
               value={entityName}
               onChange={(event) => setEntityName(event.currentTarget.value)}
             />
-            <Button
+            <AddButton
               type="button"
               disabled={!entityName.trim() || createContributor.isPending}
               onClick={submitEntity}
             >
               {panelCopy.createEntity}
-            </Button>
+            </AddButton>
             <SaveError error={add.error ?? remove.error ?? createContributor.error} />
           </div>
         )}

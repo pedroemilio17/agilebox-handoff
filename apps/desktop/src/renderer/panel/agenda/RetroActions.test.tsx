@@ -329,10 +329,10 @@ describe('Combinados: gestor adiciona', () => {
     const add = vi.spyOn(api.meetings.retroActions, 'add').mockResolvedValue(action(A1, ''))
     await openRetro(user)
     const form = screen.getByRole('form', { name: 'Adicionar combinado' })
-    await user.click(within(form).getByRole('button', { name: 'Adicionar' }))
+    await user.click(within(form).getByRole('button', { name: 'Adicionar combinado' }))
     expect(within(form).getByText('Escreva o combinado.')).toBeTruthy()
     await user.type(within(form).getByLabelText('Combinado'), 'a'.repeat(201))
-    await user.click(within(form).getByRole('button', { name: 'Adicionar' }))
+    await user.click(within(form).getByRole('button', { name: 'Adicionar combinado' }))
     expect(within(form).getByText('O combinado pode ter até 200 caracteres.')).toBeTruthy()
     expect(add).not.toHaveBeenCalled()
   })
@@ -346,7 +346,7 @@ describe('Combinados: gestor adiciona', () => {
     fireEvent.change(within(form).getByLabelText('Prazo (opcional)'), {
       target: { value: '2026-11-05' },
     })
-    await user.click(within(form).getByRole('button', { name: 'Adicionar' }))
+    await user.click(within(form).getByRole('button', { name: 'Adicionar combinado' }))
     expect(within(form).getByText('O prazo não pode ser antes da retro.')).toBeTruthy()
     expect(add).not.toHaveBeenCalled()
   })

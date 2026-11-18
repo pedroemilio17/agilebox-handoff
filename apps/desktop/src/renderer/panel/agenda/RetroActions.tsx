@@ -1,6 +1,15 @@
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { MeetingOccurrenceDto, RetroActionDto, SessionUserDto } from '@agilebox/contract'
-import { Avatar, Button, DateField, DueDate, ProgressBar, TextField, Toast } from '@agilebox/ui'
+import {
+  AddButton,
+  Avatar,
+  Button,
+  DateField,
+  DueDate,
+  ProgressBar,
+  TextField,
+  Toast,
+} from '@agilebox/ui'
 import { panelCopy } from '../copy'
 import styles from './RetroActions.module.css'
 import {
@@ -464,9 +473,9 @@ function AddForm({ users, occurrenceDate, saving, onAdd }: AddFormProps) {
           {dueError}
         </p>
       ) : null}
-      <Button type="submit" variant="primary" disabled={saving}>
+      <AddButton type="submit" variant="primary" disabled={saving}>
         {panelCopy.retroActionsAdd}
-      </Button>
+      </AddButton>
     </form>
   )
 }

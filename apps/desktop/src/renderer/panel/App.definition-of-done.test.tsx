@@ -473,6 +473,24 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     expect(await screen.findByText('Testes passando')).toBeTruthy()
   })
 
+  it('botão "Adicionar item" inclui o item da definição de pronto, sem precisar de Enter', async () => {
+    const { api, user } = setup(MANAGER, { definition: { [BOREAL]: [] } })
+    const add = vi
+      .spyOn(api.projects.definitionOfDone, 'add')
+      .mockResolvedValue([item(ITEM_TESTS, 'Revisão feita', 0, BOREAL)])
+    await openProject(user, 'Projeto Boreal')
+
+    await screen.findByText('Nenhum item. A tarefa conclui sem conferência.')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Novo item da definição de pronto' }),
+      'Revisão feita',
+    )
+    await user.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith({ projectId: BOREAL, title: 'Revisão feita' }),
+    )
+  })
+
   it('renomear: vazio e 201 caracteres mostram erro e não gravam; 200 grava', async () => {
     const { api, user } = setup(MANAGER, {
       definition: { [BOREAL]: [item(ITEM_TESTS, 'Testes', 0, BOREAL)] },

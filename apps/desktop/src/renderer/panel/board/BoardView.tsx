@@ -33,6 +33,7 @@ import type { TaskDto, WipColumnDto } from '@agilebox/contract'
 import { formatHours } from '@agilebox/core'
 import type { TaskStatus } from '@agilebox/core'
 import {
+  AddButton,
   Avatar,
   Button,
   ChecklistProgress,
@@ -338,7 +339,7 @@ export function BoardView({
               })}
           action={
             !readOnlyScope && onNewTask ? (
-              <Button
+              <AddButton
                 variant="primary"
                 shortcut="N"
                 onClick={onNewTask}
@@ -346,7 +347,7 @@ export function BoardView({
                 title={newTaskBlockedReason}
               >
                 Nova tarefa
-              </Button>
+              </AddButton>
             ) : null
           }
         />

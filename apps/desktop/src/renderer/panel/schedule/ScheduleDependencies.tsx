@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
+import { AddButton } from '@agilebox/ui'
 import type { ScheduleDependencyDto, ScheduleTaskDto } from '@agilebox/contract'
 import { useAddDependency, useRemoveDependency } from '../hooks/use-schedule'
 import { actionErrorText } from '../wbs/wbs-screen'
@@ -147,9 +148,9 @@ export function ScheduleDependencies({ tasks, dependencies }: ScheduleDependenci
                 ))}
             </select>
           </div>
-          <button type="submit" className={styles.button} disabled={!canSubmit || add.isPending}>
+          <AddButton type="submit" disabled={!canSubmit || add.isPending}>
             {dependencyCopy.add}
-          </button>
+          </AddButton>
         </form>
       ) : null}
 
