@@ -150,3 +150,16 @@
 - DECIDIR: manter `scheduled_disable` no histórico mesmo sem mudança de estado (texto: "nada foi desligado")? Mudança só de configuração não gera evento.
 - `winding_down` e `cancelled` existem no schema, mas nenhum caso de uso os produz (encerramento de módulo do projeto ainda não existe).
 - A parte "ligar/desligar" das pendências "linha do tempo do projeto" e "trilha de módulo" pode ser marcada como resolvida; "gestor propõe, equipe aceita" continua aberta.
+
+## Barra lateral conforme o design (F1 do plano de fidelidade)
+
+- Barra reestruturada no padrão do `Modulos.dc.html`: Início, Agenda e Dashboard no topo; seção "Projeto" com a metodologia de partida à direita; subitens do projeto; "Outros projetos" com "Todos os projetos", "Novo projeto" e Ajustes/usuário no rodapé. Recolher continua em 52 px.
+- A metodologia usa o preset de partida (`startedFromPreset`), agora exposto em `ProjectDto` por `projects.list`. Projeto criado sem o assistente não mostra rótulo.
+- DECIDIR: a ordem dos subitens. Os mockups não concordam entre si (Ágil põe Quadro primeiro; Tradicional põe Quadro depois de Acompanhamento). Adotei: Quadro, Backlog, Sprints (S4), Burndown, Entregas (EAP), Marcos, Cronograma, Acompanhamento, Linha de base, Métricas de fluxo, Riscos, Impedimentos, Módulos (contagem), Plug-ins.
+- DECIDIR: sem projeto selecionado, Backlog, Sprints e Impedimentos (telas da organização, hoje alcançáveis) aparecem em "Todos os projetos". O design não mostra esse estado.
+- DECIDIR: a contagem de tarefas por projeto saiu da barra (o design mostra a metodologia no lugar). Restaurar, se quiser.
+- DECIDIR: a linha de projeto selecionado leva ao quadro dele. Os mockups não definem essa ação.
+- Divergências deliberadas: o fundo da barra usa o token translúcido `--color-rail-bg` (o mockup usa `#0d0c11` sólido), por causa do vidro; os quadradinhos seguem a cor derivada do id (`ProjectSwatch`), porque o projeto não guarda cor, e o rosa `#e58fd0` do mockup não tem token (usei o mais próximo da paleta); o rótulo "Entregas" virou "Entregas (EAP)", como no design; "Navegação principal" ficou como nome do menu, em vez de "Principal".
+- Alvos: os itens seguem as medidas do mockup (36 px de topo, 34 px de subitem), abaixo dos 44 px do token de toque. Confirmar se quer 44 px.
+- Não há tela para "Plano" (`HibPlano`) nem para o gerenciamento de metodologia; ficou fora.
+- DECIDIR: o rodapé mostra só o papel ("Gestor"). O design pede "Gestor · Time".

@@ -54,6 +54,8 @@ export const projectDtoSchema = z.object({
   archivedAt: isoDateTimeSchema.nullable().optional(),
   /** Quantos itens a definição de pronto tem (0 = conclusão sem conferência). */
   definitionOfDoneCount: z.number().int().nonnegative().safe(),
+  /** Preset em que o projeto começou ("começou como"). Nulo quando não passou pelo assistente. */
+  startedFromPreset: projectPresetKeySchema.nullable().optional(),
 })
 
 export const listProjectsOutputSchema = z.array(projectDtoSchema)

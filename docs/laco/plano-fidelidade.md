@@ -15,7 +15,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
 
 ## Ordem de trabalho (um agente Haiku por passo, revisar, `pnpm check` verde, commit e push)
 
-- [ ] F1 Barra lateral conforme o design (estrutura do projeto, subitens, rótulos, contagens, ícones, medidas).
+- [x] F1 Barra lateral conforme o design (estrutura do projeto, subitens, rótulos, contagens, ícones, medidas).
 - [ ] B1 Arrastar cartões ancorados no ponto do clique (item 4).
 - [ ] B2 Botão "+" nos pontos de inclusão (item 3).
 - [ ] B3 Guia em todas as telas do passo a passo, com ponte entre funcionalidades (item 2).

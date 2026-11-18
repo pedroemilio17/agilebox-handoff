@@ -26,6 +26,9 @@ import { FlowMetricsView } from './flow-metrics/FlowMetricsView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
+import { summarizeModules } from './modules/modules-screen'
+import { useProjectModules } from './hooks/use-project-modules'
+import { useSprintList } from './sprints/use-sprints'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { ManagerBanner } from './board/ManagerBanner'
@@ -195,18 +198,14 @@ function PanelContent({
         ...(viewingUser ? { forUserId: viewingUser.id } : {}),
       }),
   })
-  const allTasks = useQuery({
-    queryKey: queryKeys.tasks.board(undefined, viewingUser?.id),
-    queryFn: () => api.tasks.listBoard(viewingUser ? { forUserId: viewingUser.id } : {}),
-  })
-  const projectCounts = allTasks.data
-    ? Object.fromEntries(
-        (projects.data ?? []).map((project) => [
-          project.id,
-          allTasks.data.tasks.filter((task) => task.projectId === project.id).length,
-        ]),
-      )
-    : undefined
+  // Barra lateral: sprint ativa (S4) e quantos módulos estão ligados no projeto selecionado.
+  const projectModules = useProjectModules(selectedProjectId)
+  const projectModuleCount = projectModules.data
+    ? summarizeModules(projectModules.data.modules).enabled
+    : null
+  const sprintList = useSprintList(selectedProjectId)
+  const activeSprintNumber =
+    sprintList.data?.find((sprint) => sprint.status === 'active')?.number ?? null
   const definitionGate = useDefinitionOfDoneGate()
   const moveTask = useMutation({
     mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
@@ -428,12 +427,14 @@ function PanelContent({
         projects={projects.data ?? []}
         selectedProjectId={selectedProjectId}
         newTaskBlockedReason={newTaskBlockedReason}
-        {...(projectCounts ? { projectCounts } : {})}
+        activeSprintNumber={activeSprintNumber}
+        projectModuleCount={projectModuleCount}
         onProjectSelect={(id) => {
           setSelectedProjectId(id)
           setActiveTaskId(null)
           setView('projects')
         }}
+        onNewProject={() => setProjectDialogOpen(true)}
         onOpenTray={() => window.agilebox.shell.toggleTray()}
         account={{
           users: sessionUsers.data ?? [],
