@@ -196,6 +196,7 @@ export function registerHandlers(
     useCases.milestones.remove.execute(context, input),
   )
   register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
+  register('tracking.get', (context, input) => useCases.tracking.get.execute(context, input))
   register('schedule.addDependency', (context, input) =>
     useCases.schedule.addDependency.execute(context, input),
   )

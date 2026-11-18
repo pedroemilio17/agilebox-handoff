@@ -7,6 +7,7 @@ import {
   type ListBoardDto,
   type MilestonesListDto,
   type ScheduleViewDto,
+  type TrackingViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
@@ -110,6 +111,25 @@ export function emptyWbsView(projectId: string): WbsViewDto {
   }
 }
 
+/** Acompanhamento vazio e sem custo: o padrão neutro dos testes (sem semana, sem marcos, sem valores). */
+export function emptyTrackingView(projectId: string): TrackingViewDto {
+  return {
+    projectId,
+    week: null,
+    summary: {
+      progress: 0,
+      plannedHours: 0,
+      loggedHours: 0,
+      realizedCost: null,
+      plannedCost: null,
+      tasks: { total: 0, done: 0 },
+    },
+    nextMilestone: null,
+    milestones: [],
+    today: '2026-01-01',
+  }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -141,6 +161,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.schedule,
       get: (input) => Promise.resolve(emptyScheduleView(input.projectId)),
       ...overrides.schedule,
+    },
+    tracking: {
+      ...api.tracking,
+      get: (input) => Promise.resolve(emptyTrackingView(input.projectId)),
+      ...overrides.tracking,
     },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },

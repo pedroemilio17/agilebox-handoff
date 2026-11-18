@@ -217,6 +217,7 @@ import {
   setTaskStartInputSchema,
   setTaskStartOutputSchema,
 } from './schedule'
+import { getTrackingInputSchema, getTrackingOutputSchema } from './tracking'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -431,6 +432,7 @@ export const API_SCHEMA_REGISTRY = {
     input: removeTaskDependencyInputSchema,
     output: removeTaskDependencyOutputSchema,
   },
+  'tracking.get': { input: getTrackingInputSchema, output: getTrackingOutputSchema },
   'tasks.setDeliverable': {
     input: setTaskDeliverableInputSchema,
     output: setTaskDeliverableOutputSchema,
@@ -733,6 +735,9 @@ export interface AgileBoxApi {
     get: Method<'schedule.get'>
     addDependency: Method<'schedule.addDependency'>
     removeDependency: Method<'schedule.removeDependency'>
+  }
+  tracking: {
+    get: Method<'tracking.get'>
   }
   milestones: {
     list: Method<'milestones.list'>

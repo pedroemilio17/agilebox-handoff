@@ -1,6 +1,7 @@
 import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
 import { assertProjectModuleUsable, USE_CASE_MODULES } from './module-guard'
+import { GetTracking } from './use-cases/tracking/tracking'
 import type { ModuleGuardPorts, ModuleUsePolicy, UseCasePath } from './module-guard'
 import { assertTenantContext } from './tenant-context'
 import type { TenantContext } from './tenant-context'
@@ -323,6 +324,9 @@ export function createUseCases(deps: AppDeps) {
       get: forTenant('schedule.get', new GetSchedule(deps)),
       addDependency: forTenant('schedule.addDependency', new AddTaskDependency(deps)),
       removeDependency: forTenant('schedule.removeDependency', new RemoveTaskDependency(deps)),
+    },
+    tracking: {
+      get: forTenant('tracking.get', new GetTracking(deps)),
     },
     milestones: {
       list: forTenant('milestones.list', new ListMilestones(deps)),

@@ -727,8 +727,8 @@ describe('mapa de módulos dos casos de uso', () => {
     // 103 + 9 da EAP e dos marcos (ADR-10, fase 3, A2): 5 de `wbs`, `tasks.setDeliverable` e 3 de `milestones`.
     // Mais 1: `milestones.list`, a leitura dos marcos (módulo `milestones`).
     // Mais 4 do cronograma (ADR-10, fase 3, A4): `tasks.setStart`, `schedule.get`, `schedule.addDependency`
-    // e `schedule.removeDependency`.
-    expect(registered).toHaveLength(117)
+    // e `schedule.removeDependency`. Mais 1: `tracking.get`, o acompanhamento (módulo `schedule`).
+    expect(registered).toHaveLength(118)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 

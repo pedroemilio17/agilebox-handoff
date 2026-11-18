@@ -235,6 +235,8 @@ export const USE_CASE_MODULES = {
   'schedule.get': { module: 'schedule', project: { from: 'projectId' } },
   'schedule.addDependency': { module: 'schedule', creates: true, project: { from: 'successorId' } },
   'schedule.removeDependency': { module: 'schedule', project: { from: 'successorId' } },
+  // Acompanhamento (ADR-10): leitura do projeto, no módulo do cronograma.
+  'tracking.get': { module: 'schedule', project: { from: 'projectId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */

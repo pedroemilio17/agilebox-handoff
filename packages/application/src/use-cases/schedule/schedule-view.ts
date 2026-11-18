@@ -14,7 +14,7 @@ import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from '../tasks/task-prefix'
 
 /** Menor início e maior prazo entre as tarefas com as duas datas. Nulo quando nenhuma tem as duas. */
-function rangeOf(tasks: readonly Task[]): { start: DateOnly; end: DateOnly } | null {
+export function rangeOf(tasks: readonly Task[]): { start: DateOnly; end: DateOnly } | null {
   let start: DateOnly | null = null
   let end: DateOnly | null = null
   for (const task of tasks) {

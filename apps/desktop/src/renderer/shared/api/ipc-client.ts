@@ -112,6 +112,9 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       addDependency: (input) => call('schedule.addDependency', input),
       removeDependency: (input) => call('schedule.removeDependency', input),
     },
+    tracking: {
+      get: (input) => call('tracking.get', input),
+    },
     milestones: {
       list: (input) => call('milestones.list', input),
       create: (input) => call('milestones.create', input),

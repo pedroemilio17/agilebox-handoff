@@ -15,6 +15,7 @@ import { AccountMenu } from './AccountMenu'
 import { SettingsView } from '../settings/SettingsView'
 import { sprintCopy } from '../sprints/sprint-copy'
 import { impedimentCopy } from '../impediments/impediment-copy'
+import { trackingCopy } from '../tracking/tracking-screen'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -24,6 +25,7 @@ export type PanelView =
   | 'wbs'
   | 'milestones'
   | 'schedule'
+  | 'tracking'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -69,6 +71,8 @@ export interface PanelShellProps {
   readonly milestones?: ReactNode
   /** Cronograma do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly schedule?: ReactNode
+  /** Acompanhamento do projeto. O item da barra só aparece com projeto selecionado e o módulo do cronograma ligado. */
+  readonly tracking?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -84,6 +88,7 @@ const viewTitles: Record<PanelView, string> = {
   wbs: 'Entregas',
   milestones: 'Marcos',
   schedule: 'Cronograma',
+  tracking: trackingCopy.title,
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -117,6 +122,7 @@ export function PanelShell({
   wbs,
   milestones,
   schedule,
+  tracking,
   sprints,
   impediments,
   children,
@@ -144,6 +150,10 @@ export function PanelShell({
     // Cronograma: com projeto selecionado e o módulo ligado no projeto.
     ...(selectedProjectId !== null && capabilities.showScreen('schedule')
       ? [{ id: 'schedule' as const, label: viewTitles.schedule, icon: '≋' }]
+      : []),
+    // Acompanhamento: no mesmo módulo do cronograma (só com projeto selecionado).
+    ...(selectedProjectId !== null && capabilities.showScreen('schedule')
+      ? [{ id: 'tracking' as const, label: viewTitles.tracking, icon: '◔' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -207,6 +217,8 @@ export function PanelShell({
             milestones
           ) : visibleView === 'schedule' && schedule ? (
             schedule
+          ) : visibleView === 'tracking' && tracking ? (
+            tracking
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -457,6 +469,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
     milestones: 'M12 3l8 9-8 9-8-9z',
     schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
+    tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
   }
   return (
     <span aria-hidden="true">
