@@ -1,6 +1,8 @@
 /* Tela "Entregas" (EAP): cabeçalho, resumo, tabela em árvore e o passo de criação direta. Só tokens. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-5);

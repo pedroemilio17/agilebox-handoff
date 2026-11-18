@@ -118,6 +118,8 @@ async function setup(options: SetupOptions = {}) {
     deliverables: repositories.deliverables,
     taskDependencies: repositories.taskDependencies,
     milestones: repositories.milestones,
+    risks: repositories.risks,
+    baselines: repositories.baselines,
     impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
@@ -233,6 +235,12 @@ const REPRESENTATIVES: readonly Representative[] = [
     module: 'flowMetrics',
     disabled: { flowMetrics: 'disabled' },
     call: (u) => u.tasks.getBoardFlow.execute(contextA, {}),
+  },
+  {
+    module: 'definitionOfDone',
+    disabled: { definitionOfDone: 'disabled' },
+    call: (u, fx) =>
+      u.projects.definitionOfDone.list.execute(contextA, { projectId: fx.project.id }),
   },
 ]
 
@@ -415,6 +423,36 @@ describe('guard de módulo: encerramento (winding_down)', () => {
         title: 'Ação nova',
       }),
     ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
+  })
+  it('definição de pronto: encerrando, renomear e ler seguem e adicionar é recusado', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const fx = await fixtures(useCases, unitOfWork)
+    const projectId = toProjectId(fx.project.id)
+    await setProjectModules(unitOfWork, orgA, projectId, managerAId, { definitionOfDone: 'active' })
+    const [item] = await useCases.projects.definitionOfDone.add.execute(contextA, {
+      projectId: fx.project.id,
+      title: 'Testes passando',
+    })
+
+    await setProjectModules(unitOfWork, orgA, projectId, managerAId, {
+      definitionOfDone: 'winding_down',
+    })
+    await expect(
+      useCases.projects.definitionOfDone.add.execute(contextA, {
+        projectId: fx.project.id,
+        title: 'Outro item',
+      }),
+    ).rejects.toMatchObject(REFUSED_WINDING_DOWN)
+    await expect(
+      useCases.projects.definitionOfDone.rename.execute(contextA, {
+        projectId: fx.project.id,
+        itemId: item!.id,
+        title: 'Testes automatizados',
+      }),
+    ).resolves.toBeDefined()
+    await expect(
+      useCases.projects.definitionOfDone.list.execute(contextA, { projectId: fx.project.id }),
+    ).resolves.toHaveLength(1)
   })
 })
 
@@ -729,7 +767,11 @@ describe('mapa de módulos dos casos de uso', () => {
     // Mais 4 do cronograma (ADR-10, fase 3, A4): `tasks.setStart`, `schedule.get`, `schedule.addDependency`
     // e `schedule.removeDependency`. Mais 1: `tracking.get`, o acompanhamento (módulo `schedule`).
     // Mais 1: `burndown.get`, o burndown e a velocidade (módulo `burndown`).
-    expect(registered).toHaveLength(119)
+    // Mais 1: `flowMetrics.get`, as métricas de fluxo por projeto (módulo `flowMetrics`).
+    // Mais 4: `risks.list`, `risks.create`, `risks.update` e `risks.remove` (módulo `risks`, ADR-10).
+    // Mais 2: `baseline.get` e `baseline.take` (módulo `baseline`, ADR-10).
+    // Mais 1: `projectModules.history`, o histórico de mudanças do projeto (núcleo, lido por participação).
+    expect(registered).toHaveLength(127)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -744,9 +786,12 @@ describe('mapa de módulos dos casos de uso', () => {
       .sort()
     expect(creates).toEqual([
       'backlog.add',
+      'baseline.take',
       'meetings.create',
       'meetings.retroActions.add',
       'milestones.create',
+      'projects.definitionOfDone.add',
+      'risks.create',
       'schedule.addDependency',
       'sprints.addTask',
       'sprints.create',
@@ -769,6 +814,10 @@ describe('mapa de módulos dos casos de uso', () => {
     expect(USE_CASE_MODULES['impediments.list'].project).toBe('none')
     expect(USE_CASE_MODULES['meetings.create'].project).toBe('none')
     expect(USE_CASE_MODULES['daily.save'].project).toBe('none')
+    expect(USE_CASE_MODULES['projectModules.history']).toEqual({
+      module: 'core',
+      project: { from: 'projectId' },
+    })
   })
 
   it('o núcleo é o módulo de todos os casos que não dependem de ferramenta', () => {

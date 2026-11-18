@@ -1,4 +1,6 @@
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   max-width: 560px;

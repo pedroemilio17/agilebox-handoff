@@ -28,6 +28,10 @@ export const queryKeys = {
     all: ['agilebox', 'milestones'] as const,
     project: (projectId: string) => ['agilebox', 'milestones', projectId] as const,
   },
+  risks: {
+    all: ['agilebox', 'risks'] as const,
+    project: (projectId: string) => ['agilebox', 'risks', projectId] as const,
+  },
   schedule: {
     all: ['agilebox', 'schedule'] as const,
     project: (projectId: string) => ['agilebox', 'schedule', projectId] as const,
@@ -36,9 +40,17 @@ export const queryKeys = {
     all: ['agilebox', 'tracking'] as const,
     project: (projectId: string) => ['agilebox', 'tracking', projectId] as const,
   },
+  baseline: {
+    all: ['agilebox', 'baseline'] as const,
+    project: (projectId: string) => ['agilebox', 'baseline', projectId] as const,
+  },
   burndown: {
     all: ['agilebox', 'burndown'] as const,
     project: (projectId: string) => ['agilebox', 'burndown', projectId] as const,
+  },
+  flowMetrics: {
+    all: ['agilebox', 'flowMetrics'] as const,
+    project: (projectId: string) => ['agilebox', 'flowMetrics', projectId] as const,
   },
   backlog: {
     all: ['agilebox', 'backlog'] as const,
@@ -88,6 +100,7 @@ export const queryKeys = {
     all: ['agilebox', 'projectModules'] as const,
     project: (projectId: string) => ['agilebox', 'projectModules', projectId] as const,
     organization: ['agilebox', 'projectModules', 'organization'] as const,
+    history: (projectId: string) => ['agilebox', 'projectModules', 'history', projectId] as const,
   },
   contributors: { all: ['agilebox', 'contributors'] as const },
   dashboard: { all: ['agilebox', 'dashboard'] as const },

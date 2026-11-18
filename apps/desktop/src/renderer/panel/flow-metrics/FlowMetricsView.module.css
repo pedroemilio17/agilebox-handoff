@@ -1,0 +1,182 @@
+/* Tela "Métricas de fluxo". Só tokens do repositório; o gráfico usa as cores de destaque e de texto. */
+
+.view {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+.errorBox {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.value {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-group);
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+  font-size: var(--font-size-small);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--font-size-title-small);
+  font-weight: 620;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+}
+
+.grid {
+  stroke: var(--color-hairline);
+  stroke-width: 1;
+}
+
+.axis {
+  fill: var(--color-text-subtle);
+  font-size: 11px;
+  font-family: var(--font-family-mono);
+}
+
+.bar {
+  fill: var(--color-accent-text);
+}
+
+.barValue {
+  fill: var(--color-text-body);
+  font-size: 11px;
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bar {
+    transition:
+      y 200ms ease-out,
+      height 200ms ease-out;
+  }
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-body);
+}
+
+.details summary {
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.table {
+  width: 100%;
+  margin-top: var(--space-2);
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+}
+
+.table th,
+.table td {
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.table td {
+  font-variant-numeric: tabular-nums;
+}

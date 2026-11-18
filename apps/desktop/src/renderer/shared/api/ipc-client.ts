@@ -115,14 +115,27 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     tracking: {
       get: (input) => call('tracking.get', input),
     },
+    baseline: {
+      get: (input) => call('baseline.get', input),
+      take: (input) => call('baseline.take', input),
+    },
     burndown: {
       get: (input) => call('burndown.get', input),
+    },
+    flowMetrics: {
+      get: (input) => call('flowMetrics.get', input),
     },
     milestones: {
       list: (input) => call('milestones.list', input),
       create: (input) => call('milestones.create', input),
       update: (input) => call('milestones.update', input),
       remove: (input) => call('milestones.remove', input),
+    },
+    risks: {
+      list: (input) => call('risks.list', input),
+      create: (input) => call('risks.create', input),
+      update: (input) => call('risks.update', input),
+      remove: (input) => call('risks.remove', input),
     },
     backlog: {
       list: (input) => call('backlog.list', input),
@@ -178,6 +191,7 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       change: (input) => call('projectModules.change', input),
       setConfig: (input) => call('projectModules.setConfig', input),
       getOrganization: () => call('projectModules.getOrganization', undefined),
+      history: (input) => call('projectModules.history', input),
     },
     guide: {
       get: (input) => call('guide.get', input),

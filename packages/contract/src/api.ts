@@ -165,6 +165,8 @@ import {
   getOrganizationModulesInputSchema,
   getProjectModulesInputSchema,
   organizationModulesViewDtoSchema,
+  projectModuleHistoryDtoSchema,
+  projectModuleHistoryInputSchema,
   projectModulesChangeResultDtoSchema,
   projectModulesViewDtoSchema,
 } from './project-modules'
@@ -196,6 +198,16 @@ import {
   updateMilestoneOutputSchema,
 } from './milestones'
 import {
+  createRiskInputSchema,
+  createRiskOutputSchema,
+  listRisksInputSchema,
+  listRisksOutputSchema,
+  removeRiskInputSchema,
+  removeRiskOutputSchema,
+  updateRiskInputSchema,
+  updateRiskOutputSchema,
+} from './risks'
+import {
   createDeliverableInputSchema,
   createDeliverableOutputSchema,
   getWbsInputSchema,
@@ -218,7 +230,14 @@ import {
   setTaskStartOutputSchema,
 } from './schedule'
 import { getTrackingInputSchema, getTrackingOutputSchema } from './tracking'
+import {
+  getBaselineInputSchema,
+  getBaselineOutputSchema,
+  takeBaselineInputSchema,
+  takeBaselineOutputSchema,
+} from './baseline'
 import { getBurndownInputSchema, getBurndownOutputSchema } from './burndown'
+import { getFlowMetricsInputSchema, getFlowMetricsOutputSchema } from './flow-metrics'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -434,7 +453,10 @@ export const API_SCHEMA_REGISTRY = {
     output: removeTaskDependencyOutputSchema,
   },
   'tracking.get': { input: getTrackingInputSchema, output: getTrackingOutputSchema },
+  'baseline.get': { input: getBaselineInputSchema, output: getBaselineOutputSchema },
+  'baseline.take': { input: takeBaselineInputSchema, output: takeBaselineOutputSchema },
   'burndown.get': { input: getBurndownInputSchema, output: getBurndownOutputSchema },
+  'flowMetrics.get': { input: getFlowMetricsInputSchema, output: getFlowMetricsOutputSchema },
   'tasks.setDeliverable': {
     input: setTaskDeliverableInputSchema,
     output: setTaskDeliverableOutputSchema,
@@ -457,6 +479,10 @@ export const API_SCHEMA_REGISTRY = {
   'milestones.create': { input: createMilestoneInputSchema, output: createMilestoneOutputSchema },
   'milestones.update': { input: updateMilestoneInputSchema, output: updateMilestoneOutputSchema },
   'milestones.remove': { input: removeMilestoneInputSchema, output: removeMilestoneOutputSchema },
+  'risks.list': { input: listRisksInputSchema, output: listRisksOutputSchema },
+  'risks.create': { input: createRiskInputSchema, output: createRiskOutputSchema },
+  'risks.update': { input: updateRiskInputSchema, output: updateRiskOutputSchema },
+  'risks.remove': { input: removeRiskInputSchema, output: removeRiskOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -549,6 +575,10 @@ export const API_SCHEMA_REGISTRY = {
     input: getOrganizationModulesInputSchema,
     output: organizationModulesViewDtoSchema,
   },
+  'projectModules.history': {
+    input: projectModuleHistoryInputSchema,
+    output: projectModuleHistoryDtoSchema,
+  },
   'guide.get': { input: getGuideInputSchema, output: guideViewDtoSchema },
   'guide.dismissCard': {
     input: dismissGuideCardInputSchema,
@@ -623,6 +653,7 @@ export interface AgileBoxApi {
     change: Method<'projectModules.change'>
     setConfig: Method<'projectModules.setConfig'>
     getOrganization: Method<'projectModules.getOrganization'>
+    history: Method<'projectModules.history'>
   }
   guide: {
     get: Method<'guide.get'>
@@ -741,14 +772,27 @@ export interface AgileBoxApi {
   tracking: {
     get: Method<'tracking.get'>
   }
+  baseline: {
+    get: Method<'baseline.get'>
+    take: Method<'baseline.take'>
+  }
   burndown: {
     get: Method<'burndown.get'>
+  }
+  flowMetrics: {
+    get: Method<'flowMetrics.get'>
   }
   milestones: {
     list: Method<'milestones.list'>
     create: Method<'milestones.create'>
     update: Method<'milestones.update'>
     remove: Method<'milestones.remove'>
+  }
+  risks: {
+    list: Method<'risks.list'>
+    create: Method<'risks.create'>
+    update: Method<'risks.update'>
+    remove: Method<'risks.remove'>
   }
   backlog: {
     list: Method<'backlog.list'>

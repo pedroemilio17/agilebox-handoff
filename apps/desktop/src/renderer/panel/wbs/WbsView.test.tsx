@@ -496,6 +496,7 @@ describe('ajuda do módulo', () => {
         get: () =>
           Promise.resolve(projectModulesView({ enabled: ['wbs'], projectId: WBS_PROJECT_ID })),
         getOrganization: () => Promise.resolve({ modules: [], hasActiveProjects: false }),
+        history: (input) => Promise.resolve({ projectId: input.projectId, events: [] }),
         change: () =>
           Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),
         setConfig: () =>

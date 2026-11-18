@@ -67,6 +67,8 @@ function setup(actor: Actor = ana, clockInstant = '2026-11-04T15:00:00.000Z') {
     deliverables: unitOfWork.repositories.deliverables,
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
+    risks: unitOfWork.repositories.risks,
+    baselines: unitOfWork.repositories.baselines,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),

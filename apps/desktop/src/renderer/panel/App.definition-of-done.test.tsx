@@ -1,7 +1,8 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
+import type { ModuleId } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
 import type {
   DefinitionOfDoneItemDto,
@@ -14,6 +15,8 @@ import type {
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
 import { createFakeApi } from '../shared/testing/fake-api'
+import { projectModulesView } from '../shared/testing/project-modules-fixture'
+import { teamToolsView } from '../shared/testing/team-tools-fixture'
 import { App } from './App'
 import { makeDetail, makeEvent } from './task-detail/fixtures'
 
@@ -107,6 +110,13 @@ interface SetupOptions {
   readonly tasks?: TaskDto[]
   readonly projects?: ProjectDto[]
   readonly definition?: Record<string, DefinitionOfDoneItemDto[]>
+  /** Projetos com o módulo `definitionOfDone` desligado (ADR-10). Os demais têm o módulo ligado. */
+  readonly moduleOff?: readonly string[]
+  /**
+   * Ferramentas da equipe com nível conhecido. Sem isso, a interface não monta o escopo de módulos
+   * e cai no padrão permissivo; só o teste de módulo desligado precisa dele.
+   */
+  readonly teamModules?: readonly ModuleId[]
 }
 
 function setup(currentUserId: string, options: SetupOptions = {}) {
@@ -125,6 +135,18 @@ function setup(currentUserId: string, options: SetupOptions = {}) {
   vi.spyOn(api.session, 'listUsers').mockResolvedValue(users)
   vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
   vi.spyOn(api.projects, 'listMembers').mockResolvedValue([])
+  if (options.teamModules !== undefined)
+    vi.spyOn(api.teamTools, 'get').mockResolvedValue(
+      teamToolsView({ modules: options.teamModules, level: 'advanced', role: 'manager' }),
+    )
+  vi.spyOn(api.projectModules, 'get').mockImplementation(({ projectId }) =>
+    Promise.resolve(
+      projectModulesView({
+        projectId,
+        enabled: options.moduleOff?.includes(projectId) ? [] : ['definitionOfDone'],
+      }),
+    ),
+  )
   vi.spyOn(api.tasks, 'listBoard').mockResolvedValue({
     tasks,
     wipLimits: {},
@@ -560,6 +582,43 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     expect(
       await screen.findByText('Não foi possível atualizar a definição de pronto.'),
     ).toBeTruthy()
+  })
+
+  it('módulo desligado: o editor da definição de pronto some do diálogo do projeto', async () => {
+    const { api, user } = setup(MANAGER, {
+      definition: { [AURORA]: TWO_ITEMS },
+      moduleOff: [AURORA],
+      teamModules: ['core'],
+    })
+    await openProject(user, 'Projeto Aurora')
+    await waitFor(() => expect(api.projectModules.get).toHaveBeenCalledWith({ projectId: AURORA }))
+    // Enquanto a lista de módulos carrega, a interface é permissiva: deixa as consultas de módulo e
+    // da equipe resolverem antes de afirmar que o editor não aparece.
+    await act(async () => {
+      for (let tick = 0; tick < 20; tick += 1)
+        await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(screen.queryByRole('textbox', { name: 'Novo item da definição de pronto' })).toBeNull()
+    expect(screen.queryByText('Testes passando')).toBeNull()
+    expect(api.projects.definitionOfDone.list).not.toHaveBeenCalled()
+  })
+
+  it('módulo desligado: concluir a tarefa não abre a conferência, porque a contagem vem zerada', async () => {
+    const { api, user } = setup(ANA, {
+      tasks: [emptyTask],
+      projects: [
+        project({ id: BOREAL, name: 'Projeto Boreal', createdBy: BRUNO, definitionOfDoneCount: 0 }),
+      ],
+      definition: { [BOREAL]: TWO_ITEMS.map((entry) => ({ ...entry, projectId: BOREAL })) },
+      moduleOff: [BOREAL],
+    })
+    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue({ ...emptyTask, status: 'done' })
+
+    await selectDone(user, emptyTask.title)
+
+    await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: emptyTask.id, status: 'done' }))
+    expect(screen.queryByRole('dialog', { name: 'Definição de pronto' })).toBeNull()
   })
 
   it('o criador do projeto também edita; colaborador comum só lê', async () => {

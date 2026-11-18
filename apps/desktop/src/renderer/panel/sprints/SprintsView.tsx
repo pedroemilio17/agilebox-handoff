@@ -65,6 +65,9 @@ export function SprintsView({
   const list = useSprintList(projectId)
 
   const windingDown = capabilities.isWindingDown('sprints')
+  // Cerimônias são agendamentos da Agenda, criados pelo gestor (ADR-10). Exigem as duas ferramentas.
+  const ceremoniesVisible =
+    isManager && capabilities.showScreen('reviewRetro') && capabilities.showScreen('agenda')
   const showEstimates = capabilities.can('estimates.hours:passive')
   const all: readonly SprintDto[] = list.data ?? []
   const drafts = all
@@ -154,6 +157,8 @@ export function SprintsView({
           showEstimates={showEstimates}
           onOpenTask={onOpenTask}
           onNotify={announce}
+          ceremoniesVisible={ceremoniesVisible}
+          {...(onNavigate ? { onNavigate } : {})}
         />
       ) : (
         <ClosedTab

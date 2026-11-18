@@ -42,6 +42,10 @@ describe('createSqliteClient', () => {
         'milestones',
         'sprint_tasks',
         'task_dependencies',
+        'risks',
+        'baselines',
+        'baseline_tasks',
+        'project_module_events',
       ].sort(),
     )
 

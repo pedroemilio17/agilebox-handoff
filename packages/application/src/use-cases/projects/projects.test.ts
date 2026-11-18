@@ -43,6 +43,8 @@ function setup() {
     deliverables: unitOfWork.repositories.deliverables,
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
+    risks: unitOfWork.repositories.risks,
+    baselines: unitOfWork.repositories.baselines,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     comments: unitOfWork.repositories.comments,

@@ -13,6 +13,7 @@ import { toProjectDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
 import type { ProjectSetup } from '../../ports'
 import { enableRefusalMessage } from '../project-modules/project-modules'
+import { definitionItemsInForce } from './definition-of-done-in-force'
 
 const CORE: ModuleId = 'core'
 
@@ -61,7 +62,7 @@ export class CreateProjectWithSetup {
     modules: readonly ModuleId[],
     startedFromPreset: ProjectPresetKey | null,
   ): Promise<ProjectWithSetupDto> {
-    const items = await this.deps.definitionOfDone.listByProject(actor.organizationId, project.id)
+    const items = await definitionItemsInForce(this.deps, actor.organizationId, project.id)
     return { ...toProjectDto(project, items.length), modules: [...modules], startedFromPreset }
   }
 

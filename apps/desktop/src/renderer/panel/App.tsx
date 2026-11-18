@@ -17,9 +17,12 @@ import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
 import { WbsView } from './wbs/WbsView'
 import { MilestonesView } from './milestones/MilestonesView'
+import { RisksView } from './risks/RisksView'
 import { ScheduleView } from './schedule/ScheduleView'
 import { TrackingView } from './tracking/TrackingView'
+import { BaselineView } from './baseline/BaselineView'
 import { BurndownView } from './burndown/BurndownView'
+import { FlowMetricsView } from './flow-metrics/FlowMetricsView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
@@ -74,8 +77,14 @@ function PanelContent({
   const scheduleVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
   // Acompanhamento: mesmo módulo do cronograma, com projeto selecionado; senão a view cai no Quadro.
   const trackingVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
+  // Linha de base: módulo `baseline` ligado no projeto selecionado; senão a view cai no Quadro.
+  const baselineVisible = selectedProjectId !== null && capabilities.showScreen('baseline')
   // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado; senão a view cai no Quadro.
   const burndownVisible = selectedProjectId !== null && capabilities.showScreen('burndown')
+  // Métricas de fluxo: módulo `flowMetrics` ligado no projeto selecionado; senão a view cai no Quadro.
+  const flowMetricsVisible = selectedProjectId !== null && capabilities.showScreen('flowMetrics')
+  // Riscos: módulo `risks` ligado no projeto selecionado; sem projeto a view cai no Quadro.
+  const risksVisible = selectedProjectId !== null && capabilities.showScreen('risks')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
@@ -100,7 +109,10 @@ function PanelContent({
     (view === 'milestones' && !milestonesVisible) ||
     (view === 'schedule' && !scheduleVisible) ||
     (view === 'tracking' && !trackingVisible) ||
+    (view === 'baseline' && !baselineVisible) ||
     (view === 'burndown' && !burndownVisible) ||
+    (view === 'flowMetrics' && !flowMetricsVisible) ||
+    (view === 'risks' && !risksVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
@@ -444,6 +456,14 @@ function PanelContent({
             onNavigate={setView}
           />
         }
+        risks={
+          <RisksView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
         milestones={
           <MilestonesView
             key={selectedProjectId ?? 'none'}
@@ -468,8 +488,24 @@ function PanelContent({
             onNavigate={setView}
           />
         }
+        baseline={
+          <BaselineView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
         burndown={
           <BurndownView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        flowMetrics={
+          <FlowMetricsView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}

@@ -62,18 +62,46 @@ export function flowMetrics(
   }
 }
 
-/** Six calendar weeks, Monday inclusive through next Monday exclusive. */
-export function flowWeeks(today: DateOnly, timeZone: string): FlowWindow[] {
+/** Semanas da série do dashboard (seis) e da tela de métricas por projeto (oito). */
+export const FLOW_TREND_WEEKS = 8
+
+export interface FlowWeekMetrics extends FlowMetrics {
+  readonly start: DateOnly
+}
+
+/**
+ * `count` calendar weeks, Monday inclusive through next Monday exclusive, ending with the week of
+ * `today`. The default is six, the dashboard's series.
+ */
+export function flowWeeks(today: DateOnly, timeZone: string, count = 6): FlowWindow[] {
   const date = new Date(`${today}T12:00:00Z`)
   const offset = (date.getUTCDay() + 6) % 7
-  date.setUTCDate(date.getUTCDate() - offset - 35)
+  date.setUTCDate(date.getUTCDate() - offset - (count - 1) * 7)
   const weeks: FlowWindow[] = []
-  for (let index = 0; index < 6; index++) {
+  for (let index = 0; index < count; index++) {
     const start = toDateOnly(date, 'UTC')
     date.setUTCDate(date.getUTCDate() + 7)
     weeks.push({ start, endExclusive: toDateOnly(date, 'UTC'), timeZone })
   }
   return weeks
+}
+
+/**
+ * Métricas de cada semana, na ordem recebida. A última semana mede até `now`; as anteriores, até o
+ * fim delas (com o estado reconstruído naquele instante). Dashboard e tela de métricas usam a mesma série.
+ */
+export function flowSeries(
+  tasks: readonly Task[],
+  events: readonly TimelineEvent[],
+  weeks: readonly FlowWindow[],
+  now: string,
+): FlowWeekMetrics[] {
+  return weeks.map((week, index) => {
+    const end = new Date(`${week.endExclusive}T00:00:00`)
+    const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()
+    const snapshot = index === weeks.length - 1 ? tasks : flowSnapshot(tasks, events, at)
+    return { start: week.start, ...flowMetrics(snapshot, events, week, at) }
+  })
 }
 
 /** Reconstruct only the fields used for flow/adoption, undoing changes after the snapshot. */

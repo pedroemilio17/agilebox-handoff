@@ -10,6 +10,7 @@ import type { Actor, Project } from '@agilebox/core'
 import type { ProjectDto } from '@agilebox/contract'
 import { toProjectDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { definitionItemsInForce } from './definition-of-done-in-force'
 
 abstract class ChangeProjectArchive {
   constructor(protected readonly deps: AppDeps) {}
@@ -33,7 +34,7 @@ abstract class ChangeProjectArchive {
       kind: 'project',
       ids: [project.id],
     })
-    const items = await this.deps.definitionOfDone.listByProject(actor.organizationId, project.id)
+    const items = await definitionItemsInForce(this.deps, actor.organizationId, project.id)
     return toProjectDto(updated, items.length)
   }
 }

@@ -18,6 +18,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
 
@@ -51,6 +52,8 @@ function setup(actor: Actor = creator, unitOfWork = new InMemoryUnitOfWork()) {
     deliverables: unitOfWork.repositories.deliverables,
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
+    risks: unitOfWork.repositories.risks,
+    baselines: unitOfWork.repositories.baselines,
     impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
@@ -85,6 +88,10 @@ async function seedProject(unitOfWork: InMemoryUnitOfWork, id: ProjectId = proje
     createdAt: '2026-01-01T00:00:00.000Z',
   })
   await unitOfWork.repositories.projects.save(organizationId, project)
+  // Critério de pronto é um módulo por projeto (ADR-10): os casos de uso exigem o módulo ligado.
+  await enableProjectModules(unitOfWork, organizationId, project.id, creatorId, [
+    'definitionOfDone',
+  ])
   await unitOfWork.repositories.projects.addMember(organizationId, {
     projectId: project.id,
     userId: creatorId,
@@ -283,5 +290,49 @@ describe('definição de pronto: casos de uso', () => {
     })
     const projects = await useCases.projects.listProjects.execute(createTenantContext(creator))
     expect(projects).toEqual([expect.objectContaining({ id: projectId, definitionOfDoneCount: 2 })])
+  })
+})
+
+describe('definição de pronto: módulo desligado (ADR-10)', () => {
+  const disabledMessage = 'Esta ferramenta está desativada para a equipe.'
+
+  it('desligado: ler e editar são recusados, os itens seguem guardados e voltam ao religar', async () => {
+    const { useCases, unitOfWork } = setup(creator)
+    await seedProject(unitOfWork)
+    await useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
+      projectId,
+      title: 'A',
+    })
+
+    await setProjectModules(unitOfWork, organizationId, projectId, creatorId, {
+      definitionOfDone: 'disabled',
+    })
+    await expect(
+      useCases.projects.definitionOfDone.list.execute(createTenantContext(creator), { projectId }),
+    ).rejects.toMatchObject({ message: disabledMessage })
+    await expect(
+      useCases.projects.definitionOfDone.add.execute(createTenantContext(creator), {
+        projectId,
+        title: 'B',
+      }),
+    ).rejects.toMatchObject({ message: disabledMessage })
+    // Desligar oculta, nunca apaga: o item continua no banco.
+    expect(
+      await unitOfWork.repositories.definitionOfDone.listByProject(organizationId, projectId),
+    ).toHaveLength(1)
+    // A contagem que a lista de projetos mostra segue a regra em vigor: zero enquanto desligado.
+    const off = await useCases.projects.listProjects.execute(createTenantContext(creator))
+    expect(off).toEqual([expect.objectContaining({ id: projectId, definitionOfDoneCount: 0 })])
+
+    await setProjectModules(unitOfWork, organizationId, projectId, creatorId, {
+      definitionOfDone: 'active',
+    })
+    const items = await useCases.projects.definitionOfDone.list.execute(
+      createTenantContext(creator),
+      { projectId },
+    )
+    expect(items.map((item) => item.title)).toEqual(['A'])
+    const on = await useCases.projects.listProjects.execute(createTenantContext(creator))
+    expect(on).toEqual([expect.objectContaining({ id: projectId, definitionOfDoneCount: 1 })])
   })
 })

@@ -16,7 +16,9 @@ import { SettingsView } from '../settings/SettingsView'
 import { sprintCopy } from '../sprints/sprint-copy'
 import { impedimentCopy } from '../impediments/impediment-copy'
 import { trackingCopy } from '../tracking/tracking-screen'
+import { baselineCopy } from '../baseline/baseline-screen'
 import { burndownCopy } from '../burndown/burndown-screen'
+import { flowMetricsCopy } from '../flow-metrics/flow-metrics-screen'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -27,7 +29,10 @@ export type PanelView =
   | 'milestones'
   | 'schedule'
   | 'tracking'
+  | 'baseline'
   | 'burndown'
+  | 'flowMetrics'
+  | 'risks'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -75,8 +80,14 @@ export interface PanelShellProps {
   readonly schedule?: ReactNode
   /** Acompanhamento do projeto. O item da barra só aparece com projeto selecionado e o módulo do cronograma ligado. */
   readonly tracking?: ReactNode
+  /** Linha de base do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly baseline?: ReactNode
   /** Burndown e velocidade. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly burndown?: ReactNode
+  /** Métricas de fluxo do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly flowMetrics?: ReactNode
+  /** Riscos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly risks?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -93,7 +104,10 @@ const viewTitles: Record<PanelView, string> = {
   milestones: 'Marcos',
   schedule: 'Cronograma',
   tracking: trackingCopy.title,
+  baseline: baselineCopy.title,
   burndown: burndownCopy.title,
+  flowMetrics: flowMetricsCopy.title,
+  risks: 'Riscos',
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -128,7 +142,10 @@ export function PanelShell({
   milestones,
   schedule,
   tracking,
+  baseline,
   burndown,
+  flowMetrics,
+  risks,
   sprints,
   impediments,
   children,
@@ -161,9 +178,21 @@ export function PanelShell({
     ...(selectedProjectId !== null && capabilities.showScreen('schedule')
       ? [{ id: 'tracking' as const, label: viewTitles.tracking, icon: '◔' }]
       : []),
+    // Linha de base: módulo `baseline` ligado no projeto selecionado (N3; o nível não esconde a tela).
+    ...(selectedProjectId !== null && capabilities.showScreen('baseline')
+      ? [{ id: 'baseline' as const, label: viewTitles.baseline, icon: '▥' }]
+      : []),
     // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado.
     ...(selectedProjectId !== null && capabilities.showScreen('burndown')
       ? [{ id: 'burndown' as const, label: viewTitles.burndown, icon: '↘' }]
+      : []),
+    // Métricas de fluxo: módulo `flowMetrics` ligado no projeto selecionado (N3; o nível não esconde a tela).
+    ...(selectedProjectId !== null && capabilities.showScreen('flowMetrics')
+      ? [{ id: 'flowMetrics' as const, label: viewTitles.flowMetrics, icon: '▁' }]
+      : []),
+    // Riscos: módulo `risks` ligado no projeto selecionado (N3; o nível não esconde a tela).
+    ...(selectedProjectId !== null && capabilities.showScreen('risks')
+      ? [{ id: 'risks' as const, label: viewTitles.risks, icon: '△' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -229,8 +258,14 @@ export function PanelShell({
             schedule
           ) : visibleView === 'tracking' && tracking ? (
             tracking
+          ) : visibleView === 'baseline' && baseline ? (
+            baseline
           ) : visibleView === 'burndown' && burndown ? (
             burndown
+          ) : visibleView === 'flowMetrics' && flowMetrics ? (
+            flowMetrics
+          ) : visibleView === 'risks' && risks ? (
+            risks
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -482,7 +517,10 @@ function NavIcon({ kind }: { readonly kind: string }) {
     milestones: 'M12 3l8 9-8 9-8-9z',
     schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
     tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
+    baseline: 'M4 20h16M6 16V10M12 16V6M18 16v-4',
     burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
+    flowMetrics: 'M6 19v-6M12 19V8M18 19V4',
+    risks: 'M4 4h12l4 4v12H4Z M8 12h8M8 16h5',
   }
   return (
     <span aria-hidden="true">

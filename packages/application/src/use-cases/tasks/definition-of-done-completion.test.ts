@@ -19,6 +19,7 @@ import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
+import { enableProjectModules, setProjectModules } from '../../testing/task-harness'
 import { createUseCases } from '../../create-use-cases'
 import type { ActorSession } from '../../ports'
 
@@ -52,6 +53,8 @@ function setup(actor: Actor = owner) {
     deliverables: unitOfWork.repositories.deliverables,
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
+    risks: unitOfWork.repositories.risks,
+    baselines: unitOfWork.repositories.baselines,
     impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,
@@ -88,6 +91,8 @@ async function seed(
     createdAt: timestamp,
   })
   await unitOfWork.repositories.projects.save(organizationId, project)
+  // Critério de pronto é um módulo por projeto (ADR-10): a regra só vale com ele ligado.
+  await enableProjectModules(unitOfWork, organizationId, projectId, ownerId, ['definitionOfDone'])
   await unitOfWork.repositories.projects.addMember(organizationId, {
     projectId,
     userId: ownerId,
@@ -295,5 +300,56 @@ describe('conferência da definição de pronto ao concluir', () => {
     ).resolves.toMatchObject({
       status: 'done',
     })
+  })
+})
+
+describe('conferência da definição de pronto com o módulo desligado (ADR-10)', () => {
+  it('desligado: concluir sem confirmar passa, sem evento, e os itens seguem guardados', async () => {
+    const { useCases, unitOfWork } = setup()
+    const items = await seed(unitOfWork)
+    await setProjectModules(unitOfWork, organizationId, projectId, ownerId, {
+      definitionOfDone: 'disabled',
+    })
+
+    await useCases.tasks.move.execute(createTenantContext(owner), { taskId, status: 'done' })
+
+    const stored = await unitOfWork.repositories.tasks.findById(organizationId, taskId)
+    expect(stored?.status).toBe('done')
+    expect(await timelineTypes(unitOfWork)).not.toContain('definition_confirmed')
+    expect(
+      await unitOfWork.repositories.definitionOfDone.listByProject(organizationId, projectId),
+    ).toHaveLength(items.length)
+  })
+
+  it('desligado: criar a tarefa já concluída também não exige nada', async () => {
+    const { useCases, unitOfWork } = setup()
+    await seed(unitOfWork)
+    await setProjectModules(unitOfWork, organizationId, projectId, ownerId, {
+      definitionOfDone: 'disabled',
+    })
+
+    await expect(
+      useCases.tasks.create.execute(createTenantContext(owner), {
+        projectId,
+        title: 'Já pronta',
+        status: 'done',
+      }),
+    ).resolves.toBeDefined()
+  })
+
+  it('desligado: o detalhe não traz itens, e religar devolve os mesmos itens', async () => {
+    const { useCases, unitOfWork } = setup()
+    await seed(unitOfWork, { titles: ['A', 'B'] })
+    await setProjectModules(unitOfWork, organizationId, projectId, ownerId, {
+      definitionOfDone: 'disabled',
+    })
+    const off = await useCases.tasks.getDetail.execute(createTenantContext(owner), { taskId })
+    expect(off.projectDefinitionOfDone).toEqual([])
+
+    await setProjectModules(unitOfWork, organizationId, projectId, ownerId, {
+      definitionOfDone: 'active',
+    })
+    const on = await useCases.tasks.getDetail.execute(createTenantContext(owner), { taskId })
+    expect(on.projectDefinitionOfDone.map((item) => item.title)).toEqual(['A', 'B'])
   })
 })

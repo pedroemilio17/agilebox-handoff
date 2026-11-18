@@ -2,7 +2,9 @@ import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
 import { assertProjectModuleUsable, USE_CASE_MODULES } from './module-guard'
 import { GetTracking } from './use-cases/tracking/tracking'
+import { GetBaseline, TakeBaseline } from './use-cases/baseline/baseline'
 import { GetBurndown } from './use-cases/burndown/burndown'
+import { GetFlowMetrics } from './use-cases/flow-metrics/flow-metrics'
 import type { ModuleGuardPorts, ModuleUsePolicy, UseCasePath } from './module-guard'
 import { assertTenantContext } from './tenant-context'
 import type { TenantContext } from './tenant-context'
@@ -16,6 +18,7 @@ import {
   SetTeamModuleConfig,
 } from './use-cases/team-tools/team-tools'
 import {
+  ListProjectModuleHistory,
   ChangeProjectModules,
   SetProjectModuleConfig,
   GetOrganizationModules,
@@ -35,6 +38,7 @@ import {
   RemoveMilestone,
   UpdateMilestone,
 } from './use-cases/milestones/milestones'
+import { CreateRisk, ListRisks, RemoveRisk, UpdateRisk } from './use-cases/risks/risks'
 import {
   AddTaskDependency,
   GetSchedule,
@@ -217,7 +221,7 @@ export function createUseCases(deps: AppDeps) {
     projects: {
       listProjects: forTenant(
         'projects.listProjects',
-        new ListProjects(deps.projects, deps.definitionOfDone),
+        new ListProjects(deps.projects, deps.definitionOfDone, deps.projectModules),
       ),
       createProject: forTenant('projects.createProject', new CreateProject(deps)),
       createWithSetup: forTenant('projects.createWithSetup', new CreateProjectWithSetup(deps)),
@@ -329,14 +333,27 @@ export function createUseCases(deps: AppDeps) {
     tracking: {
       get: forTenant('tracking.get', new GetTracking(deps)),
     },
+    baseline: {
+      get: forTenant('baseline.get', new GetBaseline(deps)),
+      take: forTenant('baseline.take', new TakeBaseline(deps)),
+    },
     burndown: {
       get: forTenant('burndown.get', new GetBurndown(deps)),
+    },
+    flowMetrics: {
+      get: forTenant('flowMetrics.get', new GetFlowMetrics(deps)),
     },
     milestones: {
       list: forTenant('milestones.list', new ListMilestones(deps)),
       create: forTenant('milestones.create', new CreateMilestone(deps)),
       update: forTenant('milestones.update', new UpdateMilestone(deps)),
       remove: forTenant('milestones.remove', new RemoveMilestone(deps)),
+    },
+    risks: {
+      list: forTenant('risks.list', new ListRisks(deps)),
+      create: forTenant('risks.create', new CreateRisk(deps)),
+      update: forTenant('risks.update', new UpdateRisk(deps)),
+      remove: forTenant('risks.remove', new RemoveRisk(deps)),
     },
     backlog: {
       list: forTenant('backlog.list', new ListBacklog(deps)),
@@ -358,6 +375,7 @@ export function createUseCases(deps: AppDeps) {
       get: forTenant('projectModules.get', new GetProjectModules(deps)),
       change: forTenant('projectModules.change', new ChangeProjectModules(deps)),
       setConfig: forTenant('projectModules.setConfig', new SetProjectModuleConfig(deps)),
+      history: forTenant('projectModules.history', new ListProjectModuleHistory(deps)),
       getOrganization: forTenant(
         'projectModules.getOrganization',
         new GetOrganizationModules(deps),

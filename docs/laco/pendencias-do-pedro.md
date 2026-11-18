@@ -96,3 +96,57 @@
 - Detalhe da tarefa sem custo: o cartão fica só com as horas (título "Horas").
 - Valor/hora padrão de usuário e entidade é global, não por projeto: não alterado.
 - Testes existentes ajustados só para ligar `cost` no setup; nenhuma asserção removida.
+
+## Cerimônias na Agenda (ADR-10, fase 5, B3)
+
+- Na aba Ativa da sprint, o gestor agenda Planning, Review e Retrospectiva com 1 clique (usa `meetings.create`; só aparece com `reviewRetro` e `agenda` ligados; servidor já exige gestor).
+- DECIDIR: Planning não tem tipo próprio (usa `meeting`, identificada pelo título). Um tipo `planning` exige migração do CHECK de `meetings.kind`. Quer?
+- DECIDIR: horários sugeridos 09:00/10:00/11:00 são provisórios.
+- DECIDIR: Planning sugere o início da sprint, que numa sprint já ativa costuma estar no passado. Sugerir hoje?
+- Anti-duplicata só em memória: sair da tela e voltar permite agendar a mesma cerimônia de novo (checar títulos existentes mudaria o comportamento; combinar).
+
+## Rolagem das telas
+
+- CONFERIR: telas novas (Módulos, EAP, Marcos, Cronograma, Acompanhamento, Burndown, Ajustes) não rolavam porque a raiz `.view` não tinha `overflow-y: auto`; adicionei (como Backlog/Dashboard já faziam). Verificado só por `pnpm check` (jsdom não mede rolagem); veja rodando e me avise se alguma tela ainda não rolar.
+
+## Métricas de fluxo (ADR-10, fase 6, C1)
+
+- Tela por projeto (`flowMetrics.get`): lead time, cycle time e vazão das últimas 8 semanas; reaproveita as regras do dashboard (extraí `flowSeries`, dashboard inalterado). Arquivadas e backlog ficam fora.
+- CONFERIR: textos da nota de amostra (< 5 tarefas concluídas) e do estado vazio, ícone e glifo ▁ são escolhas do agente; visual não visto rodando.
+- Tarefa concluída, reaberta e concluída em semanas diferentes aparece em duas barras e conta uma vez no total (regra existente do dashboard).
+
+## Riscos (ADR-10, fase 6, C2)
+
+- Módulo `risks` por projeto: migração 0022 (`risks`), casos de uso `risks.list/create/update/delete`, tela com faixa em texto (Baixo/Médio/Alto) e pontuação = probabilidade × impacto. Guard ganhou a resolução `riskId`.
+- DECIDIR: escrita segue a regra dos marcos (gestor ou criador do projeto). O pedido falava em "gestor e participantes"; participantes hoje não escrevem. Mudar? (uma linha em `writableProject`)
+- DECIDIR: probabilidade e impacto são obrigatórios (1 a 3, formulário em "Média"); o ADR diz que campos de módulo são opcionais, mas a pontuação precisa dos dois.
+- Dono precisa ser membro do projeto; entrega precisa ser do mesmo projeto e exige `wbs` ligado.
+- Não vi protótipo de Riscos em `design/`: UI feita do manifesto e do ADR. CONFERIR visualmente.
+- "Alimenta o Dashboard" não foi feito.
+
+## Linha de base (ADR-10, fase 6, C3)
+
+- Módulo `baseline` por projeto: migração 0023 (`baselines` e `baseline_tasks`), casos de uso `baseline.get` e `baseline.take` (só gestor), tela com cartões, tabela de desvios e confirmação antes de gravar. Não há commit.
+- DECIDIR: "Nova" vale só para tarefa criada depois da foto. Tarefa antiga que não tinha datas na foto fica fora da comparação, mesmo que ganhe datas depois, até a próxima foto. Confirmar.
+- DECIDIR: a foto grava só tarefas ativas com início ou fim. Horas e custo entram junto; tarefa sem data não entra.
+- DECIDIR: "Atrasada N d" usa o maior atraso entre início e fim. Tarefa que começou atrasada e terminou no prazo aparece como atrasada. Quer só o fim?
+- DECIDIR: o nome da foto é automático ("Linha de base de DD/MM/AAAA"). Não há campo de nome na tela.
+- DECIDIR: projeto arquivado não aceita foto nova (mesma regra da EAP e dos riscos).
+- Custo: sem o módulo `cost` na foto, a comparação de custo fica vazia. Ligar `cost` depois não recalcula a foto antiga. `costVisible` diz se quem lê vê valores; resumo sem nenhum valor conhecido vira "—", não zero.
+- Não há tela ou teste visual rodando: a apresentação foi feita a partir do ADR e do padrão do Acompanhamento. CONFERIR na tela, em 1280 e 1440 px, e com a tabela em tela estreita.
+
+## Critério de pronto como módulo (ADR-10, fase 2)
+
+- `projects.definitionOfDone.*` agora exige o módulo `definitionOfDone` do projeto. Com o módulo desligado: editor some, a conclusão não exige conferência e a contagem vem zero; os itens ficam guardados. Encerrando ainda vale (como `cost`).
+- Migração 0024 liga o módulo nos projetos que já tinham itens (sem ela esses projetos perderiam a regra).
+- DECIDIR: projeto criado pelo caminho simples (sem wizard) nasce sem o módulo; o gestor precisa ligar "Critério de pronto" em Módulos. O preset Simples deveria ligá-lo?
+- DECIDIR: a conferência só vale ao entrar em Concluído; o ADR fala em "Concluído/Revisar". Manter?
+- `ListProjects` lê o módulo por projeto (N+1 pequeno).
+
+## Histórico de módulos do projeto (ADR-10, fase 2)
+
+- Migração 0025 (`project_module_events`): cada ligar/desligar grava um evento por módulo, na mesma transação, com quem fez (marca "Gestor") e `auto` quando foi por cascata ("junto com X"). Leitura: `projectModules.history`; tela Módulos ganhou a seção "Histórico".
+- Coluna extra `related_module_id` (não estava no pedido) para mostrar "junto com".
+- DECIDIR: manter `scheduled_disable` no histórico mesmo sem mudança de estado (texto: "nada foi desligado")? Mudança só de configuração não gera evento.
+- `winding_down` e `cancelled` existem no schema, mas nenhum caso de uso os produz (encerramento de módulo do projeto ainda não existe).
+- A parte "ligar/desligar" das pendências "linha do tempo do projeto" e "trilha de módulo" pode ser marcada como resolvida; "gestor propõe, equipe aceita" continua aberta.

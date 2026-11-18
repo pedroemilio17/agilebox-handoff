@@ -269,3 +269,99 @@ describe('migração de módulos por projeto (0018)', () => {
     client.close()
   })
 })
+
+describe('migração do Critério de pronto como módulo por projeto (0024)', () => {
+  const definitionMigration = '0024_definition_of_done_module'
+  const beforeDefinition = tags.slice(0, tags.indexOf(definitionMigration))
+
+  /**
+   * Banco na migração anterior à 0024, com três projetos: um com itens, um sem itens e um com
+   * itens e a linha `definitionOfDone` desligada (a migração deve ativá-la, sem mexer na config).
+   */
+  function seedDefinitionItems(): BetterSqlite3.Database {
+    const client = new BetterSqlite3(':memory:')
+    client.pragma('foreign_keys = OFF')
+    applyAll(client, beforeDefinition)
+
+    client
+      .prepare('INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)')
+      .run('ORG_A', 'Equipe', createdAt)
+    client
+      .prepare(
+        'INSERT INTO users (id, organization_id, name, email, initials, role, default_rate_cents, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      )
+      .run('USER_A', 'ORG_A', 'Ana', 'ana@example.com', 'AN', 'manager', 0, createdAt)
+
+    const insertProject = client.prepare(
+      'INSERT INTO projects (id, organization_id, name, name_key, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    )
+    insertProject.run('PROJ_COM', 'ORG_A', 'Com itens', 'com', 'USER_A', createdAt)
+    insertProject.run('PROJ_SEM', 'ORG_A', 'Sem itens', 'sem', 'USER_A', createdAt)
+    insertProject.run('PROJ_DESL', 'ORG_A', 'Com itens e desligado', 'desl', 'USER_A', createdAt)
+
+    const insertItem = client.prepare(
+      'INSERT INTO definition_of_done_items (id, organization_id, project_id, title, position) VALUES (?, ?, ?, ?, ?)',
+    )
+    insertItem.run('ITEM_1', 'ORG_A', 'PROJ_COM', 'Testes passando', 0)
+    insertItem.run('ITEM_2', 'ORG_A', 'PROJ_COM', 'Revisado por par', 1)
+    insertItem.run('ITEM_3', 'ORG_A', 'PROJ_DESL', 'Testes passando', 0)
+
+    client
+      .prepare(
+        "INSERT INTO project_modules (organization_id, project_id, module_id, state, config, changed_by, changed_at) VALUES ('ORG_A', 'PROJ_DESL', 'definitionOfDone', 'disabled', '{\"nota\":1}', 'USER_A', ?)",
+      )
+      .run(createdAt)
+    return client
+  }
+
+  function definitionRowsOf(client: BetterSqlite3.Database, projectId: string) {
+    return client
+      .prepare(
+        "SELECT module_id, state, config FROM project_modules WHERE project_id = ? AND module_id = 'definitionOfDone'",
+      )
+      .all(projectId) as { module_id: string; state: string; config: string | null }[]
+  }
+
+  it('existe no diário e só mexe em project_modules (sem apagar nem alterar outras tabelas)', () => {
+    expect(tags).toContain(definitionMigration)
+    const sql = statementsOf(definitionMigration).join('\n')
+    expect(sql).toMatch(/INSERT INTO `project_modules`/u)
+    expect(sql).toMatch(
+      /ON CONFLICT\(`project_id`, `module_id`\) DO UPDATE SET `state` = 'active'/u,
+    )
+    expect(sql).not.toMatch(
+      /DROP TABLE|DELETE FROM|UPDATE `definition_of_done_items`|ALTER TABLE|CREATE TABLE/iu,
+    )
+  })
+
+  it('projeto com itens ganha o módulo definitionOfDone ativo, em uma única linha', () => {
+    const client = seedDefinitionItems()
+    applyAll(client, [definitionMigration])
+
+    expect(definitionRowsOf(client, 'PROJ_COM')).toEqual([
+      { module_id: 'definitionOfDone', state: 'active', config: null },
+    ])
+    client.close()
+  })
+
+  it('projeto sem itens não ganha a linha do módulo', () => {
+    const client = seedDefinitionItems()
+    applyAll(client, [definitionMigration])
+
+    expect(definitionRowsOf(client, 'PROJ_SEM')).toEqual([])
+    client.close()
+  })
+
+  it('linha existente desligada vira ativa, e a configuração e os itens são preservados', () => {
+    const client = seedDefinitionItems()
+    applyAll(client, [definitionMigration])
+
+    expect(definitionRowsOf(client, 'PROJ_DESL')).toEqual([
+      { module_id: 'definitionOfDone', state: 'active', config: '{"nota":1}' },
+    ])
+    expect(client.prepare('SELECT COUNT(*) AS total FROM definition_of_done_items').get()).toEqual({
+      total: 3,
+    })
+    client.close()
+  })
+})

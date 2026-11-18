@@ -1,5 +1,6 @@
 import {
   canSeeProject,
+  cascadeAnchorOf,
   getManifest,
   MODULE_IDS,
   MODULE_LABELS,
@@ -23,6 +24,9 @@ import type {
 import type {
   ChangeProjectModulesInput,
   GetProjectModulesInput,
+  ProjectModuleEventDto,
+  ProjectModuleHistoryDto,
+  ProjectModuleHistoryInput,
   OrganizationModulesViewDto,
   ProjectModuleDto,
   ProjectModulesChangeResultDto,
@@ -31,10 +35,12 @@ import type {
 } from '@agilebox/contract'
 import type { AppDeps } from '../../deps'
 import { organizationModuleStateOf } from '../../module-guard'
-import type { ProjectModuleChange, ProjectModuleSetting } from '../../ports'
+import type { NewProjectModuleEvent, ProjectModuleChange, ProjectModuleSetting } from '../../ports'
 import { validateModuleConfig } from '../team-tools/module-config'
 
 const CORE: ModuleId = 'core'
+/** Eventos devolvidos por padrão no histórico: os mais recentes. */
+export const PROJECT_MODULE_HISTORY_DEFAULT_LIMIT = 50
 
 /** Id do catálogo, recusado com `ValidationError` e mensagem clara se não existir. */
 function catalogId(value: string): ModuleId {
@@ -194,6 +200,60 @@ export class SetProjectModuleConfig {
 }
 
 /**
+ * Eventos de histórico de uma mudança já decidida pelo domínio: um por módulo que mudou de estado
+ * (com `auto` e o módulo que puxou, quando veio por dependência) e um por desligamento agendado.
+ */
+function historyEventsOf(input: {
+  readonly organizationId: NewProjectModuleEvent['organizationId']
+  readonly projectId: NewProjectModuleEvent['projectId']
+  readonly actor: Actor
+  readonly at: string
+  readonly changes: readonly ProjectModuleChange[]
+  readonly autoIds: readonly ModuleId[]
+  readonly scheduled: readonly { readonly moduleId: ModuleId }[]
+  readonly requestedDisable: readonly ModuleId[]
+  readonly cascadeDisabled: readonly ModuleId[]
+}): NewProjectModuleEvent[] {
+  const base = {
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    actorId: input.actor.userId,
+    actorRole: input.actor.role,
+    at: input.at,
+  }
+  const changed = (state: ModuleState) =>
+    input.changes.filter((change) => change.state === state).map((change) => change.moduleId)
+  const changes = input.changes.map((change): NewProjectModuleEvent => {
+    const auto = input.autoIds.includes(change.moduleId)
+    // Mudança aplicada agora: só ligar ou desligar (o núcleo e o agendado não entram aqui).
+    const state = change.state === 'active' ? 'active' : 'disabled'
+    return {
+      ...base,
+      moduleId: change.moduleId,
+      action: state === 'active' ? 'enabled' : 'disabled',
+      auto,
+      relatedModuleId: auto ? cascadeAnchorOf(change.moduleId, state, changed(change.state)) : null,
+    }
+  })
+  const scheduledEvents = input.scheduled.map(({ moduleId }): NewProjectModuleEvent => {
+    const auto = input.cascadeDisabled.includes(moduleId)
+    return {
+      ...base,
+      moduleId,
+      action: 'scheduled_disable',
+      auto,
+      relatedModuleId: auto
+        ? cascadeAnchorOf(moduleId, 'disabled', [
+            ...input.requestedDisable,
+            ...input.cascadeDisabled,
+          ])
+        : null,
+    }
+  })
+  return [...changes, ...scheduledEvents]
+}
+
+/**
  * Liga e desliga módulos do projeto (só o gestor). Ligar traz o que o módulo exige. Desligar traz
  * junto quem depende dele; se houver sprint ativa, o desligamento de Sprints fica agendado e nada
  * dele é gravado. Projeto arquivado não muda. Desligar nunca apaga configuração.
@@ -236,6 +296,7 @@ export class ChangeProjectModules {
       // Com agendamento, o plano não desliga nada: `enabled` já é o conjunto sem a desativação.
       const after = disablePlan.enabled
       const changes = changesBetween(before, after)
+      const applied = disablePlan.scheduled.length === 0
       if (changes.length > 0)
         await repositories.projectModules.save(
           organizationId,
@@ -244,9 +305,23 @@ export class ChangeProjectModules {
           actor.userId,
           now,
         )
+      // Histórico na mesma transação: se a gravação do histórico falhar, a mudança também não fica.
+      await repositories.projectModuleEvents.append(
+        organizationId,
+        historyEventsOf({
+          organizationId,
+          projectId,
+          actor,
+          at: now,
+          changes,
+          autoIds: [...enablePlan.autoEnabled, ...disablePlan.cascadeDisabled],
+          scheduled: applied ? [] : disablePlan.scheduled,
+          requestedDisable: disable,
+          cascadeDisabled: disablePlan.cascadeDisabled,
+        }),
+      )
 
       const saved = await repositories.projectModules.list(organizationId, projectId)
-      const applied = disablePlan.scheduled.length === 0
       return {
         modules: toModuleDtos(saved),
         autoEnabled: [...enablePlan.autoEnabled],
@@ -281,5 +356,46 @@ export class GetOrganizationModules {
       })),
     )
     return { modules, hasActiveProjects }
+  }
+}
+
+/**
+ * Histórico de mudanças de módulos do projeto, do mais recente para o mais antigo (ADR-10). Mesma
+ * regra de leitura do projeto (`canSeeProject`): quem participa ou é gestor. Cada linha traz quem
+ * fez a mudança, o papel dela na hora, e o que foi junto por dependência.
+ */
+export class ListProjectModuleHistory {
+  constructor(private readonly deps: AppDeps) {}
+
+  async execute(actor: Actor, input: ProjectModuleHistoryInput): Promise<ProjectModuleHistoryDto> {
+    const projectId = toProjectId(input.projectId)
+    const limit = input.limit ?? PROJECT_MODULE_HISTORY_DEFAULT_LIMIT
+    const project = await projectOf(this.deps, actor, projectId)
+    const members = await this.deps.projects.listMembers(actor.organizationId, projectId)
+    const isMember = members.some((member) => member.userId === actor.userId)
+    if (!canSeeProject(actor, project, isMember))
+      throw new PermissionDeniedError('Sem acesso a este projeto')
+
+    const events = await this.deps.unitOfWork.run(actor.organizationId, (repositories) =>
+      repositories.projectModuleEvents.listByProject(actor.organizationId, projectId, limit),
+    )
+    const users = await this.deps.users.list(actor.organizationId)
+    const names = new Map(users.map((user) => [user.id, user.name]))
+    const moduleName = (id: ModuleId) => getManifest(id).name
+
+    const rows: ProjectModuleEventDto[] = events.map((event) => ({
+      id: event.id,
+      at: event.at,
+      action: event.action,
+      moduleId: event.moduleId,
+      moduleName: moduleName(event.moduleId),
+      auto: event.auto,
+      relatedModuleId: event.relatedModuleId,
+      relatedModuleName: event.relatedModuleId ? moduleName(event.relatedModuleId) : null,
+      actorId: event.actorId,
+      actorName: names.get(event.actorId) ?? '—',
+      actorRole: event.actorRole,
+    }))
+    return { projectId, events: rows }
   }
 }

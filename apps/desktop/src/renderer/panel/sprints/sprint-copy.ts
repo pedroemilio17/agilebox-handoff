@@ -75,6 +75,23 @@ export const sprintCopy = {
   columnCount: (count: number) => `${count} ${count === 1 ? 'item' : 'itens'}`,
   noColumnItems: 'Nada aqui.',
 
+  // Cerimônias (gestor, com a Agenda e Cerimônias ligadas)
+  ceremoniesTitle: 'Cerimônias',
+  ceremoniesHint:
+    'Entram na Agenda com a data sugerida pela sprint. Ajuste o horário lá, se precisar.',
+  ceremonyAction: {
+    planning: 'Agendar planning',
+    review: 'Agendar review',
+    retro: 'Agendar retro',
+  },
+  ceremonyScheduled: {
+    planning: 'Planning agendada',
+    review: 'Review agendada',
+    retro: 'Retro agendada',
+  },
+  ceremonyNotice: (title: string) => `${title} agendada na Agenda.`,
+  ceremonyError: 'Não foi possível agendar a cerimônia.',
+
   // Encerrar
   closeTitle: 'Encerrar sprint',
   closeSummary: (done: number, open: number, started: number) =>

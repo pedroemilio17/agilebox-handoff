@@ -1,6 +1,8 @@
 /* Tela "Módulos" do projeto: grade de cartões de vidro, interruptores de 44 px e aviso inline. */
 
 .view {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: var(--space-6);

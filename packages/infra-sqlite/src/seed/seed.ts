@@ -91,9 +91,15 @@ export async function seedDemo(runtime: SeedRuntime): Promise<void> {
   })
   // Ferramentas do projeto (ADR-10): o mesmo padrão da demonstração, ligado em cada projeto criado.
   // Gravado pelo gestor do seed (o primeiro usuário não é gestor, e só o gestor muda módulos).
-  const projectModules = defaults.modules
-    .filter((module) => module.state === 'active' && module.moduleId !== 'core')
-    .map(({ moduleId }) => ({ moduleId, state: 'active' as const }))
+  // O Critério de pronto (módulo `definitionOfDone`) não está no padrão da equipe: a demonstração
+  // liga o módulo nos projetos, porque os itens de demonstração são gravados pelo caso de uso (que
+  // recusa com o módulo desligado).
+  const projectModules = [
+    ...defaults.modules
+      .filter((module) => module.state === 'active' && module.moduleId !== 'core')
+      .map(({ moduleId }) => ({ moduleId, state: 'active' as const })),
+    { moduleId: 'definitionOfDone' as const, state: 'active' as const },
+  ]
   const projects = []
   for (const name of demoSeedData.projects) {
     const project = await useCases.projects.createProject.execute(createTenantContext(actor), {

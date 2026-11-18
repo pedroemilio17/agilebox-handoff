@@ -6,9 +6,12 @@ import {
   type GuideViewDto,
   type ListBoardDto,
   type MilestonesListDto,
+  type RisksListDto,
   type ScheduleViewDto,
   type BurndownViewDto,
+  type FlowMetricsViewDto,
   type TrackingViewDto,
+  type BaselineViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
@@ -87,6 +90,11 @@ export function emptyMilestonesView(projectId: string): MilestonesListDto {
   return { projectId, canEdit: false, milestones: [] }
 }
 
+/** Riscos vazios e sem permissão de edição: o padrão neutro dos testes da tela Riscos. */
+export function emptyRisksView(projectId: string): RisksListDto {
+  return { projectId, canEdit: false, risks: [] }
+}
+
 /** EAP vazia do projeto, sem edição: o padrão dos testes para a tela "Entregas" não aparecer preenchida. */
 /** Cronograma vazio e sem permissão de edição: o padrão neutro dos testes do renderer. */
 export function emptyScheduleView(projectId: string): ScheduleViewDto {
@@ -129,6 +137,20 @@ export function emptyBurndownView(projectId: string): BurndownViewDto {
   }
 }
 
+/** Métricas de fluxo vazias: sem tarefa concluída, sem médias e sem semanas. */
+export function emptyFlowMetricsView(projectId: string): FlowMetricsViewDto {
+  return {
+    projectId,
+    today: '2026-01-02',
+    windowStart: '2025-11-10',
+    windowEnd: '2026-01-05',
+    leadDays: null,
+    cycleDays: null,
+    completed: 0,
+    weeks: [],
+  }
+}
+
 /** Acompanhamento vazio e sem custo: o padrão neutro dos testes (sem semana, sem marcos, sem valores). */
 export function emptyTrackingView(projectId: string): TrackingViewDto {
   return {
@@ -146,6 +168,18 @@ export function emptyTrackingView(projectId: string): TrackingViewDto {
     nextMilestone: null,
     milestones: [],
     today: '2026-01-01',
+  }
+}
+
+export function emptyBaselineView(projectId: string): BaselineViewDto {
+  return {
+    projectId,
+    canTake: true,
+    costEnabled: true,
+    costVisible: true,
+    baseline: null,
+    summary: null,
+    tasks: [],
   }
 }
 
@@ -176,6 +210,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       list: (input) => Promise.resolve(emptyMilestonesView(input.projectId)),
       ...overrides.milestones,
     },
+    risks: {
+      ...api.risks,
+      list: (input) => Promise.resolve(emptyRisksView(input.projectId)),
+      ...overrides.risks,
+    },
     schedule: {
       ...api.schedule,
       get: (input) => Promise.resolve(emptyScheduleView(input.projectId)),
@@ -186,10 +225,20 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       get: (input) => Promise.resolve(emptyTrackingView(input.projectId)),
       ...overrides.tracking,
     },
+    baseline: {
+      ...api.baseline,
+      get: (input) => Promise.resolve(emptyBaselineView(input.projectId)),
+      ...overrides.baseline,
+    },
     burndown: {
       ...api.burndown,
       get: (input) => Promise.resolve(emptyBurndownView(input.projectId)),
       ...overrides.burndown,
+    },
+    flowMetrics: {
+      ...api.flowMetrics,
+      get: (input) => Promise.resolve(emptyFlowMetricsView(input.projectId)),
+      ...overrides.flowMetrics,
     },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },
@@ -209,6 +258,8 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
         Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),
       // Sem configuração de módulo por projeto, a gravação devolve a visão sem mudança.
       setConfig: (input) => Promise.resolve(hiddenProjectModules(input.projectId)),
+      // Sem mudança registrada, o histórico vem vazio; os testes da tela substituem o que precisam.
+      history: (input) => Promise.resolve({ projectId: input.projectId, events: [] }),
       ...overrides.projectModules,
     },
   }

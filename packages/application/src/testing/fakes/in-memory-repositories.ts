@@ -14,6 +14,7 @@ import {
 } from '@agilebox/core'
 import type {
   AcceptanceCriterion,
+  Baseline,
   BacklogRankChange,
   BoardSettings,
   ExperienceLevel,
@@ -28,6 +29,8 @@ import type {
   DeliverableId,
   Milestone,
   MilestoneId,
+  Risk,
+  RiskId,
   DailyEntry,
   DefinitionOfDoneItemId,
   Contributor,
@@ -55,6 +58,9 @@ import type {
 } from '@agilebox/core'
 import type {
   AcceptanceRepository,
+  NewProjectModuleEvent,
+  ProjectModuleEvent,
+  ProjectModuleEventRepository,
   BoardSettingsRepository,
   ChecklistRepository,
   ContributorRepository,
@@ -66,6 +72,8 @@ import type {
   TaskCommentRepository,
   MeetingRepository,
   MilestoneRepository,
+  RiskRepository,
+  BaselineRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
@@ -117,6 +125,10 @@ export interface InMemoryState {
   deliverables: Map<OrganizationId, Map<string, Deliverable>>
   /** Marcos por id, dentro da organização. */
   milestones: Map<OrganizationId, Map<string, Milestone>>
+  /** Riscos por id, dentro da organização. */
+  risks: Map<OrganizationId, Map<string, Risk>>
+  /** Linhas de base (fotos) por id, com as tarefas dentro de cada foto. */
+  baselines: Map<OrganizationId, Map<string, Baseline>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
   /** Dependências término→início por predecessora|sucessora, dentro da organização (ADR-10). */
@@ -133,6 +145,9 @@ export interface InMemoryState {
   tasks: Map<OrganizationId, Map<string, Task>>
   /** Módulos de cada projeto, por projeto e módulo (`projectId|moduleId`), dentro da organização. */
   projectModules: Map<OrganizationId, Map<string, InMemoryProjectModuleRow>>
+  /** Histórico de mudanças de módulos por projeto, por id numérico (texto); só cresce. */
+  projectModuleEvents: Map<OrganizationId, Map<string, ProjectModuleEvent>>
+  projectModuleEventsNextId: number
   /** Progresso do guia por pessoa e projeto (`projectId|userId|stepKey`), dentro da organização. */
   guideProgress: Map<OrganizationId, Map<string, InMemoryGuideProgressRow>>
   /** Uma linha de preferência por organização (nível da equipe e autoria do nível). */
@@ -165,6 +180,8 @@ export function createInMemoryState(): InMemoryState {
     guideProgress: new Map(),
     meetings: new Map(),
     milestones: new Map(),
+    risks: new Map(),
+    baselines: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
@@ -174,6 +191,8 @@ export function createInMemoryState(): InMemoryState {
     projects: new Map(),
     projectSetup: new Map(),
     projectModules: new Map(),
+    projectModuleEvents: new Map(),
+    projectModuleEventsNextId: 1,
     members: new Map(),
     organizations: new Map([[defaultOrganization.id, defaultOrganization]]),
     taskOpens: new Map(),
@@ -1013,6 +1032,29 @@ export class InMemoryProjectModulesRepository implements ProjectModulesRepositor
   }
 }
 
+export class InMemoryProjectModuleEventRepository implements ProjectModuleEventRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async append(organizationId: OrganizationId, events: readonly NewProjectModuleEvent[]) {
+    await Promise.resolve()
+    const log = bucket(this.state.projectModuleEvents, organizationId)
+    for (const event of events) {
+      const id = this.state.projectModuleEventsNextId++
+      log.set(String(id), { ...event, id })
+    }
+  }
+
+  async listByProject(organizationId: OrganizationId, projectId: ProjectId, limit: number) {
+    await Promise.resolve()
+    if (!Number.isInteger(limit) || limit < 1)
+      throw new ValidationError('Limite do histórico inválido')
+    return [...bucket(this.state.projectModuleEvents, organizationId).values()]
+      .filter((event) => event.projectId === projectId)
+      .sort((a, b) => (a.at === b.at ? b.id - a.id : a.at < b.at ? 1 : -1))
+      .slice(0, limit)
+  }
+}
+
 const sprintRowKey = (row: Pick<SprintTask, 'sprintId' | 'taskId' | 'addedAt'>) =>
   `${row.sprintId}|${row.taskId}|${row.addedAt}`
 
@@ -1292,5 +1334,62 @@ export class InMemoryImpedimentRepository implements ImpedimentRepository {
     if (impediment.status === 'open' && open)
       throw new ConflictError('Tarefa já tem um impedimento aberto')
     values.set(impediment.id, impediment)
+  }
+}
+
+/** Linhas de base: foto imutável com as tarefas. Como o SQLite, recusa projeto, gravador ou tarefa de outra organização. */
+export class InMemoryBaselineRepository implements BaselineRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async findLatestByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const found = [...bucket(this.state.baselines, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort((a, b) =>
+        a.takenAt === b.takenAt ? (a.id < b.id ? 1 : -1) : a.takenAt < b.takenAt ? 1 : -1,
+      )
+    return found[0] ?? null
+  }
+  async add(org: OrganizationId, value: Baseline) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.baselines, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.takenBy)
+    for (const item of value.tasks) {
+      if (!bucket(this.state.tasks, org).has(item.taskId))
+        throw new ValidationError('Tarefa de outra organização')
+    }
+    bucket(this.state.baselines, org).set(value.id, value)
+  }
+}
+
+export class InMemoryRiskRepository implements RiskRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.risks, org).values()].filter(
+      (item) => item.projectId === projectId,
+    )
+  }
+  async findById(org: OrganizationId, riskId: RiskId) {
+    await Promise.resolve()
+    return bucket(this.state.risks, org).get(riskId) ?? null
+  }
+  async save(org: OrganizationId, value: Risk) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.risks, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.ownerId !== null && !bucket(this.state.users, org).has(value.ownerId))
+      throw new ValidationError('Dono do risco de outra organização')
+    if (value.deliverableId !== null) {
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
+    bucket(this.state.risks, org).set(value.id, value)
+  }
+  async delete(org: OrganizationId, riskId: RiskId) {
+    await Promise.resolve()
+    bucket(this.state.risks, org).delete(riskId)
   }
 }

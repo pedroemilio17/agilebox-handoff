@@ -8,6 +8,7 @@ import {
   toImpedimentId,
   toMilestoneId,
   toProjectId,
+  toRiskId,
   toSprintId,
   toTaskId,
 } from '@agilebox/core'
@@ -17,6 +18,7 @@ import type {
   ImpedimentRepository,
   MilestoneRepository,
   ProjectModulesRepository,
+  RiskRepository,
   ProjectRepository,
   SprintRepository,
   TaskRepository,
@@ -39,6 +41,7 @@ export type ProjectResolution =
   | { readonly from: 'impedimentId' }
   | { readonly from: 'deliverableId' }
   | { readonly from: 'milestoneId' }
+  | { readonly from: 'riskId' }
   | { readonly from: 'successorId' }
 
 /** Módulo de um caso de uso, se ele cria itens novos desse módulo, e de onde sai o projeto. */
@@ -66,8 +69,11 @@ export interface ModuleUsePolicy {
  *   Daily não tem projeto: `project: 'none'`, regra da organização.
  * - `participations.setHours` e `setRate` ficam em `core`: horas e valor/hora alimentam o custo,
  *   que é regra do produto e não da ferramenta de estimativa (`estimates.hours`).
- * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto, não é o módulo
- *   `acceptance` (critérios de aceitação, por tarefa).
+ * - `projects.definitionOfDone.*` é do módulo `definitionOfDone` (ADR-10, "Critério de pronto"), no
+ *   projeto que a chamada informa (`projectId`). Adicionar item é criar (encerrando, recusa); renomear,
+ *   mover, remover e listar seguem. Desligado, nada disso roda, e a regra de conclusão some junto
+ *   (ver `definitionItemsInForce`); os itens ficam guardados. Não é o módulo `acceptance`
+ *   (critérios de aceitação, por tarefa).
  * - `tasks.setEstimate` tem módulo próprio (`estimates.hours`) porque `tasks.update` é do núcleo e o
  *   guard não olha campo a campo.
  * - `teamTools.*` fica em `core`: a gestão das ferramentas não pode ser desligada por ela mesma.
@@ -75,6 +81,7 @@ export interface ModuleUsePolicy {
  *   que leva à tarefa); sprints saem do `sprintId`; backlog e sprints.list/create, do `projectId`.
  *   EAP e marcos: entregas saem do `deliverableId` (e criar, do `projectId`); marcos saem do
  *   `milestoneId` (e criar, do `projectId`). `tasks.setDeliverable` segue a tarefa.
+ *   Riscos (ADR-10): saem do `riskId` (e criar e listar, do `projectId`).
  *   Cronograma (ADR-10): `tasks.setStart` sai do `taskId`; dependências saem da sucessora
  *   (`successorId`, a tarefa que muda), e a leitura do cronograma, do `projectId`.
  *   Agenda, check-in, limites do quadro, impedimentos da organização e ações de retro não têm
@@ -99,11 +106,28 @@ export const USE_CASE_MODULES = {
   'projects.archive': { module: 'core', project: 'none' },
   'projects.unarchive': { module: 'core', project: 'none' },
   'projects.rename': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.list': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.add': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.rename': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.remove': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.move': { module: 'core', project: 'none' },
+  // Critério de pronto (ADR-10, módulo `definitionOfDone`): o projeto vem do `projectId` de cada chamada.
+  'projects.definitionOfDone.list': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.add': {
+    module: 'definitionOfDone',
+    creates: true,
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.rename': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.remove': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.move': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
 
   'tasks.create': { module: 'core', project: 'none' },
   'tasks.getDetail': { module: 'core', project: 'none' },
@@ -195,6 +219,8 @@ export const USE_CASE_MODULES = {
   'projectModules.setConfig': { module: 'core', project: { from: 'projectId' } },
   // Estado dos módulos da organização (barra lateral sem projeto selecionado): só leitura agregada.
   'projectModules.getOrganization': { module: 'core', project: 'none' },
+  // Histórico de mudanças do projeto (ADR-10): leitura por participação, sem módulo a checar.
+  'projectModules.history': { module: 'core', project: { from: 'projectId' } },
 
   // Guia de alimentação (ADR-10): leitura e dispensa do cartão. Sempre no núcleo: o guia nunca
   // bloqueia nada, e a trilha já sai só dos módulos ativos do projeto.
@@ -229,6 +255,13 @@ export const USE_CASE_MODULES = {
   'milestones.update': { module: 'milestones', project: { from: 'milestoneId' } },
   'milestones.remove': { module: 'milestones', project: { from: 'milestoneId' } },
 
+  // Riscos (ADR-10, módulo `risks`): criar é criar item do módulo (encerrando, recusa). Editar, remover
+  // e ler seguem. O projeto sai do `projectId` (criar e listar) ou do próprio risco (editar e remover).
+  'risks.list': { module: 'risks', project: { from: 'projectId' } },
+  'risks.create': { module: 'risks', creates: true, project: { from: 'projectId' } },
+  'risks.update': { module: 'risks', project: { from: 'riskId' } },
+  'risks.remove': { module: 'risks', project: { from: 'riskId' } },
+
   // Cronograma (ADR-10): início da tarefa, dependências término→início e a leitura. Criar dependência é
   // criar item do módulo (encerrando, recusa). Remover e ler seguem.
   'tasks.setStart': { module: 'schedule', project: { from: 'taskId' } },
@@ -239,6 +272,12 @@ export const USE_CASE_MODULES = {
   'tracking.get': { module: 'schedule', project: { from: 'projectId' } },
   // Burndown e velocidade (ADR-10): leitura do projeto, no módulo `burndown` (exige sprints e horas).
   'burndown.get': { module: 'burndown', project: { from: 'projectId' } },
+  // Métricas de fluxo (ADR-10): leitura do projeto, no módulo `flowMetrics` (lead time, ciclo e vazão).
+  'flowMetrics.get': { module: 'flowMetrics', project: { from: 'projectId' } },
+  // Linha de base (ADR-10, módulo `baseline`): tirar a foto é criar item do módulo (encerrando, recusa).
+  // Ler segue. O projeto sai do `projectId` nos dois casos.
+  'baseline.get': { module: 'baseline', project: { from: 'projectId' } },
+  'baseline.take': { module: 'baseline', creates: true, project: { from: 'projectId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */
@@ -261,6 +300,7 @@ export interface ModuleGuardPorts {
   readonly impediments: ImpedimentRepository
   readonly deliverables: DeliverableRepository
   readonly milestones: MilestoneRepository
+  readonly risks: RiskRepository
 }
 
 /** Ordem de força dos estados: o melhor estado entre vários projetos é o que vale. */
@@ -348,6 +388,11 @@ async function targetOf(
       const milestone =
         milestoneId === null ? null : await ports.milestones.findById(organizationId, milestoneId)
       return milestone === null ? missing : project(milestone.projectId)
+    }
+    case 'riskId': {
+      const riskId = parseIdOrNull(toRiskId, raw)
+      const risk = riskId === null ? null : await ports.risks.findById(organizationId, riskId)
+      return risk === null ? missing : project(risk.projectId)
     }
     case 'successorId': {
       const successorId = parseIdOrNull(toTaskId, raw)
