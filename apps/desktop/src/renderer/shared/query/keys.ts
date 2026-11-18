@@ -28,6 +28,10 @@ export const queryKeys = {
     all: ['agilebox', 'milestones'] as const,
     project: (projectId: string) => ['agilebox', 'milestones', projectId] as const,
   },
+  risks: {
+    all: ['agilebox', 'risks'] as const,
+    project: (projectId: string) => ['agilebox', 'risks', projectId] as const,
+  },
   schedule: {
     all: ['agilebox', 'schedule'] as const,
     project: (projectId: string) => ['agilebox', 'schedule', projectId] as const,

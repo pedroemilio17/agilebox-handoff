@@ -195,6 +195,10 @@ export function registerHandlers(
   register('milestones.remove', (context, input) =>
     useCases.milestones.remove.execute(context, input),
   )
+  register('risks.list', (context, input) => useCases.risks.list.execute(context, input))
+  register('risks.create', (context, input) => useCases.risks.create.execute(context, input))
+  register('risks.update', (context, input) => useCases.risks.update.execute(context, input))
+  register('risks.remove', (context, input) => useCases.risks.remove.execute(context, input))
   register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
   register('tracking.get', (context, input) => useCases.tracking.get.execute(context, input))
   register('burndown.get', (context, input) => useCases.burndown.get.execute(context, input))

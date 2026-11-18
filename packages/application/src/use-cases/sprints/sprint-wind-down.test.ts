@@ -106,6 +106,7 @@ async function setup() {
     deliverables: repos.deliverables,
     taskDependencies: repos.taskDependencies,
     milestones: repos.milestones,
+    risks: repos.risks,
     impediments: repos.impediments,
     taskOpens: repos.taskOpens,
     tasks: repos.tasks,

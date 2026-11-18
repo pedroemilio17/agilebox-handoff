@@ -8,6 +8,7 @@ import {
   toImpedimentId,
   toMilestoneId,
   toProjectId,
+  toRiskId,
   toSprintId,
   toTaskId,
 } from '@agilebox/core'
@@ -17,6 +18,7 @@ import type {
   ImpedimentRepository,
   MilestoneRepository,
   ProjectModulesRepository,
+  RiskRepository,
   ProjectRepository,
   SprintRepository,
   TaskRepository,
@@ -39,6 +41,7 @@ export type ProjectResolution =
   | { readonly from: 'impedimentId' }
   | { readonly from: 'deliverableId' }
   | { readonly from: 'milestoneId' }
+  | { readonly from: 'riskId' }
   | { readonly from: 'successorId' }
 
 /** Módulo de um caso de uso, se ele cria itens novos desse módulo, e de onde sai o projeto. */
@@ -75,6 +78,7 @@ export interface ModuleUsePolicy {
  *   que leva à tarefa); sprints saem do `sprintId`; backlog e sprints.list/create, do `projectId`.
  *   EAP e marcos: entregas saem do `deliverableId` (e criar, do `projectId`); marcos saem do
  *   `milestoneId` (e criar, do `projectId`). `tasks.setDeliverable` segue a tarefa.
+ *   Riscos (ADR-10): saem do `riskId` (e criar e listar, do `projectId`).
  *   Cronograma (ADR-10): `tasks.setStart` sai do `taskId`; dependências saem da sucessora
  *   (`successorId`, a tarefa que muda), e a leitura do cronograma, do `projectId`.
  *   Agenda, check-in, limites do quadro, impedimentos da organização e ações de retro não têm
@@ -229,6 +233,13 @@ export const USE_CASE_MODULES = {
   'milestones.update': { module: 'milestones', project: { from: 'milestoneId' } },
   'milestones.remove': { module: 'milestones', project: { from: 'milestoneId' } },
 
+  // Riscos (ADR-10, módulo `risks`): criar é criar item do módulo (encerrando, recusa). Editar, remover
+  // e ler seguem. O projeto sai do `projectId` (criar e listar) ou do próprio risco (editar e remover).
+  'risks.list': { module: 'risks', project: { from: 'projectId' } },
+  'risks.create': { module: 'risks', creates: true, project: { from: 'projectId' } },
+  'risks.update': { module: 'risks', project: { from: 'riskId' } },
+  'risks.remove': { module: 'risks', project: { from: 'riskId' } },
+
   // Cronograma (ADR-10): início da tarefa, dependências término→início e a leitura. Criar dependência é
   // criar item do módulo (encerrando, recusa). Remover e ler seguem.
   'tasks.setStart': { module: 'schedule', project: { from: 'taskId' } },
@@ -263,6 +274,7 @@ export interface ModuleGuardPorts {
   readonly impediments: ImpedimentRepository
   readonly deliverables: DeliverableRepository
   readonly milestones: MilestoneRepository
+  readonly risks: RiskRepository
 }
 
 /** Ordem de força dos estados: o melhor estado entre vários projetos é o que vale. */
@@ -350,6 +362,11 @@ async function targetOf(
       const milestone =
         milestoneId === null ? null : await ports.milestones.findById(organizationId, milestoneId)
       return milestone === null ? missing : project(milestone.projectId)
+    }
+    case 'riskId': {
+      const riskId = parseIdOrNull(toRiskId, raw)
+      const risk = riskId === null ? null : await ports.risks.findById(organizationId, riskId)
+      return risk === null ? missing : project(risk.projectId)
     }
     case 'successorId': {
       const successorId = parseIdOrNull(toTaskId, raw)

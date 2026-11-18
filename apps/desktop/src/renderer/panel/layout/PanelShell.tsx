@@ -30,6 +30,7 @@ export type PanelView =
   | 'tracking'
   | 'burndown'
   | 'flowMetrics'
+  | 'risks'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -81,6 +82,8 @@ export interface PanelShellProps {
   readonly burndown?: ReactNode
   /** Métricas de fluxo do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly flowMetrics?: ReactNode
+  /** Riscos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly risks?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -99,6 +102,7 @@ const viewTitles: Record<PanelView, string> = {
   tracking: trackingCopy.title,
   burndown: burndownCopy.title,
   flowMetrics: flowMetricsCopy.title,
+  risks: 'Riscos',
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -135,6 +139,7 @@ export function PanelShell({
   tracking,
   burndown,
   flowMetrics,
+  risks,
   sprints,
   impediments,
   children,
@@ -174,6 +179,10 @@ export function PanelShell({
     // Métricas de fluxo: módulo `flowMetrics` ligado no projeto selecionado (N3; o nível não esconde a tela).
     ...(selectedProjectId !== null && capabilities.showScreen('flowMetrics')
       ? [{ id: 'flowMetrics' as const, label: viewTitles.flowMetrics, icon: '▁' }]
+      : []),
+    // Riscos: módulo `risks` ligado no projeto selecionado (N3; o nível não esconde a tela).
+    ...(selectedProjectId !== null && capabilities.showScreen('risks')
+      ? [{ id: 'risks' as const, label: viewTitles.risks, icon: '△' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -243,6 +252,8 @@ export function PanelShell({
             burndown
           ) : visibleView === 'flowMetrics' && flowMetrics ? (
             flowMetrics
+          ) : visibleView === 'risks' && risks ? (
+            risks
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -496,6 +507,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
     burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
     flowMetrics: 'M6 19v-6M12 19V8M18 19V4',
+    risks: 'M4 4h12l4 4v12H4Z M8 12h8M8 16h5',
   }
   return (
     <span aria-hidden="true">

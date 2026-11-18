@@ -28,6 +28,8 @@ import type {
   DeliverableId,
   Milestone,
   MilestoneId,
+  Risk,
+  RiskId,
   DailyEntry,
   DefinitionOfDoneItemId,
   Contributor,
@@ -66,6 +68,7 @@ import type {
   TaskCommentRepository,
   MeetingRepository,
   MilestoneRepository,
+  RiskRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
@@ -117,6 +120,8 @@ export interface InMemoryState {
   deliverables: Map<OrganizationId, Map<string, Deliverable>>
   /** Marcos por id, dentro da organização. */
   milestones: Map<OrganizationId, Map<string, Milestone>>
+  /** Riscos por id, dentro da organização. */
+  risks: Map<OrganizationId, Map<string, Risk>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
   /** Dependências término→início por predecessora|sucessora, dentro da organização (ADR-10). */
@@ -165,6 +170,7 @@ export function createInMemoryState(): InMemoryState {
     guideProgress: new Map(),
     meetings: new Map(),
     milestones: new Map(),
+    risks: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
@@ -1292,5 +1298,37 @@ export class InMemoryImpedimentRepository implements ImpedimentRepository {
     if (impediment.status === 'open' && open)
       throw new ConflictError('Tarefa já tem um impedimento aberto')
     values.set(impediment.id, impediment)
+  }
+}
+
+export class InMemoryRiskRepository implements RiskRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async listByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    return [...bucket(this.state.risks, org).values()].filter(
+      (item) => item.projectId === projectId,
+    )
+  }
+  async findById(org: OrganizationId, riskId: RiskId) {
+    await Promise.resolve()
+    return bucket(this.state.risks, org).get(riskId) ?? null
+  }
+  async save(org: OrganizationId, value: Risk) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.risks, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.createdBy)
+    if (value.ownerId !== null && !bucket(this.state.users, org).has(value.ownerId))
+      throw new ValidationError('Dono do risco de outra organização')
+    if (value.deliverableId !== null) {
+      const deliverable = bucket(this.state.deliverables, org).get(value.deliverableId)
+      if (!deliverable || deliverable.projectId !== value.projectId)
+        throw new ValidationError('Entrega não encontrada neste projeto')
+    }
+    bucket(this.state.risks, org).set(value.id, value)
+  }
+  async delete(org: OrganizationId, riskId: RiskId) {
+    await Promise.resolve()
+    bucket(this.state.risks, org).delete(riskId)
   }
 }

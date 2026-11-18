@@ -114,3 +114,12 @@
 - Tela por projeto (`flowMetrics.get`): lead time, cycle time e vazão das últimas 8 semanas; reaproveita as regras do dashboard (extraí `flowSeries`, dashboard inalterado). Arquivadas e backlog ficam fora.
 - CONFERIR: textos da nota de amostra (< 5 tarefas concluídas) e do estado vazio, ícone e glifo ▁ são escolhas do agente; visual não visto rodando.
 - Tarefa concluída, reaberta e concluída em semanas diferentes aparece em duas barras e conta uma vez no total (regra existente do dashboard).
+
+## Riscos (ADR-10, fase 6, C2)
+
+- Módulo `risks` por projeto: migração 0022 (`risks`), casos de uso `risks.list/create/update/delete`, tela com faixa em texto (Baixo/Médio/Alto) e pontuação = probabilidade × impacto. Guard ganhou a resolução `riskId`.
+- DECIDIR: escrita segue a regra dos marcos (gestor ou criador do projeto). O pedido falava em "gestor e participantes"; participantes hoje não escrevem. Mudar? (uma linha em `writableProject`)
+- DECIDIR: probabilidade e impacto são obrigatórios (1 a 3, formulário em "Média"); o ADR diz que campos de módulo são opcionais, mas a pontuação precisa dos dois.
+- Dono precisa ser membro do projeto; entrega precisa ser do mesmo projeto e exige `wbs` ligado.
+- Não vi protótipo de Riscos em `design/`: UI feita do manifesto e do ADR. CONFERIR visualmente.
+- "Alimenta o Dashboard" não foi feito.

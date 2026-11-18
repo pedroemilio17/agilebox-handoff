@@ -127,6 +127,12 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
       update: (input) => call('milestones.update', input),
       remove: (input) => call('milestones.remove', input),
     },
+    risks: {
+      list: (input) => call('risks.list', input),
+      create: (input) => call('risks.create', input),
+      update: (input) => call('risks.update', input),
+      remove: (input) => call('risks.remove', input),
+    },
     backlog: {
       list: (input) => call('backlog.list', input),
       add: (input) => call('backlog.add', input),

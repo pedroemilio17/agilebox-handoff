@@ -36,6 +36,7 @@ import {
   RemoveMilestone,
   UpdateMilestone,
 } from './use-cases/milestones/milestones'
+import { CreateRisk, ListRisks, RemoveRisk, UpdateRisk } from './use-cases/risks/risks'
 import {
   AddTaskDependency,
   GetSchedule,
@@ -341,6 +342,12 @@ export function createUseCases(deps: AppDeps) {
       create: forTenant('milestones.create', new CreateMilestone(deps)),
       update: forTenant('milestones.update', new UpdateMilestone(deps)),
       remove: forTenant('milestones.remove', new RemoveMilestone(deps)),
+    },
+    risks: {
+      list: forTenant('risks.list', new ListRisks(deps)),
+      create: forTenant('risks.create', new CreateRisk(deps)),
+      update: forTenant('risks.update', new UpdateRisk(deps)),
+      remove: forTenant('risks.remove', new RemoveRisk(deps)),
     },
     backlog: {
       list: forTenant('backlog.list', new ListBacklog(deps)),

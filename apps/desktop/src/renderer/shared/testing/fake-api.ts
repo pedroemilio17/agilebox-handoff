@@ -6,6 +6,7 @@ import {
   type GuideViewDto,
   type ListBoardDto,
   type MilestonesListDto,
+  type RisksListDto,
   type ScheduleViewDto,
   type BurndownViewDto,
   type FlowMetricsViewDto,
@@ -86,6 +87,11 @@ export function hiddenOrganizationModules(): OrganizationModulesViewDto {
 /** Marcos vazios do projeto, sem edição: o padrão dos testes para a tela Marcos não aparecer preenchida. */
 export function emptyMilestonesView(projectId: string): MilestonesListDto {
   return { projectId, canEdit: false, milestones: [] }
+}
+
+/** Riscos vazios e sem permissão de edição: o padrão neutro dos testes da tela Riscos. */
+export function emptyRisksView(projectId: string): RisksListDto {
+  return { projectId, canEdit: false, risks: [] }
 }
 
 /** EAP vazia do projeto, sem edição: o padrão dos testes para a tela "Entregas" não aparecer preenchida. */
@@ -190,6 +196,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.milestones,
       list: (input) => Promise.resolve(emptyMilestonesView(input.projectId)),
       ...overrides.milestones,
+    },
+    risks: {
+      ...api.risks,
+      list: (input) => Promise.resolve(emptyRisksView(input.projectId)),
+      ...overrides.risks,
     },
     schedule: {
       ...api.schedule,

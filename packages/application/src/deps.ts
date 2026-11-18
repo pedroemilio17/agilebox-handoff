@@ -16,6 +16,7 @@ import type {
   IdGenerator,
   MeetingRepository,
   MilestoneRepository,
+  RiskRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectModulesRepository,
@@ -55,6 +56,7 @@ export interface AppDeps {
   readonly projects: ProjectRepository
   readonly projectSetup: ProjectSetupRepository
   readonly retroActions: RetroActionRepository
+  readonly risks: RiskRepository
   readonly sprints: SprintRepository
   readonly sprintTasks: SprintTaskRepository
   readonly taskDependencies: TaskDependencyRepository

@@ -62,6 +62,7 @@ function setup(actor: Actor = ana, options: { sprints?: unknown } = {}) {
     deliverables: unitOfWork.repositories.deliverables,
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
+    risks: unitOfWork.repositories.risks,
     impediments: unitOfWork.repositories.impediments,
     definitionOfDone: unitOfWork.repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),

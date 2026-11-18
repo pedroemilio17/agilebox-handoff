@@ -196,6 +196,16 @@ import {
   updateMilestoneOutputSchema,
 } from './milestones'
 import {
+  createRiskInputSchema,
+  createRiskOutputSchema,
+  listRisksInputSchema,
+  listRisksOutputSchema,
+  removeRiskInputSchema,
+  removeRiskOutputSchema,
+  updateRiskInputSchema,
+  updateRiskOutputSchema,
+} from './risks'
+import {
   createDeliverableInputSchema,
   createDeliverableOutputSchema,
   getWbsInputSchema,
@@ -459,6 +469,10 @@ export const API_SCHEMA_REGISTRY = {
   'milestones.create': { input: createMilestoneInputSchema, output: createMilestoneOutputSchema },
   'milestones.update': { input: updateMilestoneInputSchema, output: updateMilestoneOutputSchema },
   'milestones.remove': { input: removeMilestoneInputSchema, output: removeMilestoneOutputSchema },
+  'risks.list': { input: listRisksInputSchema, output: listRisksOutputSchema },
+  'risks.create': { input: createRiskInputSchema, output: createRiskOutputSchema },
+  'risks.update': { input: updateRiskInputSchema, output: updateRiskOutputSchema },
+  'risks.remove': { input: removeRiskInputSchema, output: removeRiskOutputSchema },
   'participations.add': {
     input: addParticipationInputSchema,
     output: addParticipationOutputSchema,
@@ -754,6 +768,12 @@ export interface AgileBoxApi {
     create: Method<'milestones.create'>
     update: Method<'milestones.update'>
     remove: Method<'milestones.remove'>
+  }
+  risks: {
+    list: Method<'risks.list'>
+    create: Method<'risks.create'>
+    update: Method<'risks.update'>
+    remove: Method<'risks.remove'>
   }
   backlog: {
     list: Method<'backlog.list'>

@@ -34,6 +34,7 @@ import type {
   RetroAction,
   Impediment,
   Milestone,
+  Risk,
   Sprint,
   SprintTask,
   Task,
@@ -61,6 +62,7 @@ import type {
   ProjectDto,
   RetroActionDto,
   MilestoneDto,
+  RiskDto,
   SprintDto,
   SprintHistoryRowDto,
   SprintRefDto,
@@ -285,6 +287,25 @@ export function toMilestoneDto(milestone: Milestone): MilestoneDto {
     deliverableId: milestone.deliverableId,
     criterion: milestone.criterion,
     createdAt: milestone.createdAt,
+  }
+}
+
+/** Risco como a interface o mostra (ADR-10). `ownerName` vem do dono, nulo sem dono. */
+export function toRiskDto(risk: Risk, ownerName: string | null): RiskDto {
+  return {
+    id: risk.id,
+    projectId: risk.projectId,
+    title: risk.title,
+    description: risk.description,
+    probability: risk.probability,
+    impact: risk.impact,
+    response: risk.response,
+    ownerId: risk.ownerId,
+    ownerName: risk.ownerId === null ? null : ownerName,
+    deliverableId: risk.deliverableId,
+    status: risk.status,
+    createdAt: risk.createdAt,
+    updatedAt: risk.updatedAt,
   }
 }
 

@@ -118,6 +118,7 @@ async function setup(options: SetupOptions = {}) {
     deliverables: repositories.deliverables,
     taskDependencies: repositories.taskDependencies,
     milestones: repositories.milestones,
+    risks: repositories.risks,
     impediments: repositories.impediments,
     definitionOfDone: repositories.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),
@@ -730,7 +731,8 @@ describe('mapa de módulos dos casos de uso', () => {
     // e `schedule.removeDependency`. Mais 1: `tracking.get`, o acompanhamento (módulo `schedule`).
     // Mais 1: `burndown.get`, o burndown e a velocidade (módulo `burndown`).
     // Mais 1: `flowMetrics.get`, as métricas de fluxo por projeto (módulo `flowMetrics`).
-    expect(registered).toHaveLength(120)
+    // Mais 4: `risks.list`, `risks.create`, `risks.update` e `risks.remove` (módulo `risks`, ADR-10).
+    expect(registered).toHaveLength(124)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 
@@ -748,6 +750,7 @@ describe('mapa de módulos dos casos de uso', () => {
       'meetings.create',
       'meetings.retroActions.add',
       'milestones.create',
+      'risks.create',
       'schedule.addDependency',
       'sprints.addTask',
       'sprints.create',
