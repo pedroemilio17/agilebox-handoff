@@ -17,6 +17,7 @@ import { AgendaView } from './agenda/AgendaView'
 import { BacklogView } from './backlog/BacklogView'
 import { WbsView } from './wbs/WbsView'
 import { MilestonesView } from './milestones/MilestonesView'
+import { ScheduleView } from './schedule/ScheduleView'
 import { SprintsView } from './sprints/SprintsView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { ModulesView } from './modules/ModulesView'
@@ -67,6 +68,8 @@ function PanelContent({
   const wbsVisible = selectedProjectId !== null && capabilities.showScreen('wbs')
   // Marcos: mesmo caminho (módulo ligado no projeto selecionado; sem projeto cai no Quadro).
   const milestonesVisible = selectedProjectId !== null && capabilities.showScreen('milestones')
+  // Cronograma: módulo ligado no projeto selecionado; sem projeto a view cai no Quadro.
+  const scheduleVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
   // Sprints segue o mesmo caminho: módulo ligado (ou encerrando) e nível da pessoa.
   const sprintsVisible = capabilities.showScreen('sprints')
   // Impedimentos: mesmo caminho (módulo ligado ou encerrando, e nível da pessoa).
@@ -89,6 +92,7 @@ function PanelContent({
     (view === 'backlog' && !backlogVisible) ||
     (view === 'wbs' && !wbsVisible) ||
     (view === 'milestones' && !milestonesVisible) ||
+    (view === 'schedule' && !scheduleVisible) ||
     (view === 'sprints' && !sprintsVisible) ||
     (view === 'impediments' && !impedimentsVisible) ||
     (view === 'modules' && selectedProjectId === null)
@@ -434,6 +438,14 @@ function PanelContent({
         }
         milestones={
           <MilestonesView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        schedule={
+          <ScheduleView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}

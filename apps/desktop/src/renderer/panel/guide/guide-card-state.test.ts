@@ -127,6 +127,19 @@ describe('ação do passo da EAP', () => {
     })
   })
 
+  it('dar datas e acompanhar o cronograma levam à tela do cronograma', () => {
+    expect(guideStepAction('schedule.dates')).toEqual({
+      kind: 'navigate',
+      view: 'schedule',
+      label: 'Abrir o cronograma',
+    })
+    expect(guideStepAction('schedule.follow')).toEqual({
+      kind: 'navigate',
+      view: 'schedule',
+      label: 'Abrir o cronograma',
+    })
+  })
+
   it('marcar os marcos leva à tela de marcos', () => {
     expect(guideStepAction('milestones.create')).toEqual({
       kind: 'navigate',

@@ -23,6 +23,7 @@ export type PanelView =
   | 'backlog'
   | 'wbs'
   | 'milestones'
+  | 'schedule'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -66,6 +67,8 @@ export interface PanelShellProps {
   readonly wbs?: ReactNode
   /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly milestones?: ReactNode
+  /** Cronograma do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly schedule?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -80,6 +83,7 @@ const viewTitles: Record<PanelView, string> = {
   backlog: panelCopy.backlogTitle,
   wbs: 'Entregas',
   milestones: 'Marcos',
+  schedule: 'Cronograma',
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -112,6 +116,7 @@ export function PanelShell({
   backlog,
   wbs,
   milestones,
+  schedule,
   sprints,
   impediments,
   children,
@@ -135,6 +140,10 @@ export function PanelShell({
     // Marcos: com projeto selecionado e o módulo ligado no projeto (sem EAP, a tela continua).
     ...(selectedProjectId !== null && capabilities.showScreen('milestones')
       ? [{ id: 'milestones' as const, label: viewTitles.milestones, icon: '◇' }]
+      : []),
+    // Cronograma: com projeto selecionado e o módulo ligado no projeto.
+    ...(selectedProjectId !== null && capabilities.showScreen('schedule')
+      ? [{ id: 'schedule' as const, label: viewTitles.schedule, icon: '≋' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -196,6 +205,8 @@ export function PanelShell({
             wbs
           ) : visibleView === 'milestones' && milestones ? (
             milestones
+          ) : visibleView === 'schedule' && schedule ? (
+            schedule
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -445,6 +456,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
     modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
     milestones: 'M12 3l8 9-8 9-8-9z',
+    schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
   }
   return (
     <span aria-hidden="true">
