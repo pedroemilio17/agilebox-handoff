@@ -231,3 +231,12 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - DECIDIR (06): o design posiciona a janela em (456, 150); o app centraliza a janela na tela. Mantido centrado.
 - Texto removido por não ter fonte: "Leva uns 2 minutos" (o design afirma o tempo; nada no app calcula). Contagem de passos agora "N passos, ajustados ao que já existe aqui.".
 - Não visto rodando no Electron (só testes e tipos).
+
+## Fidelidade das telas 07 e 08 (sprints) (F2)
+
+- Planejar sprint: cabeçalho "Planejar Sprint N" com Rascunho/período/dias úteis, faixa meta/período/estimativa, Backlog × Sprint lado a lado com arrastar para levar item. Sprint ativa: cabeçalho com datas, Editar, Encerrar sprint, Nova tarefa; faixa Meta / Dia X de Y / Restante / miniatura do burndown; quadro de 4 colunas (Planejamento só se houver item); cartões com chave, título e horas. Não vi rodando.
+- Mantido fora do design (função não pode sumir): abas Planejamento/Ativa/Encerradas e seletor de projeto, "Editar", cerimônias (B3), "Adicionar do backlog". DECIDIR se mantém as abas.
+- NÃO implementado (sem dado/regra): capacidade da sprint e por pessoa ("62 h de 80 h", "Carga por pessoa"), avatar do responsável e "3 de 4 atualizaram hoje", "Parada 3d", linha "Planning · seg 24/11, 9:00" (sprint sem vínculo com a Agenda), atalho N. Quer entrar no backlog de produto como pendências de domínio?
+- Textos novos meus: "Sem meta definida.", "Estimado nesta sprint", "Média de N sprints encerradas: X h.", "Sem sprint encerrada para comparar.", "sem estimativa", "No ideal".
+- DECIDIR: "Nova tarefa" na sprint ativa cria no backlog (não entra direto na sprint). Ícone de remover só no hover/foco. Quatro colunas vs cinco fixas.
+- Dado do mockup: "seg 24/11 → sex 05/12, 10 dias úteis" não bate com o calendário de 2026 (24/11 é terça, 05/12 é sábado; 9 dias úteis). O app usa o calendário real.

@@ -141,3 +141,63 @@ export function progressOf(items: readonly TaskDto[]): { done: number; total: nu
 export function sprintMarker(task: Pick<TaskDto, 'sprint'>): string | null {
   return task.sprint ? sprintLabel(task.sprint.number) : null
 }
+
+/** Horas que ainda faltam: estimativa das tarefas não concluídas (sem estimativa conta zero). */
+export function remainingHours(items: readonly TaskDto[]): number {
+  return items
+    .filter((item) => item.status !== 'done')
+    .reduce((total, item) => total + (item.estimatedHours ?? 0), 0)
+}
+
+/** Dias úteis (segunda a sexta) entre duas datas, incluindo as duas pontas. */
+export function workingDays(start: string, end: string): number {
+  const cursor = new Date(`${start.slice(0, 10)}T00:00:00Z`)
+  const last = new Date(`${end.slice(0, 10)}T00:00:00Z`).getTime()
+  let count = 0
+  while (cursor.getTime() <= last) {
+    const weekday = cursor.getUTCDay()
+    if (weekday !== 0 && weekday !== 6) count += 1
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return count
+}
+
+const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const
+
+/** Data com dia da semana, como "seg 24/11". */
+export function weekdayDate(date: string): string {
+  const value = new Date(`${date.slice(0, 10)}T00:00:00Z`)
+  const day = `${date.slice(8, 10)}/${date.slice(5, 7)}`
+  return `${WEEKDAYS[value.getUTCDay()]} ${day}`
+}
+
+/** Intervalo curto com seta, como "10/11 → 21/11" (cabeçalhos do design). */
+export function arrowRange(start: string, end: string): string {
+  return `${start.slice(8, 10)}/${start.slice(5, 7)} → ${end.slice(8, 10)}/${end.slice(5, 7)}`
+}
+
+/**
+ * Posição da sprint no burndown: dia atual (1 a total) e quantos dias ela está atrás da linha
+ * ideal. Atraso zero ou negativo quer dizer no prazo ou adiantada. Nulo sem medição do dia.
+ */
+export function paceAgainstIdeal(
+  days: readonly { date: string; idealHours: number; remainingHours: number | null }[],
+  today: string,
+): { day: number; total: number; lagDays: number | null } | null {
+  if (days.length === 0) return null
+  let index = 0
+  days.forEach((day, position) => {
+    if (day.date <= today) index = position
+  })
+  const current = days[index]
+  if (!current || current.remainingHours === null)
+    return { day: index + 1, total: days.length, lagDays: null }
+  const remaining = current.remainingHours
+  // A linha ideal cai; o primeiro dia em que ela alcança o restante mostra quantos dias de atraso.
+  const reached = days.findIndex((day) => day.idealHours <= remaining)
+  return {
+    day: index + 1,
+    total: days.length,
+    lagDays: reached === -1 ? null : index - reached,
+  }
+}

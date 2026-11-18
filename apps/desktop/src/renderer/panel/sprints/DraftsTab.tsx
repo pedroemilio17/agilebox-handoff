@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { sprintLabel } from '@agilebox/core'
-import type { SprintDto, TaskDto } from '@agilebox/contract'
+import type { BurndownViewDto, SprintDto, TaskDto } from '@agilebox/contract'
 import { AddButton, Button, EmptyState, Modal } from '@agilebox/ui'
+import { useBacklogList } from '../backlog/use-backlog'
 import { refusalMessage } from '../backlog/refusal-message'
 import { SprintForm } from './SprintForm'
-import { BacklogPicker, hoursText, SprintItemRow } from './SprintItems'
+import { BacklogPicker, hoursText, SprintLine } from './SprintItems'
+import { EstimateGauge } from './SprintSummary'
 import { sprintCopy } from './sprint-copy'
-import { sumHours } from './sprint-rules'
+import { heldByOtherSprint, sumHours, weekdayDate, workingDays } from './sprint-rules'
 import type { SprintFormValues } from './sprint-rules'
 import {
   useCreateSprint,
@@ -29,6 +31,8 @@ export interface DraftsTabProps {
   readonly onNotify: (message: string) => void
   /** Rascunho a abrir quando a aba é mostrada (ex.: o que acabou de ser replanejado). */
   readonly preferredId?: string | null
+  /** Burndown do projeto (velocidade das sprints encerradas), quando o módulo está ligado. */
+  readonly burndown: BurndownViewDto | null
 }
 
 /** Aba Planejamento: rascunhos do projeto, com criação, edição, descarte, itens e início. */
@@ -41,11 +45,13 @@ export function DraftsTab({
   onStarted,
   onNotify,
   preferredId = null,
+  burndown,
 }: DraftsTabProps) {
   const [chosenId, setChosenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState(false)
   const [discarding, setDiscarding] = useState(false)
+  const [dropping, setDropping] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
   const selectedId =
@@ -54,6 +60,7 @@ export function DraftsTab({
     drafts[0]?.id ??
     null
   const detail = useSprintDetail(selectedId)
+  const backlog = useBacklogList(projectId)
   const create = useCreateSprint(projectId)
   const update = useUpdateSprint()
   const start = useStartSprint()
@@ -156,6 +163,16 @@ export function DraftsTab({
     )
   }
 
+  // Arrastar um item do backlog até a coluna da sprint leva o item (o mesmo que o botão "+").
+  const canDrop = !windingDown && sprint !== undefined && !items.add.isPending
+  const dropTask = (taskId: string) => {
+    if (!sprint) return
+    const task = (backlog.data ?? []).find((candidate) => candidate.id === taskId)
+    if (!task || heldByOtherSprint(task, sprint.id)) return
+    if (sprintItems.some((item) => item.id === task.id)) return
+    addItem(task)
+  }
+
   const busy = create.isPending || update.isPending
   return (
     <div className={styles.tab}>
@@ -194,7 +211,7 @@ export function DraftsTab({
         <EmptyState title={sprintCopy.draftsEmpty} description={sprintCopy.draftsEmptyHint} />
       ) : null}
 
-      {drafts.length > 0 ? (
+      {drafts.length > 1 ? (
         <ul className={styles.draftList} aria-label={sprintCopy.draftsTitle}>
           {drafts.map((draft) => (
             <li key={draft.id}>
@@ -234,55 +251,27 @@ export function DraftsTab({
       ) : null}
 
       {sprint && !creating ? (
-        <section className={styles.panel} aria-label={sprint.name}>
-          <header className={styles.panelHeader}>
-            <div>
-              <p className={styles.eyebrow}>{sprintLabel(sprint.number)}</p>
-              <h3 className={styles.sprintName}>{sprint.name}</h3>
-              {sprint.goal ? <p className={styles.goal}>{sprint.goal}</p> : null}
-              <p className={styles.meta}>{formatRange(sprint.plannedStart, sprint.plannedEnd)}</p>
-            </div>
-            <div className={styles.actions}>
+        <section className={styles.plan} aria-label={sprint.name}>
+          <header className={styles.pageHeader}>
+            <h3 className={styles.pageTitle}>
+              {sprintCopy.planningTitle(sprintLabel(sprint.number))}
+            </h3>
+            <span className={styles.tag}>{sprintCopy.draftTag}</span>
+            <span className={styles.spacer} />
+            <Button type="button" onClick={() => setDiscarding(true)}>
+              {sprintCopy.discard}
+            </Button>
+            {windingDown ? null : (
               <Button
                 type="button"
-                onClick={() => {
-                  setFormError(null)
-                  setEditing((open) => !open)
-                }}
+                variant="primary"
+                disabled={start.isPending}
+                onClick={startSprint}
               >
-                {sprintCopy.edit}
+                {sprintCopy.start}
               </Button>
-              <Button type="button" onClick={() => setDiscarding(true)}>
-                {sprintCopy.discard}
-              </Button>
-              {windingDown ? null : (
-                <Button
-                  type="button"
-                  variant="primary"
-                  disabled={start.isPending}
-                  onClick={startSprint}
-                >
-                  {sprintCopy.start}
-                </Button>
-              )}
-            </div>
+            )}
           </header>
-
-          {editing ? (
-            <SprintForm
-              initial={{
-                name: sprint.name,
-                goal: sprint.goal ?? '',
-                plannedStart: sprint.plannedStart,
-                plannedEnd: sprint.plannedEnd,
-              }}
-              submitLabel={sprintCopy.save}
-              busy={update.isPending}
-              error={formError}
-              onSubmit={submitEdit}
-              onCancel={() => setEditing(false)}
-            />
-          ) : null}
 
           {detailError ? (
             <p role="alert" className={styles.error}>
@@ -290,37 +279,118 @@ export function DraftsTab({
             </p>
           ) : null}
 
-          <h4 className={styles.sectionTitle}>{sprintCopy.items}</h4>
-          {showEstimates && sprintItems.length > 0 ? (
-            <p className={styles.meta}>{sprintCopy.estimatedTotal(hoursText(hours.estimated))}</p>
-          ) : null}
-          {sprintItems.length === 0 ? (
-            <p className={styles.hint}>
-              {sprintCopy.noItems} {sprintCopy.noItemsDraftHint}
-            </p>
-          ) : (
-            <ul className={styles.list}>
-              {sprintItems.map((task) => (
-                <SprintItemRow
-                  key={task.id}
-                  task={task}
-                  midSprint={false}
-                  onOpen={onOpenTask}
-                  onRemove={removeItem}
-                />
-              ))}
-            </ul>
-          )}
+          <div className={styles.metaGrid}>
+            <div className={styles.metaBlock}>
+              <div className={styles.blockHead}>
+                <span className={styles.kicker}>{sprintCopy.goalTitle}</span>
+                <span className={styles.spacer} />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setFormError(null)
+                    setEditing((open) => !open)
+                  }}
+                >
+                  {sprintCopy.edit}
+                </Button>
+              </div>
+              <p className={sprint.goal ? styles.goalText : styles.hint}>
+                {sprint.goal ?? sprintCopy.noGoal}
+              </p>
+            </div>
+            <div className={styles.metaBlock}>
+              <span className={styles.kicker}>{sprintCopy.periodTitle}</span>
+              <span className={styles.period}>
+                {weekdayDate(sprint.plannedStart)} → {weekdayDate(sprint.plannedEnd)}
+              </span>
+              <span className={styles.meta}>
+                {sprintCopy.workingDays(workingDays(sprint.plannedStart, sprint.plannedEnd))}
+              </span>
+            </div>
+            {showEstimates ? (
+              <EstimateGauge
+                estimated={hours.estimated}
+                velocity={{
+                  average: burndown?.velocity.average ?? null,
+                  count: burndown?.velocity.sprints.length ?? 0,
+                }}
+              />
+            ) : null}
+          </div>
 
-          {windingDown ? null : (
-            <BacklogPicker
-              projectId={projectId}
-              sprintId={sprint.id}
-              excludeTaskIds={new Set(sprintItems.map((task) => task.id))}
-              busy={items.add.isPending}
-              onAdd={addItem}
-            />
-          )}
+          {editing ? (
+            <div className={styles.panel}>
+              <SprintForm
+                initial={{
+                  name: sprint.name,
+                  goal: sprint.goal ?? '',
+                  plannedStart: sprint.plannedStart,
+                  plannedEnd: sprint.plannedEnd,
+                }}
+                submitLabel={sprintCopy.save}
+                busy={update.isPending}
+                error={formError}
+                onSubmit={submitEdit}
+                onCancel={() => setEditing(false)}
+              />
+            </div>
+          ) : null}
+
+          <div className={styles.planGrid}>
+            {windingDown ? null : (
+              <BacklogPicker
+                projectId={projectId}
+                sprintId={sprint.id}
+                excludeTaskIds={new Set(sprintItems.map((task) => task.id))}
+                busy={items.add.isPending}
+                showEstimates={showEstimates}
+                onAdd={addItem}
+              />
+            )}
+            <section
+              className={dropping && canDrop ? styles.cardDropping : styles.card}
+              aria-label={`${sprintLabel(sprint.number)} · ${sprintCopy.items}`}
+              onDragOver={(event) => {
+                if (!canDrop) return
+                event.preventDefault()
+                setDropping(true)
+              }}
+              onDragLeave={() => setDropping(false)}
+              onDrop={(event) => {
+                event.preventDefault()
+                setDropping(false)
+                if (canDrop) dropTask(event.dataTransfer?.getData('text/plain') ?? '')
+              }}
+            >
+              <header className={styles.cardHeader}>
+                <h3 className={styles.cardHeading}>{sprintLabel(sprint.number)}</h3>
+                <span className={styles.count}>
+                  {sprintCopy.sprintColumnMeta(
+                    sprintItems.length,
+                    showEstimates ? hoursText(hours.estimated) : null,
+                  )}
+                </span>
+              </header>
+              {sprintItems.length === 0 ? (
+                <p className={styles.cardEmpty}>
+                  {sprintCopy.noItems} {sprintCopy.noItemsDraftHint}
+                </p>
+              ) : (
+                <ul className={styles.sprintList}>
+                  {sprintItems.map((task) => (
+                    <SprintLine
+                      key={task.id}
+                      task={task}
+                      showEstimates={showEstimates}
+                      onOpen={onOpenTask}
+                      onRemove={removeItem}
+                      removeDisabled={items.remove.isPending}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </section>
       ) : null}
 

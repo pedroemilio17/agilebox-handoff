@@ -538,6 +538,10 @@ function PanelContent({
               openTask(id)
               setView('projects')
             }}
+            onNewTask={() => {
+              setNewTaskStatus(undefined)
+              setNewTaskDialogOpen(true)
+            }}
           />
         }
         impediments={

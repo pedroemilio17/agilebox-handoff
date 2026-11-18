@@ -253,10 +253,6 @@
   cursor: pointer;
 }
 
-.midMark {
-  color: var(--color-accent-text);
-}
-
 .outcome {
   color: var(--color-text-body);
 }
@@ -267,30 +263,6 @@
 
 .outcome[data-outcome='removed'] {
   color: var(--color-danger);
-}
-
-.picker {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.progress {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.miniBoard {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(150px, 1fr));
-  gap: var(--space-2);
-  overflow-x: auto;
-}
-
-.column {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
-  min-width: 0;
 }
 
 .columnTitle {
@@ -356,10 +328,6 @@
   opacity: 0.5;
 }
 
-.picker .itemRow {
-  background: var(--surface-panel);
-}
-
 .ceremonies {
   display: grid;
   gap: var(--space-2);
@@ -372,4 +340,540 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+/* ---- Layout do design: Planejar sprint (tela 07) e Sprint ativa (tela 08) ---- */
+
+.spacer {
+  flex: 1;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.kicker {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.warn,
+.ok,
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-chip);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.warn {
+  background: var(--color-signal-warning-bg);
+  color: var(--color-signal-warning-text);
+}
+
+.ok {
+  background: rgba(111, 211, 154, 0.14);
+  color: var(--color-status-concluido-text);
+}
+
+.flag {
+  height: 22px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-size: 11.5px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  background: var(--color-hairline);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 11.5px;
+}
+
+.card,
+.cardDropping {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.cardDropping {
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.cardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.cardHeading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.cardEmpty {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.cardFoot {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.plan {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+  color: var(--color-text-primary);
+}
+
+.dates {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) minmax(200px, 0.8fr) minmax(260px, 1.2fr);
+  gap: var(--space-5);
+  padding: var(--space-4) 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.metaBlock {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.goalText {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.period {
+  font-family: var(--font-family-mono);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.gauge {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.gaugeHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.gaugeValue {
+  font-family: var(--font-family-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.gaugeTrack {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gaugeFill {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--color-primary-bg);
+}
+
+.gaugeMarker {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 18px;
+  margin-left: -1px;
+  background: var(--color-text-primary);
+  opacity: 0.7;
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.backlogList,
+.sprintList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backlogRow {
+  display: grid;
+  grid-template-columns: 28px 60px minmax(0, 1fr) 64px 36px;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: 52px;
+  padding: 0 var(--space-2) 0 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.backlogRow[draggable='true'] {
+  cursor: grab;
+}
+
+.sprintLine {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 64px 36px;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: 50px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.position {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+.rowText {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.rowTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.estimate,
+.estimateMissing {
+  font-family: var(--font-family-mono);
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.estimate {
+  color: var(--color-text-body);
+}
+
+.estimateMissing {
+  color: var(--color-signal-warning-text);
+}
+
+.band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.bandGoal {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.bandGoalText {
+  font-size: var(--font-size-title-small);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.bandStat {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.bigNumber {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  color: var(--color-text-primary);
+}
+
+.bigNumber small {
+  font-family: var(--font-family-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+}
+
+.sparkButton,
+.sparkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-primary);
+}
+
+.sparkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sparkButton:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.sparkIdeal,
+.sparkActual {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.sparkIdeal {
+  stroke: var(--color-status-desligado);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.sparkActual {
+  stroke: var(--color-status-desenvolvendo);
+  stroke-width: 2;
+}
+
+.board {
+  display: grid;
+  gap: var(--space-3);
+  overflow-x: auto;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: #141318;
+}
+
+.boardColumnHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-1);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.boardColumnName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--color-text-primary);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-status-afazer);
+}
+
+.boardColumn[data-status='planning'] .statusDot {
+  background: var(--color-status-planejamento);
+}
+
+.boardColumn[data-status='in_progress'] .statusDot {
+  background: var(--color-status-desenvolvendo);
+}
+
+.boardColumn[data-status='review'] .statusDot {
+  background: var(--color-status-revisar);
+}
+
+.boardColumn[data-status='done'] .statusDot {
+  background: var(--color-status-concluido);
+}
+
+.boardCards {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.boardCard {
+  display: grid;
+  gap: var(--space-2);
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.boardCard[data-done='yes'] {
+  opacity: 0.6;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* O botão de remover aparece ao passar o mouse ou ao receber o foco (teclado). */
+.boardCard .iconButton {
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transition: opacity var(--motion-duration-card-hover) ease;
+}
+
+.boardCard:hover .iconButton,
+.boardCard:focus-within .iconButton {
+  opacity: 1;
+}
+
+.boardCardTitle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.boardCardTitle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.cardMeta {
+  font-family: var(--font-family-mono);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 900px) {
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boardCard .iconButton {
+    transition: none;
+  }
 }

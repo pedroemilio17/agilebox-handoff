@@ -5,6 +5,7 @@ import type { SegmentedOption } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { useActor } from '../../shared/session/useActor'
 import { useBacklogProjects } from '../backlog/use-backlog'
+import { useBurndown } from '../hooks/use-burndown'
 import { ActiveTab } from './ActiveTab'
 import { ClosedTab } from './ClosedTab'
 import { DraftsTab } from './DraftsTab'
@@ -35,6 +36,8 @@ export interface SprintsViewProps {
   readonly projects: readonly ProjectDto[]
   readonly isManager: boolean
   readonly onOpenTask: (taskId: string) => void
+  /** Abre o diálogo de nova tarefa (o do topo da janela). */
+  readonly onNewTask?: () => void
 }
 
 /**
@@ -47,6 +50,7 @@ export function SprintsView({
   isManager,
   onOpenTask,
   onNavigate,
+  onNewTask,
 }: SprintsViewProps) {
   const capabilities = useCapabilities()
   const actor = useActor()
@@ -63,6 +67,9 @@ export function SprintsView({
   const [notice, setNotice] = useState<{ id: number; message: string } | null>(null)
   const noticeSeq = useRef(0)
   const list = useSprintList(projectId)
+  // Burndown dá a velocidade (planejamento) e o dia, o atraso e a miniatura (sprint ativa).
+  const burndownQuery = useBurndown(capabilities.showScreen('burndown') ? projectId : null)
+  const burndown = burndownQuery.data ?? null
 
   const windingDown = capabilities.isWindingDown('sprints')
   // Cerimônias são agendamentos da Agenda, criados pelo gestor (ADR-10). Exigem as duas ferramentas.
@@ -148,6 +155,7 @@ export function SprintsView({
           onStarted={() => setTab('active')}
           onNotify={announce}
           preferredId={preferredDraftId}
+          burndown={burndown}
         />
       ) : tab === 'active' ? (
         <ActiveTab
@@ -158,7 +166,9 @@ export function SprintsView({
           onOpenTask={onOpenTask}
           onNotify={announce}
           ceremoniesVisible={ceremoniesVisible}
+          burndown={burndown}
           {...(onNavigate ? { onNavigate } : {})}
+          {...(onNewTask ? { onNewTask } : {})}
         />
       ) : (
         <ClosedTab

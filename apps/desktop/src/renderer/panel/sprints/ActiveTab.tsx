@@ -1,16 +1,25 @@
 import { useState } from 'react'
-import { sprintLabel, TASK_STATUSES, TASK_STATUS_LABELS } from '@agilebox/core'
-import type { SprintDto, TaskDto } from '@agilebox/contract'
-import { Button, EmptyState, ProgressBar } from '@agilebox/ui'
+import type { BurndownViewDto, SprintDto, TaskDto } from '@agilebox/contract'
+import { Button, EmptyState } from '@agilebox/ui'
 import { refusalMessage } from '../backlog/refusal-message'
 import type { PanelView } from '../layout/PanelShell'
 import { CloseSprintDialog, type ClosePolicyChoice } from './CloseSprintDialog'
 import { SprintForm } from './SprintForm'
-import { BacklogPicker, hoursText, SprintItemRow } from './SprintItems'
+import { BacklogPicker, hoursText } from './SprintItems'
+import { ActiveBoard } from './ActiveBoard'
 import { CeremonyButtons } from './CeremonyButtons'
-import { formatRange, shortDate } from './DraftsTab'
+import { SprintBand } from './SprintSummary'
+import { shortDate } from './DraftsTab'
 import { sprintCopy } from './sprint-copy'
-import { carryTargets, groupByStatus, midSprintTaskIds, progressOf, sumHours } from './sprint-rules'
+import {
+  arrowRange,
+  carryTargets,
+  midSprintTaskIds,
+  paceAgainstIdeal,
+  progressOf,
+  remainingHours,
+  sumHours,
+} from './sprint-rules'
 import type { SprintFormValues } from './sprint-rules'
 import {
   useCloseSprint,
@@ -31,9 +40,13 @@ export interface ActiveTabProps {
   /** Gestor com Agenda e Cerimônias ligadas: mostra os atalhos de planning, review e retro. */
   readonly ceremoniesVisible?: boolean
   readonly onNavigate?: (view: PanelView) => void
+  /** Burndown do projeto, quando o módulo está ligado (dá dia, atraso e miniatura). */
+  readonly burndown: BurndownViewDto | null
+  /** Abre o diálogo de nova tarefa (o mesmo do topo da janela). */
+  readonly onNewTask?: () => void
 }
 
-/** Aba Ativa: a sprint em andamento, com progresso, mini-quadro, itens e encerramento. */
+/** Aba Ativa: a sprint em andamento, com faixa de resumo, quadro por estado e encerramento. */
 export function ActiveTab({
   projectId,
   actives,
@@ -43,6 +56,8 @@ export function ActiveTab({
   onNotify,
   ceremoniesVisible = false,
   onNavigate,
+  burndown,
+  onNewTask,
 }: ActiveTabProps) {
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId = actives.find((sprint) => sprint.id === chosenId)?.id ?? actives[0]?.id ?? null
@@ -61,10 +76,13 @@ export function ActiveTab({
   const sprintItems: readonly TaskDto[] = detail.data?.items ?? []
   const history = detail.data?.history ?? []
   const midSprint = sprint ? midSprintTaskIds(history, sprint) : new Set<string>()
-  const progress = progressOf(sprintItems)
   const hours = sumHours(sprintItems)
-  const groups = groupByStatus(sprintItems)
+  const progress = progressOf(sprintItems)
   const targets = sprint ? carryTargets(allSprints.data ?? [], projectId, sprint.id) : []
+  // O burndown mostra a sprint ativa (ou a última encerrada): só usa a medição se for esta.
+  const measured = sprint && burndown?.sprint?.id === sprint.id ? burndown : null
+  const pace = measured ? paceAgainstIdeal(measured.days, measured.today) : null
+  const remaining = remainingHours(sprintItems)
 
   if (actives.length === 0) {
     return <EmptyState title={sprintCopy.activeEmpty} description={sprintCopy.activeEmptyHint} />
@@ -157,65 +175,92 @@ export function ActiveTab({
       {windingDown ? <p className={styles.helper}>{sprintCopy.windingDownNotice}</p> : null}
 
       {sprint ? (
-        <section className={styles.panel} aria-label={sprint.name}>
-          <header className={styles.panelHeader}>
-            <div>
-              <p className={styles.eyebrow}>{sprintLabel(sprint.number)}</p>
-              <h3 className={styles.sprintName}>{sprint.name}</h3>
-              {sprint.goal ? <p className={styles.goal}>{sprint.goal}</p> : null}
-              <p className={styles.meta}>
-                {formatRange(sprint.plannedStart, sprint.plannedEnd)}
-                {sprint.startedAt ? ` · ${sprintCopy.startedOn(shortDate(sprint.startedAt))}` : ''}
-              </p>
-            </div>
-            <div className={styles.actions}>
-              <Button
-                type="button"
-                onClick={() => {
-                  setFormError(null)
-                  setEditing((open) => !open)
-                }}
-              >
-                {sprintCopy.edit}
-              </Button>
-              <Button type="button" variant="primary" onClick={() => setClosing(true)}>
-                {sprintCopy.close}
-              </Button>
-            </div>
-          </header>
-
-          {editing ? (
-            <SprintForm
-              initial={{
-                name: sprint.name,
-                goal: sprint.goal ?? '',
-                plannedStart: sprint.plannedStart,
-                plannedEnd: sprint.plannedEnd,
+        <section className={styles.plan} aria-label={sprint.name}>
+          <header className={styles.pageHeader}>
+            <h3 className={styles.pageTitle}>{sprint.name}</h3>
+            <span className={styles.dates}>
+              {arrowRange(sprint.plannedStart, sprint.plannedEnd)}
+            </span>
+            <span className={styles.spacer} />
+            <Button
+              type="button"
+              onClick={() => {
+                setFormError(null)
+                setEditing((open) => !open)
               }}
-              submitLabel={sprintCopy.save}
-              busy={update.isPending}
-              error={formError}
-              onSubmit={submitEdit}
-              onCancel={() => setEditing(false)}
-            />
-          ) : null}
-
-          <div className={styles.progress}>
-            <ProgressBar
-              done={progress.done}
-              total={progress.total}
-              label={sprintCopy.progress(progress.done, progress.total)}
-            />
-            <p className={styles.meta}>{sprintCopy.progress(progress.done, progress.total)}</p>
+            >
+              {sprintCopy.edit}
+            </Button>
+            <Button type="button" onClick={() => setClosing(true)}>
+              {sprintCopy.close}
+            </Button>
+            {windingDown || !onNewTask ? null : (
+              <Button type="button" variant="primary" onClick={onNewTask}>
+                {sprintCopy.newTask}
+              </Button>
+            )}
+          </header>
+          <div className={styles.metaRow}>
+            <span className={styles.meta}>
+              {sprintCopy.progress(progress.done, progress.total)}
+            </span>
             {showEstimates && (hours.estimated > 0 || hours.actual > 0) ? (
-              <p className={styles.meta}>
+              <span className={styles.meta}>
                 {sprintCopy.hoursEstimatedActual(
                   hoursText(hours.estimated),
                   hoursText(hours.actual),
                 )}
-              </p>
+              </span>
+            ) : null}
+            {sprint.startedAt ? (
+              <span className={styles.meta}>
+                {sprintCopy.startedOn(shortDate(sprint.startedAt))}
+              </span>
             ) : null}
           </div>
+
+          {editing ? (
+            <div className={styles.panel}>
+              <SprintForm
+                initial={{
+                  name: sprint.name,
+                  goal: sprint.goal ?? '',
+                  plannedStart: sprint.plannedStart,
+                  plannedEnd: sprint.plannedEnd,
+                }}
+                submitLabel={sprintCopy.save}
+                busy={update.isPending}
+                error={formError}
+                onSubmit={submitEdit}
+                onCancel={() => setEditing(false)}
+              />
+            </div>
+          ) : null}
+
+          <SprintBand
+            goal={sprint.goal}
+            remaining={remaining}
+            total={hours.estimated}
+            showEstimates={showEstimates}
+            pace={pace}
+            series={measured?.days ?? null}
+            {...(onNavigate ? { onOpenBurndown: () => onNavigate('burndown') } : {})}
+          />
+
+          {itemError ? (
+            <p role="alert" className={styles.error}>
+              {itemError}
+            </p>
+          ) : null}
+
+          <ActiveBoard
+            items={sprintItems}
+            midSprint={midSprint}
+            showEstimates={showEstimates}
+            removeDisabled={items.remove.isPending}
+            onOpenTask={onOpenTask}
+            onRemove={removeItem}
+          />
 
           {ceremoniesVisible ? (
             <CeremonyButtons
@@ -227,49 +272,13 @@ export function ActiveTab({
             />
           ) : null}
 
-          {itemError ? (
-            <p role="alert" className={styles.error}>
-              {itemError}
-            </p>
-          ) : null}
-
-          <div className={styles.miniBoard} aria-label={sprintCopy.items}>
-            {TASK_STATUSES.map((status) => (
-              <section
-                key={status}
-                className={styles.column}
-                aria-label={TASK_STATUS_LABELS[status]}
-              >
-                <h4 className={styles.columnTitle}>
-                  {TASK_STATUS_LABELS[status]}
-                  <span className={styles.count}>{groups[status].length}</span>
-                </h4>
-                {groups[status].length === 0 ? (
-                  <p className={styles.hint}>{sprintCopy.noColumnItems}</p>
-                ) : (
-                  <ul className={styles.list}>
-                    {groups[status].map((task) => (
-                      <SprintItemRow
-                        key={task.id}
-                        task={task}
-                        midSprint={midSprint.has(task.id)}
-                        onOpen={onOpenTask}
-                        onRemove={removeItem}
-                        removeDisabled={items.remove.isPending}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ))}
-          </div>
-
           {windingDown ? null : (
             <BacklogPicker
               projectId={projectId}
               sprintId={sprint.id}
               excludeTaskIds={new Set(sprintItems.map((task) => task.id))}
               busy={items.add.isPending}
+              showEstimates={showEstimates}
               onAdd={addItem}
             />
           )}
