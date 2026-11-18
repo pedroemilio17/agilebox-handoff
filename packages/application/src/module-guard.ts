@@ -69,8 +69,11 @@ export interface ModuleUsePolicy {
  *   Daily não tem projeto: `project: 'none'`, regra da organização.
  * - `participations.setHours` e `setRate` ficam em `core`: horas e valor/hora alimentam o custo,
  *   que é regra do produto e não da ferramenta de estimativa (`estimates.hours`).
- * - `projects.definitionOfDone.*` fica em `core`: a definição de pronto é do projeto, não é o módulo
- *   `acceptance` (critérios de aceitação, por tarefa).
+ * - `projects.definitionOfDone.*` é do módulo `definitionOfDone` (ADR-10, "Critério de pronto"), no
+ *   projeto que a chamada informa (`projectId`). Adicionar item é criar (encerrando, recusa); renomear,
+ *   mover, remover e listar seguem. Desligado, nada disso roda, e a regra de conclusão some junto
+ *   (ver `definitionItemsInForce`); os itens ficam guardados. Não é o módulo `acceptance`
+ *   (critérios de aceitação, por tarefa).
  * - `tasks.setEstimate` tem módulo próprio (`estimates.hours`) porque `tasks.update` é do núcleo e o
  *   guard não olha campo a campo.
  * - `teamTools.*` fica em `core`: a gestão das ferramentas não pode ser desligada por ela mesma.
@@ -103,11 +106,28 @@ export const USE_CASE_MODULES = {
   'projects.archive': { module: 'core', project: 'none' },
   'projects.unarchive': { module: 'core', project: 'none' },
   'projects.rename': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.list': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.add': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.rename': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.remove': { module: 'core', project: 'none' },
-  'projects.definitionOfDone.move': { module: 'core', project: 'none' },
+  // Critério de pronto (ADR-10, módulo `definitionOfDone`): o projeto vem do `projectId` de cada chamada.
+  'projects.definitionOfDone.list': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.add': {
+    module: 'definitionOfDone',
+    creates: true,
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.rename': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.remove': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
+  'projects.definitionOfDone.move': {
+    module: 'definitionOfDone',
+    project: { from: 'projectId' },
+  },
 
   'tasks.create': { module: 'core', project: 'none' },
   'tasks.getDetail': { module: 'core', project: 'none' },

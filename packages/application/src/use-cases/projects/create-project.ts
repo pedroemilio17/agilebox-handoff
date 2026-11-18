@@ -3,12 +3,13 @@ import type { Actor, Project } from '@agilebox/core'
 import type { CreateProjectInput, ProjectDto } from '@agilebox/contract'
 import { toProjectDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { definitionItemsInForce } from './definition-of-done-in-force'
 
 export class CreateProject {
   constructor(private readonly deps: AppDeps) {}
 
   private async toDto(actor: Actor, project: Project): Promise<ProjectDto> {
-    const items = await this.deps.definitionOfDone.listByProject(actor.organizationId, project.id)
+    const items = await definitionItemsInForce(this.deps, actor.organizationId, project.id)
     return toProjectDto(project, items.length)
   }
 

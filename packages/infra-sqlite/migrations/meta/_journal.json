@@ -169,6 +169,13 @@
       "when": 1794968241047,
       "tag": "0023_baselines",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1794970074285,
+      "tag": "0024_definition_of_done_module",
+      "breakpoints": true
     }
   ]
 }

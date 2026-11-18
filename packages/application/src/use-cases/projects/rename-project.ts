@@ -10,6 +10,7 @@ import type { Actor } from '@agilebox/core'
 import type { ProjectDto, RenameProjectInput } from '@agilebox/contract'
 import { toProjectDto } from '../../mappers'
 import type { AppDeps } from '../../deps'
+import { definitionItemsInForce } from './definition-of-done-in-force'
 
 /**
  * Renomeia o projeto. Só o gestor e quem criou o projeto; arquivado não se renomeia;
@@ -39,7 +40,7 @@ export class RenameProject {
       kind: 'project',
       ids: [project.id],
     })
-    const items = await this.deps.definitionOfDone.listByProject(actor.organizationId, project.id)
+    const items = await definitionItemsInForce(this.deps, actor.organizationId, project.id)
     return toProjectDto(updated, items.length)
   }
 }

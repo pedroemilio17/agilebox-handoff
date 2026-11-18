@@ -134,3 +134,11 @@
 - DECIDIR: projeto arquivado não aceita foto nova (mesma regra da EAP e dos riscos).
 - Custo: sem o módulo `cost` na foto, a comparação de custo fica vazia. Ligar `cost` depois não recalcula a foto antiga. `costVisible` diz se quem lê vê valores; resumo sem nenhum valor conhecido vira "—", não zero.
 - Não há tela ou teste visual rodando: a apresentação foi feita a partir do ADR e do padrão do Acompanhamento. CONFERIR na tela, em 1280 e 1440 px, e com a tabela em tela estreita.
+
+## Critério de pronto como módulo (ADR-10, fase 2)
+
+- `projects.definitionOfDone.*` agora exige o módulo `definitionOfDone` do projeto. Com o módulo desligado: editor some, a conclusão não exige conferência e a contagem vem zero; os itens ficam guardados. Encerrando ainda vale (como `cost`).
+- Migração 0024 liga o módulo nos projetos que já tinham itens (sem ela esses projetos perderiam a regra).
+- DECIDIR: projeto criado pelo caminho simples (sem wizard) nasce sem o módulo; o gestor precisa ligar "Critério de pronto" em Módulos. O preset Simples deveria ligá-lo?
+- DECIDIR: a conferência só vale ao entrar em Concluído; o ADR fala em "Concluído/Revisar". Manter?
+- `ListProjects` lê o módulo por projeto (N+1 pequeno).

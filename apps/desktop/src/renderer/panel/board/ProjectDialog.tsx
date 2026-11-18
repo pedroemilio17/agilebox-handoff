@@ -5,6 +5,7 @@ import { useCreateProjectWithSetup } from '../hooks/use-create-project-with-setu
 import { useArchiveProject, useUnarchiveProject } from '../hooks/use-archive-project'
 import { useRenameProject } from '../hooks/use-rename-project'
 import { SaveError } from '../task-detail/SaveError'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { DefinitionOfDoneEditor } from './DefinitionOfDoneEditor'
 import { NewProjectFlow, type NewProjectPayload } from '../new-project/NewProjectFlow'
 import { refusalMessage } from '../backlog/refusal-message'
@@ -53,6 +54,7 @@ export function ProjectDialog({
   showArchived = false,
   onShowArchivedChange,
 }: ProjectDialogProps) {
+  const capabilities = useCapabilities()
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   /** Assistente de novo projeto aberto: ele substitui o diálogo, para não haver dois modais. */
@@ -81,7 +83,9 @@ export function ProjectDialog({
     onManageMembers !== undefined &&
     canManageMembers?.(selectedProject)
   const existing = projects.find((project) => projectNameKey(project.name) === projectNameKey(name))
-  const definitionVisible = selectedProject !== undefined
+  // Critério de pronto só aparece com o módulo ligado no projeto selecionado (ADR-10).
+  const definitionVisible =
+    selectedProject !== undefined && capabilities.showScreen('definitionOfDone')
 
   // Ao cancelar o assistente, o foco volta ao botão "Criar" que o abriu (o diálogo remonta).
   useEffect(() => {

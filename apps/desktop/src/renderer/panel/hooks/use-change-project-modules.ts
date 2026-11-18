@@ -17,6 +17,8 @@ export function useChangeProjectModules(projectId: string) {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.projectModules.all }),
+        // A contagem da definição de pronto de cada projeto depende do módulo (ADR-10).
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.guide.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all }),

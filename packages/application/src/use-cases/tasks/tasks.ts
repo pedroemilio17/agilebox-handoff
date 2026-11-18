@@ -68,6 +68,7 @@ import { definitionOfDoneCompletion } from './definition-of-done-guard'
 import { assertTaskEditable } from './task-access'
 import { assertBacklogAccess } from '../backlog/backlog-access'
 import { recordGuideEvent } from '../guide/record-guide-event'
+import { definitionItemsInForce } from '../projects/definition-of-done-in-force'
 import {
   loadImpedimentRefs,
   loadImpedimentHistory,
@@ -125,7 +126,7 @@ export class CreateTask {
       })
       let created = input.status === undefined ? initialTask : setStatus(initialTask, input.status)
       const definitionEvents = await definitionOfDoneCompletion(
-        repositories.definitionOfDone,
+        repositories,
         actor.organizationId,
         projectId,
         initialTask.status,
@@ -221,7 +222,9 @@ export class GetTaskDetail {
     const checklist = await this.deps.checklist.listByTask(actor.organizationId, task.id)
     const criteria = await this.deps.acceptance.listByTask(actor.organizationId, task.id)
     const comments = await loadCommentDtos(this.deps, actor, task)
-    const definitionOfDone = await this.deps.definitionOfDone.listByProject(
+    // Critério de pronto só aparece com o módulo ligado no projeto da tarefa (ADR-10).
+    const definitionOfDone = await definitionItemsInForce(
+      this.deps,
       actor.organizationId,
       task.projectId,
     )
@@ -351,7 +354,7 @@ export abstract class ChangeTask {
     const changed = transform(task, now)
     const updated: Task = { ...changed, updatedAt: now }
     const definitionEvents = await definitionOfDoneCompletion(
-      this.deps.definitionOfDone,
+      this.deps,
       actor.organizationId,
       task.projectId,
       task.status,
