@@ -14,6 +14,7 @@ import {
 } from '@agilebox/core'
 import type {
   AcceptanceCriterion,
+  Baseline,
   BacklogRankChange,
   BoardSettings,
   ExperienceLevel,
@@ -69,6 +70,7 @@ import type {
   MeetingRepository,
   MilestoneRepository,
   RiskRepository,
+  BaselineRepository,
   OrganizationRepository,
   ParticipationRepository,
   ProjectMember,
@@ -122,6 +124,8 @@ export interface InMemoryState {
   milestones: Map<OrganizationId, Map<string, Milestone>>
   /** Riscos por id, dentro da organização. */
   risks: Map<OrganizationId, Map<string, Risk>>
+  /** Linhas de base (fotos) por id, com as tarefas dentro de cada foto. */
+  baselines: Map<OrganizationId, Map<string, Baseline>>
   /** Histórico de tarefas em sprints; chave: sprint, tarefa e entrada. */
   sprintTasks: Map<OrganizationId, Map<string, SprintTask>>
   /** Dependências término→início por predecessora|sucessora, dentro da organização (ADR-10). */
@@ -171,6 +175,7 @@ export function createInMemoryState(): InMemoryState {
     meetings: new Map(),
     milestones: new Map(),
     risks: new Map(),
+    baselines: new Map(),
     retroActions: new Map(),
     sprints: new Map(),
     sprintTasks: new Map(),
@@ -1298,6 +1303,31 @@ export class InMemoryImpedimentRepository implements ImpedimentRepository {
     if (impediment.status === 'open' && open)
       throw new ConflictError('Tarefa já tem um impedimento aberto')
     values.set(impediment.id, impediment)
+  }
+}
+
+/** Linhas de base: foto imutável com as tarefas. Como o SQLite, recusa projeto, gravador ou tarefa de outra organização. */
+export class InMemoryBaselineRepository implements BaselineRepository {
+  constructor(private readonly state: InMemoryState) {}
+
+  async findLatestByProject(org: OrganizationId, projectId: ProjectId) {
+    await Promise.resolve()
+    const found = [...bucket(this.state.baselines, org).values()]
+      .filter((item) => item.projectId === projectId)
+      .sort((a, b) =>
+        a.takenAt === b.takenAt ? (a.id < b.id ? 1 : -1) : a.takenAt < b.takenAt ? 1 : -1,
+      )
+    return found[0] ?? null
+  }
+  async add(org: OrganizationId, value: Baseline) {
+    await Promise.resolve()
+    if (usedByOtherOrganization(this.state.baselines, org, value.id)) return
+    assertProjectAndCreator(this.state, org, value.projectId, value.takenBy)
+    for (const item of value.tasks) {
+      if (!bucket(this.state.tasks, org).has(item.taskId))
+        throw new ValidationError('Tarefa de outra organização')
+    }
+    bucket(this.state.baselines, org).set(value.id, value)
   }
 }
 

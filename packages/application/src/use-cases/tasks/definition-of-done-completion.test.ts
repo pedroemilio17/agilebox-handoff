@@ -53,6 +53,7 @@ function setup(actor: Actor = owner) {
     taskDependencies: unitOfWork.repositories.taskDependencies,
     milestones: unitOfWork.repositories.milestones,
     risks: unitOfWork.repositories.risks,
+    baselines: unitOfWork.repositories.baselines,
     impediments: unitOfWork.repositories.impediments,
     clock: new FixedClock('2026-01-02T00:00:00.000Z'),
     comments: unitOfWork.repositories.comments,

@@ -100,6 +100,7 @@ async function setup(options: Options = {}) {
     taskDependencies: repositories.taskDependencies,
     milestones: repositories.milestones,
     risks: repositories.risks,
+    baselines: repositories.baselines,
     taskOpens: repositories.taskOpens,
     tasks: repositories.tasks,
     teamTools: repositories.teamTools,

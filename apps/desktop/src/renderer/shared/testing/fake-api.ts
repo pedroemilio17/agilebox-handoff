@@ -11,6 +11,7 @@ import {
   type BurndownViewDto,
   type FlowMetricsViewDto,
   type TrackingViewDto,
+  type BaselineViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
   type TaskDto,
@@ -170,6 +171,18 @@ export function emptyTrackingView(projectId: string): TrackingViewDto {
   }
 }
 
+export function emptyBaselineView(projectId: string): BaselineViewDto {
+  return {
+    projectId,
+    canTake: true,
+    costEnabled: true,
+    costVisible: true,
+    baseline: null,
+    summary: null,
+    tasks: [],
+  }
+}
+
 export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi {
   const api = createIpcClient(bridge)
   return {
@@ -211,6 +224,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.tracking,
       get: (input) => Promise.resolve(emptyTrackingView(input.projectId)),
       ...overrides.tracking,
+    },
+    baseline: {
+      ...api.baseline,
+      get: (input) => Promise.resolve(emptyBaselineView(input.projectId)),
+      ...overrides.baseline,
     },
     burndown: {
       ...api.burndown,

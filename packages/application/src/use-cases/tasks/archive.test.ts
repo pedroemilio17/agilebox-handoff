@@ -97,6 +97,7 @@ function setup(actorOf: Actor = collaborator) {
     taskDependencies: repos.taskDependencies,
     milestones: repos.milestones,
     risks: repos.risks,
+    baselines: repos.baselines,
     impediments: repos.impediments,
     definitionOfDone: repos.definitionOfDone,
     comments: repos.comments,

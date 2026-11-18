@@ -96,6 +96,7 @@ async function setup() {
     taskDependencies: repos.taskDependencies,
     milestones: repos.milestones,
     risks: repos.risks,
+    baselines: repos.baselines,
     impediments: repos.impediments,
     definitionOfDone: repos.definitionOfDone,
     idGenerator: new SequentialIdGenerator(),

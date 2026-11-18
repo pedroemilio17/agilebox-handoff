@@ -1,0 +1,210 @@
+/* Tela "Linha de base" do projeto. Só tokens do repositório, sem cor fixa. */
+
+.view {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.caption {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+.errorBox {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+}
+
+.confirm {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.cardRisk {
+  border-color: var(--color-signal-warning);
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.value {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
+.panel {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.panelTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-title-small);
+  font-weight: 600;
+}
+
+/* Rolagem horizontal só dentro da tabela, em telas estreitas; a página não rola de lado. */
+.tableWrap {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: var(--font-size-body-small);
+}
+
+.table th {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-hairline);
+  text-align: left;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-hairline);
+  vertical-align: middle;
+}
+
+.taskName {
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.nums {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status[data-tone='track'] {
+  color: var(--color-status-concluido);
+  background: color-mix(in srgb, var(--color-status-concluido) 14%, transparent);
+}
+
+.status[data-tone='risk'] {
+  color: var(--color-signal-warning-text);
+  background: var(--color-signal-warning-bg);
+}
+
+.status[data-tone='new'] {
+  color: var(--color-accent-text);
+  background: color-mix(in srgb, var(--color-accent-text) 14%, transparent);
+}
+
+.status[data-tone='muted'] {
+  color: var(--color-text-subtle);
+  background: var(--surface-raised);
+}

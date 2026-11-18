@@ -252,6 +252,10 @@ export const USE_CASE_MODULES = {
   'burndown.get': { module: 'burndown', project: { from: 'projectId' } },
   // Métricas de fluxo (ADR-10): leitura do projeto, no módulo `flowMetrics` (lead time, ciclo e vazão).
   'flowMetrics.get': { module: 'flowMetrics', project: { from: 'projectId' } },
+  // Linha de base (ADR-10, módulo `baseline`): tirar a foto é criar item do módulo (encerrando, recusa).
+  // Ler segue. O projeto sai do `projectId` nos dois casos.
+  'baseline.get': { module: 'baseline', project: { from: 'projectId' } },
+  'baseline.take': { module: 'baseline', creates: true, project: { from: 'projectId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */

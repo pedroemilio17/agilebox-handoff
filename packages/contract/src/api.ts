@@ -228,6 +228,12 @@ import {
   setTaskStartOutputSchema,
 } from './schedule'
 import { getTrackingInputSchema, getTrackingOutputSchema } from './tracking'
+import {
+  getBaselineInputSchema,
+  getBaselineOutputSchema,
+  takeBaselineInputSchema,
+  takeBaselineOutputSchema,
+} from './baseline'
 import { getBurndownInputSchema, getBurndownOutputSchema } from './burndown'
 import { getFlowMetricsInputSchema, getFlowMetricsOutputSchema } from './flow-metrics'
 import { API_CHANNELS, type ApiChannel } from './channels'
@@ -445,6 +451,8 @@ export const API_SCHEMA_REGISTRY = {
     output: removeTaskDependencyOutputSchema,
   },
   'tracking.get': { input: getTrackingInputSchema, output: getTrackingOutputSchema },
+  'baseline.get': { input: getBaselineInputSchema, output: getBaselineOutputSchema },
+  'baseline.take': { input: takeBaselineInputSchema, output: takeBaselineOutputSchema },
   'burndown.get': { input: getBurndownInputSchema, output: getBurndownOutputSchema },
   'flowMetrics.get': { input: getFlowMetricsInputSchema, output: getFlowMetricsOutputSchema },
   'tasks.setDeliverable': {
@@ -756,6 +764,10 @@ export interface AgileBoxApi {
   }
   tracking: {
     get: Method<'tracking.get'>
+  }
+  baseline: {
+    get: Method<'baseline.get'>
+    take: Method<'baseline.take'>
   }
   burndown: {
     get: Method<'burndown.get'>

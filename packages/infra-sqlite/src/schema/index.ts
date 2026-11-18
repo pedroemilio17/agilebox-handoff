@@ -1,3 +1,4 @@
+export { baselines, baselineTasks } from './baselines.js'
 export { boardSettings } from './board-settings.js'
 export { contributors } from './contributors.js'
 export { dailyEntries } from './daily-entries.js'

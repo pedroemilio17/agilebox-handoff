@@ -201,6 +201,8 @@ export function registerHandlers(
   register('risks.remove', (context, input) => useCases.risks.remove.execute(context, input))
   register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
   register('tracking.get', (context, input) => useCases.tracking.get.execute(context, input))
+  register('baseline.get', (context, input) => useCases.baseline.get.execute(context, input))
+  register('baseline.take', (context, input) => useCases.baseline.take.execute(context, input))
   register('burndown.get', (context, input) => useCases.burndown.get.execute(context, input))
   register('flowMetrics.get', (context, input) => useCases.flowMetrics.get.execute(context, input))
   register('schedule.addDependency', (context, input) =>

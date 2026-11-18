@@ -18,6 +18,7 @@ import type { ProjectRepository } from './project-repository'
 import type { ProjectSetupRepository } from './project-setup-repository'
 import type { RetroActionRepository } from './retro-action-repository'
 import type { RiskRepository } from './risk-repository'
+import type { BaselineRepository } from './baseline-repository'
 import type { SprintRepository, SprintTaskRepository } from './sprint-repository'
 import type { TaskOpenRepository } from './task-open-repository'
 import type { TaskRepository } from './task-repository'
@@ -39,6 +40,7 @@ export interface UnitOfWorkRepositories {
   readonly meetings: MeetingRepository
   readonly milestones: MilestoneRepository
   readonly risks: RiskRepository
+  readonly baselines: BaselineRepository
   readonly organizations: OrganizationRepository
   readonly participations: ParticipationRepository
   readonly projectModules: ProjectModulesRepository

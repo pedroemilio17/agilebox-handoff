@@ -19,6 +19,7 @@ import { createSqliteDefinitionOfDoneRepository } from './repositories/definitio
 import { createSqliteTaskCommentRepository } from './repositories/task-comment-repository.js'
 import { createSqliteDeliverableRepositories } from './repositories/deliverable-repository.js'
 import { createSqliteRiskRepository } from './repositories/risk-repository.js'
+import { createSqliteBaselineRepository } from './repositories/baseline-repository.js'
 import { createSqliteTaskDependencyRepository } from './repositories/task-dependency-repository.js'
 import { createSqliteTaskRepositories } from './repositories/task-repositories.js'
 import { createSqliteUnitOfWork } from './unit-of-work.js'
@@ -38,6 +39,7 @@ describe('SqliteUnitOfWork', () => {
       ...createSqliteTaskRepositories(database),
       ...createSqliteDeliverableRepositories(database),
       risks: createSqliteRiskRepository(database),
+      baselines: createSqliteBaselineRepository(database),
       taskDependencies: createSqliteTaskDependencyRepository(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),
@@ -81,6 +83,7 @@ describe('SqliteUnitOfWork', () => {
       ...createSqliteTaskRepositories(database),
       ...createSqliteDeliverableRepositories(database),
       risks: createSqliteRiskRepository(database),
+      baselines: createSqliteBaselineRepository(database),
       taskDependencies: createSqliteTaskDependencyRepository(database),
       acceptance: createSqliteAcceptanceRepository(database),
       impediments: createSqliteImpedimentRepository(database),

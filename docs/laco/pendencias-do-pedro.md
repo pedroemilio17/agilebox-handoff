@@ -123,3 +123,14 @@
 - Dono precisa ser membro do projeto; entrega precisa ser do mesmo projeto e exige `wbs` ligado.
 - Não vi protótipo de Riscos em `design/`: UI feita do manifesto e do ADR. CONFERIR visualmente.
 - "Alimenta o Dashboard" não foi feito.
+
+## Linha de base (ADR-10, fase 6, C3)
+
+- Módulo `baseline` por projeto: migração 0023 (`baselines` e `baseline_tasks`), casos de uso `baseline.get` e `baseline.take` (só gestor), tela com cartões, tabela de desvios e confirmação antes de gravar. Não há commit.
+- DECIDIR: "Nova" vale só para tarefa criada depois da foto. Tarefa antiga que não tinha datas na foto fica fora da comparação, mesmo que ganhe datas depois, até a próxima foto. Confirmar.
+- DECIDIR: a foto grava só tarefas ativas com início ou fim. Horas e custo entram junto; tarefa sem data não entra.
+- DECIDIR: "Atrasada N d" usa o maior atraso entre início e fim. Tarefa que começou atrasada e terminou no prazo aparece como atrasada. Quer só o fim?
+- DECIDIR: o nome da foto é automático ("Linha de base de DD/MM/AAAA"). Não há campo de nome na tela.
+- DECIDIR: projeto arquivado não aceita foto nova (mesma regra da EAP e dos riscos).
+- Custo: sem o módulo `cost` na foto, a comparação de custo fica vazia. Ligar `cost` depois não recalcula a foto antiga. `costVisible` diz se quem lê vê valores; resumo sem nenhum valor conhecido vira "—", não zero.
+- Não há tela ou teste visual rodando: a apresentação foi feita a partir do ADR e do padrão do Acompanhamento. CONFERIR na tela, em 1280 e 1440 px, e com a tabela em tela estreita.

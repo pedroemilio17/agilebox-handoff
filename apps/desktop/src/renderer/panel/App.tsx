@@ -20,6 +20,7 @@ import { MilestonesView } from './milestones/MilestonesView'
 import { RisksView } from './risks/RisksView'
 import { ScheduleView } from './schedule/ScheduleView'
 import { TrackingView } from './tracking/TrackingView'
+import { BaselineView } from './baseline/BaselineView'
 import { BurndownView } from './burndown/BurndownView'
 import { FlowMetricsView } from './flow-metrics/FlowMetricsView'
 import { SprintsView } from './sprints/SprintsView'
@@ -76,6 +77,8 @@ function PanelContent({
   const scheduleVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
   // Acompanhamento: mesmo módulo do cronograma, com projeto selecionado; senão a view cai no Quadro.
   const trackingVisible = selectedProjectId !== null && capabilities.showScreen('schedule')
+  // Linha de base: módulo `baseline` ligado no projeto selecionado; senão a view cai no Quadro.
+  const baselineVisible = selectedProjectId !== null && capabilities.showScreen('baseline')
   // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado; senão a view cai no Quadro.
   const burndownVisible = selectedProjectId !== null && capabilities.showScreen('burndown')
   // Métricas de fluxo: módulo `flowMetrics` ligado no projeto selecionado; senão a view cai no Quadro.
@@ -106,6 +109,7 @@ function PanelContent({
     (view === 'milestones' && !milestonesVisible) ||
     (view === 'schedule' && !scheduleVisible) ||
     (view === 'tracking' && !trackingVisible) ||
+    (view === 'baseline' && !baselineVisible) ||
     (view === 'burndown' && !burndownVisible) ||
     (view === 'flowMetrics' && !flowMetricsVisible) ||
     (view === 'risks' && !risksVisible) ||
@@ -478,6 +482,14 @@ function PanelContent({
         }
         tracking={
           <TrackingView
+            key={selectedProjectId ?? 'none'}
+            projectId={selectedProjectId}
+            projectName={selectedProject?.name ?? null}
+            onNavigate={setView}
+          />
+        }
+        baseline={
+          <BaselineView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}

@@ -2,6 +2,7 @@ import type { Actor } from '@agilebox/core'
 import type { AppDeps } from './deps'
 import { assertProjectModuleUsable, USE_CASE_MODULES } from './module-guard'
 import { GetTracking } from './use-cases/tracking/tracking'
+import { GetBaseline, TakeBaseline } from './use-cases/baseline/baseline'
 import { GetBurndown } from './use-cases/burndown/burndown'
 import { GetFlowMetrics } from './use-cases/flow-metrics/flow-metrics'
 import type { ModuleGuardPorts, ModuleUsePolicy, UseCasePath } from './module-guard'
@@ -330,6 +331,10 @@ export function createUseCases(deps: AppDeps) {
     },
     tracking: {
       get: forTenant('tracking.get', new GetTracking(deps)),
+    },
+    baseline: {
+      get: forTenant('baseline.get', new GetBaseline(deps)),
+      take: forTenant('baseline.take', new TakeBaseline(deps)),
     },
     burndown: {
       get: forTenant('burndown.get', new GetBurndown(deps)),

@@ -23,6 +23,7 @@ export type ImpedimentId = Id<'Impediment'>
 export type DeliverableId = Id<'Deliverable'>
 export type MilestoneId = Id<'Milestone'>
 export type RiskId = Id<'Risk'>
+export type BaselineId = Id<'Baseline'>
 
 function toId<Kind extends string>(value: string): Id<Kind> {
   if (!/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(value) || value.length !== 26) {
@@ -51,3 +52,4 @@ export const toImpedimentId = (value: string): ImpedimentId => toId(value)
 export const toDeliverableId = (value: string): DeliverableId => toId(value)
 export const toMilestoneId = (value: string): MilestoneId => toId(value)
 export const toRiskId = (value: string): RiskId => toId(value)
+export const toBaselineId = (value: string): BaselineId => toId(value)

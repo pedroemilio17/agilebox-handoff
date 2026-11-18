@@ -115,6 +115,10 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     tracking: {
       get: (input) => call('tracking.get', input),
     },
+    baseline: {
+      get: (input) => call('baseline.get', input),
+      take: (input) => call('baseline.take', input),
+    },
     burndown: {
       get: (input) => call('burndown.get', input),
     },
