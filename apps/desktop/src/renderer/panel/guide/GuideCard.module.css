@@ -44,6 +44,11 @@
   color: var(--color-text-placeholder);
 }
 
+.hintStrong {
+  color: var(--color-text-body);
+  font-weight: 600;
+}
+
 .spacer {
   flex: 1;
 }
@@ -55,6 +60,8 @@
 .body {
   display: grid;
   grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  max-height: 360px;
+  overflow-y: auto;
   border-top: 1px solid var(--color-hairline);
 }
 

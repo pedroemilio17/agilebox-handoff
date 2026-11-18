@@ -37,7 +37,7 @@ import { ProjectTitle } from './board/ProjectTitle'
 import { ProjectDialog } from './board/ProjectDialog'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
-import { GuideCard } from './guide/GuideCard'
+import { GuideDock } from './guide/GuideDock'
 import { WelcomeDialog } from './guide/WelcomeDialog'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
@@ -313,6 +313,9 @@ function PanelContent({
       return queryClient.invalidateQueries()
     },
   })
+  function openTray() {
+    window.agilebox.shell.toggleTray()
+  }
   function openTask(id: string) {
     setTaskFullScreen(false)
     setActiveTaskId(id)
@@ -435,7 +438,19 @@ function PanelContent({
           setView('projects')
         }}
         onNewProject={() => setProjectDialogOpen(true)}
-        onOpenTray={() => window.agilebox.shell.toggleTray()}
+        onOpenTray={openTray}
+        // O guia vai no topo de cada tela do projeto (ver GuideDock). Na tarefa em tela cheia, não.
+        guide={
+          activeTaskId && taskFullScreen ? null : (
+            <GuideDock
+              projectId={selectedProjectId}
+              view={currentView}
+              onNavigate={setView}
+              onOpenTray={openTray}
+              openRequest={trailRequest}
+            />
+          )
+        }
         account={{
           users: sessionUsers.data ?? [],
           currentUserId: actor.actor?.userId,
@@ -598,12 +613,6 @@ function PanelContent({
               />
             ) : (
               <>
-                {/* Guia só com um projeto selecionado; em "Todos os projetos" não aparece. */}
-                <GuideCard
-                  projectId={selectedProjectId}
-                  onNavigate={setView}
-                  openRequest={trailRequest}
-                />
                 {selectedProjectId ? (
                   <WelcomeDialog
                     projectId={selectedProjectId}

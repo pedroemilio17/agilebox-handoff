@@ -22,7 +22,10 @@ export const guideCopy = {
   openSprints: 'Abrir sprints',
   openAgenda: 'Abrir a agenda',
   openWbs: 'Abrir as entregas',
+  openTray: 'Abrir a bandeja',
   openMilestones: 'Abrir os marcos',
   openSchedule: 'Abrir o cronograma',
   dailyNote: 'Pela bandeja, no fim do dia',
+  onThisScreen: 'Você está na tela deste passo.',
+  collapsedHint: 'Passo atual:',
 } as const

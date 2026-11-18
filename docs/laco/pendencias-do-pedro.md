@@ -177,3 +177,12 @@
 - DECIDIR: altura 44 px (padrão do app) ou 40 px (design `btn2`)? Hoje 44 px.
 - DECIDIR: rótulos "Adicionar item" (definição de pronto) e "Adicionar combinado" (retro); no Backlog o campo e o botão repetem "Adicionar ao backlog".
 - Não alterados: criação rápida da bandeja (já tem "+"), comentários, "Levar à sprint" (move item existente), "Criar" dentro dos formulários. Incluir também?
+
+## Guia em todas as telas do passo a passo (B3)
+
+- O card "Primeiros passos" agora aparece no topo das telas do projeto no fluxo (Quadro, Backlog, Sprints, Entregas, Marcos, Cronograma, Acompanhamento, Linha de base, Burndown, Métricas, Riscos, Módulos; Agenda só com a planning pendente). Cada passo tem botão que leva à tela dele (o passo diário leva à bandeja) e o card avança sozinho (corrigi invalidações no backlog e no cronograma). Expandido na tela do passo atual, recolhido (com "Passo atual: …") nas outras. Não aparece em Dashboard, Ajustes, Plug-ins, Impedimentos nem sem projeto.
+- CONFERIR rodando: layout da faixa no topo e rolagem em janela pequena.
+- DECIDIR: a trilha do design da tela 16 (tradicional, 6 passos) difere da trilha gerada pelos módulos (uma só); implementar trilha por metodologia?
+- DECIDIR: títulos dos passos devem citar a tela ("Planeje a sprint: abre Sprints")? Textos do design diferem levemente dos do manifesto (vivem no `core`).
+- DECIDIR: experiência "sempre" mantém o card escondido (sem ponte)? Impedimentos deve ter o guia?
+- Nota: `guide-fixtures.ts` usa `doneWhen` antigos que não batem com os eventos reais.

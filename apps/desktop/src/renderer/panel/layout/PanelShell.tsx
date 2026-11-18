@@ -72,6 +72,11 @@ export interface PanelShellProps {
     readonly onSwitch: (userId: string) => void
   }
   readonly dashboard?: ReactNode
+  /**
+   * Faixa do guia "Primeiros passos", no topo da tela (ADR-10, 3.8.1). Fica acima da tela atual e
+   * reinicia a cada troca de tela, porque o conteúdo é recriado por tela.
+   */
+  readonly guide?: ReactNode
   readonly agenda?: ReactNode
   /** Tela "Módulos" do projeto selecionado. O item da barra só aparece com projeto selecionado. */
   readonly modules?: ReactNode
@@ -150,6 +155,7 @@ export function PanelShell({
   onOpenTray,
   onSearch,
   dashboard,
+  guide,
   agenda,
   modules,
   backlog,
@@ -277,6 +283,7 @@ export function PanelShell({
           onTaskScopeChange={onTaskScopeChange}
         />
         <div className={styles.content} key={visibleView}>
+          {guide}
           {visibleView === 'projects' ? (
             children
           ) : visibleView === 'dashboard' && dashboard ? (
