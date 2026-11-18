@@ -89,6 +89,11 @@
   --color-status-concluido: #6fd39a;
   --color-status-concluido-text: #8fe0b2; /* NOVO: check de etapa feita (design, 19 telas) */
   --color-switch-on: #6fa832; /* NOVO: trilho de interruptor ligado (design, 3 telas) */
+  --color-switch-off: #34323d; /* NOVO: trilho de interruptor desligado (Módulos) */
+  --color-status-desligado: #5c5966; /* NOVO: ponto de módulo desligado (Módulos) */
+  --surface-module-on: #1a1920; /* NOVO: cartão de módulo ligado (Módulos) */
+  --color-signal-advanced-text: #c4baff; /* NOVO: selo "Avançado" (N3, Módulos) */
+  --color-signal-advanced-bg: rgba(169, 156, 247, 0.14); /* NOVO: selo "Avançado" (N3, Módulos) */
 
   /* ---------- Sinais: a única cor forte da interface (NOVO) ---------- */
   --color-signal-danger: #ff6b7d; /* bloqueada, vencida */

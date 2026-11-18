@@ -209,3 +209,11 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - DIVERGÊNCIA: a barra lateral segue "Entregas (EAP)" (como em seis telas do design), e só a tela Módulos e a recomendação usam "EAP (Entregas)". Confirmar qual vale.
 - DIVERGÊNCIA com o ADR: no nível "Nunca" o ADR pede a explicação do jargão ("Entregas (EAP)", "Limite de tarefas em andamento (WIP)"). Os nomes novos ("EAP (Entregas)", "Limites WIP") não trazem a explicação. Não implementado.
 - Nomes alterados (`MODULE_LABELS` e manifestos; ids não mudaram): Estimativa (era "Estimativas em horas"), Atualização diária (era "Check-ins"), Limites WIP, Cerimônias (era "Review e retro"), Burndown e velocidade (era "Burndown e velocity"), EAP (Entregas). Na nota usa-se "Burndown" curto (`MODULE_SHORT_LABELS`).
+
+## Fidelidade da tela 03 Módulos (F2)
+
+- Tela refeita conforme o design: h1 "Módulos", selo "Começou como <metodologia>", "N de 15 ligados" (só os 15 do design), 3 grupos com descrições e dependências do design, cartões, interruptor 36x20, selos, painel lateral. Grupo "Outros" ao final para os módulos que o design não mostra (Agenda, Impedimentos etc.), sem contagem. Tokens novos só desta tela: `--color-switch-off`, `--color-status-desligado`, `--surface-module-on`, `--color-signal-advanced-text`, `--color-signal-advanced-bg`. Não vi rodando.
+- NÃO feito (sem regra/backend): aceite da equipe, votos, "Retirar proposta", "Desligamento proposto", "aguardando a equipe". O painel lateral mostra a mudança pendente com "Liga junto/Sai junto", "O que acontece" (do plano do core), aviso de sprint ativa (depois da resposta do servidor) e Confirmar/Cancelar.
+- DECIDIR: o design diz que Cerimônias "Requer Sprints", mas o catálogo exige Sprints e Agenda; Burndown "Requer Sprints, Estimativa" mas aceita horas OU pontos. Mantive o texto do design.
+- DECIDIR: painel abre para toda mudança pendente (não só com efeitos). Prefere confirm inline quando não há efeitos?
+- DECIDIR: "Começou como Tradicional" (nome completo) vs "Trad." da barra lateral.

@@ -564,6 +564,7 @@ function PanelContent({
           <ModulesView
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
+            startedFromPreset={selectedProject?.startedFromPreset ?? null}
             archived={selectedArchived}
             onNavigate={setView}
           />
