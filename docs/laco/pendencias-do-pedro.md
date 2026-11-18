@@ -75,3 +75,15 @@
 - Dúvida: conflito de dependência do marco só conta quando as duas pontas estão na entrega. Incluir predecessora de outra entrega que atrasa o marco? (uma linha em `hasScopeConflict`)
 - Semana atual/total: semanas de calendário do intervalo, travada em 1 antes do início e no total depois do fim.
 - Processo: o agente seguiu a especificação detalhada sem a confirmação que o CLAUDE.md pede por etapa; revisado por mim.
+
+## Burndown e velocidade (ADR-10, fase 5, B1)
+
+- Não há tela de Burndown em `design/`: a tela foi feita a partir do ADR e do padrão do Acompanhamento. DECIDIR/CONFERIR visualmente (não foi vista rodando).
+- Dia de conclusão vem da linha do tempo (`status_changed` para `done`); reabrir devolve as horas ao restante. Fuso do sistema, como em flowMetrics.
+- Escopo da sprint: tarefas não arquivadas com alguma linha que não seja `removed`. Dúvida: tarefa arquivada depois de concluída some da velocidade. Aceitar?
+- Estimativa usada é a atual (não há histórico): mudar a estimativa no meio da sprint muda o gráfico. Aceitar?
+- Tarefa concluída antes do início da sprint, mas no escopo, aparece como queda no dia 1. Correto?
+- A tela mostra a sprint ativa, ou a última encerrada; sem seletor de sprint. Confirmar.
+- Velocidade = horas estimadas concluídas por sprint encerrada; média das últimas até 3. Tarefa sem estimativa conta zero e a tela avisa quantas são.
+- Leitura de linha do tempo por tarefa (N+1), como no dashboard. Aceitável no MVP.
+- Processo: agente seguiu escopo fechado sem a confirmação do CLAUDE.md; revisado por mim.

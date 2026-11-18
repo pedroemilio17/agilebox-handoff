@@ -1,0 +1,247 @@
+/* Tela "Burndown e velocidade". Só tokens do repositório; o gráfico usa as cores de texto e de destaque. */
+
+.view {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.subtitle {
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-subtle);
+}
+
+.errorBox {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.value {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.velocityList {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.velocityRow {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-small);
+}
+
+.velocityName {
+  color: var(--color-text-body);
+}
+
+.velocityTrack {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-badge);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.velocityFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent-text);
+}
+
+.velocityValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-body);
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-group);
+  background: var(--surface-panel);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--font-size-title-small);
+  font-weight: 620;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+}
+
+.grid {
+  stroke: var(--color-hairline);
+  stroke-width: 1;
+}
+
+.today {
+  stroke: var(--color-hairline-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.axis {
+  fill: var(--color-text-subtle);
+  font-size: 11px;
+  font-family: var(--font-family-mono);
+}
+
+.ideal {
+  stroke: var(--color-text-subtle);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+
+.actual {
+  stroke: var(--color-accent-text);
+  stroke-width: 2.5;
+}
+
+.dot {
+  fill: var(--color-accent-text);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatchIdeal,
+.swatchActual {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+}
+
+.swatchIdeal {
+  border-top-color: var(--color-text-subtle);
+  border-top-style: dashed;
+}
+
+.swatchActual {
+  border-top-color: var(--color-accent-text);
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-body);
+}
+
+.details summary {
+  cursor: pointer;
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.table {
+  width: 100%;
+  margin-top: var(--space-2);
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .velocityFill {
+    transition: width 200ms ease-out;
+  }
+}

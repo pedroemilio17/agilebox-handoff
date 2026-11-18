@@ -728,7 +728,8 @@ describe('mapa de módulos dos casos de uso', () => {
     // Mais 1: `milestones.list`, a leitura dos marcos (módulo `milestones`).
     // Mais 4 do cronograma (ADR-10, fase 3, A4): `tasks.setStart`, `schedule.get`, `schedule.addDependency`
     // e `schedule.removeDependency`. Mais 1: `tracking.get`, o acompanhamento (módulo `schedule`).
-    expect(registered).toHaveLength(118)
+    // Mais 1: `burndown.get`, o burndown e a velocidade (módulo `burndown`).
+    expect(registered).toHaveLength(119)
     expect(Object.keys(USE_CASE_MODULES).sort()).toEqual(registered)
   })
 

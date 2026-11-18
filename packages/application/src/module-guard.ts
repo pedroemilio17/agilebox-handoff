@@ -237,6 +237,8 @@ export const USE_CASE_MODULES = {
   'schedule.removeDependency': { module: 'schedule', project: { from: 'successorId' } },
   // Acompanhamento (ADR-10): leitura do projeto, no módulo do cronograma.
   'tracking.get': { module: 'schedule', project: { from: 'projectId' } },
+  // Burndown e velocidade (ADR-10): leitura do projeto, no módulo `burndown` (exige sprints e horas).
+  'burndown.get': { module: 'burndown', project: { from: 'projectId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */

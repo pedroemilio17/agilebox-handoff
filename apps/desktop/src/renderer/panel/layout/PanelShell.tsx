@@ -16,6 +16,7 @@ import { SettingsView } from '../settings/SettingsView'
 import { sprintCopy } from '../sprints/sprint-copy'
 import { impedimentCopy } from '../impediments/impediment-copy'
 import { trackingCopy } from '../tracking/tracking-screen'
+import { burndownCopy } from '../burndown/burndown-screen'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -26,6 +27,7 @@ export type PanelView =
   | 'milestones'
   | 'schedule'
   | 'tracking'
+  | 'burndown'
   | 'sprints'
   | 'impediments'
   | 'agenda'
@@ -73,6 +75,8 @@ export interface PanelShellProps {
   readonly schedule?: ReactNode
   /** Acompanhamento do projeto. O item da barra só aparece com projeto selecionado e o módulo do cronograma ligado. */
   readonly tracking?: ReactNode
+  /** Burndown e velocidade. O item da barra só aparece com projeto selecionado e o módulo ligado. */
+  readonly burndown?: ReactNode
   readonly sprints?: ReactNode
   readonly impediments?: ReactNode
   readonly children?: ReactNode
@@ -89,6 +93,7 @@ const viewTitles: Record<PanelView, string> = {
   milestones: 'Marcos',
   schedule: 'Cronograma',
   tracking: trackingCopy.title,
+  burndown: burndownCopy.title,
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
@@ -123,6 +128,7 @@ export function PanelShell({
   milestones,
   schedule,
   tracking,
+  burndown,
   sprints,
   impediments,
   children,
@@ -154,6 +160,10 @@ export function PanelShell({
     // Acompanhamento: no mesmo módulo do cronograma (só com projeto selecionado).
     ...(selectedProjectId !== null && capabilities.showScreen('schedule')
       ? [{ id: 'tracking' as const, label: viewTitles.tracking, icon: '◔' }]
+      : []),
+    // Burndown e velocidade: módulo `burndown` ligado no projeto selecionado.
+    ...(selectedProjectId !== null && capabilities.showScreen('burndown')
+      ? [{ id: 'burndown' as const, label: viewTitles.burndown, icon: '↘' }]
       : []),
     // Sprints: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
     ...(capabilities.showScreen('sprints')
@@ -219,6 +229,8 @@ export function PanelShell({
             schedule
           ) : visibleView === 'tracking' && tracking ? (
             tracking
+          ) : visibleView === 'burndown' && burndown ? (
+            burndown
           ) : visibleView === 'sprints' && sprints ? (
             sprints
           ) : visibleView === 'impediments' && impediments ? (
@@ -470,6 +482,7 @@ function NavIcon({ kind }: { readonly kind: string }) {
     milestones: 'M12 3l8 9-8 9-8-9z',
     schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
     tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
+    burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
   }
   return (
     <span aria-hidden="true">

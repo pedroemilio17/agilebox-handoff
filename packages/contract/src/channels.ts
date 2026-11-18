@@ -119,6 +119,7 @@ export const API_CHANNELS = [
   'schedule.addDependency',
   'schedule.removeDependency',
   'tracking.get',
+  'burndown.get',
   'teamTools.setModuleConfig',
 ] as const
 

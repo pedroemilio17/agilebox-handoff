@@ -7,6 +7,7 @@ import {
   type ListBoardDto,
   type MilestonesListDto,
   type ScheduleViewDto,
+  type BurndownViewDto,
   type TrackingViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
@@ -111,6 +112,22 @@ export function emptyWbsView(projectId: string): WbsViewDto {
   }
 }
 
+/** Burndown vazio: sem sprint, sem dias e sem velocidade. */
+export function emptyBurndownView(projectId: string): BurndownViewDto {
+  return {
+    projectId,
+    today: '2026-01-01',
+    sprint: null,
+    totalHours: 0,
+    remainingHours: 0,
+    scopeTasks: 0,
+    doneTasks: 0,
+    unestimatedTasks: 0,
+    days: [],
+    velocity: { average: null, sprints: [] },
+  }
+}
+
 /** Acompanhamento vazio e sem custo: o padrão neutro dos testes (sem semana, sem marcos, sem valores). */
 export function emptyTrackingView(projectId: string): TrackingViewDto {
   return {
@@ -166,6 +183,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.tracking,
       get: (input) => Promise.resolve(emptyTrackingView(input.projectId)),
       ...overrides.tracking,
+    },
+    burndown: {
+      ...api.burndown,
+      get: (input) => Promise.resolve(emptyBurndownView(input.projectId)),
+      ...overrides.burndown,
     },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },

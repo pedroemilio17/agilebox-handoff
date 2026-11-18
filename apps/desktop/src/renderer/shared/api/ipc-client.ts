@@ -115,6 +115,9 @@ export function createIpcClient(bridge: ApiInvoker): AgileBoxApi {
     tracking: {
       get: (input) => call('tracking.get', input),
     },
+    burndown: {
+      get: (input) => call('burndown.get', input),
+    },
     milestones: {
       list: (input) => call('milestones.list', input),
       create: (input) => call('milestones.create', input),
