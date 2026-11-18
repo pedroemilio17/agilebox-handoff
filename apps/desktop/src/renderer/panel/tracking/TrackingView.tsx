@@ -70,7 +70,7 @@ export function TrackingView({ projectId, projectName, onNavigate }: TrackingVie
     )
   }
 
-  const { summary, week, nextMilestone, milestones } = query.data
+  const { summary, week, nextMilestone, milestones, costEnabled } = query.data
   const subtitle = headerSubtitle(projectName, week)
 
   return (
@@ -113,15 +113,17 @@ export function TrackingView({ projectId, projectName, onNavigate }: TrackingVie
           <p className={styles.caption}>{hoursCaption(summary.plannedHours)}</p>
         </section>
 
-        <section aria-label={trackingCopy.cost} className={styles.card}>
-          <p className={styles.label}>{trackingCopy.cost}</p>
-          <p className={styles.value}>{costValue(summary.realizedCost)}</p>
-          <p className={styles.caption}>
-            {summary.plannedCost === null
-              ? trackingCopy.costOnlyManager
-              : costCaption(summary.plannedCost)}
-          </p>
-        </section>
+        {costEnabled ? (
+          <section aria-label={trackingCopy.cost} className={styles.card}>
+            <p className={styles.label}>{trackingCopy.cost}</p>
+            <p className={styles.value}>{costValue(summary.realizedCost)}</p>
+            <p className={styles.caption}>
+              {summary.plannedCost === null
+                ? trackingCopy.costOnlyManager
+                : costCaption(summary.plannedCost)}
+            </p>
+          </section>
+        ) : null}
 
         <NextMilestoneCard next={nextMilestone} />
       </div>

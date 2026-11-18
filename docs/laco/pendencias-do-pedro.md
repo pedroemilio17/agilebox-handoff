@@ -87,3 +87,12 @@
 - Velocidade = horas estimadas concluídas por sprint encerrada; média das últimas até 3. Tarefa sem estimativa conta zero e a tela avisa quantas são.
 - Leitura de linha do tempo por tarefa (N+1), como no dashboard. Aceitável no MVP.
 - Processo: agente seguiu escopo fechado sem a confirmação do CLAUDE.md; revisado por mim.
+
+## Custo como módulo (ADR-10, fase 5, B2)
+
+- Regra: custo visível se `moduleStateOf(cost) !== 'disabled'` (encerrando ainda mostra). Some em `wbs.get`, `tracking.get`, `tasks.getDetail` e nas respostas de `participations.*`; DTOs ganharam `costEnabled`. A migração liga `cost` em todos os projetos existentes.
+- DECIDIR: projeto criado pelo caminho simples (`projects.create`, sem wizard) não grava módulos e, portanto, nasce SEM custo (mudança de comportamento; segue o ADR "projeto novo começa só com o núcleo"). Esse caminho deveria gravar o preset Simples ou ligar `cost`?
+- DECIDIR: desligar `cost` só esconde a leitura; `participations.add/setHours/setRate` seguem no núcleo e continuam gravando.
+- Detalhe da tarefa sem custo: o cartão fica só com as horas (título "Horas").
+- Valor/hora padrão de usuário e entidade é global, não por projeto: não alterado.
+- Testes existentes ajustados só para ligar `cost` no setup; nenhuma asserção removida.

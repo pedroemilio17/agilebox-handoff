@@ -396,6 +396,25 @@ describe('permissões e valores', () => {
     const summary = screen.getByRole('region', { name: 'Resumo' })
     expect(within(summary).getByText('Custo previsto').parentElement?.textContent).toContain('—')
   })
+
+  it('com o módulo cost desligado, somem a coluna Custo, o cartão Custo previsto e a frase do rodapé', async () => {
+    const view = wbsView(
+      [deliverableRow(ENTREGA_2, { code: '1', title: 'Configuração', hours: 60, cost: null })],
+      { summary: { deliverables: 1, tasks: 0, hours: 60, cost: null, progress: 0 } },
+    )
+    renderWbs({ view: { ...view, costEnabled: false } })
+    const table = await screen.findByRole('table')
+    expect(within(table).getByRole('columnheader', { name: 'Horas' })).toBeTruthy()
+    expect(within(table).queryByRole('columnheader', { name: 'Custo' })).toBeNull()
+    const row = within(table)
+      .getByRole('rowheader', { name: /Configuração/ })
+      .closest('tr') as HTMLElement
+    expect(within(row).queryByText('—', { selector: 'td' })).toBeNull()
+    const summary = screen.getByRole('region', { name: 'Resumo' })
+    expect(within(summary).queryByText('Custo previsto')).toBeNull()
+    expect(screen.queryByText(/Custo = horas/)).toBeNull()
+    expect(screen.getByText(/Horas e progresso sobem somando os filhos/)).toBeTruthy()
+  })
 })
 
 describe('estados', () => {

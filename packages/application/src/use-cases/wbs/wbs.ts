@@ -25,6 +25,7 @@ import type {
 } from '@agilebox/core'
 import type { WbsRowDto, WbsViewDto } from '@agilebox/contract'
 import { toMilestoneDto } from '../../mappers'
+import { projectCostEnabled } from '../../module-guard'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from '../tasks/task-prefix'
 import { recordGuideEvent } from '../guide/record-guide-event'
@@ -45,7 +46,8 @@ function money(cents: number, visible: boolean): number | null {
 
 /**
  * Leitura da EAP (ADR-10): entregas e tarefas em ordem de exibição, totais por entrega somando as
- * subentregas, e o resumo do projeto. Horas aparecem a quem vê o projeto; valores só ao gestor.
+ * subentregas, e o resumo do projeto. Horas aparecem a quem vê o projeto; valores só ao gestor, e
+ * nenhum valor com o módulo `cost` desligado no projeto (`costEnabled: false`, valores nulos).
  */
 export async function wbsViewOf(
   deps: AppDeps,
@@ -53,22 +55,25 @@ export async function wbsViewOf(
   project: Project,
 ): Promise<WbsViewDto> {
   const organizationId = actor.organizationId
-  const [deliverables, tasks, milestones, users, prefix] = await Promise.all([
+  const [deliverables, tasks, milestones, users, prefix, costEnabled] = await Promise.all([
     deps.deliverables.listByProject(organizationId, project.id),
     deps.tasks.listByProject(organizationId, project.id),
     deps.milestones.listByProject(organizationId, project.id),
     deps.users.list(organizationId),
     findTaskPrefix(deps, organizationId),
+    projectCostEnabled(deps, organizationId, project.id),
   ])
   const tree = buildWbs({ deliverables, tasks, milestones })
   const names = new Map<UserId, string>(users.map((user) => [user.id, user.name]))
-  const seesMoney = canSeeTaskTotal(actor, organizationId)
+  // Valor só para o gestor e só com o módulo `cost` ligado no projeto.
+  const seesMoney = costEnabled && canSeeTaskTotal(actor, organizationId)
 
   const rows = tree.rows.map((row): WbsRowDto => toRowDto(row, names, prefix, seesMoney))
   return {
     projectId: project.id,
     canEdit: canEditProjectStructure(actor, project) && project.archivedAt === null,
     deliverables: rows,
+    costEnabled,
     summary: {
       deliverables: tree.summary.deliverables,
       tasks: tree.summary.tasks,

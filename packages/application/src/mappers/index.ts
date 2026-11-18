@@ -128,11 +128,16 @@ export function toDefinitionOfDoneItemDto(item: DefinitionOfDoneItem): Definitio
   return { id: item.id, projectId: item.projectId, title: item.title, position: item.position }
 }
 
+/**
+ * Valor/hora só sai com o módulo `cost` ligado no projeto (`costEnabled`) e para quem pode ver o
+ * valor daquele envolvido. Horas seguem sempre (são do núcleo).
+ */
 export function toParticipationSummaryDto(
   participation: Participation,
   organizationId: Task['organizationId'],
   actor: Actor,
   names: Pick<TimelineNames, 'user' | 'contributor'>,
+  costEnabled: boolean,
 ): ParticipationSummaryDto {
   const participantName =
     participation.participant.kind === 'user'
@@ -145,9 +150,10 @@ export function toParticipationSummaryDto(
     participantName,
     role: participation.role,
     hours: participation.hoursHundredths / 100,
-    rate: canSeeRate(actor, { organizationId, participant: participation.participant })
-      ? rateInReais(participation.rateCents)
-      : null,
+    rate:
+      costEnabled && canSeeRate(actor, { organizationId, participant: participation.participant })
+        ? rateInReais(participation.rateCents)
+        : null,
   }
 }
 
@@ -348,11 +354,13 @@ export function toTaskDetailDto(
   sprint: SprintRefDto | null,
   impediment: ImpedimentRefDto | null,
   impedimentHistory: readonly ImpedimentDto[],
+  costEnabled: boolean,
 ): GetTaskDto {
   const canEdit = canEditTask(actor, task)
-  const cost = canSeeEstimatedCost(actor, task)
-    ? estimatedCostOf(task, responsibleDefaultRateCents)
-    : null
+  const cost =
+    costEnabled && canSeeEstimatedCost(actor, task)
+      ? estimatedCostOf(task, responsibleDefaultRateCents)
+      : null
   return {
     ...toTaskDto(task, taskPrefix, checklist, comments.length, criteria, sprint, impediment),
     impedimentHistory: [...impedimentHistory],
@@ -362,11 +370,13 @@ export function toTaskDetailDto(
     projectDefinitionOfDone: definitionOfDone.map(toDefinitionOfDoneItemDto),
     comments: [...comments],
     participations: task.participations.map((participation) =>
-      toParticipationSummaryDto(participation, task.organizationId, actor, names),
+      toParticipationSummaryDto(participation, task.organizationId, actor, names, costEnabled),
     ),
-    total: canSeeTaskTotal(actor, task.organizationId)
-      ? rateInReais(calculateTaskTotal(task.participations))
-      : null,
+    costEnabled,
+    total:
+      costEnabled && canSeeTaskTotal(actor, task.organizationId)
+        ? rateInReais(calculateTaskTotal(task.participations))
+        : null,
     canEdit,
     readOnly: isReadOnlyFor(actor, task, isMember),
     canArchive: canChangeTaskArchive(actor, task),

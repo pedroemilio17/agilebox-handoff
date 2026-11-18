@@ -105,6 +105,7 @@ export function emptyWbsView(projectId: string): WbsViewDto {
   return {
     projectId,
     canEdit: false,
+    costEnabled: true,
     deliverables: [],
     summary: { deliverables: 0, tasks: 0, hours: 0, cost: null, progress: 0 },
     milestones: [],
@@ -132,6 +133,7 @@ export function emptyBurndownView(projectId: string): BurndownViewDto {
 export function emptyTrackingView(projectId: string): TrackingViewDto {
   return {
     projectId,
+    costEnabled: true,
     week: null,
     summary: {
       progress: 0,

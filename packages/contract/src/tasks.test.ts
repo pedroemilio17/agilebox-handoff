@@ -92,6 +92,7 @@ describe('schemas de tarefas', () => {
         },
       ],
       total: null,
+      costEnabled: true,
       canEdit: true,
       readOnly: false,
       projectDefinitionOfDone: [],

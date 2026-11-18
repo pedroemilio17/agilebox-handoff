@@ -73,6 +73,7 @@ export function wbsView(
   return {
     projectId: PROJECT_ID,
     canEdit: options.canEdit ?? true,
+    costEnabled: true,
     deliverables: [...deliverables],
     summary: {
       deliverables: deliverableCount,

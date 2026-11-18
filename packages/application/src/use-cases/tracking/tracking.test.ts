@@ -18,7 +18,13 @@ import {
   ana,
 } from '../../testing/task-harness'
 
-const TRACKING_MODULES: readonly ModuleId[] = ['schedule', 'wbs', 'milestones', 'estimates.hours']
+const TRACKING_MODULES: readonly ModuleId[] = [
+  'schedule',
+  'wbs',
+  'milestones',
+  'estimates.hours',
+  'cost',
+]
 
 type Harness = ReturnType<typeof createTaskHarness>
 
@@ -85,6 +91,25 @@ describe('tracking.get (acompanhamento)', () => {
       loggedHours: 2,
       realizedCost: null,
       plannedCost: null,
+    })
+  })
+
+  it('com o módulo cost desligado no projeto, nenhum valor sai, nem para o gestor; horas seguem', async () => {
+    const harness = await setup()
+    await harness.useCases.tasks.setEstimate.execute(ctx(manager), { taskId, estimatedHours: 10 })
+    await setProjectModules(harness.unitOfWork, orgA, projectId, managerId, { cost: 'disabled' })
+    expect(await read(harness)).toMatchObject({
+      costEnabled: false,
+      summary: { plannedHours: 10, loggedHours: 2, realizedCost: null, plannedCost: null },
+    })
+
+    // Ao religar, os mesmos valores voltam ao gestor (desligar não apaga). Em encerramento, o custo segue.
+    await setProjectModules(harness.unitOfWork, orgA, projectId, managerId, {
+      cost: 'winding_down',
+    })
+    expect(await read(harness)).toMatchObject({
+      costEnabled: true,
+      summary: { realizedCost: 60, plannedCost: 450 },
     })
   })
 

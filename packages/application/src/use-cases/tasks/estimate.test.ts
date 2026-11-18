@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ConflictError, PermissionDeniedError, ValidationError } from '@agilebox/core'
-import type { TimelineEvent } from '@agilebox/core'
+import {
+  ConflictError,
+  DEFAULT_TEAM_MODULE_IDS,
+  PermissionDeniedError,
+  ValidationError,
+} from '@agilebox/core'
+import type { ModuleId, TimelineEvent } from '@agilebox/core'
 import {
   ana,
   bia,
@@ -93,16 +98,18 @@ describe('estimativa em horas: quem edita e o que volta', () => {
 })
 
 describe('estimativa: visibilidade do custo estimado', () => {
+  // Custo estimado só sai com o módulo `cost` ligado no projeto (ADR-10); o padrão do harness não o liga.
+  const COST_ON: readonly ModuleId[] = [...DEFAULT_TEAM_MODULE_IDS, 'cost']
   // Responsável ana (4500 centavos/hora) e estimativa de 2,5 h: custo estimado de R$ 112,50.
   it('o Responsável vê o custo estimado da própria tarefa', async () => {
     const { useCases, unitOfWork } = createTaskHarness(ana)
-    await seedTaskHarness(unitOfWork, { estimatedHoursHundredths: 250 })
+    await seedTaskHarness(unitOfWork, { estimatedHoursHundredths: 250, projectModules: COST_ON })
     expect((await useCases.tasks.getDetail.execute(ctx(ana), { taskId })).estimatedCost).toBe(112.5)
   })
 
   it('o gestor vê o custo estimado', async () => {
     const { useCases, unitOfWork } = createTaskHarness(manager)
-    await seedTaskHarness(unitOfWork, { estimatedHoursHundredths: 250 })
+    await seedTaskHarness(unitOfWork, { estimatedHoursHundredths: 250, projectModules: COST_ON })
     expect((await useCases.tasks.getDetail.execute(ctx(manager), { taskId })).estimatedCost).toBe(
       112.5,
     )
@@ -122,8 +129,24 @@ describe('estimativa: visibilidade do custo estimado', () => {
       estimatedHoursHundredths: 250,
       responsibleRateCents: 0,
       anaDefaultRateCents: 6000,
+      projectModules: COST_ON,
     })
     expect((await useCases.tasks.getDetail.execute(ctx(ana), { taskId })).estimatedCost).toBe(150)
+  })
+
+  it('com o módulo cost desligado no projeto, custo estimado, total e valor/hora somem, até para o gestor', async () => {
+    const { useCases, unitOfWork } = createTaskHarness(manager)
+    // O harness não liga `cost` por padrão: o projeto começa sem custo, mesmo com estimativa.
+    await seedTaskHarness(unitOfWork, { estimatedHoursHundredths: 250 })
+    const off = await useCases.tasks.getDetail.execute(ctx(manager), { taskId })
+    expect(off).toMatchObject({ costEnabled: false, estimatedCost: null, total: null })
+    expect(off.participations.every((item) => item.rate === null)).toBe(true)
+
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { cost: 'active' })
+    expect(await useCases.tasks.getDetail.execute(ctx(manager), { taskId })).toMatchObject({
+      costEnabled: true,
+      estimatedCost: 112.5,
+    })
   })
 
   it('sem valor/hora em lugar nenhum, o custo estimado é nulo', async () => {

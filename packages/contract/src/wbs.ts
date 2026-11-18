@@ -10,7 +10,7 @@ export const WBS_MAX_LEVEL = 3
 
 const deliverableTitleSchema = z.string().trim().min(1).max(DELIVERABLE_TITLE_INPUT_MAX)
 
-/** Totais de uma entrega, somando as subentregas. `cost` é nulo para quem não é gestor. */
+/** Totais de uma entrega, somando as subentregas. `cost` é nulo para quem não é gestor ou sem o módulo `cost`. */
 export const wbsTotalsDtoSchema = z.object({
   hours: z.number().nonnegative(),
   cost: visibleRateSchema,
@@ -47,6 +47,8 @@ export const wbsViewDtoSchema = z.object({
   projectId: ulidSchema,
   /** Quem pode criar, renomear, mover e remover entregas e marcos (gestor ou criador, projeto ativo). */
   canEdit: z.boolean(),
+  /** Módulo `cost` ligado no projeto. Desligado, todo valor de custo vem nulo e a coluna some. */
+  costEnabled: z.boolean(),
   deliverables: z.array(
     z.discriminatedUnion('kind', [wbsDeliverableRowDtoSchema, wbsTaskRowDtoSchema]),
   ),

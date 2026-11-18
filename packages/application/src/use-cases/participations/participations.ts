@@ -30,6 +30,7 @@ import type {
 } from '@agilebox/core'
 import type { ParticipationSummaryDto } from '@agilebox/contract'
 import { toParticipationSummaryDto } from '../../mappers'
+import { projectCostEnabled } from '../../module-guard'
 import { assertTaskEditable } from '../tasks/task-access'
 import type { AppDeps } from '../../deps'
 
@@ -151,7 +152,9 @@ abstract class ChangeParticipation {
       user: (id) => userNameMap.get(id) ?? 'Usuário',
       contributor: (id) => contributorNameMap.get(id) ?? 'Entidade',
     }
-    return toParticipationSummaryDto(participation, task.organizationId, actor, names)
+    // Valor/hora segue o módulo `cost` do projeto da tarefa: desligado, o envolvimento volta sem valor.
+    const costEnabled = await projectCostEnabled(this.deps, actor.organizationId, task.projectId)
+    return toParticipationSummaryDto(participation, task.organizationId, actor, names, costEnabled)
   }
 }
 

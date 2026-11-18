@@ -2,12 +2,13 @@ import { createTenantContext } from '../../tenant-context'
 import { describe, expect, it } from 'vitest'
 import { toOrganizationId, toParticipationId, toUserId } from '@agilebox/core'
 import type { Actor } from '@agilebox/core'
-import { aContributor, aParticipation, aTask, aUser } from '../../testing/builders'
+import { aContributor, aParticipation, aProject, aTask, aUser } from '../../testing/builders'
 import { FixedClock } from '../../testing/fakes/fixed-clock'
 import { InMemoryUnitOfWork } from '../../testing/fakes/in-memory-unit-of-work'
 import { RecordingNotifier } from '../../testing/fakes/recording-notifier'
 import { SequentialIdGenerator } from '../../testing/fakes/sequential-id-generator'
 import { createUseCases } from '../../create-use-cases'
+import { enableProjectModules } from '../../testing/task-harness'
 import type { ActorSession } from '../../ports'
 
 const organizationId = toOrganizationId('00000000000000000000000001')
@@ -88,6 +89,13 @@ describe('casos de uso de envolvimentos', () => {
     const contributor = aContributor().with({ defaultRateCents: 8750 }).build()
     await unitOfWork.repositories.tasks.save(organizationId, task)
     await unitOfWork.repositories.contributors.save(organizationId, contributor)
+    // O valor/hora só sai com o módulo `cost` ligado no projeto da tarefa (gestor que liga, cadastrado).
+    await unitOfWork.repositories.projects.save(organizationId, aProject().build())
+    await unitOfWork.repositories.users.save(
+      organizationId,
+      aUser().with({ id: managerId, role: 'manager' }).build(),
+    )
+    await enableProjectModules(unitOfWork, organizationId, task.projectId, managerId, ['cost'])
 
     const added = await useCases.participations.add.execute(createTenantContext(manager), {
       taskId: task.id,
@@ -99,6 +107,27 @@ describe('casos de uso de envolvimentos', () => {
     expect(
       await unitOfWork.repositories.timeline.listByTask(organizationId, task.id),
     ).toMatchObject([{ type: 'participant_added', asManager: true }])
+  })
+
+  it('sem o módulo cost no projeto, o valor/hora do envolvimento não sai, nem para o gestor', async () => {
+    const { useCases, unitOfWork } = setup()
+    const task = aTask().build()
+    const contributor = aContributor().with({ defaultRateCents: 8750 }).build()
+    await unitOfWork.repositories.tasks.save(organizationId, task)
+    await unitOfWork.repositories.contributors.save(organizationId, contributor)
+    // Projeto sem linha em `project_modules`: conta como sem `cost`.
+    await unitOfWork.repositories.projects.save(organizationId, aProject().build())
+    await unitOfWork.repositories.users.save(
+      organizationId,
+      aUser().with({ id: managerId, role: 'manager' }).build(),
+    )
+
+    const added = await useCases.participations.add.execute(createTenantContext(manager), {
+      taskId: task.id,
+      participant: { kind: 'contributor', contributorId: contributor.id },
+      role: 'support',
+    })
+    expect(added.rate).toBeNull()
   })
 
   it('nega envolvimento em tarefa de outra pessoa e participante inexistente', async () => {

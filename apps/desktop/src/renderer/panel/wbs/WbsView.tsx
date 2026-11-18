@@ -36,6 +36,8 @@ const copy = {
   empty: 'Nenhuma entrega cadastrada.',
   footnote:
     'O último nível de cada entrega são tarefas: elas aparecem no quadro. Horas, custo e progresso sobem somando os filhos. Custo = horas × valor/hora de cada responsável.',
+  footnoteNoCost:
+    'O último nível de cada entrega são tarefas: elas aparecem no quadro. Horas e progresso sobem somando os filhos.',
   summary: 'Resumo',
   structure: 'Estrutura de entregas',
 } as const
@@ -96,7 +98,7 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
   }
 
   const view = query.data
-  const { canEdit, summary } = view
+  const { canEdit, summary, costEnabled } = view
   const empty = isWbsEmpty(view)
   const showGuided = canEdit && (empty || guidedOpen)
   const rows = visibleRows(view.deliverables, collapsed)
@@ -204,10 +206,12 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             <span className={styles.metricLabel}>Horas</span>
             <span className={styles.metricValue}>{formatHours(summary.hours)}</span>
           </div>
-          <div className={styles.metric}>
-            <span className={styles.metricLabel}>Custo previsto</span>
-            <span className={styles.metricValue}>{formatCost(summary.cost)}</span>
-          </div>
+          {costEnabled ? (
+            <div className={styles.metric}>
+              <span className={styles.metricLabel}>Custo previsto</span>
+              <span className={styles.metricValue}>{formatCost(summary.cost)}</span>
+            </div>
+          ) : null}
           <div className={`${styles.metric} ${styles.metricWide}`}>
             <span className={styles.metricLabel}>Concluído</span>
             <span className={styles.progressLine}>
@@ -252,6 +256,7 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
             allRows={view.deliverables}
             collapsed={collapsed}
             canEdit={canEdit}
+            costEnabled={costEnabled}
             onToggle={(id) =>
               setCollapsed((current) => {
                 const next = new Set(current)
@@ -270,7 +275,7 @@ export function WbsView({ projectId, projectName, onNavigate }: WbsViewProps) {
 
       {!empty ? (
         <div className={styles.footer}>
-          <p className={styles.note}>{copy.footnote}</p>
+          <p className={styles.note}>{costEnabled ? copy.footnote : copy.footnoteNoCost}</p>
           {view.tasksWithoutDeliverable > 0 ? (
             <p className={styles.note}>
               {view.tasksWithoutDeliverable === 1

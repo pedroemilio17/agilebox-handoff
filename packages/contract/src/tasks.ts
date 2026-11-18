@@ -104,6 +104,8 @@ export const getTaskOutputSchema = taskDtoSchema
     checklist: z.array(checklistItemDtoSchema),
     /** Critérios de aceitação (M3.2), em ordem de posição. Ausente em respostas antigas: tratar como lista vazia. */
     criteria: z.array(acceptanceCriterionDtoSchema).optional(),
+    /** Módulo `cost` ligado no projeto da tarefa. Desligado, custo, total e valor/hora vêm nulos. */
+    costEnabled: z.boolean(),
     /** Custo estimado (estimativa × valor/hora do Responsável). Nulo quando o ator não vê esse valor/hora. */
     estimatedCost: visibleRateSchema.optional(),
     /** Definição de pronto do projeto, para a conferência ao concluir (vazia = sem conferência). */

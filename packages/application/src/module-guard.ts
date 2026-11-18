@@ -403,6 +403,21 @@ export async function organizationModuleStateOf(
 }
 
 /**
+ * Se o módulo `cost` está ligado (ou encerrando, que só lê) no projeto. Quem devolve valores de custo
+ * por projeto (EAP, acompanhamento, custo da tarefa) usa esta leitura, com a mesma regra do guard:
+ * projeto sem linha gravada conta como desligado (`moduleStateOf`). As migrações gravam `cost` em
+ * todos os projetos existentes, e projeto novo só ganha `cost` pelo wizard ou pelo preset.
+ */
+export async function projectCostEnabled(
+  ports: Pick<ModuleGuardPorts, 'projectModules'>,
+  organizationId: OrganizationId,
+  projectId: ProjectId,
+): Promise<boolean> {
+  const rows = await ports.projectModules.list(organizationId, projectId)
+  return moduleStateOf(rows, 'cost') !== 'disabled'
+}
+
+/**
  * Recusa a chamada se o módulo do caso de uso não está disponível para ela (ADR-10). O módulo vale
  * no projeto do caso de uso (`project_modules`); o núcleo nunca consulta nada. Sem projeto nos
  * argumentos, o módulo vale se estiver ligado (ou encerrando, para o que não cria) em pelo menos um

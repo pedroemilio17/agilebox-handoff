@@ -20,6 +20,7 @@ afterEach(() => {
 function view(overrides: Partial<TrackingViewDto> = {}): TrackingViewDto {
   return {
     projectId: PROJECT_ID,
+    costEnabled: true,
     week: { current: 3, total: 13 },
     summary: {
       progress: 34,
@@ -123,6 +124,19 @@ describe('TrackingView', () => {
     expect(within(cost).queryByText(/R\$/)).toBeNull()
     expect(within(cost).getByText('Só o gestor vê os valores')).toBeTruthy()
     // As horas seguem visíveis para quem vê o projeto.
+    expect(within(card('Horas lançadas')).getByText('214 h')).toBeTruthy()
+  })
+
+  it('com o módulo cost desligado, o cartão de custo e a legenda de gestor somem; as horas seguem', async () => {
+    renderTracking({
+      data: view({
+        costEnabled: false,
+        summary: { ...view().summary, realizedCost: null, plannedCost: null },
+      }),
+    })
+    expect(await screen.findByRole('heading', { name: 'Acompanhamento', level: 2 })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Custo realizado' })).toBeNull()
+    expect(screen.queryByText('Só o gestor vê os valores')).toBeNull()
     expect(within(card('Horas lançadas')).getByText('214 h')).toBeTruthy()
   })
 

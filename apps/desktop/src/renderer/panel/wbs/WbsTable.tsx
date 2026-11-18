@@ -29,6 +29,8 @@ export interface WbsTableProps {
   readonly allRows: readonly WbsRowDto[]
   readonly collapsed: ReadonlySet<string>
   readonly canEdit: boolean
+  /** Módulo `cost` ligado no projeto. Desligado, a coluna de custo não aparece. */
+  readonly costEnabled: boolean
   readonly onToggle: (id: string) => void
   readonly onRename: (id: string, title: string) => Promise<boolean>
   readonly onCreateChild: (parentId: string, title: string) => Promise<boolean>
@@ -41,11 +43,11 @@ export interface WbsTableProps {
  * `aria-expanded`, e as ações por entrega aparecem só para quem pode editar.
  */
 export function WbsTable(props: WbsTableProps) {
-  const { rows, allRows, collapsed, canEdit } = props
+  const { rows, allRows, collapsed, canEdit, costEnabled } = props
   const [editing, setEditing] = useState<Editing | null>(null)
   const idPrefix = useId()
   const expandable = new Set(expandableIds(allRows))
-  const columns = canEdit ? 7 : 6
+  const columns = (canEdit ? 7 : 6) - (costEnabled ? 0 : 1)
 
   function triggerId(kind: string, id: string) {
     return `${idPrefix}-${kind}-${id}`
@@ -76,9 +78,11 @@ export function WbsTable(props: WbsTableProps) {
             <th scope="col" className={styles.colNum}>
               Horas
             </th>
-            <th scope="col" className={styles.colNum}>
-              Custo
-            </th>
+            {costEnabled ? (
+              <th scope="col" className={styles.colNum}>
+                Custo
+              </th>
+            ) : null}
             <th scope="col" className={styles.colProgress}>
               Progresso
             </th>
@@ -92,7 +96,14 @@ export function WbsTable(props: WbsTableProps) {
         <tbody>
           {rows.map((row) => {
             if (row.kind === 'task') {
-              return <TaskRow key={`t-${row.taskId}`} row={row} canEdit={canEdit} />
+              return (
+                <TaskRow
+                  key={`t-${row.taskId}`}
+                  row={row}
+                  canEdit={canEdit}
+                  costEnabled={costEnabled}
+                />
+              )
             }
             const isCollapsed = collapsed.has(row.id)
             const moveUp = canEdit ? siblingMove(allRows, row.id, 'up') : null
@@ -103,6 +114,7 @@ export function WbsTable(props: WbsTableProps) {
                 row={row}
                 columns={columns}
                 canEdit={canEdit}
+                costEnabled={costEnabled}
                 hasChildren={expandable.has(row.id)}
                 isCollapsed={isCollapsed}
                 onToggle={() => props.onToggle(row.id)}
@@ -152,6 +164,7 @@ interface DeliverableRowsProps {
   readonly row: WbsDeliverableRow
   readonly columns: number
   readonly canEdit: boolean
+  readonly costEnabled: boolean
   readonly hasChildren: boolean
   readonly isCollapsed: boolean
   readonly renameEditing: boolean
@@ -226,7 +239,7 @@ function DeliverableRows(props: DeliverableRowsProps) {
         </th>
         <td className={styles.resp} />
         <td className={styles.num}>{formatHours(row.totals.hours)}</td>
-        <td className={styles.num}>{formatCost(row.totals.cost)}</td>
+        {props.costEnabled ? <td className={styles.num}>{formatCost(row.totals.cost)}</td> : null}
         <td>
           <ProgressCell progress={row.totals.progress} />
         </td>
@@ -326,7 +339,15 @@ function ProgressCell({ progress }: { readonly progress: number }) {
   )
 }
 
-function TaskRow({ row, canEdit }: { readonly row: WbsTaskRow; readonly canEdit: boolean }) {
+function TaskRow({
+  row,
+  canEdit,
+  costEnabled,
+}: {
+  readonly row: WbsTaskRow
+  readonly canEdit: boolean
+  readonly costEnabled: boolean
+}) {
   const style = { '--level': 2 } as CSSProperties
   return (
     <tr className={styles.taskRow}>
@@ -351,7 +372,7 @@ function TaskRow({ row, canEdit }: { readonly row: WbsTaskRow; readonly canEdit:
         )}
       </td>
       <td className={styles.num}>{formatHours(row.estimatedHours)}</td>
-      <td className={styles.num}>{formatCost(null)}</td>
+      {costEnabled ? <td className={styles.num}>{formatCost(null)}</td> : null}
       <td>
         <span className={styles.statusText} data-status={row.status}>
           {taskStatusText(row.status)}

@@ -31,10 +31,12 @@ export const trackingNextMilestoneDtoSchema = z.object({
 
 /**
  * Leitura do acompanhamento do projeto. Valores em reais; nulos quando quem lê não é gestor (só o
- * gestor vê custo). `week` é nulo sem intervalo de datas no cronograma.
+ * gestor vê custo) ou quando o módulo `cost` está desligado no projeto (`costEnabled: false`).
+ * `week` é nulo sem intervalo de datas no cronograma.
  */
 export const trackingViewDtoSchema = z.object({
   projectId: ulidSchema,
+  costEnabled: z.boolean(),
   week: z.object({ current: z.number().int().min(1), total: z.number().int().min(1) }).nullable(),
   summary: z.object({
     /** Concluído: horas estimadas das tarefas concluídas ÷ horas estimadas, de 0 a 100. */

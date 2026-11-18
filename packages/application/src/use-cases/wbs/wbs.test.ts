@@ -24,7 +24,7 @@ import {
 } from '../../testing/task-harness'
 
 /** Módulos ligados no projeto da fixture: a EAP, os marcos e a estimativa (para o custo e o progresso). */
-const WBS_MODULES: readonly ModuleId[] = ['wbs', 'milestones', 'estimates.hours']
+const WBS_MODULES: readonly ModuleId[] = ['wbs', 'milestones', 'estimates.hours', 'cost']
 
 async function setup(options: { readonly archived?: boolean } = {}) {
   const harness = createTaskHarness(manager)
@@ -365,6 +365,33 @@ describe('EAP: leitura consolidada', () => {
     )
     expect(rootForAna?.totals.hours).toBe(4)
     expect(rootForAna?.totals.cost).toBeNull()
+  })
+
+  it('com o módulo cost desligado no projeto, nenhum valor sai, nem para o gestor; horas seguem', async () => {
+    const { useCases, unitOfWork } = await setup()
+    const { fundacao } = await seedTree(useCases)
+    await useCases.projects.addMember.execute(ctx(manager), { projectId, userId: ana.userId })
+    await useCases.tasks.setDeliverable.execute(ctx(ana), { taskId, deliverableId: fundacao })
+    expect(await useCases.wbs.get.execute(ctx(manager), { projectId })).toMatchObject({
+      costEnabled: true,
+      summary: { cost: 60 },
+    })
+
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { cost: 'disabled' })
+    const asManager = await useCases.wbs.get.execute(ctx(manager), { projectId })
+    expect(asManager.costEnabled).toBe(false)
+    expect(asManager.summary).toMatchObject({ hours: 4, cost: null })
+    expect(
+      asManager.deliverables.every((row) => row.kind !== 'deliverable' || row.totals.cost === null),
+    ).toBe(true)
+    expect(
+      asManager.deliverables.find((row) => row.kind === 'deliverable' && row.id === fundacao),
+    ).toMatchObject({ totals: { hours: 4 } })
+    expect((await useCases.wbs.get.execute(ctx(ana), { projectId })).costEnabled).toBe(false)
+
+    // Em encerramento o módulo só lê: o custo volta a aparecer ao gestor.
+    await setProjectModules(unitOfWork, orgA, projectId, manager.userId, { cost: 'winding_down' })
+    expect((await useCases.wbs.get.execute(ctx(manager), { projectId })).summary.cost).toBe(60)
   })
 
   it('tarefa sem entrega entra no resumo do projeto, e tarefa arquivada fica de fora', async () => {

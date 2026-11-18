@@ -33,7 +33,7 @@ import { rangeOf } from '../schedule/schedule-view'
 
 const VIEW_DENIED = 'Sem acesso a este projeto'
 
-/** Centavos viram reais. Quem não é gestor não recebe valor agregado (nulo), como em `wbs.get`. */
+/** Centavos viram reais. Quem não é gestor, ou com o módulo `cost` desligado, não recebe valor (nulo). */
 function money(cents: number, visible: boolean): number | null {
   return visible ? cents / 100 : null
 }
@@ -52,7 +52,8 @@ function scopeOf(
 /**
  * Acompanhamento do projeto tradicional (ADR-10, módulo `schedule`). Quem vê o projeto lê. Tarefa
  * arquivada fica de fora de tudo. Os marcos só aparecem com o módulo `milestones` não desligado, e a
- * entrega do marco só com o módulo `wbs`. Valores (custo) só para o gestor.
+ * entrega do marco só com o módulo `wbs`. Valores (custo) só para o gestor e só com o módulo `cost`
+ * ligado no projeto (`costEnabled`); desligado, os valores vêm nulos e o cartão some na tela.
  */
 export class GetTracking {
   constructor(private readonly deps: AppDeps) {}
@@ -87,7 +88,8 @@ export class GetTracking {
     const milestonesOn = moduleStateOf(modules, 'milestones') !== 'disabled'
     const wbsOn = moduleStateOf(modules, 'wbs') !== 'disabled'
     const tasks = allTasks.filter((task) => task.archivedAt === null)
-    const seesMoney = canSeeTaskTotal(actor, organizationId)
+    const costEnabled = moduleStateOf(modules, 'cost') !== 'disabled'
+    const seesMoney = costEnabled && canSeeTaskTotal(actor, organizationId)
 
     const rates = new Map<UserId, number>(users.map((user) => [user.id, user.defaultRateCents]))
     const totals = trackingTotals(tasks, (userId) => rates.get(userId) ?? 0)
@@ -136,6 +138,7 @@ export class GetTracking {
     return {
       projectId,
       week: weekOf(rangeOf(tasks), today),
+      costEnabled,
       summary: {
         progress: totals.progress,
         plannedHours: totals.plannedHoursHundredths / 100,

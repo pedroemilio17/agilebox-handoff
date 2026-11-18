@@ -332,6 +332,23 @@ describe('Card Custo', () => {
     expect(document.body.textContent).not.toMatch(/R\$/)
   })
 
+  it('com o módulo cost desligado no projeto da tarefa, o cartão fica só com as horas', async () => {
+    setup({
+      detail: makeDetail({
+        costEnabled: false,
+        total: null,
+        estimatedCost: null,
+        participations: [makeParticipation({ rate: null })],
+      }),
+    })
+    expect(await screen.findByLabelText('Horas de Ana Souza')).toBeTruthy()
+    expect(screen.queryByText('Horas e custo')).toBeNull()
+    expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
+    expect(screen.queryByLabelText('Total')).toBeNull()
+    expect(screen.queryByLabelText('Custo estimado')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/R\$/)
+  })
+
   it('colaborador vê só o próprio valor e nenhum total', async () => {
     setup({
       detail: makeDetail({

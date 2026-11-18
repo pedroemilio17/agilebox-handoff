@@ -58,6 +58,7 @@ import type {
 } from '@agilebox/core'
 import type { CreateTaskInput, GetTaskDto, TaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { toTaskDetailDto, toTaskDto } from '../../mappers'
+import { projectCostEnabled } from '../../module-guard'
 import type { AppDeps } from '../../deps'
 import { findTaskPrefix } from './task-prefix'
 import { loadCommentCounts } from './comment-loader'
@@ -235,6 +236,8 @@ export class GetTaskDetail {
       task.id,
     )
     const impedimentHistory = await loadImpedimentHistory(this.deps, actor.organizationId, task.id)
+    // Custo e valor/hora seguem o módulo `cost` do projeto da tarefa (não o projeto selecionado).
+    const costEnabled = await projectCostEnabled(this.deps, actor.organizationId, task.projectId)
     const events =
       task.status === 'in_progress' || task.status === 'review'
         ? await this.deps.timeline.listByTask(actor.organizationId, task.id)
@@ -254,6 +257,7 @@ export class GetTaskDetail {
         sprint ?? null,
         impediment ?? null,
         impedimentHistory,
+        costEnabled,
       ),
       agingDays: staleDays(task, events, toDateOnly(new Date(now), timeZone), timeZone),
     }

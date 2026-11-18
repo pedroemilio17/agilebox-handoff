@@ -54,6 +54,7 @@ describe('contrato da EAP e dos marcos', () => {
     const view = {
       projectId: id(1),
       canEdit: false,
+      costEnabled: true,
       deliverables: [
         {
           kind: 'deliverable',
