@@ -153,7 +153,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     steps: [
       {
         key: 'daily.answer',
-        title: 'Atualize as tarefas pela bandeja no fim do dia',
+        title: 'Atualize pela bandeja',
         why: 'O quadro fica fiel ao que aconteceu, sem reunião.',
         doneWhen: 'daily.answered',
       },
@@ -182,7 +182,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
       {
         key: 'backlog.rank',
         title: 'Ordene pela importância',
-        why: 'O que está no topo entra primeiro na sprint.',
+        why: 'O que está no topo entra primeiro na sprint. Sem ordem, a equipe escolhe pelo que parece mais fácil.',
         doneWhen: 'backlog.reordered',
       },
     ],
@@ -204,7 +204,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     steps: [
       {
         key: 'estimate.first',
-        title: 'Estime em horas os primeiros itens',
+        title: 'Estime os primeiros itens',
         why: 'Só dá para planejar o ciclo sabendo o tamanho do trabalho.',
         doneWhen: 'task.estimated',
       },
@@ -308,7 +308,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     objective: 'Trabalhar em ciclos curtos com meta.',
     enhances: ['estimates.hours'],
     tutorial: {
-      why: 'Quando a entrega muda no caminho, planejar tudo de uma vez não funciona. A sprint fecha um pedaço pequeno e deixa corrigir o rumo.',
+      why: 'Quando a entrega muda no caminho, planejar tudo de uma vez não funciona. A sprint fecha um pedaço pequeno, mostra o resultado e deixa a equipe corrigir o rumo antes do próximo.',
       flow: ['Planejar', 'Executar', 'Revisar', 'Retro'],
       next: 'Cerimônias e burndown aproveitam as sprints.',
     },
@@ -319,13 +319,13 @@ const MANIFESTS: readonly ModuleManifest[] = [
     steps: [
       {
         key: 'sprints.create',
-        title: 'Crie a primeira sprint, com uma meta',
+        title: 'Crie a primeira sprint',
         why: 'A meta diz o que o ciclo entrega.',
         doneWhen: 'sprint.created',
       },
       {
         key: 'sprints.add',
-        title: 'Leve os itens para a sprint',
+        title: 'Leve itens para a sprint',
         why: 'Só o que está na sprint aparece no quadro.',
         doneWhen: 'sprint.task_added',
       },
@@ -382,7 +382,7 @@ const MANIFESTS: readonly ModuleManifest[] = [
     steps: [
       {
         key: 'ceremonies.planning',
-        title: 'Marque a planning na Agenda',
+        title: 'Marque a planning',
         why: 'A equipe combina o que entra na sprint.',
         doneWhen: 'meeting.created',
       },

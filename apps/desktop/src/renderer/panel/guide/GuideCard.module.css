@@ -1,13 +1,13 @@
-/* Cartão "Primeiros passos": vidro de grupo sobre o quadro, sem animação (respeita reduced motion). */
+/* Cartão "Primeiros passos" (design: PrimeirosPassos.dc.html). Superfície sólida, sem animação (respeita reduced motion). */
 
 .card {
   display: flex;
   flex: none;
   flex-direction: column;
   min-width: 0;
-  border: var(--glass-group-border);
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
-  background: var(--glass-group);
+  background: var(--surface-panel);
   color: var(--color-text-primary);
   overflow: hidden;
 }
@@ -16,31 +16,39 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: 14px;
+  padding: 14px 16px 14px 20px;
 }
 
 .title {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: var(--font-size-title-small);
+  font-size: 18px;
   font-weight: 620;
   letter-spacing: -0.015em;
 }
 
 .counter {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-chip);
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
-.progress {
+/* Barra de 140 x 4 px; o preenchimento usa a cor de ação (o design: accent). */
+.card .progress {
   width: 140px;
   max-width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card .progress > span {
+  background: var(--color-primary-bg);
 }
 
 .hint {
-  font-size: var(--font-size-body-small);
+  font-size: var(--font-size-small);
   color: var(--color-text-placeholder);
 }
 
@@ -53,13 +61,29 @@
   flex: 1;
 }
 
-.dismiss {
-  color: var(--color-text-muted);
+/* Botões do cabeçalho: 36 px, texto de 13,5 px (design: btn2). */
+.card .toggle,
+.card .dismiss {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: var(--font-size-body-small);
+  font-weight: 500;
+}
+
+.card .toggle {
+  --button-fill: var(--surface-card);
+  --button-line: rgba(255, 255, 255, 0.1);
+}
+
+.card .dismiss {
+  --button-fill: transparent;
+  --button-line: transparent;
+  color: var(--color-text-placeholder);
 }
 
 .body {
   display: grid;
-  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
   max-height: 360px;
   overflow-y: auto;
   border-top: 1px solid var(--color-hairline);
@@ -68,9 +92,9 @@
 .steps {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
   margin: 0;
-  padding: var(--space-2);
+  padding: 10px;
   list-style: none;
   border-right: 1px solid var(--color-hairline);
 }
@@ -78,22 +102,26 @@
 .step {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
   border-radius: var(--radius-chip);
   color: var(--color-text-muted);
 }
 
 .current {
-  background: var(--surface-raised);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-primary);
   font-weight: 600;
 }
 
-.done .stepTitle {
+.done {
   color: var(--color-text-placeholder);
+}
+
+.done .stepTitle {
   text-decoration: line-through;
+  font-weight: 400;
 }
 
 .mark {
@@ -101,19 +129,19 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--color-hairline-strong);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--color-text-muted);
   font-family: var(--font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
 }
 
 .done .mark {
   background: rgba(111, 211, 154, 0.18);
-  color: var(--color-status-concluido);
+  color: var(--color-status-concluido-text);
 }
 
 .current .mark {
@@ -121,71 +149,82 @@
   color: var(--color-on-primary);
 }
 
-.stepText {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .stepTitle {
+  flex: 1;
+  min-width: 0;
   font-size: var(--font-size-body-small);
   overflow-wrap: anywhere;
 }
 
 .stepModule {
+  flex: none;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-chip);
+  font-size: 10.5px;
   color: var(--color-text-placeholder);
 }
 
 .detail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
   min-width: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: 20px 24px;
 }
 
-.eyebrow {
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.position {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-chip);
-  letter-spacing: var(--letter-spacing-eyebrow);
-  text-transform: uppercase;
-  color: var(--color-text-placeholder);
+  font-size: 12px;
+  color: var(--color-accent-text);
 }
 
-.block {
+.stepHeading {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: 22px;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-content: start;
+}
+
+.column {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: 6px;
   min-width: 0;
 }
 
-.blockLabel,
-.blockTitle {
+.columnAction {
+  gap: 10px;
+}
+
+.label {
   margin: 0;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-chip);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: var(--letter-spacing-eyebrow);
   text-transform: uppercase;
   color: var(--color-text-placeholder);
-}
-
-.blockTitle {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-title-small);
-  font-weight: 620;
-  letter-spacing: -0.015em;
-  text-transform: none;
-  color: var(--color-text-primary);
 }
 
 .text {
   margin: 0;
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-body-small);
   line-height: 1.5;
   color: var(--color-text-body);
   overflow-wrap: anywhere;
@@ -194,7 +233,30 @@
 .note {
   margin: 0;
   font-size: var(--font-size-body-small);
+  line-height: 1.5;
   color: var(--color-text-muted);
+}
+
+/* Botão de ação do passo: 40 px, texto de 13,5 px (design). */
+.card .action {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: var(--font-size-body-small);
+  font-weight: 600;
+}
+
+.complete {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.completeTitle {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-title-small);
+  font-weight: 620;
+  letter-spacing: -0.015em;
 }
 
 .srOnly {
@@ -223,5 +285,9 @@
   .steps {
     border-right: 0;
     border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

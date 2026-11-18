@@ -15,7 +15,7 @@ export interface WelcomeDialogProps {
 }
 
 /**
- * Janela de boas-vindas (ADR-10): diálogo de vidro com o projeto e a trilha de primeiros passos.
+ * Janela de boas-vindas (ADR-10; design: BoasVindas.dc.html): diálogo de vidro com o projeto e a trilha de primeiros passos.
  * É a única janela modal de entrada; qualquer resposta ("Agora não", Esc ou "Ver a trilha") grava
  * a resposta. Se a consulta falhar ou não houver janela a mostrar, não renderiza nada.
  */
@@ -91,17 +91,16 @@ function WelcomeContent({ projectId, state, onSeeTrail }: WelcomeContentProps) {
           <h3 id={trailId} className={styles.trailTitle}>
             {welcomeCopy.trailQuestion}
           </h3>
-          <p className={styles.count}>{welcomeCopy.stepCount(state.stepCount)}</p>
+          <p className={styles.count}>
+            <span>{welcomeCopy.stepCount(state.stepCount)}</span> {welcomeCopy.trailIntro}
+          </p>
           <ol className={styles.steps} aria-label={welcomeCopy.stepList}>
             {state.steps.map((step, index) => (
               <li key={step.key} className={styles.step}>
                 <span className={styles.mark} aria-hidden="true">
                   {index + 1}
                 </span>
-                <span className={styles.stepText}>
-                  <span className={styles.stepTitle}>{step.title}</span>
-                  <span className={styles.stepModule}>{step.moduleName}</span>
-                </span>
+                <span className={styles.stepTitle}>{step.title}</span>
               </li>
             ))}
           </ol>
@@ -116,8 +115,15 @@ function WelcomeContent({ projectId, state, onSeeTrail }: WelcomeContentProps) {
         <footer className={styles.footer}>
           <span className={styles.hint}>{welcomeCopy.hint}</span>
           <span className={styles.spacer} />
-          <Button onClick={() => respond(noop)}>{welcomeCopy.later}</Button>
-          <Button variant="primary" ref={primaryRef} onClick={() => respond(onSeeTrail)}>
+          <Button className={styles.later} onClick={() => respond(noop)}>
+            {welcomeCopy.later}
+          </Button>
+          <Button
+            variant="primary"
+            className={styles.seeTrail}
+            ref={primaryRef}
+            onClick={() => respond(onSeeTrail)}
+          >
             {welcomeCopy.seeTrail}
           </Button>
         </footer>

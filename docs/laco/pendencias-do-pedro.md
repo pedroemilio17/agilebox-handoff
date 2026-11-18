@@ -217,3 +217,17 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - DECIDIR: o design diz que Cerimônias "Requer Sprints", mas o catálogo exige Sprints e Agenda; Burndown "Requer Sprints, Estimativa" mas aceita horas OU pontos. Mantive o texto do design.
 - DECIDIR: painel abre para toda mudança pendente (não só com efeitos). Prefere confirm inline quando não há efeitos?
 - DECIDIR: "Começou como Tradicional" (nome completo) vs "Trad." da barra lateral.
+
+## Fidelidade das telas 04, 05 e 06 (F2, passos 04/05/06)
+
+- Feito: cartão "Primeiros passos" no design (superfície sólida, cabeçalho, barra de 140 x 4 px na cor de ação, lista de passos com marcas de 20 px, passo atual em três colunas: por que existe, o que fazer agora, o que vem depois); textos de passos do core alinhados ao design ("Estime os primeiros itens", "Crie a primeira sprint", "Leve itens para a sprint", "Marque a planning", "Atualize pela bandeja", "Ordene pela importância" com o "por que" do design); botão "?" como ícone de 36 px; painel "Como funciona" com medidas, título de 28 px, tag de nível, botão Fechar em ícone e "Rever os primeiros passos de <módulo>"; boas-vindas com título de 30 px, trilha em bloco, passos numerados sem círculo e botões do design. Tokens novos: `--glass-dialog`, `--glass-dialog-backdrop`, `--shadow-dialog`.
+- DECIDIR (04): o quadro vazio do design mostra 4 colunas e "O quadro mostra a sprint em andamento". O quadro do app tem 5 estados (CLAUDE.md, com Planejamento) e mostra todas as tarefas, não só a sprint. Não foi trocado. Falta também o balão "Primeira vez" (depende de `firstTimeHints`, que não tem tela) e a legenda "Você chega aqui no passo 4" (precisa da posição no guia).
+- DECIDIR (04): o design traz, por passo, um texto de "O que fazer agora" e um "por que" mais longo. Só o passo 2 tem esse texto; não foi inventado para os outros. Hoje a coluna mostra o botão e a orientação de quando (bandeja).
+- DECIDIR (04): o design usa "Diária" como etiqueta do passo da bandeja; o app mostra "Atualização diária" (nome do módulo na Módulos).
+- DECIDIR (04): botões do cabeçalho e da ação com 36/40 px (design). O padrão do app é 44 px (`--size-touch-target`); mantido o do design, confirmar.
+- DECIDIR (05): "O fluxo de cada sprint" com descrição por etapa ("Meta e itens do backlog" etc.) e o título "Palavras que você vai ver" (glossário): não existem nos manifestos. Ficaram de fora; o rótulo genérico é "Fluxo" e as etapas mostram só o nome.
+- DECIDIR (05): "Desligado · ligar" (link para ligar o módulo daqui) e "Mudar para mim" (nível por pessoa) não existem. O véu escurece a janela inteira; o design só a área à direita da barra lateral (depende do estado recolhido da barra).
+- DECIDIR (06): "Agora / Com você / Meta" (sprint atual, tarefas do usuário, meta) e a trilha própria do design não têm dado no backend; seguem as decisões de ADR-10 (item de boas-vindas acima). A descrição da metodologia ("sprints de 2 semanas", "atualização diária pela bandeja") também não existe no app; mantido "Este projeto começou como …".
+- DECIDIR (06): o design posiciona a janela em (456, 150); o app centraliza a janela na tela. Mantido centrado.
+- Texto removido por não ter fonte: "Leva uns 2 minutos" (o design afirma o tempo; nada no app calcula). Contagem de passos agora "N passos, ajustados ao que já existe aqui.".
+- Não visto rodando no Electron (só testes e tipos).

@@ -63,6 +63,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
     0 30px 80px rgba(0, 0, 0, 0.55); /* NOVO */
 
+  /* Janelas de diálogo do guia (painel "Como funciona" e boas-vindas): vidro mais opaco que o popover. */
+  --glass-dialog: rgba(38, 37, 46, 0.78); /* NOVO: design (Tutorial, BoasVindas) */
+  --glass-dialog-backdrop: blur(20px); /* NOVO */
+  --shadow-dialog:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 24px 50px rgba(0, 0, 0, 0.55); /* NOVO */
+
   --color-field-bg: rgba(0, 0, 0, 0.24);
   --color-field-border: rgba(255, 255, 255, 0.09); /* NOVO */
   --color-rail-bg: rgba(

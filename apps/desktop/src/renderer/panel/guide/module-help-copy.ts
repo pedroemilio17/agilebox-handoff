@@ -2,16 +2,15 @@
 export const moduleHelpCopy = {
   eyebrow: 'Como funciona',
   buttonLabel: (moduleName: string) => `Como funciona: ${moduleName}`,
-  buttonText: '?',
   close: 'Fechar',
   whyLabel: 'Por que existe',
   flowLabel: 'Fluxo',
   linksLabel: 'Ligação com outros módulos',
   noLinks: 'Este módulo não liga a outros.',
   linkKind: {
-    requer: 'Requer',
-    aproveita: 'Aproveita',
-    alimenta: 'Alimenta',
+    requer: 'requer',
+    aproveita: 'aproveita',
+    alimenta: 'alimenta',
   },
   stateOn: 'Ligado',
   stateOff: 'Desligado',
@@ -19,5 +18,5 @@ export const moduleHelpCopy = {
   stateError: 'Indisponível',
   experiencePrefix: 'Seu guia:',
   experienceSuffix: 'definido pelo projeto.',
-  reviewSteps: 'Rever os primeiros passos',
+  reviewSteps: (moduleName: string) => `Rever os primeiros passos de ${moduleName}`,
 } as const

@@ -11,6 +11,7 @@ export const welcomeCopy = {
     total === 0 ? 'Este projeto usa só o núcleo.' : `Este projeto usa ${modulesText(total)}.`,
   trailQuestion: 'Quer ver a trilha de primeiros passos?',
   stepCount: (total: number) => (total === 1 ? '1 passo' : `${total} passos`),
+  trailIntro: 'ajustados ao que já existe aqui.',
   stepList: 'Passos da trilha',
   hint: 'Dá para abrir depois pelo ? de qualquer tela.',
   later: 'Agora não',
