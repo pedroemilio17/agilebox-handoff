@@ -33,6 +33,7 @@ import { useProjectModules } from './hooks/use-project-modules'
 import { useSprintList } from './sprints/use-sprints'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
+import { UpdatesView } from './dashboard/UpdatesView'
 import { ManagerBanner } from './board/ManagerBanner'
 import { ProjectMembersDialog } from './board/ProjectMembersDialog'
 import { ProjectTitle } from './board/ProjectTitle'
@@ -633,12 +634,35 @@ function PanelContent({
               openTask(id)
               setView('projects')
             }}
+            onOpenProject={(projectId, screen) => {
+              setBoardException(null)
+              setViewingUser(null)
+              setActiveTaskId(null)
+              setSelectedProjectId(projectId)
+              setView(screen === 'board' ? 'projects' : 'schedule')
+            }}
+            onOpenUpdates={() => setView('updates')}
             onOpenProjects={(user) => {
               setBoardException(null)
               setViewingUser({ id: user.id, name: user.name })
               setSelectedProjectId(null)
               setActiveTaskId(null)
               setView('projects')
+            }}
+          />
+        }
+        updates={
+          <UpdatesView
+            onOpenTask={(id) => {
+              openTask(id)
+              setView('projects')
+            }}
+            onOpenProject={(projectId, screen) => {
+              setBoardException(null)
+              setViewingUser(null)
+              setActiveTaskId(null)
+              setSelectedProjectId(projectId)
+              setView(screen === 'board' ? 'projects' : 'schedule')
             }}
           />
         }

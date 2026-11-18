@@ -1,0 +1,305 @@
+/* Atualizações (design, tela 20): coluna de filtros à esquerda, feed por dia à direita. */
+.view {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  align-items: start;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 16px 14px;
+  border-right: 1px solid var(--color-hairline);
+  background: var(--surface-aside);
+}
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 2px;
+}
+.eyebrow {
+  padding: 0 10px 6px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+.viewButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.viewButton[aria-current='page'] {
+  background: var(--surface-card);
+  color: var(--color-text-primary);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--color-text-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+.check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-accent-text);
+  flex: none;
+}
+.people {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px;
+}
+.person {
+  width: 36px;
+  height: 36px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--color-avatar-bg);
+  color: var(--color-text-primary);
+  font: 600 12px var(--font-family-sans);
+  opacity: 0.45;
+  cursor: pointer;
+}
+.personOn {
+  border-color: var(--color-accent-text);
+  opacity: 1;
+}
+
+.main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  padding: 16px 24px 28px;
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: 24px;
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+}
+.subtle {
+  color: var(--color-text-subtle);
+  font-size: 13px;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  /* A cor do ponto é a do tom (ou do texto ao redor), como no desenho. */
+  color: var(--color-text-subtle);
+  background: currentColor;
+}
+.toneDanger {
+  color: var(--color-signal-danger-text);
+}
+.toneWarning {
+  color: var(--color-signal-warning-text);
+}
+.toneNeutral {
+  color: var(--color-text-body);
+}
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--color-tint-soft);
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.banner strong {
+  color: var(--color-text-primary);
+  font-weight: 550;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.dayTitle {
+  margin: 6px 0 2px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-panel);
+}
+.itemType {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.typeLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.time {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+}
+.body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.headline {
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.detail {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.via {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.miniAvatar {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--color-tint-tag);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--color-tint-soft);
+}
+.subLine {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+.subTime {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+}
+.button,
+.asideButton {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+  color: var(--color-text-primary);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* Botão da coluna de filtros: largura da coluna, altura do desenho (40 px). */
+.asideButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+}
+/* Botões do desenho que ainda não têm dado no backend: visíveis, sem ação. */
+.button:disabled,
+.asideButton:disabled {
+  color: var(--color-text-subtle);
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aside {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+  .item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

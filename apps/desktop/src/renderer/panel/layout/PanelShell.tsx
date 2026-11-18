@@ -15,10 +15,12 @@ import { baselineCopy } from '../baseline/baseline-screen'
 import { burndownCopy } from '../burndown/burndown-screen'
 import { flowMetricsCopy } from '../flow-metrics/flow-metrics-screen'
 import { planCopy } from '../plan/plan-screen'
+import { swatchIndexOf } from '../../shared/lib/project-swatch'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
   | 'dashboard'
+  | 'updates'
   | 'projects'
   | 'backlog'
   | 'wbs'
@@ -75,6 +77,8 @@ export interface PanelShellProps {
     readonly onSwitch: (userId: string) => void
   }
   readonly dashboard?: ReactNode
+  /** Atualizações (tela 20): o dashboard com o filtro de atualizações. Fica sob o item Dashboard. */
+  readonly updates?: ReactNode
   /**
    * Faixa do guia "Primeiros passos", no topo da tela (ADR-10, 3.8.1). Fica acima da tela atual e
    * reinicia a cada troca de tela, porque o conteúdo é recriado por tela.
@@ -114,6 +118,7 @@ export interface PanelShellProps {
 
 const viewTitles: Record<PanelView, string> = {
   dashboard: panelCopy.dashboard,
+  updates: 'Atualizações',
   projects: 'Quadro',
   backlog: panelCopy.backlogTitle,
   wbs: 'Entregas (EAP)',
@@ -164,6 +169,7 @@ export function PanelShell({
   onOpenTray,
   onSearch,
   dashboard,
+  updates,
   guide,
   agenda,
   modules,
@@ -186,7 +192,7 @@ export function PanelShell({
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
   const capabilities = useCapabilities()
-  const visibleView = view === 'dashboard' && !isManager ? 'projects' : view
+  const visibleView = (view === 'dashboard' || view === 'updates') && !isManager ? 'projects' : view
   const hasProject = selectedProjectId !== null
   // Início, Agenda e Dashboard ficam no topo, como no design. Agenda só com o módulo ligado.
   const topEntries: readonly RailEntry[] = [
@@ -272,7 +278,13 @@ export function PanelShell({
         expanded={railExpanded}
         topEntries={topEntries}
         contextEntries={contextEntries}
-        selected={visibleView === 'planSprint' ? 'projects' : visibleView}
+        selected={
+          visibleView === 'planSprint'
+            ? 'projects'
+            : visibleView === 'updates'
+              ? 'dashboard'
+              : visibleView
+        }
         onExpandChange={setRailExpanded}
         onSelect={onViewChange}
         account={account}
@@ -303,6 +315,8 @@ export function PanelShell({
             children
           ) : visibleView === 'dashboard' && dashboard ? (
             dashboard
+          ) : visibleView === 'updates' && updates ? (
+            updates
           ) : visibleView === 'backlog' && backlog ? (
             backlog
           ) : visibleView === 'wbs' && wbs ? (
@@ -360,11 +374,6 @@ interface RailProps {
   readonly onSearch: PanelShellProps['onSearch']
   readonly onOpenTray: PanelShellProps['onOpenTray']
   readonly account: PanelShellProps['account']
-}
-
-/** Cor do quadradinho: a mesma regra de antes (índice derivado do id), sem cor guardada no projeto. */
-function swatchIndexOf(id: string): number {
-  return Array.from(id).reduce((sum, char) => sum + char.charCodeAt(0), 0)
 }
 
 function Rail({

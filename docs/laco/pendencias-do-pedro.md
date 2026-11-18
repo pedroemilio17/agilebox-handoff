@@ -295,3 +295,43 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - Tokens novos: `--color-deliverable*` (entrega: barra, marco e selo E#) e `--surface-column` (#141318, que antes estava literal em Sprints, EAP e Plano; mesmo valor).
 - Literais no CSS do plano: cores de status das sprints na faixa (`#22352b` fechada, `#2d3f5c` ativa). Só o plano usa. Virar token se outra tela precisar.
 - CONFERIR: 1280 e 1440 px; faixas que se sobrepõem em duas linhas; "Abrir Sprint" sem sprint ativa; sprint 18 de uma entrega sem itens; entrega atual sem sprint (só marco e falta); o colaborador vendo o plano.
+
+## Telas 19 e 20, dashboard do gestor e Atualizações (F2)
+
+- Feito: dashboard (19) no layout do desenho: cabeçalho com "Semana N · dd–dd mês" e quatro filtros (Projetos, Metodologia e Pessoa funcionam; Mini-equipe é estático), "Precisa de você", cartões por projeto com a forma de medir da metodologia, "Equipe em todos os projetos". Atualizações (20) como página: filtros à esquerda (visões, tipos, projeto, pessoa, "Agrupar por tarefa", "Mostrar minhas edições") e feed por dia. Os cartões e os sinais saem dos casos de uso que já existiam (acompanhamento, burndown, linha de base, fluxo, marcos, WIP, critérios de aceite e linha do tempo), respeitando o módulo ligado em cada projeto.
+- DECIDIR (regra provisória, `core/rules/dashboard-health.ts`): o design mostra Em dia, Atenção e Risco com motivo, mas nenhum documento diz quando cada um vale. Usei: Risco com tarefa vencida, marco em risco ou coluna acima do limite de WIP; Atenção com tarefa parada há mais de 4 dias, tarefa bloqueada ou fim previsto depois da linha de base; Em dia no resto. Confirme ou mude.
+- DECIDIR: "Precisa de você" mostra WIP acima do limite, marco em risco e aceite pendente (tarefa concluída com critério não atendido). Ficaram de fora "Fora da entrega" (falta a regra: item de sprint fora da entrega) e "Proposta" (falta a regra "gestor propõe, equipe aceita").
+- DECIDIR: a coluna "Carga da semana" mostra as horas estimadas das tarefas abertas da pessoa, sem barra. O desenho mostra "h / 40 h": não há capacidade por pessoa no app (mesma pendência de "Carga por pessoa" da tela 07).
+- DECIDIR: removi do dashboard o seletor de semana, "Quadro em dia", "Fluxo de seis semanas" e os cartões de exceções (bloqueadas, paradas, vencidas), porque o desenho não tem. Os números continuam no contrato e no resumo exportado. Quer algum deles de volta em outra tela?
+- DECIDIR: o botão "Exportar resumo" ficou no cabeçalho, fora do desenho. O botão "Ver" da daily também ficou, ao lado de "✓ respondida" (o desenho não tem o botão).
+- DECIDIR: as cores dos projetos são as da barra lateral (derivadas do id), não as do desenho (que são de dados de exemplo). O rótulo "Concluído contra a base" aparece quando há linha de base.
+- DECIDIR: o desenho usa "Semana 47 · 17–21 nov" (segunda a sexta). O app mostra segunda a sexta da semana do painel, com o número da semana ISO.
+- NÃO implementado (sem dado ou regra no app):
+  - Visões de Atualizações "Commits sem tarefa" (plug-in, fora do MVP) e "Escopo e módulos" (sem evento de módulo na linha do tempo). Omitidas.
+  - Tipos "Fora da entrega", "Propostas de módulo", "Commit via plug-in" e "Diária" (sem evento na linha do tempo). Omitidos da barra lateral de Atualizações.
+  - "Salvar como visão" e "Marcar como vistas": não há visões salvas nem marca de leitura. Omitidos.
+  - "Mini-equipe" (visão Equipe): estático, como combinado.
+  - Cartão de Ágil: "previsão: termina no dia 12". O app mostra "termina em dd/mm" (o fim planejado da sprint), sem previsão.
+  - Cartão de Tradicional: "de 38%" (o planejado até hoje). A linha de base não tem avanço planejado por dia. O app mostra só o concluído e a semana.
+  - Gráfico pequeno (linha tracejada e real): só onde há série (sprint com burndown e Kanban com vazão semanal). Tradicional e híbrido sem série.
+  - Sinal "Parada 3d" usa os dias desde a última mudança de estado; "+7 dias no ERP" virou "+N dias de atraso" (sem nome de projeto, pela largura).
+  - "Desenvolvendo está com 4 de 3 há 2 dias": o app não diz há quantos dias a coluna passou do limite.
+- Textos novos meus (revisar): "Nenhum sinal pede decisão agora.", "Nenhum sinal de atenção.", "Fim previsto N dias depois da linha de base", "marco venceu há N dias", "marco hoje", "termina em dd/mm", "N tarefas concluídas na semana", "pendente", "N aceites pendentes", "N bloqueadas", "Em aberto" (título dos sinais sem horário), "Outras edições" (tipo genérico), "Filtrar por projeto/metodologia/pessoa" (nome do controle), "foi concluída sem “…”".
+- Texto do desenho mantido, mas descreve tipos que ainda não existem (proposta, commit, parada há 3 dias, diária sem resposta): "Exige ação junta o que só você resolve: …". DECIDIR se fica assim até os tipos existirem.
+- Atualizações: "Mostrar minhas edições" esconde as edições marcadas como Gestor. Com um gestor só, é a mesma coisa; com mais de um, ficaria a dúvida.
+- Atualizações: a janela são os últimos sete dias corridos (até 200 movimentos); "9 de 63 nesta semana" do desenho vira "visíveis de total". "Hoje" e "Ontem" são contados a partir do horário do dado.
+- Custo: o cartão Tradicional mostra "R$ gastos" só para o gestor, com o módulo `cost` ligado no projeto (regra do acompanhamento).
+- Desempenho: o dashboard agora chama, para cada projeto, os casos de uso de acompanhamento, burndown, linha de base e fluxo (cada um relê tarefas e linha do tempo). Com muitos projetos, medir o tempo de resposta.
+- Arquivos de componentes sem uso removidos: `CollaboratorTable.tsx`, `StatCard.tsx`, `StackedBar.tsx`, `status-colors.ts`.
+- Tokens novos: `--color-signal-ok`, `--color-signal-ok-text`, `--color-signal-ok-bg` (Em dia), `--surface-aside` (coluna de filtros de Atualizações).
+- CONFERIR rodando no Electron: 1280 e 1440 px, rolagem da raiz (`min-height: 0`, `overflow-y: auto`) nas duas telas, tabela da equipe com rolagem horizontal abaixo de 900 px e o aside da tela 20 empilhado abaixo de 900 px.
+- Revisão desta etapa (fidelidade das telas 19 e 20, retomada):
+  - Atualizações: "Mudança de estado", "Comentários" e "Outras edições" começam desmarcados, como no desenho (que deixa esses dois de fora). "Outras edições" é do app (não está no desenho) e segue o mesmo padrão.
+  - Atualizações: sinal com hora (WIP, aceite) entra no dia dele ("Hoje"/"Ontem"), como no desenho. Marco sem hora fica em "Em aberto" (título do app, não está no desenho).
+  - Atualizações: "Marcar como vistas" e "Salvar como visão" aparecem desabilitados (botões do desenho sem dado no backend). Mesmo critério do "Mini-equipe".
+  - Atualizações: o filtro de WIP por ferramenta agora vale também nesta tela (antes só o painel aplicava).
+  - Equipe: todos os sinais usam o tom de atenção do desenho (antes o overdue e o bloqueio eram vermelhos).
+  - Equipe: a coluna "Carga da semana" e a legenda "Carga soma as estimativas…" só aparecem com `estimates.hours` ligado. O Básico não tem estimativa e o termo "estimativas" está na lista de termos proibidos do Básico. DECIDIR: a legenda some no Básico, como feito, ou fica sem a palavra "estimativas" (texto novo).
+  - Equipe: o botão "Ver" da diária continua (não está no desenho). DECIDIR: manter ou tirar (sem ele, a diária só se vê pela bandeja).
+  - Tokens novos (`packages/ui/src/styles/tokens.css`): `--color-tint-faint`, `--color-tint-soft`, `--color-tint-chip`, `--color-tint-tag`, `--color-divider`, `--color-control-border`. Substituem `rgba(255,255,255,…)` repetidos nos módulos do dashboard.
+  - Testes ajustados ao desenho (sem asserts enfraquecidos): `App.manager` (seletor de semana e cartões de exceção trocados pelos sinais da equipe e por "Precisa de você"); `App.basic-flow`, `App.scrum-basic` (mesmas checagens de ausência, nos seletores novos); `App.tools-audit` (sondas do painel nos elementos novos; a linha "fluxo de seis semanas" saiu do snapshot, porque a seção não existe mais; o fluxo chega pelos cartões, e a regra dele é coberta em `get-dashboard.test.ts`); `updates-feed.test`, `UpdatesView.test` (dia dos sinais e tipos padrão). Fixture `managerDashboard` ganhou um WIP em "Precisa de você" e uma parada na equipe, para o relatório de níveis medir essas linhas.

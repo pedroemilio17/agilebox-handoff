@@ -163,20 +163,15 @@ async function auditManager(user: ReturnType<typeof userEvent.setup>): Promise<s
   await screen.findByRole('region', { name: 'Concluído, tarefas' })
   const lines: string[] = []
   await user.click(screen.getByRole('button', { name: 'Dashboard' }))
-  await screen.findByRole('region', { name: 'Quadro em dia' })
+  // Sinais da equipe (Bloqueadas, Paradas, Diária de hoje) e "Precisa de você" (WIP); fluxo nos cartões.
+  const dashTeam = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
   lines.push(
     `  dashboard: ${present([
-      ['Bloqueadas', screen.queryByRole('button', { name: /^Bloqueadas/ }) !== null],
-      ['Paradas', screen.queryByRole('button', { name: /^Paradas/ }) !== null],
-      [
-        'colunas acima do limite',
-        screen.queryByRole('list', { name: 'Colunas acima do limite' }) !== null,
-      ],
-      [
-        'fluxo de seis semanas',
-        screen.queryByRole('region', { name: 'Fluxo de seis semanas' }) !== null,
-      ],
-      ['daily de hoje', screen.queryByText(/Daily de hoje/) !== null],
+      ['Bloqueadas', within(dashTeam).queryByText(/^\d+ bloqueadas?$/) !== null],
+      ['Paradas', within(dashTeam).queryByText(/^Parada \d+d$/) !== null],
+      ['colunas acima do limite', screen.queryByText(/está com \d+ de \d+\./) !== null],
+      ['lead time nos cartões', screen.queryByText('Lead time médio') !== null],
+      ['daily de hoje', within(dashTeam).queryByText('Diária de hoje') !== null],
     ])}`,
   )
   await user.click(screen.getByRole('button', { name: 'Ajustes' }))
@@ -312,7 +307,7 @@ describe('Auditoria de ferramentas × nível (4 presets × 3 níveis)', () => {
         agenda: aberta
         ajustes: somente leitura; avisos de nível: nenhum
         gestor
-        dashboard: Paradas, colunas acima do limite, fluxo de seis semanas
+        dashboard: Paradas, colunas acima do limite
         ajustes (gestor): 4 presets para aplicar; controle de nível
       Scrum completo · Básico
         colaborador

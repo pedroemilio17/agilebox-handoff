@@ -41,11 +41,19 @@
   --surface-card: #1d1c23; /* cartões de tarefa, blocos clicáveis */
   --surface-raised: #26252d; /* hover, chips, faixas */
   --surface-sunken: #0d0c11; /* barra lateral quando a janela é opaca */
+  --surface-aside: #121116; /* NOVO: coluna de filtros da tela Atualizações (design, tela 20) */
   --surface-column: #141318; /* colunas e blocos de apoio dentro de telas (quadro da sprint, EAP, plano) */
   --surface-sprint-closed: #22352b; /* faixa de sprint concluída no plano (tela 17) */
   --surface-sprint-active: #2d3f5c; /* faixa de sprint ativa no plano (tela 17) */
   --color-hairline: rgba(255, 255, 255, 0.07); /* NOVO: bordas finas */
   --color-hairline-strong: rgba(255, 255, 255, 0.12); /* NOVO */
+  /* NOVO (tela 19 e 20): tintas brancas que se repetiam como valores soltos nos módulos do dashboard */
+  --color-tint-faint: rgba(255, 255, 255, 0.03); /* faixa de sinal "Precisa de você" */
+  --color-tint-soft: rgba(255, 255, 255, 0.04); /* faixas de apoio (aviso, sublinhas) */
+  --color-tint-chip: rgba(255, 255, 255, 0.05); /* chip de projeto na equipe */
+  --color-tint-tag: rgba(255, 255, 255, 0.07); /* etiqueta de metodologia */
+  --color-divider: rgba(255, 255, 255, 0.06); /* separador fino dentro de cartões e linhas */
+  --color-control-border: rgba(255, 255, 255, 0.1); /* borda de botão secundário */
 
   /* ---------- Vidro: só janela da bandeja, barra lateral e camadas flutuantes ---------- */
   --glass-window: rgba(20, 19, 26, var(--glass-window-alpha)); /* sem o gradiente branco antigo */
@@ -112,6 +120,9 @@
   --color-signal-warning: #f2b45a; /* parada, WIP no limite, prioridade alta */
   --color-signal-warning-text: #f4c27a;
   --color-signal-warning-bg: rgba(242, 180, 90, 0.14);
+  --color-signal-ok: #6fd39a; /* NOVO: Em dia (dashboard, design 19) */
+  --color-signal-ok-text: #8fe0b2; /* NOVO: Em dia, texto */
+  --color-signal-ok-bg: rgba(111, 211, 154, 0.14); /* NOVO: Em dia, fundo */
   --color-danger: #ff6b7d;
   --color-danger-hover: rgba(255, 107, 125, 0.9);
 

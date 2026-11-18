@@ -24,7 +24,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
   - [x] 01 wizard · [x] 02 recomendação (estrutura e medidas; textos do core em F2a) · [x] 03 módulos (inclui painel "Proposta" lateral, que depende da regra "gestor propõe, equipe aceita" ainda indefinida: registrar, não inventar) · [x] 04 primeiros passos · [x] 05 botão ? · [x] 06 boas-vindas (partes sem dado no backend ficaram em pendências)
   - [x] 07 planejar sprint · [x] 08 sprint ativa · [x] 09 critério de pronto ao concluir · [x] 10 burndown · [x] 11 encerrar sprint/retro · [x] 12 comparação (quadro explicativo do ADR, não é tela do app: nada a implementar)
   - [x] 13 EAP · [x] 14 cronograma · [x] 15 acompanhamento · [x] 16 guia tradicional (parcial: trilha de 6 passos do design pendente, ver pendências) · [x] 17 híbrido plano (parcial, ver pendências) · [x] 18 híbrido sprint (parcial, ver pendências)
-  - [ ] 19 dashboard do gestor · [ ] 20 atualizações filtradas
+  - [x] 19 dashboard do gestor (feito; ver pendências, com regra provisória de Em dia/Atenção/Risco) · [x] 20 atualizações filtradas (feito; ver pendências)
 
 ## Regras
 
