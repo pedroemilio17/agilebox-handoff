@@ -23,6 +23,10 @@ export interface ConcludeRequest {
   readonly complete: (confirmedDefinitionItemIds: readonly string[]) => Promise<unknown>
   /** Cancelar a conferência: a tela volta ao estado de antes. */
   readonly onCancel?: () => void
+  /** "AB-140 · Aviso de chamado aberto": cabeçalho da conferência. */
+  readonly taskLabel?: string
+  /** Estado de origem ("Revisar"): o botão de cancelar diz "Voltar para Revisar". */
+  readonly returnTo?: string
 }
 
 interface Opening {
@@ -124,6 +128,8 @@ export function useDefinitionOfDoneGate() {
       items={opening.items}
       reopened={opening.reopened}
       saving={opening.saving}
+      {...(opening.request.taskLabel ? { taskLabel: opening.request.taskLabel } : {})}
+      {...(opening.request.returnTo ? { returnTo: opening.request.returnTo } : {})}
       onConfirm={() => void confirm()}
       onCancel={cancel}
     />

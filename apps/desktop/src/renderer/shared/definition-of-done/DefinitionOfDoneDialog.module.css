@@ -1,20 +1,76 @@
+/* Diálogo "Antes de concluir" (design Pronto.dc.html): 440 px, vidro de guia, linhas de 44 px. */
+
 .content {
   display: grid;
   gap: var(--space-4);
 }
 
-.header h2 {
-  margin: 0;
-  font-size: var(--font-size-title);
+.header {
+  display: grid;
+  gap: var(--space-1);
 }
 
-.intro {
-  margin: 0;
+.eyebrow {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.fieldset {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0 0 var(--space-2);
+}
+
+.legendText {
+  flex: 1;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.counter {
+  font-family: var(--font-family-mono);
+  font-size: 11.5px;
+  color: var(--color-text-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.missing {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+  color: var(--color-signal-warning-text);
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.actions > button {
+  flex: 1;
+  min-height: var(--size-touch-target);
 }

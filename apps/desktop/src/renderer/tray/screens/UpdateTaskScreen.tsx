@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TaskStatus } from '@agilebox/core'
+import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import {
   Button,
   FieldRow,
@@ -99,6 +99,8 @@ export function UpdateTaskScreen({ taskId, onSaved }: UpdateTaskScreenProps) {
             // Concluir na bandeja passa pela mesma conferência; cancelar devolve o estado anterior.
             definitionGate.conclude({
               projectId: task.projectId,
+              taskLabel: `${task.key} · ${task.title}`,
+              returnTo: TASK_STATUS_LABELS[task.status],
               items: task.projectDefinitionOfDone,
               definitionOfDoneCount: task.projectDefinitionOfDone.length,
               complete: (confirmedDefinitionItemIds) =>

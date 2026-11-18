@@ -216,6 +216,8 @@ export function TaskDetailView({
               // Concluir pelo detalhe passa pela conferência da definição de pronto do projeto.
               definitionGate.conclude({
                 projectId: task!.projectId,
+                taskLabel: `${task!.key} · ${task!.title}`,
+                returnTo: TASK_STATUS_LABELS[task!.status],
                 items: task!.projectDefinitionOfDone,
                 definitionOfDoneCount: task!.projectDefinitionOfDone.length,
                 complete: (confirmedDefinitionItemIds) =>

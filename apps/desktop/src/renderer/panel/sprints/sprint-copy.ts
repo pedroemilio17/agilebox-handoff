@@ -91,11 +91,17 @@ export const sprintCopy = {
   ceremonyError: 'Não foi possível agendar a cerimônia.',
 
   // Encerrar
-  closeTitle: 'Encerrar sprint',
-  closeSummary: (done: number, open: number, started: number) =>
-    `Concluídos: ${done}. Abertos: ${open}. Já iniciados: ${started}.`,
-  closePolicyLegend: 'O que fazer com os itens abertos',
-  policyReturn: 'Devolver ao backlog',
+  closeTitle: 'Encerrar a sprint',
+  closeTileItems: 'Itens',
+  closeTileHours: 'Horas concluídas',
+  closeOpenItems: (count: number) =>
+    count === 1
+      ? '1 item não terminou. Para onde vai?'
+      : `${count} itens não terminaram. Para onde vão?`,
+  closeDestination: 'Destino dos itens abertos',
+  closeVelocity: (number: number, hours: string) =>
+    `A velocidade da Sprint ${number} fica registrada como ${hours} h.`,
+  policyReturn: 'Voltar ao backlog',
   policyReturnHelp:
     'Itens ainda não iniciados voltam ao backlog. Os já iniciados ficam no quadro, sem sprint.',
   policyCarry: 'Levar para a próxima sprint',
@@ -103,6 +109,10 @@ export const sprintCopy = {
   nextSprintLabel: 'Sprint seguinte',
   noDraftForCarry: 'Não há rascunho neste projeto. Crie um em Planejamento para usar esta opção.',
   closeConfirm: 'Encerrar sprint',
+  retroTitle: 'Retrospectiva',
+  retroLoading: 'Carregando a retrospectiva…',
+  retroError: 'Não foi possível carregar a retrospectiva.',
+  retroNone: 'Nenhuma retrospectiva agendada para esta sprint.',
   closeError: 'Não foi possível encerrar a sprint.',
   closed: 'Sprint encerrada.',
 

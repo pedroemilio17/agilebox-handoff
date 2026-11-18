@@ -19,3 +19,19 @@
   color: var(--color-text-primary);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
 }
+
+/* Diálogo de conferência (design "Antes de concluir"): vidro de guia, 440 px. */
+.glass {
+  width: min(100%, 440px);
+  padding: var(--space-5) 22px;
+  border: 0;
+  border-radius: var(--radius-drawer);
+  background: var(--glass-dialog);
+  backdrop-filter: var(--glass-dialog-backdrop);
+  box-shadow: var(--shadow-dialog);
+}
+/* Diálogo de encerramento com duas colunas (design "Encerrar"). */
+.sizeWide {
+  width: min(100%, 960px);
+  max-height: min(88vh, 860px);
+}

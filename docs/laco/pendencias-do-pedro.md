@@ -240,3 +240,10 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - Textos novos meus: "Sem meta definida.", "Estimado nesta sprint", "Média de N sprints encerradas: X h.", "Sem sprint encerrada para comparar.", "sem estimativa", "No ideal".
 - DECIDIR: "Nova tarefa" na sprint ativa cria no backlog (não entra direto na sprint). Ícone de remover só no hover/foco. Quatro colunas vs cinco fixas.
 - Dado do mockup: "seg 24/11 → sex 05/12, 10 dias úteis" não bate com o calendário de 2026 (24/11 é terça, 05/12 é sábado; 9 dias úteis). O app usa o calendário real.
+
+## Fidelidade das telas 09, 10 e 11 (F2)
+
+- 09 Critério de pronto ao concluir: diálogo "Antes de concluir" com rótulo da tarefa, contador x/y, "Voltar para <estado de origem>". NÃO feito: "Concluir mesmo assim" / "aceite pendente" (o servidor recusa concluir sem confirmar), linha de critérios de aceite da tarefa, nota "editado em Módulos". DECIDIR: quer a regra de aceite pendente no domínio (e no dashboard)?
+- 10 Burndown: cabeçalho "Sprint N · dia X de Y", 4 cartões do design onde há dado, gráfico 760x300 com previsão de fim/hoje, velocidade em colunas com média. NÃO feito (sem regra/dado): cartões "Ritmo real", "Previsão", "Para fechar no dia 10", barras "Comprometido" por sprint, "O que está segurando". DECIDIR: regras de ritmo/previsão e horas comprometidas por sprint no DTO; eixo X em data (como está) ou número do dia (design)?
+- 11 Encerrar sprint e retro: diálogo em duas colunas (resumo, itens abertos, destino, velocidade registrada; retro com os combinados da sprint). NÃO feito: "A meta foi atingida? Sim/Em parte/Não" (sem persistência), destino por item (política é por sprint), colunas Manter/Melhorar/Tentar com votos, "ações viram tarefa no backlog", "4 de 4 participaram". DECIDIR cada uma.
+- Modal em `packages/ui` ganhou `surface` (glass) e `size` (wide). O véu do Modal escurece a janela inteira; o design é painel flutuante sem véu. Textos novos meus: "Falta/Faltam N itens para concluir.", "Nenhuma retrospectiva agendada para esta sprint." e variações.

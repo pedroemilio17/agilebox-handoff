@@ -22,7 +22,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
 - [x] F2a Textos do domínio conforme o design nas telas 01/02: propósito do preset e motivo por módulo gerados pelas respostas (como em Recomendacao.dc.html), nomes "Estimativa" e "Burndown", nota "Os outros N ficam em Módulos" com link "Ver todos", regra de "Algumas vezes" (extras fora da lista, só na nota). Mexe no `core`: manter testes, atualizar só o que o design exigir.
 - [ ] F2.. Auditoria e ajuste tela a tela contra o canvas, na ordem 01, 02, 03, 04, 05, 06, 07 ... 20. Cada passo: comparar markup do `.dc.html` com a tela do app (medidas, textos, estados), listar divergências, corrigir, atualizar testes sem enfraquecê-los.
   - [x] 01 wizard · [x] 02 recomendação (estrutura e medidas; textos do core em F2a) · [x] 03 módulos (inclui painel "Proposta" lateral, que depende da regra "gestor propõe, equipe aceita" ainda indefinida: registrar, não inventar) · [x] 04 primeiros passos · [x] 05 botão ? · [x] 06 boas-vindas (partes sem dado no backend ficaram em pendências)
-  - [x] 07 planejar sprint · [x] 08 sprint ativa · [ ] 09 critério de pronto ao concluir · [ ] 10 burndown · [ ] 11 encerrar sprint/retro · [ ] 12 comparação
+  - [x] 07 planejar sprint · [x] 08 sprint ativa · [x] 09 critério de pronto ao concluir · [x] 10 burndown · [x] 11 encerrar sprint/retro · [ ] 12 comparação
   - [ ] 13 EAP · [ ] 14 cronograma · [ ] 15 acompanhamento · [ ] 16 guia tradicional · [ ] 17 híbrido plano · [ ] 18 híbrido sprint
   - [ ] 19 dashboard do gestor · [ ] 20 atualizações filtradas
 

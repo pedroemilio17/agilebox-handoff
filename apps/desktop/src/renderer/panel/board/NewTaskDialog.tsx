@@ -51,6 +51,7 @@ export function NewTaskDialog({
       // Criar já como Concluído exige a mesma conferência de concluir uma tarefa existente.
       definitionGate.conclude({
         projectId,
+        taskLabel: trimmedTitle,
         definitionOfDoneCount:
           projects.find((project) => project.id === projectId)?.definitionOfDoneCount ?? 0,
         complete: async (confirmedDefinitionItemIds) => {

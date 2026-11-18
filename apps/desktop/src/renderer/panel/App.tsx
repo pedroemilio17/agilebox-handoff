@@ -247,6 +247,8 @@ function PanelContent({
       // Concluir passa pela conferência da definição de pronto (drag, seletor e detalhe).
       definitionGate.conclude({
         projectId: task.projectId,
+        taskLabel: `${task.key} · ${task.title}`,
+        returnTo: TASK_STATUS_LABELS[task.status],
         definitionOfDoneCount:
           projects.data?.find((project) => project.id === task.projectId)?.definitionOfDoneCount ??
           0,
@@ -516,7 +518,6 @@ function PanelContent({
           <BurndownView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
-            projectName={selectedProject?.name ?? null}
             onNavigate={setView}
           />
         }

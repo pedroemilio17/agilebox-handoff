@@ -1,8 +1,10 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import type { SprintDto, TaskDto } from '@agilebox/contract'
 import { Button, Modal } from '@agilebox/ui'
-import { closeSummary } from './sprint-rules'
+import { hoursText } from './SprintItems'
+import { shortDate } from './DraftsTab'
 import { sprintCopy } from './sprint-copy'
+import { sumHours } from './sprint-rules'
 import styles from './SprintsView.module.css'
 
 export type ClosePolicyChoice =
@@ -18,13 +20,19 @@ export interface CloseSprintDialogProps {
   readonly windingDown: boolean
   readonly busy: boolean
   readonly error: string | null
+  /** Retrospectiva da sprint (combinados), na coluna da direita. Sem ela, o diálogo tem uma coluna. */
+  readonly retro?: ReactNode
   readonly onCancel: () => void
   readonly onConfirm: (choice: ClosePolicyChoice) => void
 }
 
+const RETURN_VALUE = 'return_to_backlog'
+const CARRY_PREFIX = 'carry:'
+
 /**
- * Encerrar a sprint: resumo e a política para os itens abertos. Devolver ao backlog é o padrão.
- * "Levar para a próxima" exige um rascunho do projeto e some do caminho quando o módulo encerra.
+ * Encerrar a sprint (design "Encerrar", à esquerda): itens e horas concluídos, o destino dos itens
+ * abertos e a velocidade que fica registrada. A retrospectiva entra à direita, quando há.
+ * Devolver ao backlog é o padrão. "Levar para a próxima" exige um rascunho do projeto.
  */
 export function CloseSprintDialog({
   open,
@@ -34,109 +42,129 @@ export function CloseSprintDialog({
   windingDown,
   busy,
   error,
+  retro,
   onCancel,
   onConfirm,
 }: CloseSprintDialogProps) {
-  const groupId = useId()
-  const summary = closeSummary(items)
+  const selectId = useId()
+  const doneItems = items.filter((item) => item.status === 'done')
+  const openItems = items.filter((item) => item.status !== 'done')
+  const doneHours = sumHours(doneItems).estimated
+  const totalHours = sumHours(items).estimated
   const carryAvailable = !windingDown && targets.length > 0
-  const [policy, setPolicy] = useState<'return_to_backlog' | 'carry_over'>('return_to_backlog')
-  const [chosenTarget, setChosenTarget] = useState<string>('')
-  const nextId = targets.find((target) => target.id === chosenTarget)?.id ?? targets[0]?.id ?? ''
-  const carrying = policy === 'carry_over' && carryAvailable
-  const confirmDisabled = busy || (carrying && nextId === '')
+  const [choice, setChoice] = useState<string>(RETURN_VALUE)
+  const selected = carryAvailable
+    ? (targets.find((target) => `${CARRY_PREFIX}${target.id}` === choice)?.id ?? null)
+    : null
+  const carrying = selected !== null
+  const confirmDisabled = busy
 
   return (
-    <Modal open={open} title={sprintCopy.closeTitle} onClose={onCancel}>
+    <Modal
+      open={open}
+      title={sprintCopy.closeTitle}
+      onClose={onCancel}
+      size={retro ? 'wide' : 'default'}
+    >
       <form
-        className={styles.dialog}
+        className={retro ? styles.closeLayoutWide : styles.closeLayout}
         onSubmit={(event) => {
           event.preventDefault()
           if (confirmDisabled) return
           onConfirm(
-            carrying
-              ? { policy: 'carry_over', nextSprintId: nextId }
+            carrying && selected !== null
+              ? { policy: 'carry_over', nextSprintId: selected }
               : { policy: 'return_to_backlog' },
           )
         }}
       >
-        <h3 className={styles.sectionHeading}>
-          {sprintCopy.closeTitle} · {sprint.label}
-        </h3>
-        <p className={styles.summary}>
-          {sprintCopy.closeSummary(summary.done, summary.open, summary.started)}
-        </p>
-
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>{sprintCopy.closePolicyLegend}</legend>
-
-          <label className={styles.option}>
-            <input
-              type="radio"
-              name={`${groupId}-policy`}
-              value="return_to_backlog"
-              checked={policy === 'return_to_backlog'}
-              onChange={() => setPolicy('return_to_backlog')}
-            />
-            <span>
-              <strong>{sprintCopy.policyReturn}</strong>
-              <span className={styles.hint}>{sprintCopy.policyReturnHelp}</span>
+        <div className={styles.closeMain}>
+          <header className={styles.closeHeader}>
+            <h2 className={styles.closeTitle}>{sprintCopy.closeTitle}</h2>
+            <span className={styles.closeMeta}>
+              {sprint.label} · {shortDate(sprint.plannedEnd)}
             </span>
-          </label>
+          </header>
 
-          <label className={styles.option}>
-            <input
-              type="radio"
-              name={`${groupId}-policy`}
-              value="carry_over"
-              checked={policy === 'carry_over'}
-              disabled={!carryAvailable}
-              onChange={() => setPolicy('carry_over')}
-            />
-            <span>
-              <strong>{sprintCopy.policyCarry}</strong>
-              <span className={styles.hint}>{sprintCopy.policyCarryHelp}</span>
-            </span>
-          </label>
+          <div className={styles.closeTiles}>
+            <div className={styles.closeTile}>
+              <span className={styles.closeTileLabel}>{sprintCopy.closeTileItems}</span>
+              <span className={styles.closeTileValue}>
+                {doneItems.length} <span>de {items.length}</span>
+              </span>
+            </div>
+            <div className={styles.closeTile}>
+              <span className={styles.closeTileLabel}>{sprintCopy.closeTileHours}</span>
+              <span className={styles.closeTileValue}>
+                {hoursText(doneHours)} h <span>de {hoursText(totalHours)} h</span>
+              </span>
+            </div>
+          </div>
 
-          {carryAvailable ? null : (
-            <p className={styles.hint}>
-              {windingDown ? sprintCopy.windingDownNoCreate : sprintCopy.noDraftForCarry}
-            </p>
-          )}
-
-          {carrying ? (
-            <label className={styles.field}>
-              <span className={styles.label}>{sprintCopy.nextSprintLabel}</span>
-              <select
-                className={styles.select}
-                value={nextId}
-                onChange={(event) => setChosenTarget(event.currentTarget.value)}
-              >
-                {targets.map((target) => (
-                  <option key={target.id} value={target.id}>
-                    {target.label} · {target.name}
-                  </option>
+          {openItems.length > 0 ? (
+            <section className={styles.closeOpen} aria-labelledby={`${selectId}-open`}>
+              <div className={styles.closeOpenHeader}>
+                <h3 id={`${selectId}-open`} className={styles.closeOpenTitle}>
+                  {sprintCopy.closeOpenItems(openItems.length)}
+                </h3>
+                <label className={styles.closeDestination}>
+                  <span className={styles.srOnly}>{sprintCopy.closeDestination}</span>
+                  <select
+                    id={selectId}
+                    className={styles.select}
+                    value={carrying ? `${CARRY_PREFIX}${selected}` : RETURN_VALUE}
+                    onChange={(event) => setChoice(event.currentTarget.value)}
+                  >
+                    <option value={RETURN_VALUE}>{sprintCopy.policyReturn}</option>
+                    {carryAvailable
+                      ? targets.map((target) => (
+                          <option key={target.id} value={`${CARRY_PREFIX}${target.id}`}>
+                            {sprintCopy.policyCarry}: {target.label} · {target.name}
+                          </option>
+                        ))
+                      : null}
+                  </select>
+                </label>
+              </div>
+              <ul className={styles.closeOpenList}>
+                {openItems.map((item) => (
+                  <li key={item.id} className={styles.closeOpenRow}>
+                    <span className={styles.closeKey}>{item.key}</span>
+                    <span className={styles.closeOpenName}>{item.title}</span>
+                    <span className={styles.closeKey}>{hoursText(item.estimatedHours ?? 0)} h</span>
+                  </li>
                 ))}
-              </select>
-            </label>
+              </ul>
+              <p className={styles.hint}>
+                {carrying ? sprintCopy.policyCarryHelp : sprintCopy.policyReturnHelp}
+              </p>
+              {carryAvailable ? null : (
+                <p className={styles.hint}>
+                  {windingDown ? sprintCopy.windingDownNoCreate : sprintCopy.noDraftForCarry}
+                </p>
+              )}
+            </section>
           ) : null}
-        </fieldset>
 
-        {error ? (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
-        ) : null}
+          {error ? (
+            <p role="alert" className={styles.error}>
+              {error}
+            </p>
+          ) : null}
 
-        <div className={styles.actions}>
-          <Button type="submit" variant="primary" disabled={confirmDisabled}>
-            {sprintCopy.closeConfirm}
-          </Button>
-          <Button type="button" onClick={onCancel} disabled={busy}>
-            {sprintCopy.cancel}
-          </Button>
+          <footer className={styles.closeFooter}>
+            <p className={styles.closeVelocity}>
+              {sprintCopy.closeVelocity(sprint.number, hoursText(doneHours))}
+            </p>
+            <Button type="button" onClick={onCancel} disabled={busy}>
+              {sprintCopy.cancel}
+            </Button>
+            <Button type="submit" variant="primary" disabled={confirmDisabled}>
+              {sprintCopy.closeConfirm}
+            </Button>
+          </footer>
         </div>
+        {retro}
       </form>
     </Modal>
   )

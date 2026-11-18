@@ -418,11 +418,13 @@ describe('Ativa: encerrar com as duas políticas', () => {
     await goTo(user, 'Ativa')
     await user.click(await screen.findByRole('button', { name: sprintCopy.close }))
     const dialog = screen.getByRole('dialog', { name: sprintCopy.closeTitle })
-    expect(within(dialog).getByText(sprintCopy.closeSummary(0, 2, 1))).toBeTruthy()
+    expect(within(dialog).getByText(sprintCopy.closeTileItems)).toBeTruthy()
     expect(within(dialog).getByText(sprintCopy.policyReturnHelp)).toBeTruthy()
     expect(
-      within(dialog).getByRole<HTMLInputElement>('radio', { name: /Devolver ao backlog/ }).checked,
-    ).toBe(true)
+      within(dialog).getByRole<HTMLSelectElement>('combobox', {
+        name: sprintCopy.closeDestination,
+      }).value,
+    ).toBe('return_to_backlog')
     await user.click(within(dialog).getByRole('button', { name: sprintCopy.closeConfirm }))
     await waitFor(() =>
       expect(close).toHaveBeenCalledWith({ sprintId: active.id, policy: 'return_to_backlog' }),
@@ -442,7 +444,11 @@ describe('Ativa: encerrar com as duas políticas', () => {
     await goTo(user, 'Ativa')
     await user.click(await screen.findByRole('button', { name: sprintCopy.close }))
     const dialog = screen.getByRole('dialog', { name: sprintCopy.closeTitle })
-    await user.click(within(dialog).getByRole('radio', { name: /Levar para a próxima sprint/ }))
+    const destination = within(dialog).getByRole('combobox', { name: sprintCopy.closeDestination })
+    await user.selectOptions(
+      destination,
+      within(dialog).getByRole('option', { name: /Levar para a próxima sprint/ }),
+    )
     expect(within(dialog).getByText(sprintCopy.policyCarryHelp)).toBeTruthy()
     await user.click(within(dialog).getByRole('button', { name: sprintCopy.closeConfirm }))
     await waitFor(() =>
@@ -464,11 +470,7 @@ describe('Ativa: encerrar com as duas políticas', () => {
     await goTo(user, 'Ativa')
     await user.click(await screen.findByRole('button', { name: sprintCopy.close }))
     const dialog = screen.getByRole('dialog', { name: sprintCopy.closeTitle })
-    expect(
-      within(dialog).getByRole<HTMLInputElement>('radio', {
-        name: /Levar para a próxima sprint/,
-      }).disabled,
-    ).toBe(true)
+    expect(within(dialog).queryByRole('option', { name: /Levar para a próxima sprint/ })).toBeNull()
     expect(within(dialog).getByText(sprintCopy.noDraftForCarry)).toBeTruthy()
   })
 })
@@ -598,11 +600,7 @@ describe('Módulo encerrando', () => {
     expect(screen.getByRole('button', { name: sprintCopy.removeItem('Em aberto') })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: sprintCopy.close }))
     const dialog = screen.getByRole('dialog', { name: sprintCopy.closeTitle })
-    expect(
-      within(dialog).getByRole<HTMLInputElement>('radio', {
-        name: /Levar para a próxima sprint/,
-      }).disabled,
-    ).toBe(true)
+    expect(within(dialog).queryByRole('option', { name: /Levar para a próxima sprint/ })).toBeNull()
     expect(within(dialog).getByText(sprintCopy.windingDownNoCreate)).toBeTruthy()
   })
 

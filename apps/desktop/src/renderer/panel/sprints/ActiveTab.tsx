@@ -3,7 +3,9 @@ import type { BurndownViewDto, SprintDto, TaskDto } from '@agilebox/contract'
 import { Button, EmptyState } from '@agilebox/ui'
 import { refusalMessage } from '../backlog/refusal-message'
 import type { PanelView } from '../layout/PanelShell'
+import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { CloseSprintDialog, type ClosePolicyChoice } from './CloseSprintDialog'
+import { SprintRetroPanel } from './SprintRetroPanel'
 import { SprintForm } from './SprintForm'
 import { BacklogPicker, hoursText } from './SprintItems'
 import { ActiveBoard } from './ActiveBoard'
@@ -65,6 +67,8 @@ export function ActiveTab({
   const allSprints = useSprintList(projectId)
   const update = useUpdateSprint()
   const close = useCloseSprint()
+  // Retro na tela de encerramento só com a ferramenta de review e retro (mesma regra da Agenda).
+  const retroVisible = useCapabilities().can('reviewRetro:screen')
   const items = useSprintItemMutations()
   const [editing, setEditing] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -294,6 +298,7 @@ export function ActiveTab({
           windingDown={windingDown}
           busy={close.isPending}
           error={closeError}
+          retro={retroVisible && sprint ? <SprintRetroPanel sprint={sprint} /> : undefined}
           onCancel={() => setClosing(false)}
           onConfirm={confirmClose}
         />
