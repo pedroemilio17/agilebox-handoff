@@ -5,9 +5,9 @@
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: var(--space-5);
+  gap: 14px;
   min-width: 0;
-  padding: var(--space-5) var(--space-6) var(--space-7);
+  padding: var(--space-4) var(--space-6) var(--space-6);
 }
 
 .header {
@@ -24,7 +24,7 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-title);
+  font-size: var(--font-size-heading);
   font-weight: 620;
   letter-spacing: var(--letter-spacing-display);
 }
@@ -64,21 +64,66 @@
 .segmented {
   display: inline-flex;
   padding: 3px;
-  border: var(--glass-group-border);
-  border-radius: var(--radius-button);
-  background: var(--glass-control);
+  border: 1px solid var(--color-hairline);
+  border-radius: 9px;
+  background: var(--surface-panel);
 }
 
 .segment {
-  min-height: var(--size-touch-target);
-  padding: 0 var(--space-4);
+  height: 32px;
+  padding: 0 12px;
   border: 0;
-  border-radius: var(--radius-chip);
+  border-radius: 7px;
   background: transparent;
   color: var(--color-text-muted);
   font: inherit;
-  font-size: var(--font-size-body-small);
+  font-size: 12.5px;
   cursor: pointer;
+}
+
+/* Interruptor da linha de base: 30 x 18 px, verde quando ligado (design). */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-button);
+  background: var(--surface-panel);
+  color: var(--color-text-body);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.track {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--color-switch-off);
+}
+
+.track[data-on='true'] {
+  background: var(--color-switch-on);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-on-primary);
+  transition: left var(--motion-duration-control) var(--ease-ios);
+}
+
+.track[data-on='true'] .knob {
+  left: 14px;
 }
 
 .segment[aria-pressed='true'] {
@@ -98,12 +143,12 @@
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
   color: var(--color-text-muted);
-  font-size: var(--font-size-body-small);
+  font-size: 12px;
 }
 
 .legend li {
@@ -122,28 +167,20 @@
 .swatchLine {
   display: inline-block;
   width: 18px;
-  height: 2px;
-  background: var(--color-text-muted);
-}
-
-.legend li:last-child .swatchLine {
-  background: var(--color-signal-warning);
+  height: 3px;
+  background: var(--color-text-placeholder);
 }
 
 .swatchInProgress {
-  background: var(--color-status-desenvolvendo);
+  background: #3b5a86;
 }
 
 .swatchDone {
-  background: var(--color-status-concluido);
-}
-
-.swatchFuture {
-  background: var(--color-status-planejamento);
+  background: #2f5a43;
 }
 
 .swatchLate {
-  background: var(--color-signal-danger);
+  background: #6a5530;
 }
 
 .swatchDiamond {
@@ -156,14 +193,14 @@
 .swatchToday {
   width: 2px;
   height: 12px;
-  background: var(--color-primary-bg);
+  background: var(--color-accent-text);
 }
 
 /* Cartão do Gantt: rola na horizontal; a coluna de nomes fica fixa. */
 .ganttCard {
-  border: var(--glass-group-border);
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
-  background: var(--glass-group);
+  background: var(--surface-panel);
   overflow: hidden;
 }
 
@@ -197,11 +234,17 @@
   gap: var(--space-2);
   min-width: 0;
   padding: 0 var(--space-4);
-  background: var(--surface-card);
-  font-size: var(--font-size-body-small);
+  background: var(--surface-panel);
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.nameDiamond {
+  flex: none;
+  color: var(--color-text-primary);
+  font-size: 9px;
 }
 
 .nameHead {
@@ -214,14 +257,15 @@
 }
 
 .nameTask {
-  padding-left: var(--space-6);
+  padding-left: 34px;
 }
 
 .nameTaskIndent {
-  padding-left: calc(var(--space-6) + var(--space-3));
+  padding-left: 34px;
 }
 
 .nameGroup {
+  font-size: 13.5px;
   font-weight: 600;
 }
 
@@ -232,13 +276,14 @@
 }
 
 .code {
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
-  background: var(--glass-control);
-  color: var(--color-text-muted);
+  color: var(--color-text-subtle);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-chip);
-  line-height: 20px;
+  font-size: 11px;
+}
+
+/* Separador "1.1 · Entrega": decorativo, fora do texto lido pelo leitor de tela. */
+.code::after {
+  content: ' ·';
 }
 
 .axis {
@@ -248,7 +293,7 @@
 
 .axisLabel {
   position: absolute;
-  top: 12px;
+  top: 13px;
   padding-left: var(--space-1);
   border-left: 1px solid var(--color-hairline-strong);
   color: var(--color-text-muted);
@@ -258,12 +303,12 @@
 }
 
 .ganttRow {
-  height: 40px;
+  height: 38px;
   border-bottom: 1px solid var(--color-hairline);
 }
 
 .groupRow {
-  background: var(--glass-control);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .timeline {
@@ -273,27 +318,57 @@
 
 .bar {
   position: absolute;
-  top: 12px;
+  top: 9px;
   height: 16px;
   min-width: 4px;
   border-radius: 4px;
-  background: var(--color-status-afazer);
+  background: #2a2932;
 }
 
 .bar[data-state='done'] {
-  background: var(--color-status-concluido);
+  background: #2f5a43;
 }
 
 .bar[data-state='current'] {
-  background: var(--color-status-desenvolvendo);
-}
-
-.bar[data-state='future'] {
-  background: var(--color-status-planejamento);
+  background: #3b5a86;
 }
 
 .bar[data-state='late'] {
-  background: var(--color-signal-danger);
+  background: #6a5530;
+}
+
+/* Barra fina da entrega: do início ao prazo das tarefas dela. */
+.groupBar {
+  position: absolute;
+  top: 15px;
+  height: 8px;
+  border-radius: 4px;
+  background: #34323d;
+}
+
+/* Linha da base por baixo da barra: onde a tarefa devia estar. */
+.baselineLine {
+  position: absolute;
+  top: 27px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-text-placeholder);
+}
+
+/* Rótulo à direita da barra: progresso, ou o atraso frente à base. */
+.barLabel {
+  position: absolute;
+  top: 9px;
+  height: 16px;
+  padding-left: 12px;
+  color: var(--color-text-placeholder);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.barLabel[data-tone='late'] {
+  color: var(--color-signal-warning-text);
 }
 
 .noDates {
@@ -306,10 +381,10 @@
 
 .milestone {
   position: absolute;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
+  top: 12px;
+  width: 13px;
+  height: 13px;
+  margin: 0 0 0 -6px;
   transform: rotate(45deg);
   background: var(--color-text-primary);
 }
@@ -317,9 +392,19 @@
 .milestoneLabel {
   position: absolute;
   top: 10px;
-  padding-left: var(--space-3);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-chip);
+  padding-left: 12px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.todayLabel {
+  position: absolute;
+  top: 2px;
+  margin-left: 6px;
+  color: var(--color-accent-text);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
   white-space: nowrap;
 }
 
@@ -381,27 +466,39 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-signal-warning);
-  border-radius: var(--radius-group);
-  background: var(--color-signal-warning-bg);
-  color: var(--color-signal-warning-text);
-  font-size: var(--font-size-body-small);
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(242, 180, 90, 0.25);
+  border-radius: 12px;
+  background: rgba(242, 180, 90, 0.08);
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.alertText {
+  flex: 1;
+  min-width: 280px;
+  margin: 0;
+  font-size: 13px;
 }
 
 .alertTag {
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 7px;
   background: var(--color-signal-warning-bg);
-  font-weight: 600;
-  line-height: 22px;
+  color: var(--color-signal-warning-text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .card {
-  border: var(--glass-group-border);
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-group);
-  background: var(--glass-group);
+  background: var(--surface-panel);
   padding: var(--space-4);
   display: grid;
   gap: var(--space-3);
@@ -556,7 +653,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .segment,
-  .button {
+  .button,
+  .knob {
     transition: none;
   }
 }

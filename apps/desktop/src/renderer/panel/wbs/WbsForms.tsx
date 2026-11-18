@@ -25,7 +25,9 @@ export const wbsCopy = {
   tipComplete: 'Nada fica de fora',
   tipCompleteText:
     'Tudo o que o projeto entrega precisa caber em alguma entrega. O que não couber, não está no escopo.',
-  enterHint: 'Enter cria e vai para o próximo',
+  enterHint: 'Enter para a próxima',
+  exampleTitle: 'Exemplo · implantação de sistema',
+  exampleNote: 'Nível 1 são as entregas. O último nível vira tarefa no quadro e no cronograma.',
   done: 'Fechar passo',
 } as const
 
@@ -159,7 +161,11 @@ export function GuidedStart({ onCreate, onDone }: GuidedStartProps) {
         {drafts.map((draft, index) => {
           const label = guidedFieldLabel(index)
           return (
-            <label key={index} className={styles.startField}>
+            <label
+              key={index}
+              className={styles.startField}
+              data-first={index === 0 ? 'true' : undefined}
+            >
               <span className={styles.startNumber} aria-hidden="true">
                 {index + 1}
               </span>
@@ -202,5 +208,43 @@ export function GuidedStart({ onCreate, onDone }: GuidedStartProps) {
         ) : null}
       </div>
     </section>
+  )
+}
+
+/** Exemplo de EAP ao lado do passo 1 (estado vazio). Texto fixo do design: não lê o projeto. */
+const EXAMPLE_ROWS: readonly {
+  readonly code: string
+  readonly title: string
+  readonly level: 0 | 1
+}[] = [
+  { code: '1', title: 'Levantamento', level: 0 },
+  { code: '1.1', title: 'Entrevistas com as áreas', level: 1 },
+  { code: '1.2', title: 'Mapa de processos', level: 1 },
+  { code: '2', title: 'Sistema configurado', level: 0 },
+  { code: '2.1', title: 'Cadastros', level: 1 },
+  { code: '2.2', title: 'Módulo financeiro', level: 1 },
+  { code: '3', title: 'Dados migrados', level: 0 },
+  { code: '4', title: 'Usuários treinados', level: 0 },
+  { code: '4.1', title: 'Turmas de treinamento', level: 1 },
+  { code: '4.2', title: 'Manual de uso', level: 1 },
+]
+
+export function GuidedExample() {
+  const headingId = useId()
+  return (
+    <aside aria-labelledby={headingId} className={styles.example}>
+      <h2 id={headingId} className={styles.exampleTitle}>
+        {wbsCopy.exampleTitle}
+      </h2>
+      <ol className={styles.exampleList}>
+        {EXAMPLE_ROWS.map((row) => (
+          <li key={row.code} className={styles.exampleRow} data-level={row.level}>
+            <span className={styles.exampleCode}>{row.code}</span>
+            {row.title}
+          </li>
+        ))}
+      </ol>
+      <p className={styles.exampleNote}>{wbsCopy.exampleNote}</p>
+    </aside>
   )
 }

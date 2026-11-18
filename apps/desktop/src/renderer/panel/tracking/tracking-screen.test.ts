@@ -30,7 +30,7 @@ describe('valores dos cartões', () => {
   it('horas com vírgula pt-BR e a previsão no texto', () => {
     expect(hoursValue(214)).toBe('214 h')
     expect(hoursValue(12.5)).toBe('12,5 h')
-    expect(hoursCaption(590)).toBe('de 590 h previstas')
+    expect(hoursCaption(590)).toBe('de 590 h previstas no projeto')
   })
 
   it('custo em reais, e "—" quando não há valor (quem não é gestor)', () => {

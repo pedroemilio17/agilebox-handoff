@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   canHaveSubdeliverable,
+  dayMonthText,
+  overdueDays,
+  overdueText,
   collapseToggleLabel,
   collapseAll,
   formatCost,
@@ -153,5 +156,24 @@ describe('collapseToggleLabel', () => {
     expect(collapseToggleLabel(rows, new Set())).toBe('Recolher tudo')
     expect(collapseToggleLabel(rows, new Set([A]))).toBe('Recolher tudo')
     expect(collapseToggleLabel(rows, collapseAll(rows))).toBe('Expandir tudo')
+  })
+})
+
+describe('atraso e datas curtas da EAP', () => {
+  it('conta os dias de atraso só de tarefa sem concluir com prazo antes de hoje', () => {
+    expect(overdueDays('2026-11-11', false, '2026-11-18')).toBe(7)
+    expect(overdueDays('2026-11-17', false, '2026-11-18')).toBe(1)
+    expect(overdueDays('2026-11-18', false, '2026-11-18')).toBeNull()
+    expect(overdueDays('2026-11-11', true, '2026-11-18')).toBeNull()
+    expect(overdueDays(null, false, '2026-11-18')).toBeNull()
+  })
+
+  it('escreve o aviso no singular e no plural', () => {
+    expect(overdueText(1)).toBe('1 dia atrás')
+    expect(overdueText(7)).toBe('7 dias atrás')
+  })
+
+  it('mostra dia e mês da data', () => {
+    expect(dayMonthText('2026-12-18')).toBe('18/12')
   })
 })

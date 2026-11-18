@@ -1,7 +1,7 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { TrackingViewDto } from '@agilebox/contract'
+import type { RiskListItemDto, TrackingViewDto } from '@agilebox/contract'
 import { getManifest } from '@agilebox/core'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { renderPanel } from '../../shared/testing/render-panel'
@@ -108,7 +108,7 @@ describe('TrackingView', () => {
 
     const hours = card('Horas lançadas')
     expect(within(hours).getByText('214 h')).toBeTruthy()
-    expect(within(hours).getByText('de 590 h previstas')).toBeTruthy()
+    expect(within(hours).getByText('de 590 h previstas no projeto')).toBeTruthy()
 
     const cost = card('Custo realizado')
     expect(within(cost).getByText(/^R\$\s9\.630,00$/)).toBeTruthy()
@@ -211,3 +211,107 @@ describe('TrackingView', () => {
     expect(await screen.findByRole('heading', { name: 'Acompanhamento', level: 2 })).toBeTruthy()
   })
 })
+
+describe('Acompanhamento: linha de base e riscos na mesma tela', () => {
+  it('a linha de base mostra quando foi tirada, por quem e as tarefas fora dela, e leva à tela própria', async () => {
+    const user = userEvent.setup()
+    const api = createFakeApi()
+    vi.spyOn(api.tracking, 'get').mockResolvedValue(view())
+    vi.spyOn(api.baseline, 'get').mockResolvedValue({
+      projectId: PROJECT_ID,
+      canTake: true,
+      costEnabled: false,
+      costVisible: false,
+      baseline: {
+        id: '01J8Y4G2XK8Z1S6M3Q9W0FGHB0',
+        name: 'Linha de base de 03/11/2026',
+        takenAt: '2026-11-03T12:00:00.000Z',
+        takenByName: 'Pedro',
+      },
+      summary: null,
+      tasks: [
+        {
+          taskId: '01J8Y4G2XK8Z1S6M3Q9W0FGHB1',
+          title: 'Integração bancária',
+          status: 'late',
+          delayDays: 7,
+          startDelayDays: 0,
+          endDelayDays: 7,
+          plannedStartsOn: null,
+          plannedEndsOn: null,
+          currentStartsOn: null,
+          currentEndsOn: null,
+          hoursDelta: null,
+          costDelta: null,
+        },
+      ],
+    })
+    const onNavigate = vi.fn()
+    renderPanel(
+      <TrackingView projectId={PROJECT_ID} projectName="Implantação ERP" onNavigate={onNavigate} />,
+      { api },
+    )
+    expect(await screen.findByText(/Tirada em/)).toBeTruthy()
+    expect(screen.getByText(/1 tarefa fora da base: Integração bancária, \+7 dias\./)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Tirar nova foto' }))
+    expect(onNavigate).toHaveBeenCalledWith('baseline')
+  })
+
+  it('os riscos aparecem na matriz com o código da lista, a resposta e o dono', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.tracking, 'get').mockResolvedValue(view())
+    vi.spyOn(api.risks, 'list').mockResolvedValue({
+      projectId: PROJECT_ID,
+      canEdit: true,
+      risks: [
+        riskItem('01J8Y4G2XK8Z1S6M3Q9W0FGHR1', {
+          title: 'Banco atrasar a API',
+          probability: 3,
+          impact: 3,
+          response: 'Testar com arquivo de remessa',
+          ownerName: 'Ana Souza',
+        }),
+        riskItem('01J8Y4G2XK8Z1S6M3Q9W0FGHR2', {
+          title: 'Cadastros duplicados',
+          probability: 2,
+          impact: 2,
+          response: null,
+          ownerName: null,
+        }),
+      ],
+    })
+    renderPanel(<TrackingView projectId={PROJECT_ID} projectName="Implantação ERP" />, { api })
+    const matrix = await screen.findByRole('table', {
+      name: 'Matriz de riscos por probabilidade e impacto',
+    })
+    expect(within(matrix).getByText('R1')).toBeTruthy()
+    expect(within(matrix).getByText('R2')).toBeTruthy()
+    expect(screen.getByText('Resposta: Testar com arquivo de remessa')).toBeTruthy()
+    expect(screen.getByText('Resposta: Sem resposta definida')).toBeTruthy()
+    expect(screen.getByText('AS')).toBeTruthy()
+  })
+})
+
+function riskItem(
+  id: string,
+  overrides: {
+    readonly title: string
+    readonly probability: 1 | 2 | 3
+    readonly impact: 1 | 2 | 3
+    readonly response: string | null
+    readonly ownerName: string | null
+  },
+): RiskListItemDto {
+  return {
+    id,
+    projectId: PROJECT_ID,
+    description: null,
+    ownerId: null,
+    deliverableId: null,
+    deliverableTitle: null,
+    status: 'open',
+    createdAt: '2026-11-01T12:00:00.000Z',
+    updatedAt: '2026-11-01T12:00:00.000Z',
+    ...overrides,
+  }
+}

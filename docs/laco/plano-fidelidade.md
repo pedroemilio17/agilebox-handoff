@@ -23,7 +23,7 @@ Os `.dc.html` são só referência visual: ler o markup e o CSS inline para extr
 - [ ] F2.. Auditoria e ajuste tela a tela contra o canvas, na ordem 01, 02, 03, 04, 05, 06, 07 ... 20. Cada passo: comparar markup do `.dc.html` com a tela do app (medidas, textos, estados), listar divergências, corrigir, atualizar testes sem enfraquecê-los.
   - [x] 01 wizard · [x] 02 recomendação (estrutura e medidas; textos do core em F2a) · [x] 03 módulos (inclui painel "Proposta" lateral, que depende da regra "gestor propõe, equipe aceita" ainda indefinida: registrar, não inventar) · [x] 04 primeiros passos · [x] 05 botão ? · [x] 06 boas-vindas (partes sem dado no backend ficaram em pendências)
   - [x] 07 planejar sprint · [x] 08 sprint ativa · [x] 09 critério de pronto ao concluir · [x] 10 burndown · [x] 11 encerrar sprint/retro · [x] 12 comparação (quadro explicativo do ADR, não é tela do app: nada a implementar)
-  - [ ] 13 EAP · [ ] 14 cronograma · [ ] 15 acompanhamento · [ ] 16 guia tradicional · [ ] 17 híbrido plano · [ ] 18 híbrido sprint
+  - [x] 13 EAP · [x] 14 cronograma · [x] 15 acompanhamento · [x] 16 guia tradicional (parcial: trilha de 6 passos do design pendente, ver pendências) · [ ] 17 híbrido plano · [ ] 18 híbrido sprint
   - [ ] 19 dashboard do gestor · [ ] 20 atualizações filtradas
 
 ## Regras

@@ -323,3 +323,73 @@ describe('estados', () => {
     expect(screen.getAllByText('Configuração').length).toBeGreaterThan(0)
   })
 })
+
+describe('linha de base no cronograma', () => {
+  it('mostra o interruptor com a data da foto e marca o atraso frente à base', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.schedule, 'get').mockResolvedValue(sampleView())
+    vi.spyOn(api.baseline, 'get').mockResolvedValue({
+      projectId: SCHEDULE_PROJECT,
+      canTake: true,
+      costEnabled: false,
+      costVisible: false,
+      baseline: {
+        id: wbsId('B1'),
+        name: 'Linha de base de 03/11/2026',
+        takenAt: '2026-11-03T12:00:00.000Z',
+        takenByName: 'Pedro',
+      },
+      summary: null,
+      tasks: [
+        {
+          taskId: CADASTRO,
+          title: 'Cadastro de produtos',
+          status: 'late',
+          delayDays: 7,
+          startDelayDays: 0,
+          endDelayDays: 7,
+          plannedStartsOn: '2026-11-02',
+          plannedEndsOn: '2026-11-13',
+          currentStartsOn: '2026-11-02',
+          currentEndsOn: '2026-11-20',
+          hoursDelta: null,
+          costDelta: null,
+        },
+      ],
+    })
+    renderPanel(<ScheduleView projectId={SCHEDULE_PROJECT} projectName="Implantação ERP" />, {
+      api,
+    })
+    const toggle = await screen.findByRole('switch', { name: 'Linha de base de 03/11' })
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByText('+7 dias')).toBeTruthy()
+    expect(
+      screen
+        .getByRole('img', { name: 'Cadastro de produtos: início 02/11, prazo 20/11' })
+        .getAttribute('data-state'),
+    ).toBe('late')
+
+    await userEvent.setup().click(toggle)
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByText('+7 dias')).toBeNull()
+  })
+
+  it('sem foto, não mostra o interruptor', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.schedule, 'get').mockResolvedValue(sampleView())
+    vi.spyOn(api.baseline, 'get').mockResolvedValue({
+      projectId: SCHEDULE_PROJECT,
+      canTake: true,
+      costEnabled: false,
+      costVisible: false,
+      baseline: null,
+      summary: null,
+      tasks: [],
+    })
+    renderPanel(<ScheduleView projectId={SCHEDULE_PROJECT} projectName="Implantação ERP" />, {
+      api,
+    })
+    await screen.findByRole('img', { name: 'Cadastro de produtos: início 02/11, prazo 20/11' })
+    expect(screen.queryByRole('switch')).toBeNull()
+  })
+})

@@ -145,10 +145,14 @@ export type BarState = 'done' | 'late' | 'current' | 'future'
  * Estado da barra: concluída; atrasada (prazo passou e não está concluída); em andamento (hoje entre
  * início e prazo); futura (o resto). Sem as duas datas, não há estado.
  */
-export function barState(task: ScheduleTaskDto, today: string): BarState | null {
+export function barState(
+  task: ScheduleTaskDto,
+  today: string,
+  behindBaseline = false,
+): BarState | null {
   if (!hasBar(task)) return null
   if (task.done) return 'done'
-  if (task.deadline < today) return 'late'
+  if (behindBaseline || task.deadline < today) return 'late'
   if (task.startsOn <= today && today <= task.deadline) return 'current'
   return 'future'
 }
@@ -170,6 +174,21 @@ export function barLabel(task: ScheduleTaskDto): string {
 export function datesText(task: ScheduleTaskDto): string {
   if (!hasBar(task)) return 'sem datas'
   return `${shortDate(task.startsOn)} → ${shortDate(task.deadline)}`
+}
+
+/** Início menor e prazo maior entre as tarefas de um grupo com as duas datas: a barra do grupo. */
+export function groupSpan(
+  tasks: readonly ScheduleTaskDto[],
+): { readonly start: string; readonly end: string } | null {
+  const dated = tasks.filter(hasBar)
+  if (dated.length === 0) return null
+  let start = dated[0]?.startsOn ?? ''
+  let end = dated[0]?.deadline ?? ''
+  for (const task of dated) {
+    if (task.startsOn < start) start = task.startsOn
+    if (task.deadline > end) end = task.deadline
+  }
+  return { start, end }
 }
 
 export interface ScheduleGroup {
@@ -364,11 +383,19 @@ export const DAY_WIDTH: Record<ScheduleScale, number> = {
 }
 
 /** Altura de cada linha do Gantt e largura da coluna de nomes, em pixels (só layout). */
-export const ROW_HEIGHT = 40
+export const ROW_HEIGHT = 38
 export const NAME_COLUMN_WIDTH = 280
 
 /** "dd/mm/aaaa" para o intervalo do cabeçalho. */
 export function fullDate(iso: string): string {
   const [year = '1970', month = '01', day = '01'] = iso.split('-')
   return `${day}/${month}/${year}`
+}
+
+/** Dia e mês de um instante, no fuso do computador: "03/11". Usado na foto da linha de base. */
+export function baselineDayMonth(takenAt: string): string {
+  const date = new Date(takenAt)
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  return `${dd}/${mm}`
 }

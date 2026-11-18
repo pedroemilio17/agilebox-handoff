@@ -247,3 +247,27 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
 - 10 Burndown: cabeçalho "Sprint N · dia X de Y", 4 cartões do design onde há dado, gráfico 760x300 com previsão de fim/hoje, velocidade em colunas com média. NÃO feito (sem regra/dado): cartões "Ritmo real", "Previsão", "Para fechar no dia 10", barras "Comprometido" por sprint, "O que está segurando". DECIDIR: regras de ritmo/previsão e horas comprometidas por sprint no DTO; eixo X em data (como está) ou número do dia (design)?
 - 11 Encerrar sprint e retro: diálogo em duas colunas (resumo, itens abertos, destino, velocidade registrada; retro com os combinados da sprint). NÃO feito: "A meta foi atingida? Sim/Em parte/Não" (sem persistência), destino por item (política é por sprint), colunas Manter/Melhorar/Tentar com votos, "ações viram tarefa no backlog", "4 de 4 participaram". DECIDIR cada uma.
 - Modal em `packages/ui` ganhou `surface` (glass) e `size` (wide). O véu do Modal escurece a janela inteira; o design é painel flutuante sem véu. Textos novos meus: "Falta/Faltam N itens para concluir.", "Nenhuma retrospectiva agendada para esta sprint." e variações.
+
+## Telas 13 a 16, tradicional (F2, telas 13 a 16 do design)
+
+- Feito: EAP (13) em tabela com códigos, barras, marcos com data, aviso de atraso e resumo; cronograma (14) com interruptor de linha de base, barras de atraso frente à base e legenda do design; acompanhamento (15) unindo marcos, linha de base e riscos (matriz 3 × 3 e lista); primeiros passos da EAP vazia (16) com o exemplo ao lado do passo 1.
+- DECIDIR: a tela 15 mostra marcos, linha de base e riscos como leitura, e os botões "Tirar nova foto" e "Novo risco" abrem as telas próprias. As telas Marcos, Riscos e Linha de base continuam na barra lateral. O design 13 a 16 não lista essas três entradas na barra: manter ou sair da barra?
+- DECIDIR: as ações de linha da EAP (subir, descer, renomear, subentrega, remover) aparecem ao passar o mouse ou focar a linha, numa barra flutuante. O design não mostra ações; a alternativa é deixá-las sempre visíveis (a tabela fica mais larga).
+- DECIDIR: "Nova entrega" continua com o "+" (pedido do item 3). O design mostra o botão sem o ícone.
+- DECIDIR: a linha de base vale como atraso quando a tarefa atrasou frente à foto (âmbar), e também quando o prazo passou sem concluir. Antes, o atraso por prazo era vermelho; o design só tem a legenda "Atrasada em relação à base". Manter o âmbar para os dois casos?
+- DECIDIR: "Atrasada N dias" usa o prazo (tarefa sem concluir com prazo antes de hoje). Não há um atraso por tarefa separado disso.
+- DECIDIR: os riscos "R1", "R2" são a posição na lista (ordenada por pontuação), então mudam quando a pontuação muda. Precisa de código fixo por risco? Riscos encerrados entram na matriz e na lista.
+- DECIDIR: a legenda do cronograma perdeu "Futura" e "Dependência com conflito", como no design; o conflito continua no aviso "Atenção" abaixo do gráfico.
+- Não implementado (sem dado ou regra no app):
+  - EAP: "Período" (início e fim) de entrega e tarefa. O WBS não traz datas de início. Usar o cronograma para isso marcaria o passo "Acompanhe pelo cronograma" do guia, então não foi feito.
+  - EAP: "Prazo final" do projeto. Não existe data de fim do projeto (o cronograma só tem o intervalo das tarefas).
+  - EAP e cronograma: progresso parcial de tarefa (%). O app só tem 0% e 100%; a tarefa mostra o estado.
+  - EAP: passo do guia "Importar de planilha". Sem a funcionalidade.
+  - EAP: "Projeto novo · Tradicional" no cabeçalho vazio. Não há conceito de "projeto novo" na tela.
+  - Guia da EAP vazia: o design diz que o passo se conclui com 2 entregas; a regra do servidor é 1 entrega. O texto ficou com a regra atual. Trilha de 6 passos do tradicional: ver a pendência "trilha do design da tela 16" da seção Guia.
+  - Acompanhamento: "Exportar relatório de status".
+  - Acompanhamento: "a base previa 38% até hoje · −4 pts" e o gráfico de avanço planejado × real. Falta série semanal na linha de base.
+  - Acompanhamento: "quem aprova cada um" nos marcos e "Aprova: Diretoria (entidade)". Não há aprovadores por marco; o app mostra o critério do marco no lugar.
+  - Acompanhamento: "Propor nova base" e "Uma nova base passa pelo aceite da equipe". Não há aceite; o app tira a foto direto (só gestor) e o botão diz "Tirar nova foto".
+- Textos do design que mudaram: "Enter para a próxima" (no lugar de "Enter cria e vai para o próximo"), "Horas: de 590 h previstas no projeto", a frase da EAP "...aparecem no quadro e no cronograma".
+- CONFERIR na tela: 1280 e 1440 px, tabela da EAP com ações flutuantes, matriz de riscos e cores de calor, interruptor da linha de base, rolagem da raiz das quatro telas.

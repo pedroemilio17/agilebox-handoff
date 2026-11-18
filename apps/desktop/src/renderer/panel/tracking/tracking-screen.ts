@@ -26,6 +26,22 @@ export const trackingCopy = {
   noMilestones: 'Nenhum marco ainda.',
   openMilestones: 'Abrir os marcos',
   costOnlyManager: 'Só o gestor vê os valores',
+  noOutsideBaseline: 'Nenhuma tarefa fora da base.',
+  noBaseline: 'Nenhuma linha de base ainda.',
+  takenBy: 'Tirada em',
+  takenFallback: 'sem nome',
+  baseline: 'Linha de base',
+  takeBaseline: 'Tirar nova foto',
+  risks: 'Riscos',
+  newRisk: 'Novo risco',
+  noRisks: 'Nenhum risco cadastrado.',
+  riskResponse: 'Resposta',
+  noResponse: 'Sem resposta definida',
+  riskMatrixLabel: 'Matriz de riscos por probabilidade e impacto',
+  riskListLabel: 'Lista de riscos',
+  noOwner: 'Sem dono',
+  probabilityRows: ['Prob. alta', 'média', 'baixa'],
+  impactColumns: ['Impacto baixo', 'médio', 'alto'],
   deliverable: 'Entrega',
   criterion: 'Critério',
   tasksDone: 'tarefas concluídas',
@@ -71,13 +87,13 @@ export function formatNumber(value: number): string {
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
 }
 
-/** "214 h" e "de 590 h previstas". */
+/** "214 h" e "de 590 h previstas no projeto". */
 export function hoursValue(logged: number): string {
   return `${formatNumber(logged)} h`
 }
 
 export function hoursCaption(planned: number): string {
-  return `de ${formatNumber(planned)} h previstas`
+  return `de ${formatNumber(planned)} h previstas no projeto`
 }
 
 /** Custo realizado, ou "—" quando quem lê não é gestor (valor nulo). */
@@ -107,4 +123,46 @@ export function nextMilestoneWhen(dueOn: string, daysLeft: number): string {
 /** Concluído de 0 a 100, com o texto "X de Y tarefas concluídas". */
 export function progressCaption(done: number, total: number): string {
   return `${done} de ${total} ${trackingCopy.tasksDone}`
+}
+
+/** Código curto do risco na matriz e na lista: "R1", "R2"... pela posição na ordem da pontuação. */
+export function riskCode(index: number): string {
+  return `R${index + 1}`
+}
+
+/**
+ * Nível de calor da célula da matriz (0 a 3) a partir da pontuação probabilidade × impacto: 9 é o
+ * mais quente, 1 e 2 ficam sem cor. A cor é reforço; a lista traz a faixa em texto.
+ */
+export function riskHeat(score: number): 0 | 1 | 2 | 3 {
+  if (score >= 9) return 3
+  if (score >= 6) return 2
+  if (score >= 3) return 1
+  return 0
+}
+
+/** Dia e mês do momento da foto, no fuso do computador: "03/11". */
+export function takenDayMonth(takenAt: string): string {
+  const date = new Date(takenAt)
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  return `${dd}/${mm}`
+}
+
+/**
+ * Frase das tarefas fora da linha de base: "1 tarefa fora da base: Integração bancária, +7 dias.".
+ * Sem nenhuma atrasada, diz isso.
+ */
+export function outsideBaselineText(
+  late: readonly { readonly title: string; readonly delayDays: number | null }[],
+): string {
+  if (late.length === 0) return trackingCopy.noOutsideBaseline
+  const count = late.length === 1 ? 'tarefa fora da base' : 'tarefas fora da base'
+  const items = late
+    .map((task) => {
+      const days = task.delayDays ?? 0
+      return `${task.title}, +${days} ${days === 1 ? 'dia' : 'dias'}`
+    })
+    .join('; ')
+  return `${late.length} ${count}: ${items}.`
 }
