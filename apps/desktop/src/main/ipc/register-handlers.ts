@@ -198,6 +198,7 @@ export function registerHandlers(
   register('schedule.get', (context, input) => useCases.schedule.get.execute(context, input))
   register('tracking.get', (context, input) => useCases.tracking.get.execute(context, input))
   register('burndown.get', (context, input) => useCases.burndown.get.execute(context, input))
+  register('flowMetrics.get', (context, input) => useCases.flowMetrics.get.execute(context, input))
   register('schedule.addDependency', (context, input) =>
     useCases.schedule.addDependency.execute(context, input),
   )

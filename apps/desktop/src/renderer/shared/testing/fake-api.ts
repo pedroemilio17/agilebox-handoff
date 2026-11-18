@@ -8,6 +8,7 @@ import {
   type MilestonesListDto,
   type ScheduleViewDto,
   type BurndownViewDto,
+  type FlowMetricsViewDto,
   type TrackingViewDto,
   type OrganizationModulesViewDto,
   type ProjectModulesViewDto,
@@ -129,6 +130,20 @@ export function emptyBurndownView(projectId: string): BurndownViewDto {
   }
 }
 
+/** Métricas de fluxo vazias: sem tarefa concluída, sem médias e sem semanas. */
+export function emptyFlowMetricsView(projectId: string): FlowMetricsViewDto {
+  return {
+    projectId,
+    today: '2026-01-02',
+    windowStart: '2025-11-10',
+    windowEnd: '2026-01-05',
+    leadDays: null,
+    cycleDays: null,
+    completed: 0,
+    weeks: [],
+  }
+}
+
 /** Acompanhamento vazio e sem custo: o padrão neutro dos testes (sem semana, sem marcos, sem valores). */
 export function emptyTrackingView(projectId: string): TrackingViewDto {
   return {
@@ -190,6 +205,11 @@ export function createFakeApi(overrides: Partial<AgileBoxApi> = {}): AgileBoxApi
       ...api.burndown,
       get: (input) => Promise.resolve(emptyBurndownView(input.projectId)),
       ...overrides.burndown,
+    },
+    flowMetrics: {
+      ...api.flowMetrics,
+      get: (input) => Promise.resolve(emptyFlowMetricsView(input.projectId)),
+      ...overrides.flowMetrics,
     },
     impediments: { ...api.impediments, ...overrides.impediments },
     sprints: { ...api.sprints, ...overrides.sprints },

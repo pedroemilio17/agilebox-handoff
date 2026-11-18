@@ -5,7 +5,7 @@ import {
   toDateOnly,
   flowWeeks,
   flowMetrics,
-  flowSnapshot,
+  flowSeries,
   isStaleTask,
   isOverdueTask,
   moduleUseRefusal,
@@ -127,14 +127,6 @@ export class GetDashboard {
     now: string,
   ): FlowInsights {
     const current = flowMetrics(tasks, events, weeks[5]!, now)
-    return {
-      ...current,
-      weeks: weeks.map((week, index) => {
-        const end = new Date(`${week.endExclusive}T00:00:00`)
-        const at = index === weeks.length - 1 ? now : new Date(end.getTime() - 1).toISOString()
-        const snapshot = index === weeks.length - 1 ? tasks : flowSnapshot(tasks, events, at)
-        return { start: week.start, ...flowMetrics(snapshot, events, week, at) }
-      }),
-    }
+    return { ...current, weeks: flowSeries(tasks, events, weeks, now) }
   }
 }

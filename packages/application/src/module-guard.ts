@@ -239,6 +239,8 @@ export const USE_CASE_MODULES = {
   'tracking.get': { module: 'schedule', project: { from: 'projectId' } },
   // Burndown e velocidade (ADR-10): leitura do projeto, no módulo `burndown` (exige sprints e horas).
   'burndown.get': { module: 'burndown', project: { from: 'projectId' } },
+  // Métricas de fluxo (ADR-10): leitura do projeto, no módulo `flowMetrics` (lead time, ciclo e vazão).
+  'flowMetrics.get': { module: 'flowMetrics', project: { from: 'projectId' } },
 } as const satisfies Record<string, ModuleUsePolicy>
 
 /** Caminho de um caso de uso registrado, no formato de `USE_CASE_MODULES` (ex.: `tasks.create`). */

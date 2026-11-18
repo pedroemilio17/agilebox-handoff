@@ -108,3 +108,9 @@
 ## Rolagem das telas
 
 - CONFERIR: telas novas (Módulos, EAP, Marcos, Cronograma, Acompanhamento, Burndown, Ajustes) não rolavam porque a raiz `.view` não tinha `overflow-y: auto`; adicionei (como Backlog/Dashboard já faziam). Verificado só por `pnpm check` (jsdom não mede rolagem); veja rodando e me avise se alguma tela ainda não rolar.
+
+## Métricas de fluxo (ADR-10, fase 6, C1)
+
+- Tela por projeto (`flowMetrics.get`): lead time, cycle time e vazão das últimas 8 semanas; reaproveita as regras do dashboard (extraí `flowSeries`, dashboard inalterado). Arquivadas e backlog ficam fora.
+- CONFERIR: textos da nota de amostra (< 5 tarefas concluídas) e do estado vazio, ícone e glifo ▁ são escolhas do agente; visual não visto rodando.
+- Tarefa concluída, reaberta e concluída em semanas diferentes aparece em duas barras e conta uma vez no total (regra existente do dashboard).

@@ -219,6 +219,7 @@ import {
 } from './schedule'
 import { getTrackingInputSchema, getTrackingOutputSchema } from './tracking'
 import { getBurndownInputSchema, getBurndownOutputSchema } from './burndown'
+import { getFlowMetricsInputSchema, getFlowMetricsOutputSchema } from './flow-metrics'
 import { API_CHANNELS, type ApiChannel } from './channels'
 import {
   addToBacklogInputSchema,
@@ -435,6 +436,7 @@ export const API_SCHEMA_REGISTRY = {
   },
   'tracking.get': { input: getTrackingInputSchema, output: getTrackingOutputSchema },
   'burndown.get': { input: getBurndownInputSchema, output: getBurndownOutputSchema },
+  'flowMetrics.get': { input: getFlowMetricsInputSchema, output: getFlowMetricsOutputSchema },
   'tasks.setDeliverable': {
     input: setTaskDeliverableInputSchema,
     output: setTaskDeliverableOutputSchema,
@@ -743,6 +745,9 @@ export interface AgileBoxApi {
   }
   burndown: {
     get: Method<'burndown.get'>
+  }
+  flowMetrics: {
+    get: Method<'flowMetrics.get'>
   }
   milestones: {
     list: Method<'milestones.list'>
