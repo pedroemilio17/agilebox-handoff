@@ -619,6 +619,7 @@ Não bloqueiam os marcos M1 a M5.
 12.5 **Participantes do agendamento** (antes do M8): só usuários, ou também entidades sem conta?
 12.6 **Carregando / erro / offline** (antes do M6): o HANDOFF pede esqueleto e mensagem curta, para confirmar com o Pedro.
 12.7 **Iniciar com o Windows** (antes do M10): a bandeja abre sozinha ao ligar o computador?
+12.8 **Sugestão automática de horas trabalhadas** (ideia para discutir): em vez de o usuário digitar manualmente quantas horas trabalhou, o sistema sugere o tempo com base em quando a tarefa foi aberta e quando foi concluída, e o usuário confirma se foi esse tempo mesmo (mantendo o valor editável).
 
 ---
 

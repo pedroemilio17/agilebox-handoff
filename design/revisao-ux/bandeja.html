@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bandeja Rápida · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    /* ========================================================================
+       Bandeja Rápida (360x560) — Monocromática, baixo contraste, menos caixas
+       4 telas funcionando 100% com rodapé fixo dentro de 360x560
+       ======================================================================== */
+    .tray-stage-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-height: 100%;
+    }
+
+    /* Seletor externo do protótipo para saltar direto entre as 4 telas */
+    .tray-proto-switcher {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 10px;
+      background: var(--surface-panel);
+      border: 1px solid var(--color-hairline);
+    }
+
+    .tray-proto-tab {
+      min-height: 30px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .tray-proto-tab:hover {
+      color: var(--color-text-primary);
+      background: var(--color-tint-faint);
+    }
+
+    .tray-proto-tab.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Caixa fixa exatamente 360x560 */
+    .ab-tray-window {
+      position: relative;
+      width: 360px;
+      height: 560px;
+      max-height: calc(100vh - 104px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ab-tray-window .status-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+
+    /* Header compacto (42px) */
+    .tray-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      height: 42px;
+      flex: 0 0 42px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--color-divider);
+      background: transparent;
+    }
+
+    .tray-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .tray-brand-dot {
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--color-tint-soft);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-primary);
+      flex: none;
+    }
+
+    .tray-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid var(--color-hairline);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tray-back-btn:hover {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .tray-header-title {
+      font-family: var(--font-family-display);
+      font-size: 13.5px;
+      font-weight: 650;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tray-panel-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 11.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex: none;
+    }
+
+    .tray-panel-link:hover {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Estrutura interna das telas */
+    .tray-screen {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    [hidden],
+    .tray-screen[hidden] {
+      display: none !important;
+    }
+
+    .tray-top-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--color-divider);
+      flex: none;
+    }
+
+    .tray-top-strip.is-search-only {
+      padding: 8px 12px;
+    }
+
+    /* Barra de Daily em linha limpa (sem borda/fundo amarelo gritante) */
+    .tray-daily-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      height: 32px;
+      max-height: 36px;
+      padding: 0 0 4px;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      border-radius: 0;
+      background: transparent;
+      overflow: hidden;
+      transition: height 160ms ease, opacity 140ms ease, padding 160ms ease;
+    }
+
+    .tray-daily-bar.is-hidden {
+      height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-bottom-width: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .tray-daily-bar.is-search-hidden {
+      display: none !important;
+    }
+
+    .tray-daily-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-body);
+      white-space: nowrap;
+    }
+
+    .tray-daily-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: none;
+    }
+
+    .tray-daily-btn {
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tray-daily-btn.is-now {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .tray-daily-btn.is-now:hover {
+      background: var(--surface-raised);
+    }
+
+    .tray-daily-btn.is-later {
+      background: transparent;
+      color: var(--color-text-subtle);
+    }
+
+    .tray-daily-btn.is-later:hover {
+      color: var(--color-text-primary);
+    }
+
+    .tray-search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .tray-search-box svg {
+      position: absolute;
+      left: 9px;
+      color: var(--color-text-subtle);
+      pointer-events: none;
+    }
+
+    .tray-search-input {
+      width: 100%;
+      height: 32px;
+      min-height: 32px;
+      padding: 4px 10px 4px 28px;
+      border-radius: 8px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 12.5px;
+    }
+
+    .tray-search-input:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .tray-search-input::placeholder {
+      color: var(--color-text-placeholder);
+    }
+
+    /* Corpo rolável */
+    .tray-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .tray-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 0 6px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    /* Lista Em Foco enxuta — card inteiro clicável, zero botões competindo */
+    .tray-task-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      padding: 9px 6px;
+      margin: 0 -4px;
+      border-radius: 7px;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      text-align: left;
+      cursor: pointer;
+      transition: background 140ms ease;
+    }
+
+    .tray-task-card:last-child {
+      border-bottom: 0;
+    }
+
+    .tray-task-card:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .tray-task-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      font-size: 11px;
+    }
+
+    .tray-task-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--color-text-subtle);
+      font-family: var(--font-family-mono);
+    }
+
+    .tray-task-meta strong {
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .tray-blocked-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--color-signal-danger-text);
+    }
+
+    .tray-task-title {
+      font-size: 13px;
+      font-weight: 550;
+      color: var(--color-text-primary);
+      line-height: 1.35;
+    }
+
+    /* Cabeçalho da tarefa e grupos separados na Tela Atualizar */
+    .upd-task-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 2px 0 10px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .upd-task-kicker {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+    }
+
+    .upd-task-heading {
+      margin: 0;
+      font-family: var(--font-family-display);
+      font-size: 15.5px;
+      font-weight: 650;
+      line-height: 1.25;
+      color: var(--color-text-primary);
+    }
+
+    .upd-task-submeta {
+      font-size: 11.5px;
+      color: var(--color-text-muted);
+      margin-top: 1px;
+    }
+
+    .tray-group-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-family-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+    }
+
+    .upd-subtask-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .upd-subtask-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 2px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12.5px;
+      line-height: 1.35;
+      color: var(--color-text-body);
+    }
+
+    .upd-subtask-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .upd-subtask-row input[type='checkbox'] {
+      width: 15px;
+      height: 15px;
+      margin-top: 2px;
+      accent-color: #d8d5df;
+      flex: none;
+      cursor: pointer;
+    }
+
+    .upd-subtask-row.is-done span {
+      text-decoration: line-through;
+      color: var(--color-text-subtle);
+    }
+
+    /* Passo da Daily com cabeçalho separado */
+    .daily-step-head {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-bottom: 9px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .daily-step-title {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .daily-step-sub {
+      margin: 0;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .tray-quick-pill {
+      height: 24px;
+      padding: 0 7px;
+      border: 1px solid var(--color-hairline);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tray-quick-pill:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    /* Rodapé fixo Quick-Add (Home) */
+    .tray-quickadd-footer {
+      position: relative;
+      flex: none;
+      padding: 7px 12px 9px;
+      border-top: 1px solid var(--color-divider);
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .tray-dest-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--color-text-subtle);
+    }
+
+    .tray-dest-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .tray-quickadd-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tray-quickadd-input {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      padding: 6px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 12.5px;
+    }
+
+    .tray-quickadd-input:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .tray-quickadd-btn {
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      min-height: 38px;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      background: var(--color-primary-bg);
+      color: var(--color-on-primary);
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .tray-quickadd-btn:hover {
+      background: var(--color-primary-bg-hover);
+    }
+
+    /* Dropdown autocomplete @pessoa / #projeto */
+    .tray-mention-pop {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: calc(100% + 4px);
+      z-index: 50;
+      padding: 6px;
+      border-radius: 12px;
+      background: var(--glass-popover);
+      backdrop-filter: var(--glass-popover-backdrop);
+      box-shadow: var(--shadow-popover);
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .tray-mention-pop.is-open {
+      display: flex;
+    }
+
+    .tray-mention-opt {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 34px;
+      padding: 4px 10px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .tray-mention-opt:hover {
+      background: var(--color-rail-hover);
+    }
+
+    /* Campos limpos nas telas 2, 3 e 4 */
+    .ab-tray-window .input,
+    .ab-tray-window .select,
+    .ab-tray-window .textarea {
+      min-height: 36px;
+      padding: 6px 10px;
+      background: transparent;
+      border-color: var(--color-hairline);
+      font-size: 13px;
+    }
+
+    .ab-tray-window .select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .ab-tray-window .input:focus,
+    .ab-tray-window .select:focus,
+    .ab-tray-window .textarea:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .tray-clean-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .tray-clean-section:first-child {
+      padding-top: 2px;
+    }
+
+    .tray-clean-section:last-child {
+      border-bottom: 0;
+      padding-bottom: 4px;
+    }
+
+    .state-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      align-self: flex-start;
+    }
+
+    .state-select {
+      border: 0;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      height: 32px;
+      padding-right: 4px;
+    }
+
+    .state-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    /* Rodapé fixo fora do scroll para Telas 2, 3 e 4 */
+    .tray-fixed-footer {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--color-divider);
+      background: transparent;
+    }
+
+    .tray-fixed-footer .btn {
+      flex: 1;
+      min-height: 38px;
+      font-size: 13px;
+    }
+
+    /* Overlay interno de Dirty Guard (Tela 3) */
+    .tray-dirty-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(6, 6, 9, 0.72);
+      backdrop-filter: blur(6px);
+    }
+
+    .tray-dirty-overlay.is-open {
+      display: flex;
+    }
+
+    .tray-dirty-box {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      background: var(--glass-popover);
+      border: 1px solid var(--color-hairline);
+      box-shadow: var(--shadow-popover);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Daily 3 passos (monocromático, separado por divisórias finas) */
+    .daily-progress {
+      height: 2px;
+      background: var(--color-divider);
+      flex: none;
+    }
+
+    .daily-progress-fill {
+      height: 100%;
+      background: var(--color-text-muted);
+      transition: width 200ms ease;
+    }
+
+    .daily-check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      min-height: 38px;
+      padding: 8px 2px;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      cursor: pointer;
+    }
+
+    .daily-check-row:last-child {
+      border-bottom: 0;
+    }
+
+    .daily-check-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .daily-check-row input[type='checkbox'] {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      accent-color: #d8d5df;
+      flex: none;
+    }
+
+    .daily-hour-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 2px;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .daily-hour-row:last-child {
+      border-bottom: 0;
+    }
+
+    .daily-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex: none;
+    }
+
+    .daily-step-btn {
+      min-width: 30px;
+      height: 28px;
+      padding: 0 6px;
+      border-radius: 6px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+
+    .daily-step-btn:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+    }
+  </style>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="bandeja">
+  <div class="tray-stage-wrap">
+    <!-- Seletor externo do protótipo para saltar direto entre as 4 telas -->
+    <div class="tray-proto-switcher" role="tablist" aria-label="Telas da Bandeja">
+      <button type="button" class="tray-proto-tab is-active" role="tab" data-tray-screen="home">1. Início</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="new">2. Nova tarefa</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="update">3. Atualizar tarefa</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="daily">4. Atualização do dia</button>
+    </div>
+
+    <section class="ab-tray-window" aria-label="AgileBox Bandeja">
+      <!-- ==================== TELA 1: INÍCIO ==================== -->
+      <div class="tray-screen" id="screen-home">
+        <header class="tray-header">
+          <div class="tray-header-left">
+            <span class="tray-brand-dot" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h7v10H4z"/><path d="M13 4h7v7h-7z"/><path d="M13 14h7v6h-7z"/></svg>
+            </span>
+            <span class="tray-header-title">AgileBox Bandeja</span>
+          </div>
+          <a class="tray-panel-link" href="quadro.html">Abrir Painel ↗</a>
+        </header>
+
+        <div class="tray-top-strip">
+          <!-- Barra de Daily enxuta em 1 linha -->
+          <div class="tray-daily-bar" id="home-daily-bar" role="region" aria-label="Atualização do dia">
+            <span class="tray-daily-text"><span class="dot-inline is-warning" aria-hidden="true"></span> Registrar o dia?</span>
+            <div class="tray-daily-actions">
+              <button type="button" class="tray-daily-btn is-now" id="daily-bar-now">Agora</button>
+              <button type="button" class="tray-daily-btn is-later" id="daily-bar-later">Depois</button>
+            </div>
+          </div>
+
+          <div class="tray-search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M21 21l-4.3-4.3"></path>
+            </svg>
+            <input type="search" class="tray-search-input" id="home-search-input" placeholder="Buscar tarefa ou projeto..." aria-label="Buscar tarefas na bandeja">
+          </div>
+        </div>
+
+        <div class="tray-body" id="home-tasks-body"></div>
+
+        <!-- Rodapé fixo Quick-Add -->
+        <form class="tray-quickadd-footer" id="home-quickadd-form" autocomplete="off">
+          <div class="tray-mention-pop" id="tray-mention-pop" role="listbox" aria-label="Sugestões de pessoa ou projeto"></div>
+          <div class="tray-dest-row">
+            <span class="tray-dest-pill" id="home-dest-pill">Projeto A · A fazer</span>
+            <span>Use @pessoa #projeto</span>
+          </div>
+          <div class="tray-quickadd-row">
+            <input type="text" class="tray-quickadd-input" id="home-quickadd-input" placeholder="Nova tarefa rápida... (@pessoa #projeto)" aria-label="Nova tarefa rápida">
+            <button type="submit" class="tray-quickadd-btn" title="Criar tarefa rápida" aria-label="Criar tarefa rápida">+</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ==================== TELA 2: NOVA TAREFA ==================== -->
+      <div class="tray-screen" id="screen-new" hidden>
+        <header class="tray-header">
+          <div class="tray-header-left">
+            <button type="button" class="tray-back-btn" id="new-back-btn">← Voltar</button>
+            <span class="tray-header-title">Nova tarefa</span>
+          </div>
+          <a class="tray-panel-link" href="quadro.html">Abrir Painel ↗</a>
+        </header>
+
+        <form class="tray-body" id="tray-new-form" style="padding:12px 14px;gap:10px;">
+          <div class="field">
+            <label class="field-label" for="tray-new-title">O que precisa ser feito?</label>
+            <input type="text" class="input" id="tray-new-title" placeholder="Ex.: Validar acesso VPN do cliente" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="tray-new-project">Projeto</label>
+            <select class="select" id="tray-new-project">
+              <option value="Projeto A">Projeto A · App de Vendas</option>
+              <option value="Projeto B">Projeto B · Migração ERP</option>
+              <option value="Projeto C">Projeto C · Projeto Simples</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="tray-new-status">Estado inicial</label>
+            <select class="select" id="tray-new-status">
+              <option value="Planejamento">Planejamento</option>
+              <option value="A fazer" selected>A fazer</option>
+              <option value="Desenvolvendo">Desenvolvendo</option>
+              <option value="Revisar">Revisar</option>
+              <option value="Concluído">Concluído</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="tray-new-assignee">Responsável</label>
+            <select class="select" id="tray-new-assignee">
+              <option value="Ana" selected>Ana</option>
+              <option value="João">João</option>
+              <option value="Pedro">Pedro</option>
+              <option value="Carlos">Carlos</option>
+              <option value="Maria">Maria</option>
+              <option value="Carla">Carla</option>
+            </select>
+          </div>
+        </form>
+
+        <footer class="tray-fixed-footer">
+          <button type="button" class="btn btn-secondary" id="new-cancel-btn">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="new-submit-btn">Criar tarefa</button>
+        </footer>
+      </div>
+
+      <!-- ==================== TELA 3: ATUALIZAR TAREFA (AB-5) ==================== -->
+      <div class="tray-screen" id="screen-update" hidden>
+        <header class="tray-header">
+          <div class="tray-header-left">
+            <button type="button" class="tray-back-btn" id="upd-header-back" aria-label="Voltar para início" style="width:28px;padding:0;justify-content:center;">←</button>
+            <span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-muted);" id="upd-task-id">AB-5</span>
+          </div>
+          <a class="tray-panel-link" id="upd-panel-link" href="tarefa.html?id=AB-5">Abrir no Painel ↗</a>
+        </header>
+
+        <div class="tray-body" style="padding:10px 14px;gap:0;">
+          <div class="upd-task-header">
+            <span class="upd-task-kicker" id="upd-task-project">Projeto A</span>
+            <h2 class="upd-task-heading" id="upd-task-title">Revisar contrato com Cliente ACME</h2>
+            <span class="upd-task-submeta" id="upd-task-submeta">Responsável: Ana · Prazo: 24 nov</span>
+          </div>
+
+          <div class="tray-clean-section">
+            <label class="tray-group-label" for="upd-status-select">Estado</label>
+            <div class="state-select-wrap">
+              <span class="status-dot is-desenvolvendo" id="upd-status-dot"></span>
+              <select class="state-select" id="upd-status-select" aria-label="Estado da tarefa">
+                <option value="Planejamento">Planejamento</option>
+                <option value="A fazer">A fazer</option>
+                <option value="Desenvolvendo">Desenvolvendo</option>
+                <option value="Revisar">Revisar</option>
+                <option value="Concluído">Concluído</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="tray-clean-section">
+            <div class="tray-group-label">
+              <span>Subtarefas</span>
+              <span id="upd-subtasks-count">2/3</span>
+            </div>
+            <div class="upd-subtask-list" id="upd-subtasks-list"></div>
+          </div>
+
+          <div class="tray-clean-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div>
+                <span class="tray-group-label">Horas registradas</span>
+                <strong id="upd-hours-total" style="font-size:13px;color:var(--color-text-primary);font-variant-numeric:tabular-nums;">3,0 h</strong>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn btn-sm btn-secondary" id="upd-add-half" style="min-height:30px;">+0,5h</button>
+                <button type="button" class="btn btn-sm btn-secondary" id="upd-add-one" style="min-height:30px;">+1h</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tray-clean-section">
+            <label class="tray-group-label" for="upd-note-input">Nota e impedimento</label>
+            <textarea class="textarea" id="upd-note-input" rows="2" style="min-height:48px;" placeholder="Ex.: Alinhado SLA com cliente..."></textarea>
+            <label class="checkbox-row" style="padding:2px 0;min-height:28px;">
+              <input type="checkbox" id="upd-blocked-check">
+              <span style="font-size:12px;color:var(--color-text-body);">Marcar como bloqueada (impedimento)</span>
+            </label>
+          </div>
+        </div>
+
+        <footer class="tray-fixed-footer">
+          <button type="button" class="btn btn-primary" id="upd-save-btn">Salvar alterações</button>
+        </footer>
+
+        <!-- Dirty guard ao sair sem salvar -->
+        <div class="tray-dirty-overlay" id="upd-dirty-overlay" role="dialog" aria-modal="true" aria-label="Alterações não salvas">
+          <div class="tray-dirty-box">
+            <h3 style="margin:0;font-size:15px;font-family:var(--font-family-display);">Alterações não salvas</h3>
+            <p style="margin:0;font-size:12.5px;color:var(--color-text-muted);line-height:1.4;">
+              Você alterou a tarefa <strong id="dirty-task-id">AB-5</strong> e ainda não salvou. Deseja descartar ou continuar editando?
+            </p>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn btn-secondary" id="dirty-keep-btn" style="flex:1;min-height:38px;">Continuar</button>
+              <button type="button" class="btn btn-danger" id="dirty-discard-btn" style="flex:1;min-height:38px;">Descartar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TELA 4: ATUALIZAÇÃO DO DIA (DAILY 3 PASSOS) ==================== -->
+      <div class="tray-screen" id="screen-daily" hidden>
+        <header class="tray-header">
+          <div class="tray-header-left">
+            <button type="button" class="tray-back-btn" id="daily-back-btn">← Voltar</button>
+            <span class="tray-header-title">Atualização do dia</span>
+          </div>
+          <span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-subtle);" id="daily-step-badge">1 de 3</span>
+        </header>
+        <div class="daily-progress"><div class="daily-progress-fill" id="daily-progress-fill" style="width:33%"></div></div>
+
+        <div class="tray-body" id="daily-body" style="padding:10px 14px;gap:4px;"></div>
+
+        <!-- RODAPÉ FIXO FORA DO SCROLL — sempre visível na base dos 560px -->
+        <footer class="tray-fixed-footer" id="daily-footer">
+          <button type="button" class="btn btn-secondary" id="daily-no-news-btn">Sem novidades</button>
+          <button type="button" class="btn btn-primary" id="daily-next-btn">Próximo →</button>
+        </footer>
+      </div>
+    </section>
+  </div>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var STATES = [
+        { label: 'Planejamento', dot: 'is-planejamento' },
+        { label: 'A fazer', dot: 'is-afazer' },
+        { label: 'Desenvolvendo', dot: 'is-desenvolvendo' },
+        { label: 'Revisar', dot: 'is-revisar' },
+        { label: 'Concluído', dot: 'is-concluido' }
+      ];
+
+      var PEOPLE = ['Ana', 'João', 'Pedro', 'Carlos', 'Maria', 'Carla'];
+      var PROJECTS = [
+        { tag: '#ProjetoA', name: 'Projeto A' },
+        { tag: '#ProjetoB', name: 'Projeto B' },
+        { tag: '#ProjetoC', name: 'Projeto C' }
+      ];
+
+      var tasks = [
+        {
+          id: 'AB-5', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Revisar contrato com Cliente ACME',
+          assignee: 'Ana', due: '24 nov', hours: 3.0, blocked: false, note: '',
+          subtasks: [
+            { id: 's1', text: 'Conferir cláusulas de SLA e tempo de resposta', done: true },
+            { id: 's2', text: 'Alinhar cronograma de implantação com suporte', done: true },
+            { id: 's3', text: 'Validar anexo financeiro final', done: false }
+          ]
+        },
+        {
+          id: 'AB-11', project: 'Projeto A', status: 'Revisar', dot: 'is-revisar', title: 'Validar tela de login no Fedora e Windows',
+          assignee: 'Maria', due: '24 nov', hours: 2.5, blocked: false, note: '',
+          subtasks: [
+            { id: 's1', text: 'Testar atalho global no Windows 11', done: true },
+            { id: 's2', text: 'Conferir contraste no Fedora Wayland', done: false }
+          ]
+        },
+        {
+          id: 'AB-3', project: 'Projeto A', status: 'A fazer', dot: 'is-afazer', title: 'Ajustar webhook de confirmação de boleto',
+          assignee: 'Pedro', due: '25 nov', hours: 0, blocked: false, note: '',
+          subtasks: [
+            { id: 's1', text: 'Validar assinatura do payload', done: false },
+            { id: 's2', text: 'Cobrir retorno de erro 422', done: false }
+          ]
+        },
+        {
+          id: 'AB-8', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Corrigir filtro de datas no relatório mensal',
+          assignee: 'João', due: '26 nov', hours: 1.0, blocked: true, note: 'Aguardando homologação',
+          subtasks: [
+            { id: 's1', text: 'Reproduzir fuso horário na virada do mês', done: true },
+            { id: 's2', text: 'Validar com base de testes', done: false }
+          ]
+        },
+        {
+          id: 'AB-15', project: 'Projeto B', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Script de migração de centros de custo',
+          assignee: 'Carlos', due: '28 nov', hours: 3.5, blocked: false, note: '',
+          subtasks: [
+            { id: 's1', text: 'Mapear códigos legados', done: true },
+            { id: 's2', text: 'Executar lote em staging', done: false }
+          ]
+        }
+      ];
+
+      var currentScreen = 'home'; // 'home' | 'new' | 'update' | 'daily'
+      var dailyDismissed = false;
+      var searchQuery = '';
+      var activeTaskId = 'AB-5';
+      var nextNum = 16;
+
+      // Estado de edição da Tela 3 + dirty guard
+      var draftUpdate = null;
+      var pendingNavigationAfterDirty = null;
+
+      // Estado da Daily (Tela 4)
+      var dailyState = {
+        step: 1,
+        checkedIds: ['AB-5', 'AB-11'],
+        hoursMap: { 'AB-5': 2.0, 'AB-11': 1.0 },
+        blockerText: '',
+        tomorrowFocus: ''
+      };
+
+      function esc(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function dotForStatus(label) {
+        for (var i = 0; i < STATES.length; i++) {
+          if (STATES[i].label === label) return STATES[i].dot;
+        }
+        return 'is-afazer';
+      }
+
+      function findTask(id) {
+        for (var i = 0; i < tasks.length; i++) {
+          if (tasks[i].id === id) return tasks[i];
+        }
+        return tasks[0];
+      }
+
+      function switchScreen(target, skipDirtyCheck) {
+        if (currentScreen === 'update' && !skipDirtyCheck && isUpdateDirty() && target !== 'update') {
+          pendingNavigationAfterDirty = target;
+          document.getElementById('dirty-task-id').textContent = activeTaskId;
+          document.getElementById('upd-dirty-overlay').classList.add('is-open');
+          return;
+        }
+        currentScreen = target;
+        document.getElementById('screen-home').hidden = target !== 'home';
+        document.getElementById('screen-new').hidden = target !== 'new';
+        document.getElementById('screen-update').hidden = target !== 'update';
+        document.getElementById('screen-daily').hidden = target !== 'daily';
+
+        document.querySelectorAll('.tray-proto-tab').forEach(function (tab) {
+          tab.classList.toggle('is-active', tab.getAttribute('data-tray-screen') === target);
+        });
+
+        if (target === 'home') renderHome();
+        if (target === 'new') {
+          setTimeout(function () { document.getElementById('tray-new-title').focus(); }, 20);
+        }
+        if (target === 'update') loadUpdateScreen(activeTaskId);
+        if (target === 'daily') renderDaily();
+      }
+
+      /* -------------------- TELA 1: INÍCIO -------------------- */
+      function renderHome() {
+        var isSearching = searchQuery.trim().length > 0;
+        var dailyBar = document.getElementById('home-daily-bar');
+        var topStrip = dailyBar ? dailyBar.parentElement : null;
+
+        dailyBar.classList.toggle('is-search-hidden', isSearching);
+        dailyBar.classList.toggle('is-hidden', dailyDismissed && !isSearching);
+        if (topStrip) topStrip.classList.toggle('is-search-only', isSearching || dailyDismissed);
+
+        var q = searchQuery.trim().toLowerCase();
+        var filtered = tasks.filter(function (t) {
+          if (!q) return true;
+          return (t.id + ' ' + t.title + ' ' + t.project + ' ' + t.status).toLowerCase().indexOf(q) !== -1;
+        });
+
+        var body = document.getElementById('home-tasks-body');
+        var headerHtml =
+          '<div class="tray-section-head">' +
+            '<span class="eyebrow">' + (isSearching ? 'Resultados (' + filtered.length + ')' : 'Em foco (' + filtered.length + ')') + '</span>' +
+            '<button type="button" class="tray-quick-pill" id="home-open-new" style="height:22px;padding:0 6px;border-color:transparent;">+ Detalhada</button>' +
+          '</div>';
+
+        if (!filtered.length) {
+          body.innerHTML = headerHtml +
+            '<div class="empty-state" style="padding:22px 14px;">' +
+              '<h3 style="font-size:14px;">Nenhuma tarefa encontrada</h3>' +
+              '<p style="font-size:12px;">Use o campo abaixo para criar rapidamente.</p>' +
+            '</div>';
+          return;
+        }
+
+        var cardsHtml = filtered.map(function (t) {
+          return (
+            '<button type="button" class="tray-task-card" data-open-task="' + esc(t.id) + '">' +
+              '<div class="tray-task-top">' +
+                '<span class="tray-task-meta">' +
+                  '<span class="status-dot ' + dotForStatus(t.status) + '"></span>' +
+                  '<strong>' + esc(t.id) + '</strong> · ' + esc(t.project) +
+                '</span>' +
+                (t.blocked
+                  ? '<span class="tray-blocked-inline"><span class="dot-inline is-danger"></span>Bloqueada</span>'
+                  : '<span style="color:var(--color-text-subtle);font-size:11px;">' + esc(t.status) + '</span>') +
+              '</div>' +
+              '<span class="tray-task-title">' + esc(t.title) + '</span>' +
+            '</button>'
+          );
+        }).join('');
+
+        body.innerHTML = headerHtml + cardsHtml;
+      }
+
+      document.getElementById('home-tasks-body').addEventListener('click', function (e) {
+        if (e.target.closest('#home-open-new')) {
+          switchScreen('new');
+          return;
+        }
+        var openBtn = e.target.closest('[data-open-task]');
+        if (openBtn) {
+          activeTaskId = openBtn.getAttribute('data-open-task');
+          switchScreen('update');
+        }
+      });
+
+      document.getElementById('daily-bar-now').addEventListener('click', function () {
+        dailyState.step = 1;
+        switchScreen('daily');
+      });
+
+      document.getElementById('daily-bar-later').addEventListener('click', function () {
+        dailyDismissed = true;
+        renderHome();
+      });
+
+      document.getElementById('home-search-input').addEventListener('input', function () {
+        searchQuery = this.value;
+        renderHome();
+      });
+
+      // Quick-Add com dropdown @pessoa / #projeto
+      var quickInput = document.getElementById('home-quickadd-input');
+      var mentionPop = document.getElementById('tray-mention-pop');
+      var destPill = document.getElementById('home-dest-pill');
+
+      function updateQuickAddUi() {
+        var val = quickInput.value;
+        var projLabel = 'Projeto A';
+        var hash = val.match(/#([a-zA-Z0-9À-ÿ_-]+)/);
+        if (hash) {
+          var q = hash[1].toLowerCase();
+          PROJECTS.forEach(function (p) {
+            if (p.name.toLowerCase().replace(/\s+/g, '').indexOf(q) !== -1 || p.tag.toLowerCase().indexOf(q) !== -1) {
+              projLabel = p.name;
+            }
+          });
+        }
+        var at = val.match(/@([a-zA-ZÀ-ÿ]+)/);
+        destPill.textContent = projLabel + ' · A fazer' + (at ? ' · @' + at[1] : '');
+
+        var tailAt = val.match(/(?:^|\s)@([a-zA-ZÀ-ÿ]*)$/);
+        var tailHash = val.match(/(?:^|\s)#([a-zA-Z0-9À-ÿ_-]*)$/);
+
+        if (tailAt) {
+          var qAt = tailAt[1].toLowerCase();
+          var matches = PEOPLE.filter(function (p) { return !qAt || p.toLowerCase().indexOf(qAt) !== -1; });
+          mentionPop.innerHTML = matches.map(function (p) {
+            return '<button type="button" class="tray-mention-opt" data-tok="@' + p + '" data-kind="@"><strong>@' + esc(p) + '</strong><span>Responsável</span></button>';
+          }).join('');
+          mentionPop.classList.toggle('is-open', matches.length > 0);
+          return;
+        }
+        if (tailHash) {
+          var qH = tailHash[1].toLowerCase();
+          var pMatches = PROJECTS.filter(function (p) { return !qH || p.name.toLowerCase().indexOf(qH) !== -1 || p.tag.toLowerCase().indexOf(qH) !== -1; });
+          mentionPop.innerHTML = pMatches.map(function (p) {
+            return '<button type="button" class="tray-mention-opt" data-tok="' + p.tag + '" data-kind="#"><strong>' + esc(p.tag) + '</strong><span>' + esc(p.name) + '</span></button>';
+          }).join('');
+          mentionPop.classList.toggle('is-open', pMatches.length > 0);
+          return;
+        }
+        mentionPop.classList.remove('is-open');
+      }
+
+      quickInput.addEventListener('input', updateQuickAddUi);
+
+      mentionPop.addEventListener('click', function (e) {
+        var opt = e.target.closest('.tray-mention-opt');
+        if (!opt) return;
+        var tok = opt.getAttribute('data-tok');
+        var kind = opt.getAttribute('data-kind');
+        if (kind === '@') {
+          quickInput.value = quickInput.value.replace(/@[a-zA-ZÀ-ÿ]*$/, tok + ' ');
+        } else {
+          quickInput.value = quickInput.value.replace(/#[a-zA-Z0-9À-ÿ_-]*$/, tok + ' ');
+        }
+        mentionPop.classList.remove('is-open');
+        updateQuickAddUi();
+        quickInput.focus();
+      });
+
+      document.getElementById('home-quickadd-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var raw = quickInput.value.trim();
+        if (!raw) return;
+        var cleanTitle = raw.replace(/@[a-zA-ZÀ-ÿ_-]+/g, '').replace(/#[a-zA-Z0-9À-ÿ_-]+/g, '').replace(/\s+/g, ' ').trim() || raw;
+        var proj = 'Projeto A';
+        if (/#.*b/i.test(raw)) proj = 'Projeto B';
+        if (/#.*c/i.test(raw)) proj = 'Projeto C';
+
+        var created = {
+          id: 'AB-' + nextNum++,
+          project: proj,
+          status: 'A fazer',
+          dot: 'is-afazer',
+          title: cleanTitle,
+          assignee: 'Ana',
+          due: 'Em aberto',
+          hours: 0,
+          blocked: false,
+          note: '',
+          subtasks: []
+        };
+        tasks.unshift(created);
+        quickInput.value = '';
+        mentionPop.classList.remove('is-open');
+        updateQuickAddUi();
+        renderHome();
+        window.AgileBoxProto.completeKanStep('c1');
+        window.AgileBoxProto.showToast('Tarefa ' + created.id + ' criada em ' + proj + ' · A fazer', 'success');
+      });
+
+      /* -------------------- TELA 2: NOVA TAREFA -------------------- */
+      document.getElementById('new-back-btn').addEventListener('click', function () { switchScreen('home'); });
+      document.getElementById('new-cancel-btn').addEventListener('click', function () { switchScreen('home'); });
+      document.getElementById('new-submit-btn').addEventListener('click', function () {
+        var titleEl = document.getElementById('tray-new-title');
+        var title = titleEl.value.trim();
+        if (!title) {
+          titleEl.focus();
+          window.AgileBoxProto.showToast('Informe o título da tarefa', 'warning');
+          return;
+        }
+        var proj = document.getElementById('tray-new-project').value;
+        var st = document.getElementById('tray-new-status').value;
+        var created = {
+          id: 'AB-' + nextNum++,
+          project: proj,
+          status: st,
+          dot: dotForStatus(st),
+          title: title,
+          assignee: document.getElementById('tray-new-assignee').value || 'Ana',
+          due: 'Em aberto',
+          hours: 0,
+          blocked: false,
+          note: '',
+          subtasks: []
+        };
+        tasks.unshift(created);
+        titleEl.value = '';
+        window.AgileBoxProto.completeKanStep('c1');
+        window.AgileBoxProto.showToast(created.id + ' criada em ' + proj, 'success');
+        switchScreen('home');
+      });
+
+      /* -------------------- TELA 3: ATUALIZAR TAREFA + SUBTAREFAS + DIRTY GUARD -------------------- */
+      function loadUpdateScreen(taskId) {
+        var t = findTask(taskId);
+        activeTaskId = t.id;
+        draftUpdate = {
+          status: t.status,
+          hours: t.hours,
+          note: t.note || '',
+          blocked: !!t.blocked,
+          subtasks: (t.subtasks || []).map(function (s) {
+            return { id: s.id, text: s.text, done: !!s.done };
+          })
+        };
+        document.getElementById('upd-task-id').textContent = t.id;
+        document.getElementById('upd-task-project').textContent = t.project;
+        document.getElementById('upd-task-title').textContent = t.title;
+        document.getElementById('upd-task-submeta').textContent = 'Responsável: ' + (t.assignee || 'Ana') + ' · Prazo: ' + (t.due || 'Em aberto');
+        document.getElementById('upd-panel-link').setAttribute('href', 'tarefa.html?id=' + encodeURIComponent(t.id));
+        document.getElementById('upd-note-input').value = draftUpdate.note;
+        document.getElementById('upd-blocked-check').checked = draftUpdate.blocked;
+        renderUpdateDraft();
+      }
+
+      function renderUpdateDraft() {
+        if (!draftUpdate) return;
+        document.getElementById('upd-hours-total').textContent = draftUpdate.hours.toFixed(1).replace('.', ',') + ' h';
+        document.getElementById('upd-status-select').value = draftUpdate.status;
+        document.getElementById('upd-status-dot').className = 'status-dot ' + dotForStatus(draftUpdate.status);
+
+        var subs = draftUpdate.subtasks || [];
+        var doneCount = subs.filter(function (s) { return s.done; }).length;
+        document.getElementById('upd-subtasks-count').textContent = subs.length ? (doneCount + '/' + subs.length) : '0';
+
+        var subListEl = document.getElementById('upd-subtasks-list');
+        if (!subs.length) {
+          subListEl.innerHTML = '<div style="font-size:12px;color:var(--color-text-subtle);padding:2px 0;">Nenhuma subtarefa cadastrada.</div>';
+        } else {
+          subListEl.innerHTML = subs.map(function (s) {
+            return (
+              '<label class="upd-subtask-row' + (s.done ? ' is-done' : '') + '">' +
+                '<input type="checkbox" data-upd-subtask="' + esc(s.id) + '"' + (s.done ? ' checked' : '') + '>' +
+                '<span>' + esc(s.text) + '</span>' +
+              '</label>'
+            );
+          }).join('');
+        }
+      }
+
+      function isUpdateDirty() {
+        if (!draftUpdate) return false;
+        var t = findTask(activeTaskId);
+        var origSubs = t.subtasks || [];
+        var subsDirty = (draftUpdate.subtasks || []).some(function (s, idx) {
+          return origSubs[idx] && !!s.done !== !!origSubs[idx].done;
+        });
+        return (
+          draftUpdate.status !== t.status ||
+          draftUpdate.hours !== t.hours ||
+          draftUpdate.note !== (t.note || '') ||
+          draftUpdate.blocked !== !!t.blocked ||
+          subsDirty
+        );
+      }
+
+      document.getElementById('upd-subtasks-list').addEventListener('change', function (e) {
+        var sid = e.target.getAttribute('data-upd-subtask');
+        if (!sid || !draftUpdate) return;
+        draftUpdate.subtasks.forEach(function (s) {
+          if (s.id === sid) s.done = e.target.checked;
+        });
+        renderUpdateDraft();
+      });
+
+      document.getElementById('upd-status-select').addEventListener('change', function () {
+        draftUpdate.status = this.value;
+        renderUpdateDraft();
+      });
+
+      document.getElementById('upd-add-half').addEventListener('click', function () {
+        draftUpdate.hours += 0.5;
+        renderUpdateDraft();
+      });
+      document.getElementById('upd-add-one').addEventListener('click', function () {
+        draftUpdate.hours += 1;
+        renderUpdateDraft();
+      });
+      document.getElementById('upd-note-input').addEventListener('input', function () {
+        draftUpdate.note = this.value;
+      });
+      document.getElementById('upd-blocked-check').addEventListener('change', function () {
+        draftUpdate.blocked = this.checked;
+      });
+
+      document.getElementById('upd-header-back').addEventListener('click', function () { switchScreen('home'); });
+
+      document.getElementById('upd-save-btn').addEventListener('click', function () {
+        var t = findTask(activeTaskId);
+        t.status = draftUpdate.status;
+        t.dot = dotForStatus(draftUpdate.status);
+        t.hours = draftUpdate.hours;
+        t.note = draftUpdate.note;
+        t.blocked = draftUpdate.blocked;
+        t.subtasks = (draftUpdate.subtasks || []).map(function (s) {
+          return { id: s.id, text: s.text, done: !!s.done };
+        });
+        window.AgileBoxProto.completeKanStep('c3');
+        window.AgileBoxProto.showToast('Alterações em ' + t.id + ' salvas!', 'success');
+        switchScreen('home', true);
+      });
+
+      document.getElementById('dirty-keep-btn').addEventListener('click', function () {
+        pendingNavigationAfterDirty = null;
+        document.getElementById('upd-dirty-overlay').classList.remove('is-open');
+      });
+
+      document.getElementById('dirty-discard-btn').addEventListener('click', function () {
+        document.getElementById('upd-dirty-overlay').classList.remove('is-open');
+        var dest = pendingNavigationAfterDirty || 'home';
+        pendingNavigationAfterDirty = null;
+        draftUpdate = null;
+        switchScreen(dest, true);
+      });
+
+      /* -------------------- TELA 4: ATUALIZAÇÃO DO DIA (DAILY 3 PASSOS) -------------------- */
+      function renderDaily() {
+        var step = dailyState.step;
+        document.getElementById('daily-step-badge').textContent = step + ' de 3';
+        document.getElementById('daily-progress-fill').style.width = (step === 1 ? 33 : step === 2 ? 66 : 100) + '%';
+
+        var body = document.getElementById('daily-body');
+        var nextBtn = document.getElementById('daily-next-btn');
+        var noNewsBtn = document.getElementById('daily-no-news-btn');
+
+        if (step === 1) {
+          noNewsBtn.textContent = 'Sem novidades';
+          nextBtn.textContent = 'Próximo →';
+          body.innerHTML =
+            '<div class="daily-step-head">' +
+              '<h3 class="daily-step-title">1 de 3 · Marque as tarefas trabalhadas hoje</h3>' +
+              '<p class="daily-step-sub">Selecione o que avançou hoje. Nomes completos sem cortes.</p>' +
+            '</div>' +
+            tasks.slice(0, 4).map(function (t) {
+              var checked = dailyState.checkedIds.indexOf(t.id) !== -1;
+              return (
+                '<label class="daily-check-row">' +
+                  '<input type="checkbox" data-daily-task="' + esc(t.id) + '"' + (checked ? ' checked' : '') + '>' +
+                  '<span style="font-size:12.5px;line-height:1.35;"><strong>' + esc(t.id) + '</strong> · ' + esc(t.title) + '</span>' +
+                '</label>'
+              );
+            }).join('');
+          return;
+        }
+
+        if (step === 2) {
+          noNewsBtn.textContent = '← Voltar';
+          nextBtn.textContent = 'Próximo →';
+          var selected = tasks.filter(function (t) { return dailyState.checkedIds.indexOf(t.id) !== -1; });
+          var listHtml = selected.length
+            ? selected.map(function (t) {
+                var hrs = dailyState.hoursMap[t.id] || 0;
+                return (
+                  '<div class="daily-hour-row">' +
+                    '<div style="min-width:0;flex:1;">' +
+                      '<div style="font-family:var(--font-family-mono);font-size:10.5px;color:var(--color-text-subtle);">' + esc(t.id) + '</div>' +
+                      '<div style="font-size:12.5px;font-weight:500;color:var(--color-text-primary);line-height:1.3;margin-top:2px;">' + esc(t.title) + '</div>' +
+                    '</div>' +
+                    '<div class="daily-stepper">' +
+                      '<button type="button" class="daily-step-btn" data-d-hrs="-0.5" data-d-id="' + esc(t.id) + '">−0,5</button>' +
+                      '<span style="min-width:40px;text-align:center;font-family:var(--font-family-mono);font-size:12px;">' + hrs.toFixed(1).replace('.', ',') + 'h</span>' +
+                      '<button type="button" class="daily-step-btn" data-d-hrs="0.5" data-d-id="' + esc(t.id) + '">+0,5</button>' +
+                    '</div>' +
+                  '</div>'
+                );
+              }).join('')
+            : '<div style="font-size:12.5px;color:var(--color-text-muted);padding:10px 0;">Nenhuma tarefa selecionada no passo 1. Você pode seguir direto ou voltar para marcar.</div>';
+
+          body.innerHTML =
+            '<div class="daily-step-head">' +
+              '<h3 class="daily-step-title">2 de 3 · Horas dedicadas hoje</h3>' +
+              '<p class="daily-step-sub">Ajuste rapidamente quanto tempo você dedicou em cada item.</p>' +
+            '</div>' +
+            listHtml;
+          return;
+        }
+
+        // Passo 3
+        noNewsBtn.textContent = '← Voltar';
+        nextBtn.textContent = 'Finalizar dia';
+        body.innerHTML =
+          '<div class="daily-step-head">' +
+            '<h3 class="daily-step-title">3 de 3 · Bloqueios e foco de amanhã</h3>' +
+            '<p class="daily-step-sub">Opcional — avise se algo travou ou defina sua prioridade seguinte.</p>' +
+          '</div>' +
+          '<div class="field" style="margin-top:4px;">' +
+            '<label class="field-label" for="daily-blocker-inp">Bloqueio ou pedido de ajuda (opcional)</label>' +
+            '<textarea class="textarea" id="daily-blocker-inp" rows="2" style="min-height:60px;" placeholder="Ex.: Preciso de acesso ao ambiente de testes...">' + esc(dailyState.blockerText) + '</textarea>' +
+          '</div>' +
+          '<div class="field" style="margin-top:6px;">' +
+            '<label class="field-label" for="daily-tomorrow-inp">Principal foco de amanhã (opcional)</label>' +
+            '<input type="text" class="input" id="daily-tomorrow-inp" value="' + esc(dailyState.tomorrowFocus) + '" placeholder="Ex.: Fechar contrato Cliente ACME">' +
+          '</div>';
+      }
+
+      document.getElementById('daily-body').addEventListener('change', function (e) {
+        var tid = e.target.getAttribute('data-daily-task');
+        if (tid) {
+          var idx = dailyState.checkedIds.indexOf(tid);
+          if (e.target.checked && idx === -1) dailyState.checkedIds.push(tid);
+          if (!e.target.checked && idx !== -1) dailyState.checkedIds.splice(idx, 1);
+        }
+      });
+
+      document.getElementById('daily-body').addEventListener('input', function (e) {
+        if (e.target.id === 'daily-blocker-inp') dailyState.blockerText = e.target.value;
+        if (e.target.id === 'daily-tomorrow-inp') dailyState.tomorrowFocus = e.target.value;
+      });
+
+      document.getElementById('daily-body').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-d-hrs]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-d-id');
+        var delta = parseFloat(btn.getAttribute('data-d-hrs'));
+        dailyState.hoursMap[id] = Math.max(0, (dailyState.hoursMap[id] || 0) + delta);
+        renderDaily();
+      });
+
+      document.getElementById('daily-back-btn').addEventListener('click', function () {
+        switchScreen('home');
+      });
+
+      document.getElementById('daily-no-news-btn').addEventListener('click', function () {
+        if (dailyState.step === 1) {
+          dailyDismissed = true;
+          window.AgileBoxProto.completeKanStep('c4');
+          window.AgileBoxProto.showToast('Dia registrado como sem novidades!', 'info');
+          switchScreen('home');
+        } else {
+          dailyState.step -= 1;
+          renderDaily();
+        }
+      });
+
+      document.getElementById('daily-next-btn').addEventListener('click', function () {
+        if (dailyState.step < 3) {
+          dailyState.step += 1;
+          renderDaily();
+        } else {
+          dailyDismissed = true;
+          window.AgileBoxProto.completeKanStep('c4');
+          window.AgileBoxProto.showToast('Atualização do dia concluída! Bom descanso.', 'success');
+          switchScreen('home');
+        }
+      });
+
+      // Seletor externo das 4 telas
+      document.querySelectorAll('.tray-proto-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          switchScreen(this.getAttribute('data-tray-screen'));
+        });
+      });
+
+      renderHome();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgileBox · Protótipo UX/PM Revisado</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    /* ========================================================================
+       Índice de Fluxos — Monocromático, baixo contraste, menos caixas
+       ======================================================================== */
+    .proto-showcase {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+      display: inline-block;
+    }
+
+    .dot-inline.is-manager { background: var(--color-manager-dot); }
+    .dot-inline.is-muted { background: var(--color-text-subtle); }
+
+    /* Hero limpo (sem gradientes fortes nem caixas/pílulas coloridas) */
+    .hero-block {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--font-family-display);
+      font-size: 15px;
+      font-weight: 650;
+      color: var(--color-text-primary);
+    }
+
+    .hero-brand-mark {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: var(--surface-card);
+      border: 1px solid var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .hero-meta-note {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+    }
+
+    .hero-title {
+      margin: 0;
+      font-family: var(--font-family-display);
+      font-size: clamp(24px, 3.2vw, 34px);
+      font-weight: 650;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      color: var(--color-text-primary);
+      max-width: 760px;
+    }
+
+    .hero-lead {
+      margin: 6px 0 0;
+      max-width: 720px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--color-text-muted);
+    }
+
+    .hero-ctas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-ctas .btn {
+      min-height: 42px;
+    }
+
+    /* 5 Pilares em faixa limpa com divisórias 1px */
+    .pillars-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 0;
+      padding-top: 14px;
+      border-top: 1px solid var(--color-divider);
+    }
+
+    .pillar-item {
+      padding: 4px 14px 4px 0;
+      border-right: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .pillar-item:not(:first-child) {
+      padding-left: 14px;
+    }
+
+    .pillar-item:last-child {
+      border-right: 0;
+      padding-right: 0;
+    }
+
+    @media (max-width: 860px) {
+      .pillar-item {
+        border-right: 0;
+        border-bottom: 1px solid var(--color-divider);
+        padding: 10px 0 !important;
+      }
+      .pillar-item:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    .pillar-num {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      color: var(--color-text-subtle);
+    }
+
+    .pillar-title {
+      font-family: var(--font-family-display);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .pillar-desc {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--color-text-muted);
+    }
+
+    /* Seções */
+    .section-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .section-block:last-child {
+      border-bottom: 0;
+      padding-bottom: 8px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .section-title {
+      margin: 2px 0 0;
+      font-family: var(--font-family-display);
+      font-size: 19px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+    }
+
+    .quiet-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .quiet-switch-btn {
+      height: 32px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .quiet-switch-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .quiet-switch-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Jornada Um Dia Normal de Trabalho — lista limpa com divisórias */
+    .day-summary {
+      margin: 0;
+      font-size: 13px;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    .day-steps-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-step-row {
+      display: grid;
+      grid-template-columns: 155px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 6px;
+      border-bottom: 1px solid var(--color-divider);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 140ms ease;
+    }
+
+    .day-step-row:last-child {
+      border-bottom: 0;
+    }
+
+    .day-step-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    @media (max-width: 720px) {
+      .day-step-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+    }
+
+    .day-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-family-mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .day-step-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .day-step-desc {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--color-text-muted);
+    }
+
+    .day-step-cta {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--color-text-body);
+      white-space: nowrap;
+    }
+
+    .day-step-row:hover .day-step-cta {
+      color: var(--color-text-primary);
+    }
+
+    /* Lista limpa das 10 Telas Revisadas */
+    .screens-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .screen-row:last-child {
+      border-bottom: 0;
+    }
+
+    @media (max-width: 720px) {
+      .screen-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
+    .screen-row-title {
+      margin: 2px 0 6px;
+      font-family: var(--font-family-display);
+      font-size: 15.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .screen-fixes {
+      margin: 0;
+      padding-left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--color-text-muted);
+    }
+
+    .screen-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 2px;
+    }
+  </style>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="index">
+  <main class="proto-showcase" id="page-root">
+    <!-- Cabeçalho Hero -->
+    <section class="hero-block" aria-labelledby="hero-heading">
+      <div class="hero-top">
+        <div class="hero-brand">
+          <span class="hero-brand-mark" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h7v10H4z"/><path d="M13 4h7v7h-7z"/><path d="M13 14h7v6h-7z"/></svg>
+          </span>
+          <span>AgileBox · Revisão UX/PM</span>
+        </div>
+        <span class="hero-meta-note">5 estados fixos · Marca Gestor · pt-BR</span>
+      </div>
+
+      <div>
+        <h1 class="hero-title" id="hero-heading">Protótipo navegável do AgileBox com mínimo atrito e zero armadilhas</h1>
+        <p class="hero-lead">
+          Redesenho completo do Painel Desktop, da Bandeja 360×560 e do assistente Kan acoplado, mantendo 100% das regras de produto: 5 estados oficiais, trilha auditável marcada como Gestor, entidades externas sem acesso e privacidade estrita de valores em R$.
+        </p>
+      </div>
+
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="quadro.html">Abrir Quadro principal →</a>
+        <a class="btn btn-secondary" href="bandeja.html">Abrir Bandeja 360×560</a>
+        <a class="btn btn-secondary" href="novo-projeto.html">Criar Projeto Simples</a>
+        <a class="btn btn-ghost" href="dashboard.html" id="cta-dashboard-gestor">
+          <span class="dot-inline is-manager"></span>Dashboard Gestor
+        </a>
+      </div>
+
+      <div class="pillars-strip" aria-label="5 pilares da mudança">
+        <div class="pillar-item">
+          <span class="pillar-num">01 · PRIMEIRO ACESSO</span>
+          <span class="pillar-title">Do zero à 1ª tarefa &lt; 2 min</span>
+          <span class="pillar-desc">Criação sem pergunta duplicada e atalho de 1 clique no modo Simples.</span>
+        </div>
+        <div class="pillar-item">
+          <span class="pillar-num">02 · NAVEGAÇÃO LIMPA</span>
+          <span class="pillar-title">Escopos bem separados</span>
+          <span class="pillar-desc">Sidebar por tela, Início em cada projeto e tópicos internos do mesmo escopo.</span>
+        </div>
+        <div class="pillar-item">
+          <span class="pillar-num">03 · GUIA ACOPLADO</span>
+          <span class="pillar-title">Kan 0 ms sem overlay</span>
+          <span class="pillar-desc">Abre ao lado da tela sem véu escuro para ler e clicar ao mesmo tempo.</span>
+        </div>
+        <div class="pillar-item">
+          <span class="pillar-num">04 · LINGUAGEM HUMANA</span>
+          <span class="pillar-title">Jargão traduzido</span>
+          <span class="pillar-desc">Backlog com ajuda em "?", Limite simultâneo, Tempo do pedido e dependências claras.</span>
+        </div>
+        <div class="pillar-item">
+          <span class="pillar-num">05 · TRANSPARÊNCIA</span>
+          <span class="pillar-title">Privacidade estrita de R$</span>
+          <span class="pillar-desc">Colaborador vê só o próprio valor/hora; totais ficam exclusivos do Gestor.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mapa Interativo: Um Dia Normal de Trabalho -->
+    <section class="section-block" aria-labelledby="day-map-heading">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Jornada ponta a ponta</span>
+          <h2 class="section-title" id="day-map-heading">Um Dia Normal de Trabalho</h2>
+        </div>
+        <div class="quiet-switch" role="group" aria-label="Alternar persona do dia">
+          <button type="button" class="quiet-switch-btn is-active" id="day-role-collab" data-day-role="collaborator">Colaborador (Ana)</button>
+          <button type="button" class="quiet-switch-btn" id="day-role-manager" data-day-role="manager">Gestor (Maria)</button>
+        </div>
+      </div>
+
+      <p class="day-summary" id="day-summary"></p>
+      <div class="day-steps-list" id="day-steps-grid"></div>
+    </section>
+
+    <!-- Lista das 10 Telas Revisadas + Links Diretos por Aba -->
+    <section class="section-block" aria-labelledby="screens-heading">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Mapa completo das telas e abas</span>
+          <h2 class="section-title" id="screens-heading">10 Telas Revisadas com Links Diretos</h2>
+        </div>
+        <span style="font-size:12px;color:var(--color-text-subtle);">Use o seletor de Papel no topo para testar Colaborador vs Gestor</span>
+      </div>
+
+      <div class="screens-list" id="screens-grid"></div>
+    </section>
+  </main>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var proto = window.AgileBoxProto;
+
+      var DAY_JOURNEYS = {
+        collaborator: {
+          summary: 'Rotina de Ana (Colaboradora): começa na Bandeja sem perder o foco, move tarefas no Quadro, lança suas próprias horas e acompanha a agenda em leitura.',
+          steps: [
+            {
+              time: '09:00 · Bandeja',
+              title: 'Abrir o dia e capturar rápido',
+              desc: 'Barra de Daily compacta no topo deixa 2–3 tarefas "Em foco" visíveis sem rolar. Botão "+" 44×44px com autocomplete @ e #.',
+              href: 'bandeja.html',
+              cta: 'Abrir Bandeja →'
+            },
+            {
+              time: '10:30 · Quadro',
+              title: 'Executar nos 5 estados',
+              desc: 'Cabeçalhos em 2 linhas sem overflow em 1280×780 e 960×720. Limite simultâneo explicado no hover sem bloquear trabalho.',
+              href: 'quadro.html',
+              cta: 'Abrir Quadro →'
+            },
+            {
+              time: '14:30 · Tarefa & Horas',
+              title: 'Lançar horas e pessoa externa',
+              desc: 'Cria e vincula cliente externo em 1 clique. Tabela de Horas e Custo rotulada exibindo apenas o próprio R$/h de Ana.',
+              href: 'tarefa.html',
+              cta: 'Abrir Tarefa →'
+            },
+            {
+              time: '17:45 · Agenda / Daily',
+              title: 'Conferir agenda e fechar o dia',
+              desc: 'Grade semanal inteira com domingo visível e check-in rápido de 3 passos com rodapé fixo na Bandeja.',
+              href: 'agenda.html',
+              cta: 'Ver Agenda →'
+            }
+          ]
+        },
+        manager: {
+          summary: 'Rotina de Maria (Gestora): detecta exceções no Dashboard, age nas tarefas da equipe com marca violeta Gestor, confere custos e organiza reuniões.',
+          steps: [
+            {
+              time: '09:00 · Bandeja',
+              title: 'Captura rápida entre alinhamentos',
+              desc: 'Registra demandas urgentes direcionando @responsável e #projeto em segundos antes de entrar no Painel completo.',
+              href: 'bandeja.html',
+              cta: 'Abrir Bandeja →'
+            },
+            {
+              time: '10:30 · Dashboard',
+              title: 'Identificar bloqueios e prazos',
+              desc: 'Tabela de equipe 100% alinhada, progresso híbrido corrigido e cards de projeto clicáveis com visão de custos em R$.',
+              href: 'dashboard.html',
+              cta: 'Abrir Dashboard →'
+            },
+            {
+              time: '14:30 · Tarefa & Horas',
+              title: 'Destravar e revisar custos',
+              desc: 'Edições feitas na tarefa do colaborador ganham selo violeta "Gestor" na linha do tempo e exibem custo total em R$.',
+              href: 'tarefa.html',
+              cta: 'Abrir Tarefa →'
+            },
+            {
+              time: '17:45 · Agenda / Daily',
+              title: 'Agendar reuniões no topo',
+              desc: 'Botão "+ Novo agendamento" fixo no topo (não some mais abaixo de 100 eventos) e visão completa de segunda a domingo.',
+              href: 'agenda.html',
+              cta: 'Abrir Agenda →'
+            }
+          ]
+        }
+      };
+
+      var SCREENS = [
+        {
+          tag: '00 · Visão do Projeto',
+          title: 'Início do projeto (Home)',
+          fixes: [
+            'Resumo imediato de objetivo, andamento (%), tempo médio e próximo marco.',
+            'Exceções do projeto, tarefas em destaque, próximos compromissos e time num só lugar.',
+            'Links diretos para Quadro, Backlog, Agenda e Config. e Ferramentas.'
+          ],
+          links: [{ label: 'Abrir projeto-home.html', href: 'projeto-home.html' }]
+        },
+        {
+          tag: '01 · Núcleo Diário',
+          title: 'Quadro Kanban (5 estados)',
+          fixes: [
+            'Cabeçalho em 2 linhas zera overflow horizontal em 1280×780 e 960×720.',
+            'Banner nominal do Gestor ("Tarefas de Pedro · Edições como Gestor").',
+            'Alvos confortáveis (>= 40px), filtros com wrap e Checklist ao concluir.'
+          ],
+          links: [{ label: 'Abrir quadro.html', href: 'quadro.html' }]
+        },
+        {
+          tag: '02 · Núcleo Diário',
+          title: 'Detalhe da Tarefa (tópicos laterais + 1 coluna)',
+          fixes: [
+            'Tela cheia focada com botão real "← Voltar ao Quadro" e breadcrumb clicável.',
+            'Pessoa externa (Entidade) criada e vinculada em 1 clique, sem login.',
+            'Tabela Horas e Custo com privacidade estrita de R$ + linha do tempo Gestor.'
+          ],
+          links: [{ label: 'Abrir tarefa.html', href: 'tarefa.html' }]
+        },
+        {
+          tag: '03 · Captura Rápida',
+          title: 'Bandeja Rápida (360×560)',
+          fixes: [
+            'Daily compacta (<= 52px) exibe Em foco imediatamente acima da dobra.',
+            'Botão "+" 44×44px com autocomplete @pessoa e #projeto + rodapé fixo na Daily.',
+            'Sem mascote 3D roubando espaço em 360px e com guarda contra descarte acidental.'
+          ],
+          links: [{ label: 'Abrir bandeja.html', href: 'bandeja.html' }]
+        },
+        {
+          tag: '04 · Onboarding',
+          title: 'Novo Projeto (Sem dupla pergunta)',
+          fixes: [
+            'Acesso global de qualquer tela sem depender de estar no Quadro.',
+            'Caminho rápido "Criar projeto simples agora" em 1 clique + fluxo guiado sem jargão técnico.',
+            'Corrigida sobreposição do botão Voltar e removida frase "Mudar depois é barato".'
+          ],
+          links: [{ label: 'Abrir novo-projeto.html', href: 'novo-projeto.html' }]
+        },
+        {
+          tag: '05 · Gestão',
+          title: 'Dashboard do Gestor',
+          fixes: [
+            'Corrigido grid da Tabela de Equipe (sem deslocamento de colunas).',
+            'Progresso por contagem quando horas estimadas = 0 (fim do "0% acima de 1/3").',
+            'Atualizações limpas sem menções fora do MVP.'
+          ],
+          links: [{ label: 'Abrir dashboard.html', href: 'dashboard.html' }]
+        },
+        {
+          tag: '06 · Cadência & Rituais',
+          title: 'Agenda da Equipe',
+          fixes: [
+            'Botão "+ Novo agendamento" fixo no topo acima da lista de próximos eventos.',
+            'Grade Semana exibe os 7 dias inteiros incluindo Domingo sem corte horizontal.',
+            'Tipografia natural de datas e ações da Retro convertidas em tarefas.'
+          ],
+          links: [{ label: 'Abrir agenda.html', href: 'agenda.html' }]
+        },
+        {
+          tag: '07 · Fluxo Ágil (escopos separados)',
+          title: 'Backlog & Sprints',
+          fixes: [
+            'Backlog em tela limpa dedicada com "?" explicativo sobre próximas tarefas.',
+            'Sprints com rail próprio: Sprint ativa, Planejamento, Ritmo, Métricas e Bloqueios.',
+            'Encerrar Sprint com destino em lote/item e Retro integrada virando tarefa.'
+          ],
+          links: [
+            { label: 'Backlog', href: 'agil.html?tab=backlog' },
+            { label: 'Sprints & Ritmo', href: 'agil.html?tab=sprints' }
+          ]
+        },
+        {
+          tag: '08 · Fluxo Preditivo (escopos separados)',
+          title: 'Entregas (EAP) & Cronograma',
+          fixes: [
+            'Entregas foca apenas em Estrutura (EAP) e Riscos (3×3), sem misturar Cronograma.',
+            'Cronograma agrupa apenas Linha do tempo, Dependências, Marcos e Plano salvo.',
+            'Gantt e Matriz 3×3 contidos, dependências em pt-BR e Plano salvo com confirmação.'
+          ],
+          links: [
+            { label: 'Entregas & Riscos', href: 'preditivo.html?tab=entregas' },
+            { label: 'Cronograma & Plano', href: 'preditivo.html?tab=cronograma' }
+          ]
+        },
+        {
+          tag: '09 e 10 · Escopos separados',
+          title: 'Config. do Projeto & Ajustes do App',
+          fixes: [
+            'Config. do Projeto mostra apenas Ferramentas, Membros, Checklist (DoD) e Geral.',
+            'Ajustes do App mostra apenas Minhas preferências, Padrões da empresa e Atualizações.',
+            'Elimina trava oculta de minLevel, Plug-ins fica "Em breve" e atualizações sem git/pnpm.'
+          ],
+          links: [
+            { label: 'Config. do Projeto', href: 'configuracoes.html?tab=projeto' },
+            { label: 'Ajustes do App', href: 'configuracoes.html?tab=app' }
+          ]
+        }
+      ];
+
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderDayMap(role) {
+        var isManager = role === 'manager';
+        var data = isManager ? DAY_JOURNEYS.manager : DAY_JOURNEYS.collaborator;
+
+        var collabBtn = document.getElementById('day-role-collab');
+        var mgrBtn = document.getElementById('day-role-manager');
+        if (collabBtn) collabBtn.classList.toggle('is-active', !isManager);
+        if (mgrBtn) mgrBtn.classList.toggle('is-active', isManager);
+
+        document.getElementById('day-summary').textContent = data.summary;
+        document.getElementById('day-steps-grid').innerHTML = data.steps.map(function (st) {
+          return (
+            '<a class="day-step-row" href="' + st.href + '">' +
+              '<span class="day-time"><span class="dot-inline ' + (isManager ? 'is-manager' : 'is-muted') + '"></span>' + esc(st.time) + '</span>' +
+              '<div>' +
+                '<h3 class="day-step-title">' + esc(st.title) + '</h3>' +
+                '<p class="day-step-desc">' + esc(st.desc) + '</p>' +
+              '</div>' +
+              '<span class="day-step-cta">' + esc(st.cta) + '</span>' +
+            '</a>'
+          );
+        }).join('');
+      }
+
+      function renderScreensGrid() {
+        document.getElementById('screens-grid').innerHTML = SCREENS.map(function (sc) {
+          var fixesHtml = sc.fixes.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('');
+          var linksHtml = sc.links.map(function (lk, idx) {
+            return '<a class="btn btn-sm ' + (idx === 0 ? 'btn-secondary' : 'btn-ghost') + '" href="' + lk.href + '">' + esc(lk.label) + '</a>';
+          }).join('');
+          return (
+            '<article class="screen-row">' +
+              '<div>' +
+                '<span class="eyebrow">' + esc(sc.tag) + '</span>' +
+                '<h3 class="screen-row-title">' + esc(sc.title) + '</h3>' +
+                '<ul class="screen-fixes">' + fixesHtml + '</ul>' +
+              '</div>' +
+              '<div class="screen-links">' + linksHtml + '</div>' +
+            '</article>'
+          );
+        }).join('');
+      }
+
+      document.querySelectorAll('[data-day-role]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var nextRole = btn.getAttribute('data-day-role');
+          proto.setRole(nextRole);
+          renderDayMap(nextRole);
+        });
+      });
+
+      document.getElementById('cta-dashboard-gestor').addEventListener('click', function () {
+        proto.setRole('manager');
+      });
+
+      window.addEventListener('ab:rolechange', function (e) {
+        renderDayMap(e.detail.role);
+      });
+
+      renderDayMap(proto.getRole());
+      renderScreensGrid();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1843 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fluxo Ágil · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    /* ========================================================================
+       Fluxo Ágil — Monocromático, baixo contraste, Lei de Hick (.topic-layout)
+       ======================================================================== */
+    #page-root {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+      max-width: 100%;
+      padding: 0;
+    }
+
+    /* Permitir que a coluna direita acomode o quadro de 5 estados confortavelmente */
+    #page-root .topic-stage {
+      max-width: 100%;
+    }
+
+    .topic-panel-narrow {
+      max-width: 780px;
+    }
+
+    .dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+      display: inline-block;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+    .dot-inline.is-ok { background: var(--color-signal-ok); }
+    .dot-inline.is-muted { background: var(--color-text-subtle); }
+
+    .agil-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .agil-context-note {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+    }
+
+    .agil-notice-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 13px;
+      color: var(--color-text-body);
+    }
+
+    /* Lista limpa sem caixas aninhadas (divisórias 1px) */
+    .clean-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .clean-list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+      transition: background 140ms ease;
+    }
+
+    .clean-list-row:last-child {
+      border-bottom: 0;
+    }
+
+    .clean-list-main {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex: 1 1 300px;
+      min-width: 0;
+    }
+
+    .backlog-rank {
+      font-family: var(--font-family-mono);
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+      min-width: 22px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .backlog-order-btns {
+      display: inline-flex;
+      gap: 2px;
+      flex: none;
+    }
+
+    .order-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .order-btn:hover:not(:disabled) {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline);
+      color: var(--color-text-primary);
+    }
+
+    .order-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .task-code-mono {
+      font-family: var(--font-family-mono);
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+      flex: none;
+    }
+
+    .task-link {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      text-decoration: none;
+    }
+
+    .task-link:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--color-hairline-strong);
+      text-underline-offset: 3px;
+    }
+
+    .meta-inline {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+    }
+
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .backlog-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: none;
+    }
+
+    /* Sprint Ativa */
+    .sprint-head-block {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .sprint-meta-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .sprint-title {
+      margin: 0;
+      font-family: var(--font-family-display);
+      font-size: 18px;
+      font-weight: 650;
+      letter-spacing: -0.015em;
+      color: var(--color-text-primary);
+    }
+
+    .sprint-goal {
+      margin: 4px 0 10px;
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .progress-track {
+      height: 4px;
+      width: 220px;
+      max-width: 100%;
+      border-radius: 999px;
+      background: var(--color-hairline);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--color-text-muted);
+      transition: width 260ms var(--ease-ios);
+    }
+
+    /* Quadro da Sprint (5 estados na largura da coluna direita, mínimo de caixas) */
+    .sprint-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .sprint-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+      padding-right: 8px;
+      border-right: 1px solid var(--color-divider);
+    }
+
+    .sprint-col:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    .sprint-col-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-body);
+    }
+
+    .sprint-col-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .sprint-col-count {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sprint-task-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 9px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--color-hairline);
+      min-width: 0;
+    }
+
+    .sprint-task-card:hover {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-soft);
+    }
+
+    .sprint-task-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .sprint-task-title {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .sprint-task-title:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--color-hairline-strong);
+    }
+
+    .sprint-task-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sprint-move-select {
+      min-height: 30px;
+      width: 100%;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+
+    .sprint-move-select:hover {
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .sprint-move-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    /* Planejamento */
+    .plan-cap-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    /* Burndown discreto */
+    .burndown-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      padding-top: 8px;
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-swatch {
+      width: 20px;
+      height: 2px;
+      flex: none;
+    }
+
+    .legend-swatch.is-ideal {
+      border-top: 2px dashed #716e7c;
+      height: 0;
+    }
+
+    .legend-swatch.is-real {
+      background: #e2e0e8;
+    }
+
+    /* Métricas de fluxo em faixa limpa sem caixas pesadas */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    @media (max-width: 720px) {
+      .kpi-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kpi-cell {
+      padding: 8px 16px 14px 0;
+      border-right: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-cell:not(:first-child) {
+      padding-left: 16px;
+    }
+
+    .kpi-cell:last-child {
+      border-right: 0;
+      padding-right: 0;
+    }
+
+    @media (max-width: 720px) {
+      .kpi-cell {
+        border-right: 0;
+        border-bottom: 1px solid var(--color-divider);
+        padding: 10px 0 !important;
+      }
+      .kpi-cell:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    .kpi-value {
+      font-family: var(--font-family-display);
+      font-size: 24px;
+      font-weight: 650;
+      color: var(--color-text-primary);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-hint {
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+    }
+
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .clean-table th {
+      padding: 8px 0;
+      text-align: left;
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+      border-bottom: 1px solid var(--color-hairline);
+    }
+
+    .clean-table td {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+      color: var(--color-text-body);
+      vertical-align: middle;
+    }
+
+    .clean-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .clean-table th.num,
+    .clean-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      padding-left: 14px;
+    }
+
+    /* Filtro discreto de Bloqueios */
+    .quiet-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .quiet-switch-btn {
+      height: 30px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .quiet-switch-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .quiet-switch-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Modal Encerrar Sprint */
+    .close-sprint-modal {
+      width: min(640px, 100%);
+    }
+
+    .pending-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .pending-item-row:last-child {
+      border-bottom: 0;
+    }
+
+    .pending-item-row .select {
+      width: auto;
+      min-width: 185px;
+      min-height: 36px;
+    }
+
+    .batch-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .topic-layout.is-no-rail {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .topic-layout.is-no-rail .topic-stage {
+      max-width: 960px;
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="agil">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title" id="agil-page-title">Backlog</h1>
+        <p class="ab-page-sub" id="agil-page-subtitle">Organize o que vem a seguir por prioridade e envie ao Quadro ou Sprint em 1 clique.</p>
+      </div>
+      <div class="ab-page-head-actions" id="agil-page-actions"></div>
+    </header>
+
+    <div class="topic-layout" id="agil-topic-layout">
+      <nav class="topic-rail" id="agil-topic-rail" aria-label="Tópicos de Sprints"></nav>
+      <div class="topic-stage" id="agil-view-root"></div>
+    </div>
+  </section>
+
+  <!-- Modal: Nova tarefa futura -->
+  <div class="modal-backdrop" id="modal-new-backlog" role="dialog" aria-modal="true" aria-labelledby="modal-new-backlog-title">
+    <form class="modal" id="form-new-backlog">
+      <div class="modal-header">
+        <h3 id="modal-new-backlog-title">Nova tarefa futura</h3>
+        <button type="button" class="ab-kan-close-btn" data-close-modal="modal-new-backlog" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label" for="nb-title">O que precisa ser feito depois?</label>
+          <input type="text" class="input" id="nb-title" placeholder="Ex.: Simplificar filtro por cliente no relatório" required>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+          <div class="field">
+            <label class="field-label" for="nb-priority">Prioridade</label>
+            <select class="select" id="nb-priority">
+              <option value="Alta">Alta</option>
+              <option value="Média" selected>Média</option>
+              <option value="Baixa">Baixa</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="nb-est">Estimativa simples</label>
+            <select class="select" id="nb-est">
+              <option value="2h · Rápida">2h · Rápida</option>
+              <option value="4h · Média" selected>4h · Média</option>
+              <option value="8h · Grande">8h · Grande</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="nb-owner">Responsável sugerido</label>
+          <select class="select" id="nb-owner">
+            <option value="Pedro">Pedro</option>
+            <option value="Ana">Ana</option>
+            <option value="João">João</option>
+            <option value="Carlos">Carlos</option>
+            <option value="Maria">Maria</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close-modal="modal-new-backlog">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Adicionar ao Backlog</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal: Registrar bloqueio -->
+  <div class="modal-backdrop" id="modal-new-block" role="dialog" aria-modal="true" aria-labelledby="modal-new-block-title">
+    <form class="modal" id="form-new-block">
+      <div class="modal-header">
+        <h3 id="modal-new-block-title">Registrar bloqueio</h3>
+        <button type="button" class="ab-kan-close-btn" data-close-modal="modal-new-block" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label" for="blk-task">Qual tarefa está travada?</label>
+          <select class="select" id="blk-task"></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="blk-reason">O que está impedindo o andamento?</label>
+          <textarea class="textarea" id="blk-reason" placeholder="Ex.: Aguardando aprovação de acesso ao ambiente de homologação pelo cliente." required></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label" for="blk-owner">Quem ajuda a destravar?</label>
+          <select class="select" id="blk-owner">
+            <option value="Carla">Carla (Gestora)</option>
+            <option value="Carlos">Carlos (Backend)</option>
+            <option value="Pedro">Pedro (Colaborador)</option>
+            <option value="Maria">Maria (QA &amp; Testes)</option>
+            <option value="Cliente ACME (Externo)">Cliente ACME (Externo)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close-modal="modal-new-block">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar bloqueio</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal: Encerrar Sprint -->
+  <div class="modal-backdrop" id="modal-close-sprint" role="dialog" aria-modal="true" aria-labelledby="modal-close-sprint-title">
+    <div class="modal close-sprint-modal">
+      <div class="modal-header">
+        <h3 id="modal-close-sprint-title">Encerrar Sprint 14</h3>
+        <button type="button" class="ab-kan-close-btn" data-close-modal="modal-close-sprint" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body" id="close-sprint-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close-modal="modal-close-sprint">Voltar</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-close-sprint">Confirmar encerramento da Sprint</button>
+      </div>
+    </div>
+  </div>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var proto = window.AgileBoxProto;
+      var STATES = ['Planejamento', 'A fazer', 'Desenvolvendo', 'Revisar', 'Concluído'];
+      var STATE_DOT = {
+        'Planejamento': 'is-planejamento',
+        'A fazer': 'is-afazer',
+        'Desenvolvendo': 'is-desenvolvendo',
+        'Revisar': 'is-revisar',
+        'Concluído': 'is-concluido'
+      };
+
+      var initialTab = proto.getTab() === 'sprints' ? 'sprints' : 'backlog';
+      var state = {
+        scopeTab: initialTab,
+        activeTopic: initialTab === 'sprints' ? 'ativa' : 'backlog',
+        projectId: proto.getProjectId(),
+        lastBoardBanner: '',
+        sprint14Closed: false,
+        sprint15Started: false,
+        blockFilter: 'ativos',
+        retroNote: '',
+        retroActionTitle: '',
+        projectsData: {
+          a: {
+            simpleMode: false,
+            backlog: [
+              { id: 'AB-11', title: 'Revisar envio de nota fiscal automática', priority: 'Alta', estimate: '4h · Média', owner: 'Carlos', allocated: false },
+              { id: 'AB-12', title: 'Exportar histórico de tarefa em PDF simples', priority: 'Média', estimate: '3h · Média', owner: 'Ana', allocated: false },
+              { id: 'AB-13', title: 'Ajustar máscara de telefone no cadastro externo', priority: 'Média', estimate: '2h · Rápida', owner: 'João', allocated: false },
+              { id: 'AB-14', title: 'Melhorar mensagem de erro quando internet cai', priority: 'Baixa', estimate: '2h · Rápida', owner: 'Maria', allocated: false }
+            ],
+            sprint14: {
+              name: 'Sprint 14 · Fluxo de pedidos e relatórios',
+              goal: 'Entregar checkout simplificado e validação de pedidos sem travamentos.',
+              period: '16 nov – 27 nov',
+              daysLeft: 'Restam 4 dias',
+              doneTotalBase: 6,
+              totalCountBase: 10,
+              tasks: [
+                { id: 'AB-01', title: 'Definir critérios de erro do pagamento', status: 'Planejamento', owner: 'Ana', hours: 3 },
+                { id: 'AB-03', title: 'Validar campo de CEP no resumo do pedido', status: 'A fazer', owner: 'João', hours: 2 },
+                { id: 'AB-04', title: 'Atualizar endpoint de cálculo de frete', status: 'Desenvolvendo', owner: 'Carlos', hours: 6 },
+                { id: 'AB-05', title: 'Testar cupom de desconto com valor mínimo', status: 'Revisar', owner: 'Maria', hours: 3 },
+                { id: 'AB-06', title: 'Conferir textos do e-mail de confirmação', status: 'Revisar', owner: 'Pedro', hours: 2 },
+                { id: 'AB-07', title: 'Publicar ajuste de estoque em tempo real', status: 'Concluído', owner: 'Carlos', hours: 4 },
+                { id: 'AB-08', title: 'Corrigir alinhamento do botão Finalizar', status: 'Concluído', owner: 'Ana', hours: 2 }
+              ]
+            },
+            sprint15: {
+              name: 'Sprint 15 · Relatórios e notificações leves',
+              capacityHours: 32,
+              tasks: [
+                { id: 'AB-15', title: 'Resumo semanal para o gestor sem jargão', estimate: '6h', owner: 'Pedro' },
+                { id: 'AB-16', title: 'Filtro rápido de tarefas vencidas no Quadro', estimate: '4h', owner: 'Ana' },
+                { id: 'AB-17', title: 'Revisar textos da ajuda contextual', estimate: '4h', owner: 'Maria' }
+              ]
+            },
+            burndown: {
+              ideal: [40, 32, 24, 16, 8, 0],
+              real: [40, 34, 23, 14, null, null],
+              labels: ['16 nov', '18 nov', '20 nov', '22 nov (Hoje)', '25 nov', '27 nov']
+            },
+            flow: {
+              leadTime: '4,8 dias',
+              cycleTime: '2,1 dias',
+              throughput: '6 tarefas',
+              columns: [
+                { state: 'Planejamento', count: 4, avg: '1,2d', note: 'Fluxo normal', warn: false },
+                { state: 'A fazer', count: 3, avg: '0,9d', note: 'Fila saudável', warn: false },
+                { state: 'Desenvolvendo', count: 3, avg: '1,4d', note: 'Em ritmo estável', warn: false },
+                { state: 'Revisar', count: 2, avg: '1,6d', note: 'Ponto de atenção · fila acumulando', warn: true },
+                { state: 'Concluído', count: 6, avg: '—', note: 'Entregas desta semana', warn: false }
+              ]
+            },
+            blocks: [
+              { id: 'BLK-1', taskId: 'AB-04', taskTitle: 'Atualizar endpoint de cálculo de frete', reason: 'Aguardando chave de homologação da transportadora.', owner: 'Carla', age: 'há 2 dias', resolved: false },
+              { id: 'BLK-2', taskId: 'AB-05', taskTitle: 'Testar cupom de desconto com valor mínimo', reason: 'Massa de teste do cliente estava desatualizada (já atualizada).', owner: 'Maria', age: 'resolvido ontem', resolved: true }
+            ]
+          },
+          b: {
+            simpleMode: false,
+            backlog: [
+              { id: 'ERP-08', title: 'Migrar tabela de centros de custo', priority: 'Alta', estimate: '6h · Grande', owner: 'Carlos', allocated: false },
+              { id: 'ERP-09', title: 'Conferir saldos iniciais com a contabilidade', priority: 'Alta', estimate: '4h · Média', owner: 'Maria', allocated: false },
+              { id: 'ERP-10', title: 'Documentar passo a passo de login único', priority: 'Média', estimate: '2h · Rápida', owner: 'Pedro', allocated: false }
+            ],
+            sprint14: {
+              name: 'Ciclo 14 · Migração de Cadastros ERP',
+              goal: 'Concluir importação limpa de clientes e fornecedores sem duplicidades.',
+              period: '16 nov – 27 nov',
+              daysLeft: 'Restam 4 dias',
+              doneTotalBase: 4,
+              totalCountBase: 6,
+              tasks: [
+                { id: 'ERP-02', title: 'Mapear CNPJ duplicados na planilha antiga', status: 'Desenvolvendo', owner: 'Carlos', hours: 5 },
+                { id: 'ERP-03', title: 'Validar importação com financeiro', status: 'Revisar', owner: 'Maria', hours: 3 },
+                { id: 'ERP-04', title: 'Importar catálogo base de produtos', status: 'Concluído', owner: 'Pedro', hours: 4 }
+              ]
+            },
+            sprint15: {
+              name: 'Ciclo 15 · Testes integrados de faturamento',
+              capacityHours: 28,
+              tasks: [
+                { id: 'ERP-11', title: 'Simular emissão de 50 notas em lote', estimate: '5h', owner: 'Maria' }
+              ]
+            },
+            burndown: {
+              ideal: [30, 24, 18, 12, 6, 0],
+              real: [30, 26, 20, 15, null, null],
+              labels: ['16 nov', '18 nov', '20 nov', '22 nov (Hoje)', '25 nov', '27 nov']
+            },
+            flow: {
+              leadTime: '5,4 dias',
+              cycleTime: '2,6 dias',
+              throughput: '4 tarefas',
+              columns: [
+                { state: 'Planejamento', count: 3, avg: '1,5d', note: 'Fluxo normal', warn: false },
+                { state: 'A fazer', count: 2, avg: '1,1d', note: 'Fila saudável', warn: false },
+                { state: 'Desenvolvendo', count: 2, avg: '1,8d', note: 'Em execução', warn: false },
+                { state: 'Revisar', count: 1, avg: '1,6d', note: 'Ponto de atenção · aguardando validação', warn: true },
+                { state: 'Concluído', count: 4, avg: '—', note: 'Entregas desta semana', warn: false }
+              ]
+            },
+            blocks: [
+              { id: 'BLK-B1', taskId: 'ERP-02', taskTitle: 'Mapear CNPJ duplicados na planilha antiga', reason: 'Planilha enviada sem coluna de inscrição estadual.', owner: 'Carla', age: 'há 1 dia', resolved: false }
+            ]
+          },
+          c: {
+            simpleMode: true,
+            backlog: [],
+            sprint14: {
+              name: 'Sprint 14',
+              goal: 'Ainda sem ciclos ativos neste projeto simples.',
+              period: '16 nov – 27 nov',
+              daysLeft: 'Modo Simples',
+              doneTotalBase: 0,
+              totalCountBase: 0,
+              tasks: []
+            },
+            sprint15: { name: 'Próxima sprint', capacityHours: 20, tasks: [] },
+            burndown: {
+              ideal: [20, 16, 12, 8, 4, 0],
+              real: [20, 20, null, null, null, null],
+              labels: ['16 nov', '18 nov', '20 nov', '22 nov', '25 nov', '27 nov']
+            },
+            flow: {
+              leadTime: '1,9 dias',
+              cycleTime: '1,1 dias',
+              throughput: '3 tarefas',
+              columns: [
+                { state: 'Planejamento', count: 0, avg: '0,4d', note: 'Sem acúmulo', warn: false },
+                { state: 'A fazer', count: 2, avg: '0,5d', note: 'Prontas para iniciar', warn: false },
+                { state: 'Desenvolvendo', count: 1, avg: '0,8d', note: 'Em andamento', warn: false },
+                { state: 'Revisar', count: 1, avg: '1,6d', note: 'Ponto de atenção', warn: true },
+                { state: 'Concluído', count: 3, avg: '—', note: 'Concluídas na semana', warn: false }
+              ]
+            },
+            blocks: []
+          }
+        }
+      };
+
+      var pendingDecisions = {};
+
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function getCurrentData() {
+        return state.projectsData[state.projectId] || state.projectsData.a;
+      }
+
+      function getSprintProgress(data) {
+        var sp = data.sprint14;
+        var doneInBoard = sp.tasks.filter(function (t) { return t.status === 'Concluído'; }).length;
+        var totalTasks = Math.max(sp.totalCountBase, sp.tasks.length);
+        var doneCount = Math.min(totalTasks, sp.doneTotalBase - 2 + doneInBoard);
+        if (state.projectId === 'a' && sp.tasks.length >= 7) {
+          doneCount = Math.min(totalTasks, 4 + doneInBoard);
+        }
+        var pct = totalTasks ? Math.round((doneCount / totalTasks) * 100) : 0;
+        return { doneCount: doneCount, totalTasks: totalTasks, pct: pct };
+      }
+
+      function syncHeaderAndTab(data) {
+        var titleEl = document.getElementById('agil-page-title');
+        var subEl = document.getElementById('agil-page-subtitle');
+        var actionsEl = document.getElementById('agil-page-actions');
+        var layoutEl = document.getElementById('agil-topic-layout');
+        var railEl = document.getElementById('agil-topic-rail');
+
+        if (state.scopeTab === 'backlog') {
+          state.activeTopic = 'backlog';
+          if (layoutEl) layoutEl.classList.add('is-no-rail');
+          if (railEl) railEl.hidden = true;
+          if (titleEl) {
+            titleEl.innerHTML =
+              'Backlog ' +
+              '<span class="jargon-tip is-below" style="font-family:var(--font-family-sans);font-size:12px;vertical-align:middle;margin-left:4px;">' +
+                '<button type="button" class="jargon-tip-btn" aria-label="O que é Backlog?">?</button>' +
+                '<span class="jargon-tip-popover" role="tooltip">Próximas tarefas e ideias, em ordem de prioridade, antes de irem ao Quadro ou a uma Sprint.</span>' +
+              '</span>';
+          }
+          if (subEl) subEl.textContent = 'Organize o que vem a seguir por prioridade e envie ao Quadro ou Sprint em 1 clique.';
+          proto.setActiveTab('backlog', 'Backlog');
+          if (actionsEl) {
+            actionsEl.innerHTML = (data && data.simpleMode && data.backlog.length === 0)
+              ? '<button type="button" class="btn btn-primary" id="btn-enable-first-idea">+ Adicionar primeira ideia</button>'
+              : '<button type="button" class="btn btn-primary" id="btn-open-new-backlog">+ Nova tarefa no backlog</button>';
+          }
+        } else {
+          if (state.activeTopic === 'backlog') state.activeTopic = 'ativa';
+          if (layoutEl) layoutEl.classList.remove('is-no-rail');
+          if (railEl) railEl.hidden = false;
+          var subtitles = {
+            ativa: 'Quadro vivo da sprint ativa nos 5 estados oficiais e acompanhamento de entrega.',
+            planejamento: 'Selecione itens do Backlog que cabem na capacidade antes de iniciar o ciclo.',
+            ritmo: 'Acompanhe o ritmo restante da sprint em comparação com a linha ideal.',
+            fluxo: 'Veja quanto tempo o trabalho leva do pedido à entrega e onde está ficando retido.',
+            bloqueios: 'Centralize impedimentos ativos do projeto e registre quem ajuda a destravar.'
+          };
+          var titles = {
+            ativa: 'Sprint ativa',
+            planejamento: 'Planejamento da próxima sprint',
+            ritmo: 'Ritmo (Burndown)',
+            fluxo: 'Métricas de fluxo',
+            bloqueios: 'Bloqueios do projeto'
+          };
+          if (titleEl) titleEl.textContent = titles[state.activeTopic] || 'Sprints & Ritmo';
+          if (subEl) subEl.textContent = subtitles[state.activeTopic] || '';
+          proto.setActiveTab('sprints', 'Sprints');
+          if (actionsEl) {
+            if (state.activeTopic === 'ativa') {
+              if (data && data.simpleMode && data.sprint14.tasks.length === 0) {
+                actionsEl.innerHTML = '<a class="btn btn-primary" href="configuracoes.html?tab=projeto">Ativar Sprints em Configurações</a>';
+              } else {
+                actionsEl.innerHTML = '<button type="button" class="btn btn-primary" id="btn-open-close-sprint"' + (state.sprint14Closed ? ' disabled' : '') + '>' + (state.sprint14Closed ? 'Sprint 14 encerrada' : 'Encerrar Sprint') + '</button>';
+              }
+            } else if (state.activeTopic === 'planejamento') {
+              actionsEl.innerHTML = '<button type="button" class="btn btn-primary" id="btn-start-sprint15"' + (state.sprint15Started ? ' disabled' : '') + '>' + (state.sprint15Started ? 'Sprint 15 iniciada' : 'Iniciar Sprint') + '</button>';
+            } else if (state.activeTopic === 'bloqueios') {
+              actionsEl.innerHTML = '<button type="button" class="btn btn-primary" id="btn-open-new-block">+ Registrar bloqueio</button>';
+            } else {
+              actionsEl.innerHTML = '';
+            }
+          }
+        }
+      }
+
+      function renderTopicRail(data) {
+        var rail = document.getElementById('agil-topic-rail');
+        if (!rail) return;
+        if (state.scopeTab === 'backlog') {
+          rail.innerHTML = '';
+          rail.hidden = true;
+          return;
+        }
+        rail.hidden = false;
+
+        var prog = getSprintProgress(data);
+        var activeBlocks = data.blocks.filter(function (b) { return !b.resolved; }).length;
+
+        var topics = [
+          { id: 'ativa', label: 'Sprint ativa', count: data.simpleMode && !prog.totalTasks ? '—' : prog.doneCount + '/' + prog.totalTasks },
+          { id: 'planejamento', label: 'Planejamento', count: String(data.sprint15.tasks.length) },
+          { id: 'ritmo', label: 'Ritmo (Burndown)', count: '' },
+          { id: 'fluxo', label: 'Métricas de fluxo', count: '' },
+          { id: 'bloqueios', label: 'Bloqueios', count: String(activeBlocks), dangerDot: activeBlocks > 0 }
+        ];
+
+        rail.innerHTML =
+          '<span class="topic-rail-label">Sprints</span>' +
+          topics.map(function (tp) {
+            var isAct = state.activeTopic === tp.id;
+            var rightPart = tp.dangerDot
+              ? '<span class="topic-count" style="display:inline-flex;align-items:center;gap:5px;"><span class="dot-inline is-danger"></span>' + esc(tp.count) + '</span>'
+              : (tp.count ? '<span class="topic-count">' + esc(tp.count) + '</span>' : '');
+            return (
+              '<button type="button" class="topic-btn' + (isAct ? ' is-active' : '') + '" data-topic="' + tp.id + '"' + (isAct ? ' aria-current="true"' : '') + '>' +
+                '<span>' + esc(tp.label) + '</span>' +
+                rightPart +
+              '</button>'
+            );
+          }).join('');
+      }
+
+      function renderBacklog(data) {
+        if (data.simpleMode && data.backlog.length === 0) {
+          return (
+            '<div class="topic-panel">' +
+              '<div class="empty-state">' +
+                '<span class="topic-section-meta">Projeto C · Modo Simples</span>' +
+                '<h3>Seu Backlog ainda está vazio ou desligado</h3>' +
+                '<p>Projetos Simples começam apenas com o Quadro (5 estados) para reduzir atrito. Você pode anotar sua primeira ideia aqui agora ou ativar ferramentas em Configurações.</p>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;">' +
+                  '<a class="btn btn-secondary" href="configuracoes.html?tab=projeto">Ativar ferramentas</a>' +
+                  '<a class="btn btn-ghost" href="quadro.html?projeto=c">Ir para o Quadro</a>' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }
+
+        var bannerHtml = state.lastBoardBanner
+          ? '<div class="agil-notice-line">' +
+              '<span style="display:inline-flex;align-items:center;gap:8px;"><span class="dot-inline is-ok"></span><span>' + esc(state.lastBoardBanner) + '</span></span>' +
+              '<a class="btn btn-sm btn-ghost" href="quadro.html">Ver no Quadro →</a>' +
+            '</div>'
+          : '';
+
+        var rowsHtml = '';
+        if (!data.backlog.length) {
+          rowsHtml =
+            '<div class="empty-state">' +
+              '<h3>Nenhuma tarefa aguardando no Backlog</h3>' +
+              '<p>Tudo o que estava aqui já foi enviado para o Quadro ou alocado na Sprint.</p>' +
+            '</div>';
+        } else {
+          rowsHtml = '<div class="clean-list">' + data.backlog.map(function (item, idx) {
+            var prioDot = item.priority === 'Alta' ? 'is-danger' : (item.priority === 'Média' ? 'is-warning' : 'is-muted');
+            var isFirst = idx === 0;
+            var isLast = idx === data.backlog.length - 1;
+            return (
+              '<article class="clean-list-row" data-backlog-id="' + esc(item.id) + '">' +
+                '<div class="clean-list-main">' +
+                  '<span class="backlog-rank">#' + (idx + 1) + '</span>' +
+                  '<div class="backlog-order-btns" aria-label="Reordenar prioridade">' +
+                    '<button type="button" class="order-btn" data-move="up" data-idx="' + idx + '" aria-label="Subir prioridade de ' + esc(item.id) + '"' + (isFirst ? ' disabled' : '') + '>↑</button>' +
+                    '<button type="button" class="order-btn" data-move="down" data-idx="' + idx + '" aria-label="Descer prioridade de ' + esc(item.id) + '"' + (isLast ? ' disabled' : '') + '>↓</button>' +
+                  '</div>' +
+                  '<span class="task-code-mono">' + esc(item.id) + '</span>' +
+                  '<a class="task-link" href="tarefa.html?id=' + encodeURIComponent(item.id) + '">' + esc(item.title) + '</a>' +
+                  '<div class="meta-inline">' +
+                    '<span class="meta-item"><span class="dot-inline ' + prioDot + '"></span>' + esc(item.priority) + '</span>' +
+                    '<span class="meta-item">· ' + esc(item.estimate) + '</span>' +
+                    '<span class="meta-item">· ' + esc(item.owner) + '</span>' +
+                    (item.allocated ? '<span class="meta-item"><span class="dot-inline is-ok"></span>Na Sprint 14</span>' : '') +
+                  '</div>' +
+                '</div>' +
+                '<div class="backlog-actions">' +
+                  '<button type="button" class="btn btn-secondary btn-sm" data-send-board="' + esc(item.id) + '">Enviar ao quadro</button>' +
+                  '<button type="button" class="btn btn-ghost btn-sm" data-alloc-sprint="' + esc(item.id) + '"' + (item.allocated ? ' disabled' : '') + '>' + (item.allocated ? 'Na Sprint 14' : 'Alocar na Sprint 14') + '</button>' +
+                '</div>' +
+              '</article>'
+            );
+          }).join('') + '</div>';
+        }
+
+        return (
+          '<div class="topic-panel">' +
+            '<div class="agil-toolbar">' +
+              '<div class="agil-context-note">' +
+                '<span>' + data.backlog.length + ' itens · equivalem à coluna Planejamento</span>' +
+              '</div>' +
+            '</div>' +
+            bannerHtml +
+            rowsHtml +
+          '</div>'
+        );
+      }
+
+      function renderSprintActive(data) {
+        var sp = data.sprint14;
+        if (data.simpleMode && sp.tasks.length === 0) {
+          return (
+            '<div class="topic-panel topic-panel-narrow">' +
+              '<div class="empty-state">' +
+                '<span class="topic-section-meta">Projeto C · Modo Simples</span>' +
+                '<h3>Sprints desativadas neste projeto</h3>' +
+                '<p>O Projeto C usa fluxo contínuo simples apenas com o Quadro de 5 estados. Se quiser trabalhar com ciclos quinzenais, ative Sprints nas configurações do projeto.</p>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px;">' +
+                  '<a class="btn btn-secondary" href="quadro.html?projeto=c">Abrir Quadro</a>' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }
+
+        var prog = getSprintProgress(data);
+
+        var colsHtml = STATES.map(function (st) {
+          var colTasks = sp.tasks.filter(function (t) { return t.status === st; });
+          var dotCls = STATE_DOT[st] || 'is-afazer';
+          var cardsHtml = colTasks.length
+            ? colTasks.map(function (t) {
+                var optionsHtml = STATES.map(function (opt) {
+                  return '<option value="' + esc(opt) + '"' + (opt === t.status ? ' selected' : '') + '>' + esc(opt) + '</option>';
+                }).join('');
+                var roleBadge = t.editedByManager ? '<span class="badge badge-gestor">Gestor</span>' : '';
+                return (
+                  '<div class="sprint-task-card" data-sprint-task="' + esc(t.id) + '">' +
+                    '<div class="sprint-task-top">' +
+                      '<span class="task-code-mono">' + esc(t.id) + '</span>' +
+                      roleBadge +
+                    '</div>' +
+                    '<a class="sprint-task-title" href="tarefa.html?id=' + encodeURIComponent(t.id) + '">' + esc(t.title) + '</a>' +
+                    '<div class="sprint-task-foot">' +
+                      '<span>' + esc(t.owner) + '</span>' +
+                      '<span>' + t.hours + 'h</span>' +
+                    '</div>' +
+                    '<select class="sprint-move-select" data-move-sprint-task="' + esc(t.id) + '" aria-label="Mover ' + esc(t.id) + ' para outro estado">' +
+                      optionsHtml +
+                    '</select>' +
+                  '</div>'
+                );
+              }).join('')
+            : '<div style="padding:10px 4px;font-size:11.5px;color:var(--color-text-subtle);">Vazia</div>';
+
+          return (
+            '<div class="sprint-col">' +
+              '<div class="sprint-col-head">' +
+                '<span class="sprint-col-title"><span class="status-dot ' + dotCls + '"></span>' + esc(st) + '</span>' +
+                '<span class="sprint-col-count">' + colTasks.length + '</span>' +
+              '</div>' +
+              cardsHtml +
+            '</div>'
+          );
+        }).join('');
+
+        return (
+          '<div class="topic-panel">' +
+            '<div class="sprint-head-block">' +
+              '<div style="min-width:0;flex:1 1 360px;">' +
+                '<div class="sprint-meta-line">' +
+                  '<span class="meta-item"><span class="dot-inline ' + (state.sprint14Closed ? 'is-ok' : 'is-warning') + '"></span>' + (state.sprint14Closed ? 'Encerrada' : 'Em curso') + '</span>' +
+                  '<span>·</span>' +
+                  '<span>' + esc(sp.period) + '</span>' +
+                  '<span>·</span>' +
+                  '<span>' + esc(sp.daysLeft) + '</span>' +
+                '</div>' +
+                '<h2 class="sprint-title">' + esc(sp.name) + '</h2>' +
+                '<p class="sprint-goal">' + esc(sp.goal) + '</p>' +
+                '<div class="progress-row">' +
+                  '<div class="progress-track" aria-label="Progresso da sprint"><div class="progress-fill" style="width:' + prog.pct + '%"></div></div>' +
+                  '<span style="font-size:12.5px;color:var(--color-text-muted);font-variant-numeric:tabular-nums;">' + prog.doneCount + ' de ' + prog.totalTasks + ' concluídas (' + prog.pct + '%)</span>' +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                '<a class="btn btn-ghost" href="quadro.html">Abrir Quadro completo →</a>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sprint-board">' + colsHtml + '</div>' +
+          '</div>'
+        );
+      }
+
+      function renderSprintPlanning(data) {
+        var sp15 = data.sprint15;
+        var allocatedHours = sp15.tasks.reduce(function (acc, t) {
+          var h = parseInt(t.estimate, 10) || 4;
+          return acc + h;
+        }, 0);
+        var pctCap = Math.min(100, Math.round((allocatedHours / sp15.capacityHours) * 100));
+
+        var itemsHtml = sp15.tasks.length
+          ? '<div class="clean-list">' + sp15.tasks.map(function (t) {
+              return (
+                '<div class="clean-list-row">' +
+                  '<div class="clean-list-main">' +
+                    '<span class="task-code-mono">' + esc(t.id) + '</span>' +
+                    '<a class="task-link" href="tarefa.html?id=' + encodeURIComponent(t.id) + '">' + esc(t.title) + '</a>' +
+                  '</div>' +
+                  '<div class="meta-inline">' +
+                    '<span>' + esc(t.estimate) + '</span>' +
+                    '<span>· ' + esc(t.owner) + '</span>' +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('') + '</div>'
+          : '<div class="empty-state"><h3>Nenhum item selecionado para a Sprint 15</h3><p>Puxe itens do Backlog para montar o próximo ciclo.</p></div>';
+
+        return (
+          '<div class="topic-panel topic-panel-narrow">' +
+            '<section class="topic-section">' +
+              '<div class="agil-toolbar">' +
+                '<div>' +
+                  '<span class="eyebrow">Próximo ciclo</span>' +
+                  '<h2 class="sprint-title" style="margin-top:2px;">' + esc(sp15.name) + '</h2>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                  '<a class="btn btn-ghost" href="agenda.html">Agendar Planning</a>' +
+                '</div>' +
+              '</div>' +
+              '<div class="plan-cap-strip">' +
+                '<div style="display:flex;flex-direction:column;gap:4px;">' +
+                  '<span style="font-size:13px;color:var(--color-text-body);"><strong>' + allocatedHours + 'h</strong> de ' + sp15.capacityHours + 'h estimadas · folga de <strong>' + Math.max(0, sp15.capacityHours - allocatedHours) + 'h</strong></span>' +
+                  '<div class="progress-track"><div class="progress-fill" style="width:' + pctCap + '%"></div></div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                  '<span class="jargon-tip" style="font-size:12px;color:var(--color-text-subtle);">Capacidade média' +
+                    '<button type="button" class="jargon-tip-btn" aria-label="Explicar capacidade média">?</button>' +
+                    '<span class="jargon-tip-popover" role="tooltip">Média de horas concluídas pela equipe nas últimas 3 sprints (antiga Velocidade), ajustada para evitar sobrecarga.</span>' +
+                  '</span>' +
+                  '<button type="button" class="btn btn-secondary btn-sm" id="btn-pull-from-backlog">+ Puxar do Backlog</button>' +
+                '</div>' +
+              '</div>' +
+              itemsHtml +
+            '</section>' +
+          '</div>'
+        );
+      }
+
+      function renderBurndown(data) {
+        var bd = data.burndown;
+        var w = 620, h = 230, padL = 44, padR = 22, padT = 20, padB = 30;
+        var plotW = w - padL - padR;
+        var plotH = h - padT - padB;
+        var maxVal = bd.ideal[0] || 40;
+        var steps = bd.ideal.length - 1;
+
+        function xFor(i) { return padL + (plotW * i) / steps; }
+        function yFor(v) { return padT + plotH * (1 - v / maxVal); }
+
+        var gridLines = [0, 0.25, 0.5, 0.75, 1].map(function (f) {
+          var val = Math.round(maxVal * f);
+          var y = yFor(val);
+          return (
+            '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>' +
+            '<text x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" fill="#716e7c" font-size="10.5" font-family="Geist Mono Variable, monospace">' + val + 'h</text>'
+          );
+        }).join('');
+
+        var idealPts = bd.ideal.map(function (v, i) { return xFor(i).toFixed(1) + ',' + yFor(v).toFixed(1); }).join(' ');
+        var realPtsArr = [];
+        var realDots = '';
+        bd.real.forEach(function (v, i) {
+          if (v === null || v === undefined) return;
+          var cx = xFor(i).toFixed(1);
+          var cy = yFor(v).toFixed(1);
+          realPtsArr.push(cx + ',' + cy);
+          realDots += '<circle cx="' + cx + '" cy="' + cy + '" r="3.5" fill="#e2e0e8" stroke="#111015" stroke-width="1.5"><title>' + esc(bd.labels[i]) + ': ' + v + 'h restantes</title></circle>';
+        });
+
+        var xLabels = bd.labels.map(function (lbl, i) {
+          return '<text x="' + xFor(i).toFixed(1) + '" y="' + (h - 8) + '" text-anchor="middle" fill="#93909e" font-size="10.5">' + esc(lbl) + '</text>';
+        }).join('');
+
+        var todayX = xFor(3).toFixed(1);
+
+        return (
+          '<div class="topic-panel topic-panel-narrow">' +
+            '<section class="topic-section">' +
+              '<div class="topic-section-head">' +
+                '<h2 class="topic-section-title">Ritmo da sprint (Burndown)</h2>' +
+                '<span class="topic-section-meta">14h restantes · ideal 16h</span>' +
+              '</div>' +
+              '<svg class="burndown-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Gráfico de Ritmo da sprint comparando linha ideal pontilhada cinza e linha real contínua">' +
+                gridLines +
+                '<line x1="' + todayX + '" y1="' + padT + '" x2="' + todayX + '" y2="' + (h - padB) + '" stroke="rgba(255,255,255,0.22)" stroke-dasharray="4 4" stroke-width="1"/>' +
+                '<text x="' + todayX + '" y="' + (padT - 5) + '" text-anchor="middle" fill="#93909e" font-size="10">Hoje</text>' +
+                '<polyline fill="none" stroke="#716e7c" stroke-width="1.8" stroke-dasharray="5 5" points="' + idealPts + '"/>' +
+                '<polyline fill="none" stroke="#e2e0e8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" points="' + realPtsArr.join(' ') + '"/>' +
+                realDots +
+                xLabels +
+              '</svg>' +
+              '<div class="legend-row">' +
+                '<span class="legend-item"><span class="legend-swatch is-ideal"></span>Linha ideal (cinza tracejada)</span>' +
+                '<span class="legend-item"><span class="legend-swatch is-real"></span>Linha real (trabalho restante)</span>' +
+              '</div>' +
+            '</section>' +
+            '<section class="topic-section">' +
+              '<div class="topic-section-head">' +
+                '<h2 class="topic-section-title">Como ler o gráfico</h2>' +
+              '</div>' +
+              '<p class="topic-helper" style="margin:0;color:var(--color-text-body);">Linha real abaixo da pontilhada = ritmo no prazo ou adiantado · Linha acima = há acúmulo ou bloqueios.</p>' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--color-text-muted);padding-top:4px;">' +
+                '<span class="dot-inline is-ok"></span>' +
+                '<span>Hoje (22 nov), a equipe está <strong style="color:var(--color-text-primary);font-weight:600;">2h adiantada</strong> em relação ao ritmo esperado para encerrar em 27 nov.</span>' +
+              '</div>' +
+            '</section>' +
+          '</div>'
+        );
+      }
+
+      function renderFlowMetrics(data) {
+        var fl = data.flow;
+        var rowsHtml = fl.columns.map(function (c) {
+          var dot = STATE_DOT[c.state] || 'is-afazer';
+          var diag = c.warn
+            ? '<span class="meta-item" style="color:var(--color-signal-warning-text);"><span class="dot-inline is-warning"></span>' + esc(c.note) + '</span>'
+            : '<span style="color:var(--color-text-subtle);">' + esc(c.note) + '</span>';
+          return (
+            '<tr>' +
+              '<td><span class="meta-item" style="color:var(--color-text-primary);font-weight:500;"><span class="status-dot ' + dot + '"></span>' + esc(c.state) + '</span></td>' +
+              '<td class="num">' + c.count + '</td>' +
+              '<td class="num"><strong style="color:var(--color-text-primary);font-weight:600;">' + esc(c.avg) + '</strong></td>' +
+              '<td>' + diag + '</td>' +
+            '</tr>'
+          );
+        }).join('');
+
+        return (
+          '<div class="topic-panel topic-panel-narrow">' +
+            '<section class="topic-section">' +
+              '<div class="kpi-strip">' +
+                '<div class="kpi-cell">' +
+                  '<div class="kpi-label">' +
+                    '<span class="jargon-tip">Tempo do pedido à entrega' +
+                      '<button type="button" class="jargon-tip-btn" aria-label="Explicar Tempo do pedido à entrega">?</button>' +
+                      '<span class="jargon-tip-popover" role="tooltip">Antigo Lead Time: tempo total desde quando a tarefa foi pedida até ficar Concluída.</span>' +
+                    '</span>' +
+                  '</div>' +
+                  '<div class="kpi-value">' + esc(fl.leadTime) + '</div>' +
+                  '<div class="kpi-hint">Do pedido inicial até Concluído</div>' +
+                '</div>' +
+                '<div class="kpi-cell">' +
+                  '<div class="kpi-label">' +
+                    '<span class="jargon-tip">Tempo em execução' +
+                      '<button type="button" class="jargon-tip-btn" aria-label="Explicar Tempo em execução">?</button>' +
+                      '<span class="jargon-tip-popover" role="tooltip">Antigo Cycle Time: tempo em que a equipe esteve trabalhando ativamente após puxar para Desenvolvendo.</span>' +
+                    '</span>' +
+                  '</div>' +
+                  '<div class="kpi-value">' + esc(fl.cycleTime) + '</div>' +
+                  '<div class="kpi-hint">De Desenvolvendo até Concluído</div>' +
+                '</div>' +
+                '<div class="kpi-cell">' +
+                  '<div class="kpi-label">' +
+                    '<span class="jargon-tip">Entregas por semana' +
+                      '<button type="button" class="jargon-tip-btn" aria-label="Explicar Entregas por semana">?</button>' +
+                      '<span class="jargon-tip-popover" role="tooltip">Antigo Throughput (Vazão): média real de tarefas entregues pelas semanas ativas deste projeto.</span>' +
+                    '</span>' +
+                  '</div>' +
+                  '<div class="kpi-value">' + esc(fl.throughput) + '</div>' +
+                  '<div class="kpi-hint">Média nas semanas reais do projeto</div>' +
+                '</div>' +
+              '</div>' +
+            '</section>' +
+            '<section class="topic-section">' +
+              '<div class="topic-section-head">' +
+                '<h2 class="topic-section-title">Onde o trabalho fica retido (por etapa)</h2>' +
+                '<span class="meta-item" style="font-size:12px;color:var(--color-signal-warning-text);"><span class="dot-inline is-warning"></span>Revisar: 1,6d</span>' +
+              '</div>' +
+              '<p class="topic-helper">Os 5 estados oficiais mostram em qual coluna as tarefas aguardam mais tempo.</p>' +
+              '<table class="clean-table">' +
+                '<thead><tr><th>Etapa</th><th class="num">Tarefas</th><th class="num">Tempo médio</th><th>Diagnóstico</th></tr></thead>' +
+                '<tbody>' + rowsHtml + '</tbody>' +
+              '</table>' +
+            '</section>' +
+          '</div>'
+        );
+      }
+
+      function renderBlocks(data) {
+        var activeCount = data.blocks.filter(function (b) { return !b.resolved; }).length;
+        var filtered = data.blocks.filter(function (b) {
+          if (state.blockFilter === 'ativos') return !b.resolved;
+          if (state.blockFilter === 'resolvidos') return b.resolved;
+          return true;
+        });
+
+        var listHtml = filtered.length
+          ? '<div class="clean-list">' + filtered.map(function (b) {
+              return (
+                '<div class="clean-list-row" style="align-items:flex-start;">' +
+                  '<div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 300px;">' +
+                    '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">' +
+                      '<span class="dot-inline ' + (b.resolved ? 'is-ok' : 'is-danger') + '"></span>' +
+                      '<span class="task-code-mono">' + esc(b.taskId) + '</span>' +
+                      '<a class="task-link" href="tarefa.html?id=' + encodeURIComponent(b.taskId) + '">' + esc(b.taskTitle) + '</a>' +
+                    '</div>' +
+                    '<p style="margin:0;font-size:13px;color:var(--color-text-body);">' + esc(b.reason) + '</p>' +
+                    '<div class="meta-inline">' +
+                      '<span>Responsável: <strong style="color:var(--color-text-body);font-weight:500;">' + esc(b.owner) + '</strong></span>' +
+                      '<span>· ' + esc(b.age) + '</span>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div style="display:flex;gap:8px;align-items:center;">' +
+                    (!b.resolved
+                      ? '<button type="button" class="btn btn-secondary btn-sm" data-resolve-block="' + esc(b.id) + '">Marcar resolvido</button>'
+                      : '<span class="topic-section-meta">Resolvido</span>') +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('') + '</div>'
+          : '<div class="empty-state"><h3>Nenhum bloqueio nesta visão</h3><p>Tudo fluindo neste projeto. Se surgir algum impedimento, registre aqui em segundos.</p></div>';
+
+        return (
+          '<div class="topic-panel topic-panel-narrow">' +
+            '<div class="agil-toolbar">' +
+              '<div class="quiet-switch" role="group" aria-label="Filtrar bloqueios">' +
+                '<button type="button" class="quiet-switch-btn' + (state.blockFilter === 'ativos' ? ' is-active' : '') + '" data-block-filter="ativos">Ativos (' + activeCount + ')</button>' +
+                '<button type="button" class="quiet-switch-btn' + (state.blockFilter === 'resolvidos' ? ' is-active' : '') + '" data-block-filter="resolvidos">Resolvidos</button>' +
+                '<button type="button" class="quiet-switch-btn' + (state.blockFilter === 'todos' ? ' is-active' : '') + '" data-block-filter="todos">Todos</button>' +
+              '</div>' +
+            '</div>' +
+            listHtml +
+          '</div>'
+        );
+      }
+
+      function render() {
+        var data = getCurrentData();
+        syncHeaderAndTab(data);
+        renderTopicRail(data);
+
+        var root = document.getElementById('agil-view-root');
+        if (!root) return;
+
+        if (state.activeTopic === 'backlog') root.innerHTML = renderBacklog(data);
+        else if (state.activeTopic === 'ativa') root.innerHTML = renderSprintActive(data);
+        else if (state.activeTopic === 'planejamento') root.innerHTML = renderSprintPlanning(data);
+        else if (state.activeTopic === 'ritmo') root.innerHTML = renderBurndown(data);
+        else if (state.activeTopic === 'fluxo') root.innerHTML = renderFlowMetrics(data);
+        else root.innerHTML = renderBlocks(data);
+      }
+
+      function openModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('is-open');
+      }
+
+      function closeModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('is-open');
+      }
+
+      function openCloseSprintModal() {
+        var data = getCurrentData();
+        var sp = data.sprint14;
+        var delivered = sp.tasks.filter(function (t) { return t.status === 'Concluído'; });
+        var pending = sp.tasks.filter(function (t) { return t.status !== 'Concluído'; });
+
+        pending.forEach(function (t) {
+          if (!pendingDecisions[t.id]) pendingDecisions[t.id] = 'Sprint 15';
+        });
+
+        var pendingHtml = pending.map(function (t) {
+          var chosen = pendingDecisions[t.id] || 'Sprint 15';
+          return (
+            '<div class="pending-item-row">' +
+              '<div style="min-width:0;flex:1 1 220px;">' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                  '<span class="task-code-mono">' + esc(t.id) + '</span>' +
+                  '<strong style="font-size:13px;font-weight:500;">' + esc(t.title) + '</strong>' +
+                '</div>' +
+                '<span style="font-size:12px;color:var(--color-text-subtle);">Estado atual: ' + esc(t.status) + ' · ' + esc(t.owner) + '</span>' +
+              '</div>' +
+              '<select class="select" data-pending-dest="' + esc(t.id) + '" aria-label="Destino de ' + esc(t.id) + '">' +
+                '<option value="Backlog"' + (chosen === 'Backlog' ? ' selected' : '') + '>Mover para Backlog</option>' +
+                '<option value="Sprint 15"' + (chosen === 'Sprint 15' ? ' selected' : '') + '>Passar para Sprint 15</option>' +
+                '<option value="Quadro"' + (chosen === 'Quadro' ? ' selected' : '') + '>Manter no Quadro</option>' +
+              '</select>' +
+            '</div>'
+          );
+        }).join('');
+
+        var body = document.getElementById('close-sprint-body');
+        body.innerHTML =
+          '<div class="kv-list" style="border-bottom:1px solid var(--color-divider);padding-bottom:6px;">' +
+            '<div class="kv-row"><span class="kv-label">Entregues</span><div class="kv-value"><strong>' + (delivered.length + 4) + ' tarefas</strong></div></div>' +
+            '<div class="kv-row"><span class="kv-label">Pendentes</span><div class="kv-value"><strong>' + pending.length + ' tarefas</strong></div></div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+              '<strong style="font-size:13px;">Destino das tarefas pendentes</strong>' +
+              '<div class="batch-bar">' +
+                '<button type="button" class="btn btn-sm btn-ghost" data-batch-dest="Backlog">Todas → Backlog</button>' +
+                '<button type="button" class="btn btn-sm btn-ghost" data-batch-dest="Sprint 15">Todas → Sprint 15</button>' +
+                '<button type="button" class="btn btn-sm btn-ghost" data-batch-dest="Quadro">Todas → Quadro</button>' +
+              '</div>' +
+            '</div>' +
+            '<div>' + pendingHtml + '</div>' +
+          '</div>' +
+          '<div style="border-top:1px solid var(--color-divider);padding-top:12px;display:flex;flex-direction:column;gap:10px;">' +
+            '<strong style="font-size:13px;">Lições aprendidas (Retrospectiva integrada)</strong>' +
+            '<div class="field">' +
+              '<label class="field-label" for="retro-notes">O que funcionou bem ou pode melhorar?</label>' +
+              '<textarea class="textarea" id="retro-notes" placeholder="Ex.: Revisar mais cedo para não acumular na coluna Revisar.">' + esc(state.retroNote) + '</textarea>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label class="field-label" for="retro-action-input">Combinado prático para virar tarefa (opcional)</label>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '<input type="text" class="input" id="retro-action-input" style="flex:1;min-width:200px;" placeholder="Ex.: Automatizar checklist de homologação" value="' + esc(state.retroActionTitle) + '">' +
+                '<button type="button" class="btn btn-secondary" id="btn-retro-to-task">Virar tarefa</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        openModal('modal-close-sprint');
+      }
+
+      // Cliques nos tópicos laterais
+      document.getElementById('agil-topic-rail').addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-topic]');
+        if (!btn) return;
+        state.activeTopic = btn.getAttribute('data-topic');
+        render();
+      });
+
+      // Ações contextuais no cabeçalho único (.ab-page-head-actions)
+      document.getElementById('agil-page-actions').addEventListener('click', function (ev) {
+        if (ev.target.closest('#btn-open-new-backlog') || ev.target.closest('#btn-enable-first-idea')) {
+          openModal('modal-new-backlog');
+          setTimeout(function () { document.getElementById('nb-title').focus(); }, 20);
+          return;
+        }
+        if (ev.target.closest('#btn-open-close-sprint')) {
+          openCloseSprintModal();
+          return;
+        }
+        if (ev.target.closest('#btn-start-sprint15')) {
+          state.sprint15Started = true;
+          proto.showToast('Sprint 15 iniciada! Cartões disponíveis no Quadro.', 'success');
+          render();
+          return;
+        }
+        if (ev.target.closest('#btn-open-new-block')) {
+          var data = getCurrentData();
+          var sel = document.getElementById('blk-task');
+          var tasks = data.sprint14.tasks.length ? data.sprint14.tasks : [{ id: 'AB-99', title: 'Tarefa geral do projeto' }];
+          sel.innerHTML = tasks.map(function (t) {
+            return '<option value="' + esc(t.id + '||' + t.title) + '">' + esc(t.id + ' · ' + t.title) + '</option>';
+          }).join('');
+          openModal('modal-new-block');
+          setTimeout(function () { document.getElementById('blk-reason').focus(); }, 20);
+        }
+      });
+
+      // Delegação principal de cliques no #agil-view-root
+      document.getElementById('agil-view-root').addEventListener('click', function (ev) {
+        var data = getCurrentData();
+
+        var moveBtn = ev.target.closest('[data-move]');
+        if (moveBtn) {
+          var idx = parseInt(moveBtn.getAttribute('data-idx'), 10);
+          var dir = moveBtn.getAttribute('data-move');
+          var target = dir === 'up' ? idx - 1 : idx + 1;
+          if (target >= 0 && target < data.backlog.length) {
+            var tmp = data.backlog[idx];
+            data.backlog[idx] = data.backlog[target];
+            data.backlog[target] = tmp;
+            render();
+            proto.showToast('Prioridade atualizada no Backlog.', 'info');
+          }
+          return;
+        }
+
+        var sendBtn = ev.target.closest('[data-send-board]');
+        if (sendBtn) {
+          var id = sendBtn.getAttribute('data-send-board');
+          var found = null;
+          data.backlog = data.backlog.filter(function (b) {
+            if (b.id === id) { found = b; return false; }
+            return true;
+          });
+          if (found) {
+            state.lastBoardBanner = found.id + ' ("' + found.title + '") foi enviada para a coluna A fazer no Quadro.';
+            proto.showToast(found.id + ' enviada ao Quadro (A fazer)!', 'success');
+            render();
+          }
+          return;
+        }
+
+        var allocBtn = ev.target.closest('[data-alloc-sprint]');
+        if (allocBtn) {
+          var aid = allocBtn.getAttribute('data-alloc-sprint');
+          data.backlog.forEach(function (b) {
+            if (b.id === aid && !b.allocated) {
+              b.allocated = true;
+              data.sprint14.tasks.push({
+                id: b.id,
+                title: b.title,
+                status: 'A fazer',
+                owner: b.owner,
+                hours: parseInt(b.estimate, 10) || 4
+              });
+              proto.showToast(b.id + ' alocada na Sprint 14.', 'success');
+            }
+          });
+          render();
+          return;
+        }
+
+        if (ev.target.closest('#btn-open-new-backlog') || ev.target.closest('#btn-enable-first-idea')) {
+          openModal('modal-new-backlog');
+          setTimeout(function () { document.getElementById('nb-title').focus(); }, 20);
+          return;
+        }
+
+        if (ev.target.closest('#btn-open-close-sprint')) {
+          openCloseSprintModal();
+          return;
+        }
+
+        if (ev.target.closest('#btn-start-sprint15')) {
+          state.sprint15Started = true;
+          proto.showToast('Sprint 15 iniciada! Cartões disponíveis no Quadro.', 'success');
+          render();
+          return;
+        }
+
+        if (ev.target.closest('#btn-pull-from-backlog')) {
+          if (data.backlog.length) {
+            var next = data.backlog.shift();
+            data.sprint15.tasks.push({ id: next.id, title: next.title, estimate: (parseInt(next.estimate, 10) || 4) + 'h', owner: next.owner });
+            proto.showToast(next.id + ' adicionada na Sprint 15.', 'success');
+            render();
+          } else {
+            proto.showToast('Não há mais itens no Backlog.', 'warning');
+          }
+          return;
+        }
+
+        var filterBtn = ev.target.closest('[data-block-filter]');
+        if (filterBtn) {
+          state.blockFilter = filterBtn.getAttribute('data-block-filter');
+          render();
+          return;
+        }
+
+        var resolveBtn = ev.target.closest('[data-resolve-block]');
+        if (resolveBtn) {
+          var bid = resolveBtn.getAttribute('data-resolve-block');
+          data.blocks.forEach(function (b) {
+            if (b.id === bid) {
+              b.resolved = true;
+              b.age = 'resolvido agora';
+            }
+          });
+          proto.showToast('Bloqueio marcado como resolvido.', 'success');
+          render();
+          return;
+        }
+
+        if (ev.target.closest('#btn-open-new-block')) {
+          var sel = document.getElementById('blk-task');
+          var tasks = data.sprint14.tasks.length ? data.sprint14.tasks : [{ id: 'AB-99', title: 'Tarefa geral do projeto' }];
+          sel.innerHTML = tasks.map(function (t) {
+            return '<option value="' + esc(t.id + '||' + t.title) + '">' + esc(t.id + ' · ' + t.title) + '</option>';
+          }).join('');
+          openModal('modal-new-block');
+          setTimeout(function () { document.getElementById('blk-reason').focus(); }, 20);
+        }
+      });
+
+      // Mover cartão dentro da Sprint Ativa
+      document.getElementById('agil-view-root').addEventListener('change', function (ev) {
+        var sel = ev.target.closest('[data-move-sprint-task]');
+        if (!sel) return;
+        var tid = sel.getAttribute('data-move-sprint-task');
+        var newStatus = sel.value;
+        var data = getCurrentData();
+        data.sprint14.tasks.forEach(function (t) {
+          if (t.id === tid) {
+            t.status = newStatus;
+            if (proto.getRole() === 'manager') t.editedByManager = true;
+          }
+        });
+        proto.showToast(tid + ' movida para ' + newStatus + (proto.getRole() === 'manager' ? ' (marca Gestor).' : '.'), 'success');
+        render();
+      });
+
+      // Fechar modais (clique e Escape)
+      document.addEventListener('click', function (ev) {
+        var closeBtn = ev.target.closest('[data-close-modal]');
+        if (closeBtn) {
+          closeModal(closeBtn.getAttribute('data-close-modal'));
+          return;
+        }
+        if (ev.target.classList && ev.target.classList.contains('modal-backdrop') && ev.target.id !== 'ab-global-newtask-modal') {
+          ev.target.classList.remove('is-open');
+        }
+      });
+
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') {
+          ['modal-new-backlog', 'modal-new-block', 'modal-close-sprint'].forEach(closeModal);
+        }
+      });
+
+      // Submit nova tarefa futura
+      document.getElementById('form-new-backlog').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var title = document.getElementById('nb-title').value.trim();
+        if (!title) return;
+        var data = getCurrentData();
+        var nextNum = 18 + data.backlog.length;
+        var prefix = state.projectId === 'b' ? 'ERP-' : (state.projectId === 'c' ? 'SIM-' : 'AB-');
+        data.backlog.push({
+          id: prefix + nextNum,
+          title: title,
+          priority: document.getElementById('nb-priority').value,
+          estimate: document.getElementById('nb-est').value,
+          owner: document.getElementById('nb-owner').value,
+          allocated: false
+        });
+        document.getElementById('nb-title').value = '';
+        closeModal('modal-new-backlog');
+        proto.showToast('Tarefa adicionada ao Backlog.', 'success');
+        render();
+      });
+
+      // Submit novo bloqueio
+      document.getElementById('form-new-block').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var rawTask = document.getElementById('blk-task').value.split('||');
+        var reason = document.getElementById('blk-reason').value.trim();
+        if (!reason) return;
+        var data = getCurrentData();
+        data.blocks.unshift({
+          id: 'BLK-' + (data.blocks.length + 10),
+          taskId: rawTask[0] || 'AB-01',
+          taskTitle: rawTask[1] || 'Tarefa do projeto',
+          reason: reason,
+          owner: document.getElementById('blk-owner').value,
+          age: 'registrado agora',
+          resolved: false
+        });
+        document.getElementById('blk-reason').value = '';
+        closeModal('modal-new-block');
+        proto.showToast('Bloqueio registrado e visível no Dashboard.', 'warning');
+        render();
+      });
+
+      // Interações dentro do modal Encerrar Sprint
+      document.getElementById('modal-close-sprint').addEventListener('click', function (ev) {
+        var batchBtn = ev.target.closest('[data-batch-dest]');
+        if (batchBtn) {
+          var dest = batchBtn.getAttribute('data-batch-dest');
+          var selects = document.querySelectorAll('[data-pending-dest]');
+          for (var i = 0; i < selects.length; i++) {
+            selects[i].value = dest;
+            pendingDecisions[selects[i].getAttribute('data-pending-dest')] = dest;
+          }
+          proto.showToast('Todos os itens pendentes marcados para: ' + dest, 'info');
+          return;
+        }
+        if (ev.target.closest('#btn-retro-to-task')) {
+          var noteEl = document.getElementById('retro-notes');
+          var actEl = document.getElementById('retro-action-input');
+          state.retroNote = noteEl ? noteEl.value.trim() : '';
+          var actTitle = actEl ? actEl.value.trim() : '';
+          if (!actTitle) {
+            actTitle = 'Melhoria da Retro: revisar entregas antes do fim da sprint';
+          }
+          var data = getCurrentData();
+          var newId = 'RET-' + (data.backlog.length + 1);
+          data.backlog.unshift({
+            id: newId,
+            title: actTitle,
+            priority: 'Alta',
+            estimate: '2h · Rápida',
+            owner: 'Pedro',
+            allocated: false
+          });
+          state.retroActionTitle = '';
+          if (actEl) actEl.value = '';
+          proto.showToast('Aprendizado registrado e tarefa ' + newId + ' criada no Backlog!', 'success');
+        }
+      });
+
+      document.getElementById('modal-close-sprint').addEventListener('change', function (ev) {
+        var sel = ev.target.closest('[data-pending-dest]');
+        if (sel) {
+          pendingDecisions[sel.getAttribute('data-pending-dest')] = sel.value;
+        }
+      });
+
+      document.getElementById('btn-confirm-close-sprint').addEventListener('click', function () {
+        var data = getCurrentData();
+        var remaining = [];
+        data.sprint14.tasks.forEach(function (t) {
+          if (t.status === 'Concluído') {
+            remaining.push(t);
+            return;
+          }
+          var dest = pendingDecisions[t.id] || 'Sprint 15';
+          if (dest === 'Backlog') {
+            data.backlog.push({ id: t.id, title: t.title, priority: 'Média', estimate: t.hours + 'h · Média', owner: t.owner, allocated: false });
+          } else if (dest === 'Sprint 15') {
+            data.sprint15.tasks.push({ id: t.id, title: t.title, estimate: t.hours + 'h', owner: t.owner });
+          }
+        });
+        data.sprint14.tasks = remaining;
+        state.sprint14Closed = true;
+        closeModal('modal-close-sprint');
+        proto.showToast('Sprint 14 encerrada e pendentes redistribuídas com segurança.', 'success');
+        render();
+      });
+
+      function syncFromAIStore(skipRender) {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st) return;
+        ['a', 'b', 'c'].forEach(function (pid) {
+          var pData = state.projectsData[pid];
+          if (!pData) return;
+          if (st.backlog && Array.isArray(st.backlog[pid])) {
+            pData.backlog = JSON.parse(JSON.stringify(st.backlog[pid]));
+          }
+          if (st.sprints && st.sprints[pid] && pData.sprint14) {
+            pData.sprint14.name = st.sprints[pid].name;
+            pData.sprint14.goal = st.sprints[pid].goal;
+            pData.sprint14.tasks = JSON.parse(JSON.stringify(st.sprints[pid].tasks || []));
+            if (pid === state.projectId) {
+              state.sprint14Closed = Boolean(st.sprints[pid].closed);
+            }
+          }
+        });
+        if (!skipRender) render();
+      }
+
+      window.addEventListener('ab:projectchange', function (e) {
+        state.projectId = e.detail.projectId;
+        state.lastBoardBanner = '';
+        syncFromAIStore(true);
+        render();
+      });
+
+      window.addEventListener('ab:storechange', function () {
+        syncFromAIStore(false);
+      });
+
+      window.addEventListener('ab:taskcreated', function (e) {
+        if (e.detail && e.detail.source === 'kan-ai') return;
+        if (e.detail && e.detail.projectId === state.projectId) {
+          var data = getCurrentData();
+          data.backlog.unshift({
+            id: 'NV-' + (data.backlog.length + 20),
+            title: e.detail.title,
+            priority: 'Média',
+            estimate: '2h · Rápida',
+            owner: e.detail.assignee || 'Pedro',
+            allocated: false
+          });
+          if (state.activeTopic === 'backlog') render();
+        }
+      });
+
+      syncFromAIStore(true);
+      render();
+    });
+  </script>
+</body>
+</html>

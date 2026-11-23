@@ -9,3 +9,5 @@ out/
 *.tsbuildinfo
 release/
 .agents/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

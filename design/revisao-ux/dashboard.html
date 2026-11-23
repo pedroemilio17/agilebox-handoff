@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Gestor · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    #page-root {
+      max-width: 100%;
+      padding: 0;
+      min-width: 0;
+    }
+
+    .dash-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+    }
+
+    /* Alternador discreto no cabeçalho (Visão geral | Atualizações) */
+    .dash-view-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 8px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+    }
+
+    .dash-view-btn {
+      height: 32px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .dash-view-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .dash-view-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    /* Proteção educativa no modo Colaborador */
+    .role-gate {
+      max-width: 580px;
+      margin: 28px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .role-gate h2 {
+      margin: 4px 0 0;
+      font-family: var(--font-family-display);
+      font-size: 20px;
+      font-weight: 650;
+      color: var(--color-text-primary);
+    }
+
+    .role-gate p {
+      margin: 0;
+      color: var(--color-text-body);
+      line-height: 1.5;
+      font-size: 13.5px;
+    }
+
+    .role-gate-points {
+      margin: 0;
+      padding: 10px 0 10px 18px;
+      border-top: 1px solid var(--color-divider);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    .role-gate-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Pontinhos sutis de 6px */
+    .dot-inline {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+    .dot-inline.is-ok { background: var(--color-signal-ok); }
+    .dot-inline.is-manager { background: var(--color-manager-dot); }
+
+    /* ======================================================================
+       Corpo do Dashboard — Full-width, monocromático, zero caixas pesadas
+       ====================================================================== */
+    .dash-body {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      min-width: 0;
+    }
+
+    /* 1. Faixa KPI horizontal (5 métricas em 100% da largura, divisórias 1px) */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .kpi-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 0 18px;
+      border-right: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .kpi-cell:first-child {
+      padding-left: 0;
+    }
+
+    .kpi-cell:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    .kpi-label {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      color: var(--color-text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-value {
+      font-family: var(--font-family-display);
+      font-size: 24px;
+      font-weight: 650;
+      line-height: 1.15;
+      color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Cabeçalho interno de seção limpa */
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .sec-title {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .sec-meta {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 2. Grade central 2 colunas: Tarefas por estado | Precisa de você */
+    .dash-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--color-divider);
+      align-items: start;
+    }
+
+    /* Barra segmentada fina dos 5 estados */
+    .state-bar-full {
+      display: flex;
+      height: 5px;
+      width: 100%;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--color-tint-chip);
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .state-seg { height: 100%; opacity: 0.72; }
+    .state-seg.is-planejamento { background: var(--color-status-planejamento); }
+    .state-seg.is-afazer { background: var(--color-status-afazer); }
+    .state-seg.is-desenvolvendo { background: var(--color-status-desenvolvendo); }
+    .state-seg.is-revisar { background: var(--color-status-revisar); }
+    .state-seg.is-concluido { background: var(--color-status-concluido); }
+
+    .cat-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cat-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1.2fr) minmax(70px, 1fr) 56px 76px;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 4px;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 13px;
+      color: var(--color-text-body);
+      text-decoration: none;
+      transition: background 140ms ease;
+    }
+
+    .cat-row:last-child {
+      border-bottom: 0;
+    }
+
+    .cat-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .cat-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    .cat-mini-track {
+      height: 3px;
+      border-radius: 999px;
+      background: var(--color-tint-chip);
+      overflow: hidden;
+    }
+
+    .cat-mini-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--color-text-muted);
+      opacity: 0.55;
+    }
+
+    .cat-num {
+      text-align: right;
+      font-family: var(--font-family-mono);
+      font-size: 12px;
+      color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cat-time {
+      text-align: right;
+      font-family: var(--font-family-mono);
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Lista "Precisa de você" limpa */
+    .attention-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .attention-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--color-divider);
+      color: var(--color-text-primary);
+      text-decoration: none;
+      transition: background 140ms ease;
+    }
+
+    .attention-row:last-child {
+      border-bottom: 0;
+    }
+
+    .attention-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .attention-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .attention-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .attention-meta {
+      padding-left: 14px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+    }
+
+    .row-action-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      flex: none;
+    }
+
+    .attention-row:hover .row-action-link {
+      color: var(--color-text-primary);
+    }
+
+    /* 3. Projetos — 3 colunas lado a lado, divisórias sutis sem caixas pesadas */
+    .projects-section {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .project-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 20px 10px 0;
+      border-right: 1px solid var(--color-divider);
+      text-decoration: none;
+      color: inherit;
+      transition: background 140ms ease;
+      min-width: 0;
+    }
+
+    .project-col:not(:first-child) {
+      padding-left: 20px;
+    }
+
+    .project-col:last-child {
+      border-right: 0;
+      padding-right: 0;
+    }
+
+    .project-col:hover .project-open {
+      color: var(--color-text-primary);
+    }
+
+    .project-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .project-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .project-pct {
+      font-family: var(--font-family-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .project-sub {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .project-bar {
+      display: flex;
+      height: 4px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--color-tint-chip);
+      gap: 1px;
+    }
+
+    .project-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .project-cost {
+      font-family: var(--font-family-mono);
+      color: var(--color-text-body);
+    }
+
+    .project-open {
+      color: var(--color-text-subtle);
+      transition: color 140ms ease;
+    }
+
+    /* 4. Colaboradores (tabela aberta 100% da largura, sem borda externa) */
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .clean-table th {
+      padding: 8px 10px 8px 0;
+      text-align: left;
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+      border-bottom: 1px solid var(--color-hairline);
+      white-space: nowrap;
+    }
+
+    .clean-table td {
+      padding: 10px 10px 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+      color: var(--color-text-body);
+      vertical-align: middle;
+    }
+
+    .clean-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .clean-table tbody tr:hover td {
+      background: var(--color-tint-faint);
+    }
+
+    .clean-table th.num,
+    .clean-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      padding-right: 16px;
+    }
+
+    .clean-table th:last-child,
+    .clean-table td:last-child {
+      padding-right: 0;
+      text-align: right;
+    }
+
+    .person-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .person-avatar {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--color-tint-chip);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-primary);
+      font-size: 11px;
+      font-weight: 600;
+      flex: none;
+    }
+
+    .person-name {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .person-role {
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+    }
+
+    /* Aba Atualizações */
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .filter-chip {
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .filter-chip:hover {
+      color: var(--color-text-primary);
+      background: var(--color-tint-faint);
+    }
+
+    .filter-chip.is-active {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline);
+      color: var(--color-text-primary);
+    }
+
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      max-width: 820px;
+    }
+
+    .feed-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 11px 4px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .feed-row:last-child {
+      border-bottom: 0;
+    }
+
+    .feed-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .feed-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--color-text-primary);
+    }
+
+    .feed-time {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+    }
+
+    .feed-detail {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+    }
+
+    /* Modal Resumo do dia */
+    .daily-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .daily-row:last-child {
+      border-bottom: 0;
+    }
+
+    @media (max-width: 1040px) {
+      .kpi-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        row-gap: 14px;
+      }
+
+      .kpi-cell:nth-child(3) {
+        border-right: 0;
+      }
+
+      .kpi-cell:nth-child(4) {
+        padding-left: 0;
+      }
+
+      .dash-split {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+      }
+
+      .projects-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .project-col {
+        padding: 12px 0 !important;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-divider);
+      }
+
+      .project-col:last-child {
+        border-bottom: 0;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="dashboard">
+  <section id="page-root" class="dash-wrap">
+    <!-- Cabeçalho fixo do Contrato Espacial -->
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title">Dashboard do Gestor</h1>
+        <p class="ab-page-sub">Panorama consolidado de ritmo, estados, projetos, equipe e custos.</p>
+      </div>
+      <div class="ab-page-head-actions" data-role-only="manager">
+        <div class="dash-view-switch" role="tablist" aria-label="Modo do dashboard">
+          <button type="button" class="dash-view-btn is-active" data-dash-view="overview" role="tab" aria-selected="true">Visão geral</button>
+          <button type="button" class="dash-view-btn" data-dash-view="updates" role="tab" aria-selected="false">Atualizações</button>
+        </div>
+        <button type="button" class="btn btn-primary" id="btn-open-daily" style="min-height:38px;">
+          Resumo do dia
+        </button>
+      </div>
+    </header>
+
+    <!-- Guarda educativa no modo Colaborador -->
+    <div class="role-gate" data-role-only="collaborator" aria-live="polite">
+      <span class="badge badge-gestor" style="width:fit-content;">Exclusivo do Gestor</span>
+      <h2>Visão consolidada da equipe e custos em R$</h2>
+      <p>
+        Por privacidade e foco no dia a dia, o Dashboard do Gestor reúne indicadores de todos os projetos, valores/hora e custos acumulados apenas para quem gerencia o espaço.
+      </p>
+      <ul class="role-gate-points">
+        <li>Você acompanha e atualiza suas tarefas no <strong>Quadro</strong> e na <strong>Bandeja</strong>.</li>
+        <li>Na tarefa, apenas o seu próprio valor/hora fica visível para você.</li>
+      </ul>
+      <div class="role-gate-actions">
+        <a href="quadro.html" class="btn btn-primary" style="min-height:40px;">Ir para o meu Quadro</a>
+        <button type="button" class="btn btn-secondary" id="btn-simulate-manager" style="min-height:40px;">Simular modo Gestor</button>
+      </div>
+    </div>
+
+    <!-- Conteúdo completo do Gestor -->
+    <div id="dash-manager-area" data-role-only="manager">
+      <!-- VISÃO GERAL (full-width, minimalista, enxuta e completa) -->
+      <div class="dash-body" id="view-overview">
+        <!-- 1. Faixa KPI horizontal -->
+        <section class="kpi-strip" aria-label="Indicadores principais">
+          <div class="kpi-cell">
+            <span class="kpi-label">Tarefas ativas</span>
+            <span class="kpi-value">14</span>
+            <span class="kpi-sub">6 desenvolvendo · 3 revisar</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="kpi-label">Tempo médio</span>
+            <span class="kpi-value">4,8 dias</span>
+            <span class="kpi-sub">2,1d em execução · fluxo estável</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="kpi-label">Concluídas (sem.)</span>
+            <span class="kpi-value">8</span>
+            <span class="kpi-sub">+2 vs. semana anterior</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="kpi-label">Horas lançadas</span>
+            <span class="kpi-value">156 h</span>
+            <span class="kpi-sub">4 colaboradores · 1 bloqueio</span>
+          </div>
+          <div class="kpi-cell">
+            <span class="kpi-label">Custo do time</span>
+            <span class="kpi-value">R$ 18.420,00</span>
+            <span class="kpi-sub">Visão exclusiva Gestor</span>
+          </div>
+        </section>
+
+        <!-- 2. Tarefas por estado (5 estados oficiais) + Precisa de você -->
+        <section class="dash-split" aria-label="Distribuição por estado e alertas">
+          <div>
+            <div class="sec-head">
+              <h2 class="sec-title">Tarefas por estado</h2>
+              <span class="sec-meta">22 tarefas no período · tempo médio por etapa</span>
+            </div>
+            <div class="state-bar-full" aria-hidden="true">
+              <span class="state-seg is-planejamento" style="width:9%"></span>
+              <span class="state-seg is-afazer" style="width:14%"></span>
+              <span class="state-seg is-desenvolvendo" style="width:27%"></span>
+              <span class="state-seg is-revisar" style="width:14%"></span>
+              <span class="state-seg is-concluido" style="width:36%"></span>
+            </div>
+            <div class="cat-list">
+              <a href="quadro.html" class="cat-row">
+                <span class="cat-name"><span class="status-dot is-planejamento"></span>Planejamento</span>
+                <span class="cat-mini-track"><span class="cat-mini-fill" style="width:25%"></span></span>
+                <span class="cat-num">2 · 9%</span>
+                <span class="cat-time">méd. 1,2d</span>
+              </a>
+              <a href="quadro.html" class="cat-row">
+                <span class="cat-name"><span class="status-dot is-afazer"></span>A fazer</span>
+                <span class="cat-mini-track"><span class="cat-mini-fill" style="width:38%"></span></span>
+                <span class="cat-num">3 · 14%</span>
+                <span class="cat-time">méd. 0,9d</span>
+              </a>
+              <a href="quadro.html" class="cat-row">
+                <span class="cat-name"><span class="status-dot is-desenvolvendo"></span>Desenvolvendo</span>
+                <span class="cat-mini-track"><span class="cat-mini-fill" style="width:75%"></span></span>
+                <span class="cat-num">6 · 27%</span>
+                <span class="cat-time">méd. 1,4d</span>
+              </a>
+              <a href="quadro.html" class="cat-row">
+                <span class="cat-name"><span class="status-dot is-revisar"></span>Revisar</span>
+                <span class="cat-mini-track"><span class="cat-mini-fill" style="width:38%"></span></span>
+                <span class="cat-num">3 · 14%</span>
+                <span class="cat-time">méd. 1,6d</span>
+              </a>
+              <a href="quadro.html" class="cat-row">
+                <span class="cat-name"><span class="status-dot is-concluido"></span>Concluído</span>
+                <span class="cat-mini-track"><span class="cat-mini-fill" style="width:100%"></span></span>
+                <span class="cat-num">8 · 36%</span>
+                <span class="cat-time">ciclo 2,1d</span>
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <div class="sec-head">
+              <h2 class="sec-title">Precisa de você</h2>
+              <span class="sec-meta">3 pontos de atenção</span>
+            </div>
+            <div class="attention-list">
+              <a href="tarefa.html?id=AB-7" class="attention-row">
+                <div class="attention-main">
+                  <span class="attention-title"><span class="dot-inline is-danger"></span>1 tarefa bloqueada há 3 dias (AB-7)</span>
+                  <span class="attention-meta">Projeto A · Aguardando acesso API do cliente</span>
+                </div>
+                <span class="row-action-link">Abrir →</span>
+              </a>
+              <a href="quadro.html?projeto=a" class="attention-row">
+                <div class="attention-main">
+                  <span class="attention-title"><span class="dot-inline is-warning"></span>2 tarefas paradas sem atualização</span>
+                  <span class="attention-meta">Em Desenvolvendo há mais de 4 dias</span>
+                </div>
+                <span class="row-action-link">Ver quadro →</span>
+              </a>
+              <a href="preditivo.html?tab=cronograma" class="attention-row">
+                <div class="attention-main">
+                  <span class="attention-title"><span class="dot-inline is-warning"></span>Marco Entrega Beta em risco</span>
+                  <span class="attention-meta">Projeto B · Desvio de +3 dias no cronograma</span>
+                </div>
+                <span class="row-action-link">Cronograma →</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Projetos (3 colunas lado a lado em 100% da largura) -->
+        <section class="projects-section" aria-label="Projetos ativos">
+          <div class="sec-head">
+            <h2 class="sec-title">Projetos</h2>
+            <span class="sec-meta">3 ativos · clique para abrir o quadro</span>
+          </div>
+          <div class="projects-grid">
+            <a href="quadro.html?projeto=a" class="project-col">
+              <div class="project-head">
+                <span class="project-name"><span class="ab-proj-dot is-a"></span>Projeto A · App de Vendas</span>
+                <span class="project-pct">45%</span>
+              </div>
+              <div class="project-sub">
+                <span>5 de 11 tarefas concluídas</span>
+                <span>1 bloqueio</span>
+              </div>
+              <div class="project-bar" aria-hidden="true">
+                <span class="state-seg is-planejamento" style="width:12%"></span>
+                <span class="state-seg is-afazer" style="width:15%"></span>
+                <span class="state-seg is-desenvolvendo" style="width:18%"></span>
+                <span class="state-seg is-revisar" style="width:10%"></span>
+                <span class="state-seg is-concluido" style="width:45%"></span>
+              </div>
+              <div class="project-foot">
+                <span class="project-cost">R$ 9.840,00</span>
+                <span class="project-open">Abrir quadro →</span>
+              </div>
+            </a>
+
+            <a href="quadro.html?projeto=b" class="project-col">
+              <div class="project-head">
+                <span class="project-name"><span class="ab-proj-dot is-b"></span>Projeto B · Migração ERP</span>
+                <span class="project-pct">67%</span>
+              </div>
+              <div class="project-sub">
+                <span>4 de 6 tarefas concluídas</span>
+                <span>Sem bloqueios</span>
+              </div>
+              <div class="project-bar" aria-hidden="true">
+                <span class="state-seg is-afazer" style="width:13%"></span>
+                <span class="state-seg is-desenvolvendo" style="width:20%"></span>
+                <span class="state-seg is-concluido" style="width:67%"></span>
+              </div>
+              <div class="project-foot">
+                <span class="project-cost">R$ 6.180,00</span>
+                <span class="project-open">Abrir quadro →</span>
+              </div>
+            </a>
+
+            <a href="quadro.html?projeto=c" class="project-col">
+              <div class="project-head">
+                <span class="project-name"><span class="ab-proj-dot is-c"></span>Projeto C · Projeto Simples</span>
+                <span class="project-pct">33%</span>
+              </div>
+              <div class="project-sub">
+                <span>1 de 3 tarefas concluídas</span>
+                <span>Contagem direta</span>
+              </div>
+              <div class="project-bar" aria-hidden="true">
+                <span class="state-seg is-afazer" style="width:33%"></span>
+                <span class="state-seg is-desenvolvendo" style="width:34%"></span>
+                <span class="state-seg is-concluido" style="width:33%"></span>
+              </div>
+              <div class="project-foot">
+                <span class="project-cost">R$ 2.400,00</span>
+                <span class="project-open">Abrir quadro →</span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <!-- 4. Colaboradores (tabela limpa em 100% da largura) -->
+        <section aria-label="Equipe e carga por colaborador">
+          <div class="sec-head">
+            <h2 class="sec-title">Colaboradores</h2>
+            <span class="sec-meta">Edições no quadro de um colega ficam marcadas como Gestor</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="clean-table" aria-label="Carga, tempo médio e custos por colaborador">
+              <thead>
+                <tr>
+                  <th>Pessoa</th>
+                  <th class="num">Em andamento</th>
+                  <th class="num">Bloqueadas</th>
+                  <th class="num">Tempo médio</th>
+                  <th class="num">Horas (sem.)</th>
+                  <th class="num">Valor/h (R$)</th>
+                  <th class="num">Custo (sem.)</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="team-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- SUB-VISÃO: ATUALIZAÇÕES DA EQUIPE -->
+      <div id="view-updates" hidden>
+        <div class="sec-head">
+          <h2 class="sec-title">Atualizações recentes da equipe</h2>
+          <span class="sec-meta" id="feed-count-label">5 registros</span>
+        </div>
+        <div class="filter-chips" id="feed-filters" role="group" aria-label="Filtrar por pessoa"></div>
+        <div class="feed-list" id="feed-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal Resumo do dia (DailyDialog) -->
+  <div class="modal-backdrop" id="daily-modal" role="dialog" aria-modal="true" aria-labelledby="daily-modal-title">
+    <div class="modal" style="width:min(560px, 100%);">
+      <div class="modal-header">
+        <h3 id="daily-modal-title">Resumo do dia · Equipe</h3>
+        <button type="button" class="ab-kan-close-btn" id="btn-close-daily-x" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="filter-chips" id="daily-person-filters"></div>
+        <div id="daily-entries-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-close-daily">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var TEAM = [
+        { id: 'ana', initials: 'AS', name: 'Ana Silva', role: 'Desenvolvimento', active: 4, blocked: 0, avgDays: '2,0d', hours: 38, rate: 120 },
+        { id: 'joao', initials: 'JP', name: 'João Pereira', role: 'Desenvolvimento', active: 3, blocked: 1, avgDays: '2,6d', hours: 36, rate: 95 },
+        { id: 'pedro', initials: 'PA', name: 'Pedro Alves', role: 'Produto & Fluxo', active: 3, blocked: 0, avgDays: '1,8d', hours: 32, rate: 100 },
+        { id: 'carlos', initials: 'CR', name: 'Carlos Rocha', role: 'Qualidade (QA)', active: 2, blocked: 0, avgDays: '1,5d', hours: 28, rate: 130 },
+        { id: 'carla', initials: 'CM', name: 'Carla Mendes', role: 'Gestora', active: 2, blocked: 0, avgDays: '1,9d', hours: 22, rate: 160 }
+      ];
+
+      var FEED = [
+        { person: 'Ana', isManager: false, time: 'Hoje, 10:15', title: 'Moveu AB-5 para Revisar', detail: 'Contrato com Cliente ACME revisado e anexado · +2,0h lançadas.', href: 'tarefa.html?id=AB-5' },
+        { person: 'Carla', isManager: true, time: 'Hoje, 09:40', title: 'Reajustou prioridade de AB-7 para Alta', detail: 'Cobrado retorno da API externa para destravar João.', href: 'tarefa.html?id=AB-7' },
+        { person: 'João', isManager: false, time: 'Hoje, 09:10', title: 'Registrou bloqueio em AB-7', detail: 'Aguardando credenciais de homologação do fornecedor.', href: 'tarefa.html?id=AB-7' },
+        { person: 'Carlos', isManager: false, time: 'Ontem, 17:45', title: 'Concluiu AB-11 (Validação Fedora e Windows)', detail: 'Checklist de conclusão 3/3 validado · +1,5h lançadas.', href: 'quadro.html?projeto=a' },
+        { person: 'Pedro', isManager: false, time: 'Ontem, 16:20', title: 'Criou AB-14 no Projeto C', detail: 'Nova tarefa simples adicionada direto no quadro.', href: 'quadro.html?projeto=c' }
+      ];
+
+      var DAILY = [
+        { person: 'Ana', done: true, summary: 'Fechou revisão de contrato AB-5 e iniciou checklist de faturamento (+3,0h).', taskId: 'AB-5' },
+        { person: 'João', done: true, summary: 'Avançou autenticação da Bandeja; bloqueado em AB-7 aguardando API (+2,5h).', taskId: 'AB-7' },
+        { person: 'Carlos', done: true, summary: 'Validou tela de login no Fedora e Windows sem pendências (+2,0h).', taskId: 'AB-11' },
+        { person: 'Pedro', done: false, summary: 'Ainda não registrou a atualização de hoje na Bandeja.', taskId: '' }
+      ];
+
+      function formatBRL(v) {
+        return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      // 1. Render TeamTable
+      document.getElementById('team-table-body').innerHTML = TEAM.map(function (m) {
+        var weekCost = m.hours * m.rate;
+        return (
+          '<tr>' +
+            '<td><div class="person-cell"><span class="person-avatar">' + m.initials + '</span><div><div class="person-name">' + m.name + '</div><div class="person-role">' + m.role + '</div></div></div></td>' +
+            '<td class="num">' + m.active + '</td>' +
+            '<td class="num">' + (m.blocked ? '<span style="display:inline-flex;align-items:center;gap:5px;"><span class="dot-inline is-danger"></span>' + m.blocked + '</span>' : '<span style="color:var(--color-text-subtle);">0</span>') + '</td>' +
+            '<td class="num">' + m.avgDays + '</td>' +
+            '<td class="num">' + m.hours + ' h</td>' +
+            '<td class="num">' + formatBRL(m.rate) + '</td>' +
+            '<td class="num" style="color:var(--color-text-primary);font-weight:500;">' + formatBRL(weekCost) + '</td>' +
+            '<td><a href="quadro.html?pessoa=' + m.id + '" class="row-action-link">Abrir quadro →</a></td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      // 2. Alternador Visão geral | Atualizações
+      var activeView = 'overview';
+      document.querySelectorAll('[data-dash-view]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          activeView = this.getAttribute('data-dash-view');
+          document.querySelectorAll('[data-dash-view]').forEach(function (b) {
+            var act = b.getAttribute('data-dash-view') === activeView;
+            b.classList.toggle('is-active', act);
+            b.setAttribute('aria-selected', act ? 'true' : 'false');
+          });
+          document.getElementById('view-overview').hidden = activeView !== 'overview';
+          document.getElementById('view-updates').hidden = activeView !== 'updates';
+        });
+      });
+
+      // 3. Feed Atualizações com filtro por pessoa
+      var feedFilter = 'Todos';
+      var peopleFilterList = ['Todos', 'Ana', 'João', 'Carlos', 'Pedro', 'Carla'];
+
+      function renderFeed() {
+        document.getElementById('feed-filters').innerHTML = peopleFilterList.map(function (p) {
+          return '<button type="button" class="filter-chip' + (feedFilter === p ? ' is-active' : '') + '" data-feed-person="' + p + '">' + p + '</button>';
+        }).join('');
+
+        var items = feedFilter === 'Todos' ? FEED : FEED.filter(function (f) { return f.person === feedFilter; });
+        document.getElementById('feed-count-label').textContent = items.length + ' registro(s)';
+        document.getElementById('feed-list').innerHTML = items.map(function (f) {
+          return (
+            '<div class="feed-row">' +
+              '<div class="feed-main">' +
+                '<div class="feed-head">' +
+                  '<strong>' + f.person + '</strong>' +
+                  (f.isManager ? '<span class="badge badge-gestor">Gestor</span>' : '') +
+                  '<span>' + f.title + '</span>' +
+                  '<span class="feed-time">' + f.time + '</span>' +
+                '</div>' +
+                '<p class="feed-detail">' + f.detail + '</p>' +
+              '</div>' +
+              '<a href="' + f.href + '" class="row-action-link">Abrir →</a>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('feed-filters').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-feed-person]');
+        if (!btn) return;
+        feedFilter = btn.getAttribute('data-feed-person');
+        renderFeed();
+      });
+
+      // 4. Modal Resumo do dia (DailyDialog)
+      var dailyModal = document.getElementById('daily-modal');
+      var dailyFilter = 'Todos';
+
+      function renderDaily() {
+        document.getElementById('daily-person-filters').innerHTML = ['Todos', 'Ana', 'João', 'Carlos', 'Pedro'].map(function (p) {
+          return '<button type="button" class="filter-chip' + (dailyFilter === p ? ' is-active' : '') + '" data-daily-person="' + p + '">' + p + '</button>';
+        }).join('');
+
+        var items = dailyFilter === 'Todos' ? DAILY : DAILY.filter(function (d) { return d.person === dailyFilter; });
+        document.getElementById('daily-entries-list').innerHTML = items.map(function (d) {
+          return (
+            '<div class="daily-row">' +
+              '<div>' +
+                '<div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--color-text-primary);">' +
+                  '<span class="dot-inline ' + (d.done ? 'is-ok' : 'is-warning') + '"></span>' +
+                  '<span>' + d.person + '</span>' +
+                  '<span style="font-size:11.5px;font-weight:400;color:var(--color-text-subtle);">' + (d.done ? 'Registrou hoje' : 'Pendente') + '</span>' +
+                '</div>' +
+                '<div style="font-size:12.5px;color:var(--color-text-muted);margin-top:3px;padding-left:13px;">' + d.summary + '</div>' +
+              '</div>' +
+              (d.taskId ? '<a href="tarefa.html?id=' + d.taskId + '" class="row-action-link">Abrir ' + d.taskId + ' →</a>' : '') +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('daily-person-filters').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-daily-person]');
+        if (!btn) return;
+        dailyFilter = btn.getAttribute('data-daily-person');
+        renderDaily();
+      });
+
+      document.getElementById('btn-open-daily').addEventListener('click', function () {
+        renderDaily();
+        dailyModal.classList.add('is-open');
+      });
+      document.getElementById('btn-close-daily').addEventListener('click', function () {
+        dailyModal.classList.remove('is-open');
+      });
+      document.getElementById('btn-close-daily-x').addEventListener('click', function () {
+        dailyModal.classList.remove('is-open');
+      });
+
+      document.getElementById('btn-simulate-manager').addEventListener('click', function () {
+        window.AgileBoxProto.setRole('manager');
+        window.AgileBoxProto.showToast('Modo Gestor ativado', 'info');
+      });
+
+      renderFeed();
+      renderDaily();
+    });
+  </script>
+</body>
+</html>

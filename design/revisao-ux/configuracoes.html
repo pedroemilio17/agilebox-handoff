@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configurações · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    #page-root {
+      max-width: 100%;
+      padding: 0;
+      min-width: 0;
+    }
+
+    .topic-rail-group + .topic-rail-group {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--color-divider);
+    }
+
+    /* Linhas limpas separadas por 1px solid var(--color-divider) — ZERO caixas individuais */
+    .clean-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .tool-row:first-child {
+      padding-top: 4px;
+    }
+
+    .tool-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .tool-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tool-name {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .tool-desc {
+      font-size: 12.5px;
+      color: var(--color-text-subtle);
+      line-height: 1.4;
+    }
+
+    /* Switch discreto/calmo monocromático (>= 44px alvo) */
+    .ab-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 40px;
+      cursor: pointer;
+      flex: none;
+    }
+
+    .ab-switch input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+
+    .ab-switch-track {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--color-hairline-strong);
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+
+    .ab-switch-track::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #757282;
+      transition: transform 180ms var(--ease-ios), background 180ms ease;
+    }
+
+    .ab-switch input:checked + .ab-switch-track {
+      background: rgba(255, 255, 255, 0.32);
+      border-color: rgba(255, 255, 255, 0.42);
+    }
+
+    .ab-switch input:checked + .ab-switch-track::after {
+      transform: translateX(18px);
+      background: #f2f0f6;
+    }
+
+    .ab-switch input:focus-visible + .ab-switch-track {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+    }
+
+    .ab-switch input:disabled + .ab-switch-track {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    /* Linhas de Membros, Externos e DoD sem caixas */
+    .list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .list-row:first-child {
+      padding-top: 4px;
+    }
+
+    .list-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .inline-add-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .inline-add-row .input,
+    .inline-add-row .select {
+      background: transparent;
+      border-color: var(--color-hairline);
+    }
+
+    .inline-add-row .select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .dod-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: none;
+    }
+
+    .dod-btn {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0 9px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .dod-btn:hover:not(:disabled) {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .dod-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .dod-btn.is-danger:hover:not(:disabled) {
+      color: var(--color-signal-danger-text);
+      background: var(--color-signal-danger-bg);
+    }
+
+    /* Linhas de Preferências do App */
+    .pref-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .pref-row:first-child {
+      padding-top: 4px;
+    }
+
+    .pref-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .pref-label-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 420px;
+    }
+
+    .pref-label-block strong {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .pref-label-block span {
+      font-size: 12.5px;
+      color: var(--color-text-subtle);
+      line-height: 1.4;
+    }
+
+    .quiet-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+    }
+
+    .quiet-toggle-btn {
+      min-height: 34px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .quiet-toggle-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .quiet-toggle-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .opacity-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+      min-width: 220px;
+    }
+
+    .opacity-slider {
+      flex: 1;
+      height: 36px;
+      accent-color: #d8d5df;
+      cursor: pointer;
+    }
+
+    .clean-field-input,
+    .clean-field-select,
+    .clean-field-textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-field);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13.5px;
+    }
+
+    .clean-field-input,
+    .clean-field-select {
+      min-height: 38px;
+    }
+
+    .clean-field-textarea {
+      min-height: 82px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .clean-field-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .clean-field-input:focus,
+    .clean-field-select:focus,
+    .clean-field-textarea:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .dot-inline {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-ok { background: var(--color-signal-ok); }
+
+    @media (max-width: 860px) {
+      .topic-rail-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .topic-rail-group + .topic-rail-group {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ab-switch-track,
+      .ab-switch-track::after,
+      .quiet-toggle-btn,
+      .dod-btn {
+        transition: none;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="configuracoes">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title" id="cfg-page-title">Config. e Ferramentas</h1>
+        <p class="ab-page-sub" id="cfg-page-subtitle">Ferramentas ativas, membros da equipe, checklist de conclusão e ajustes do aplicativo.</p>
+      </div>
+      <div class="ab-page-head-actions">
+        <span class="badge" id="cfg-save-badge">Salvo na hora</span>
+      </div>
+    </header>
+
+    <div class="topic-layout">
+        <!-- Rail esquerdo unificado com 2 grupos claros -->
+        <nav class="topic-rail" aria-label="Tópicos de Configurações">
+          <div class="topic-rail-group" id="cfg-rail-proj">
+            <span class="topic-rail-label">Projeto</span>
+            <button type="button" class="topic-btn is-active" data-cfg-topic="projeto:ferramentas" aria-current="true">
+              <span>Ferramentas</span>
+              <span class="topic-count" id="nav-count-tools">7/11</span>
+            </button>
+            <button type="button" class="topic-btn" data-cfg-topic="projeto:membros">
+              <span>Membros</span>
+              <span class="topic-count" id="nav-count-members">4</span>
+            </button>
+            <button type="button" class="topic-btn" data-cfg-topic="projeto:dod">
+              <span>Checklist (DoD)</span>
+              <span class="topic-count" id="nav-count-dod">3</span>
+            </button>
+            <button type="button" class="topic-btn" data-cfg-topic="projeto:geral">
+              <span>Geral</span>
+            </button>
+          </div>
+
+          <div class="topic-rail-group" id="cfg-rail-app">
+            <span class="topic-rail-label">Aplicativo</span>
+            <button type="button" class="topic-btn" data-cfg-topic="app:preferencias">
+              <span>Minhas preferências</span>
+            </button>
+            <button type="button" class="topic-btn" data-cfg-topic="app:empresa" data-role-only="manager">
+              <span>Padrões da empresa</span>
+            </button>
+            <button type="button" class="topic-btn" data-cfg-topic="app:atualizacoes">
+              <span>Atualizações</span>
+            </button>
+          </div>
+        </nav>
+
+        <!-- Coluna única limpa à direita -->
+        <div class="topic-stage">
+          <!-- 1. PROJETO: FERRAMENTAS -->
+          <div class="topic-panel" data-cfg-panel="projeto:ferramentas">
+            <section class="topic-section" aria-label="Resumo das ferramentas">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title" id="tools-counter-text">7 de 11 ferramentas ativas</h2>
+                <span class="topic-section-meta" data-role-only="collaborator">Visualização de colaborador (edição do projeto pelo Gestor)</span>
+              </div>
+              <p class="topic-helper">Desligar uma ferramenta apenas oculta o menu dela no projeto atual — nenhum dado é apagado.</p>
+            </section>
+            <div id="tools-groups-container" style="display:flex;flex-direction:column;gap:20px;"></div>
+          </div>
+
+          <!-- 2. PROJETO: MEMBROS -->
+          <div class="topic-panel" data-cfg-panel="projeto:membros" hidden>
+            <section class="topic-section" aria-label="Equipe do projeto">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Equipe do projeto</h2>
+                <span class="topic-section-meta" id="members-count-badge">4 pessoas</span>
+              </div>
+              <div class="inline-add-row" data-role-only="manager">
+                <select class="select" id="member-add-select" aria-label="Selecionar pessoa para adicionar" style="flex:1;min-width:180px;">
+                  <option value="Pedro|Desenvolvedor">Pedro (Desenvolvedor)</option>
+                  <option value="Carla|Gestora">Carla (Gestora)</option>
+                  <option value="Lucas|Infraestrutura">Lucas (Infraestrutura)</option>
+                </select>
+                <button type="button" class="btn btn-primary" id="member-add-btn" style="min-height:40px;">+ Adicionar à equipe</button>
+              </div>
+              <div class="clean-list" id="members-list"></div>
+            </section>
+
+            <section class="topic-section" aria-label="Pessoas externas">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Pessoas externas (Clientes / Parceiros)</h2>
+              </div>
+              <p class="topic-helper">Usado apenas para identificar clientes ou terceiros nas tarefas. Pessoas externas nunca recebem login, permissões ou avisos.</p>
+              <div class="inline-add-row" data-role-only="manager">
+                <input type="text" class="input" id="external-add-input" placeholder="Ex.: Cliente ACME ou Consultoria Alpha" style="flex:1;min-width:180px;">
+                <button type="button" class="btn btn-secondary" id="external-add-btn" style="min-height:40px;">+ Vincular externa</button>
+              </div>
+              <div class="clean-list" id="external-list"></div>
+            </section>
+          </div>
+
+          <!-- 3. PROJETO: CHECKLIST (DoD) -->
+          <div class="topic-panel" data-cfg-panel="projeto:dod" hidden>
+            <section class="topic-section" aria-label="Checklist de conclusão (DoD)">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Checklist de conclusão (DoD)</h2>
+                <button type="button" class="btn btn-primary btn-sm" id="dod-add-open" data-role-only="manager" style="min-height:36px;">+ Adicionar critério</button>
+              </div>
+              <p class="topic-helper">Critérios conferidos toda vez que alguém move uma tarefa deste projeto para Concluído.</p>
+              <div class="inline-add-row" id="dod-add-bar" hidden>
+                <input type="text" class="input" id="dod-new-input" placeholder="Ex.: Validar com o solicitante antes de fechar" style="flex:1;min-width:200px;">
+                <button type="button" class="btn btn-primary btn-sm" id="dod-save-new" style="min-height:40px;">Salvar critério</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="dod-cancel-new" style="min-height:40px;">Cancelar</button>
+              </div>
+              <div class="clean-list" id="dod-list"></div>
+            </section>
+          </div>
+
+          <!-- 4. PROJETO: GERAL -->
+          <div class="topic-panel" data-cfg-panel="projeto:geral" hidden>
+            <section class="topic-section" aria-label="Dados gerais do projeto">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Dados gerais do projeto</h2>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row">
+                  <label class="kv-label" for="proj-general-name">Nome do projeto</label>
+                  <div class="kv-value">
+                    <input type="text" class="clean-field-input" id="proj-general-name" value="Projeto A · App de Vendas">
+                  </div>
+                </div>
+                <div class="kv-row" style="align-items:start;">
+                  <label class="kv-label" for="proj-general-desc" style="padding-top:8px;">Descrição breve</label>
+                  <div class="kv-value">
+                    <textarea class="clean-field-textarea" id="proj-general-desc">Evolução do portal de pedidos, integrações de pagamento e acompanhamento com cliente.</textarea>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;" data-role-only="manager">
+                <button type="button" class="btn btn-primary" id="proj-general-save">Salvar alterações</button>
+              </div>
+            </section>
+
+            <section class="topic-section" data-role-only="manager" aria-label="Arquivar projeto">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <strong style="font-size:13.5px;color:var(--color-signal-danger-text);">Arquivar projeto</strong>
+                  <p style="margin:3px 0 0;font-size:12.5px;color:var(--color-text-subtle);">Oculta o projeto da barra lateral mantendo histórico e tarefas preservados para consulta.</p>
+                </div>
+                <button type="button" class="btn btn-danger" id="proj-archive-btn">Arquivar projeto</button>
+              </div>
+            </section>
+          </div>
+
+          <!-- 5. APLICATIVO: MINHAS PREFERÊNCIAS (sempre acessível para TODOS os papéis) -->
+          <div class="topic-panel" data-cfg-panel="app:preferencias" hidden>
+            <section class="topic-section" aria-label="Minhas preferências">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Minhas preferências</h2>
+                <span class="topic-section-meta">Pessoal</span>
+              </div>
+
+              <div class="clean-list">
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Superfície da janela</strong>
+                    <span>Escolha entre vidro fosco translúcido ou fundo sólido opaco.</span>
+                  </div>
+                  <div class="quiet-toggle" role="group" aria-label="Superfície visual">
+                    <button type="button" class="quiet-toggle-btn is-active" data-app-glass="glass">Vidro</button>
+                    <button type="button" class="quiet-toggle-btn" data-app-glass="opaque">Sólido</button>
+                  </div>
+                </div>
+
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Opacidade do vidro fosco</strong>
+                    <span>Nível de transparência quando o modo Vidro estiver ativo.</span>
+                  </div>
+                  <div class="opacity-slider-wrap">
+                    <input type="range" min="45" max="95" value="68" class="opacity-slider" id="app-opacity-slider" aria-label="Opacidade do vidro fosco">
+                    <span style="font-family:var(--font-family-mono);font-size:12px;font-variant-numeric:tabular-nums;min-width:34px;text-align:right;color:var(--color-text-muted);" id="app-opacity-val">68%</span>
+                  </div>
+                </div>
+
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Meu Valor/Hora padrão (R$/h)</strong>
+                    <span>Privado: apenas você e o Gestor visualizam este valor.</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" class="clean-field-input" id="app-my-rate" value="120" min="0" step="5" style="width:108px;font-variant-numeric:tabular-nums;" aria-label="Meu valor por hora em reais">
+                    <button type="button" class="btn btn-primary btn-sm" id="app-save-rate" style="min-height:38px;">Salvar</button>
+                  </div>
+                </div>
+
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Nível de apoio do Kan</strong>
+                    <span>Define o quanto o guia lateral aparece aberto automaticamente e explica termos na tela.</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                    <div class="quiet-toggle" role="group" aria-label="Nível de apoio do Kan">
+                      <button type="button" class="quiet-toggle-btn is-active" data-kan-level="Iniciante">Iniciante</button>
+                      <button type="button" class="quiet-toggle-btn" data-kan-level="Intermediário">Intermediário</button>
+                      <button type="button" class="quiet-toggle-btn" data-kan-level="Experiente">Experiente</button>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="app-reset-hints" style="min-height:32px;font-size:12px;">
+                      Mostrar dicas ocultadas novamente
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- 6. APLICATIVO: PADRÕES DA EMPRESA (somente Gestor) -->
+          <div class="topic-panel" data-cfg-panel="app:empresa" data-role-only="manager" hidden>
+            <section class="topic-section" aria-label="Padrões da empresa">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Padrões da empresa</h2>
+                <span class="badge badge-gestor">Gestor</span>
+              </div>
+              <p class="topic-helper">Afeta somente novos projetos criados daqui em diante (projetos atuais não mudam).</p>
+
+              <div class="clean-list">
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Modelo inicial de novos projetos</strong>
+                    <span>Sugestão pré-selecionada quando alguém criar um projeto na equipe.</span>
+                  </div>
+                  <select class="clean-field-select" id="app-company-preset" style="width:236px;" aria-label="Modelo inicial de novos projetos">
+                    <option value="simples">Quadro simples (5 estados)</option>
+                    <option value="continuo">Fluxo contínuo com limites</option>
+                    <option value="ciclos">Ciclos curtos (Sprints)</option>
+                    <option value="preditivo">Entregas e Cronograma</option>
+                  </select>
+                </div>
+
+                <div class="pref-row">
+                  <div class="pref-label-block">
+                    <strong>Limite simultâneo padrão por coluna</strong>
+                    <span>Recomendação inicial na coluna Desenvolvendo para evitar sobrecarga.</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" class="clean-field-input" id="app-company-wip" value="3" min="1" max="15" style="width:84px;font-variant-numeric:tabular-nums;" aria-label="Limite simultâneo padrão">
+                    <button type="button" class="btn btn-primary btn-sm" id="app-save-company" style="min-height:38px;">Salvar padrões</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- 7. APLICATIVO: ATUALIZAÇÕES (100% pt-BR, zero CLI) -->
+          <div class="topic-panel" data-cfg-panel="app:atualizacoes" hidden>
+            <section class="topic-section" aria-label="Atualizações do aplicativo">
+              <div class="topic-section-head">
+                <h2 class="topic-section-title">Atualizações do aplicativo</h2>
+                <span class="topic-section-meta" style="display:inline-flex;align-items:center;gap:6px;">
+                  <span class="dot-inline is-ok" aria-hidden="true"></span>
+                  <span>Canal estável</span>
+                </span>
+              </div>
+              <div class="pref-row">
+                <div class="pref-label-block">
+                  <strong>AgileBox Desktop 2.4.0 (Windows / Linux)</strong>
+                  <span id="app-update-status">Tudo atualizado · Verificação automática em segundo plano ativa.</span>
+                </div>
+                <button type="button" class="btn btn-secondary" id="app-check-updates">
+                  Verificar atualizações
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+    <!-- Modal de Confirmação Reutilizável -->
+    <div class="modal-backdrop" id="cfg-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cfg-confirm-title">
+      <div class="modal" style="width:min(440px, 100%);">
+        <div class="modal-header">
+          <h3 id="cfg-confirm-title">Confirmar ação</h3>
+          <button type="button" class="ab-kan-close-btn" id="cfg-confirm-close" aria-label="Fechar">×</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin:0;font-size:13.5px;color:var(--color-text-body);line-height:1.5;" id="cfg-confirm-msg"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cfg-confirm-cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="cfg-confirm-ok">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script defer>
+    document.addEventListener('ab:ready', function (ev) {
+      var TOOL_GROUPS = [
+        {
+          title: 'Essenciais do dia a dia',
+          items: [
+            { id: 'wip', name: 'Limite simultâneo no Quadro', desc: 'Mostra o contador por coluna e avisa quando muitas tarefas estão abertas juntas.', on: true },
+            { id: 'dod', name: 'Checklist de conclusão (DoD)', desc: 'Exige conferência dos critérios padrão antes de mover uma tarefa para Concluído.', on: true },
+            { id: 'bloqueios', name: 'Registro de bloqueios', desc: 'Ativa o botão Bloquear nas tarefas e consolida os travamentos para o Gestor.', on: true },
+            { id: 'daily', name: 'Atualização diária (Bandeja)', desc: 'Habilita o check-in rápido de fim de dia na Bandeja e o Resumo do dia no Dashboard.', on: true }
+          ]
+        },
+        {
+          title: 'Ritmo Ágil',
+          items: [
+            { id: 'backlog', name: 'Backlog', desc: 'Adiciona a fila priorizada de próximas tarefas no menu lateral do projeto.', on: true },
+            { id: 'sprints', name: 'Sprints (Ciclos curtos)', desc: 'Habilita a tela Sprints e o painel de Ritmo da sprint no menu lateral.', on: true },
+            { id: 'custos', name: 'Estimativa de horas e custo', desc: 'Ativa o lançamento de horas e o cálculo automático em R$ dentro das tarefas.', on: true }
+          ]
+        },
+        {
+          title: 'Prazo e Entregas Preditivas',
+          items: [
+            { id: 'entregas', name: 'Entregas do projeto (EAP)', desc: 'Adiciona a tela Entregas no menu lateral para organizar resultados e criar tarefas.', on: false },
+            { id: 'cronograma', name: 'Cronograma e dependências', desc: 'Habilita a linha do tempo no menu lateral e a ordem entre tarefas.', on: false },
+            { id: 'marcos', name: 'Marcos de entrega', desc: 'Ativa a aba Marcos dentro de Cronograma para datas combinadas com clientes.', on: false },
+            { id: 'riscos_baseline', name: 'Plano salvo e Riscos', desc: 'Habilita a matriz 3×3 de Riscos em Entregas e comparação com Plano salvo.', on: false }
+          ]
+        }
+      ];
+
+      var MEMBERS = [
+        { id: 'maria', name: 'Maria', role: 'QA & Testes', isManager: false, rate: 'R$ 115,00' },
+        { id: 'ana', name: 'Ana', role: 'Design & UX', isManager: false, rate: 'R$ 135,00' },
+        { id: 'joao', name: 'João', role: 'Suporte & Dev', isManager: false, rate: 'R$ 110,00' },
+        { id: 'carlos', name: 'Carlos', role: 'Backend', isManager: false, rate: 'R$ 140,00' }
+      ];
+
+      var EXTERNALS = [
+        { id: 'ext1', name: 'Cliente ACME', note: 'Aprovação das entregas de homologação' },
+        { id: 'ext2', name: 'Gateway Pagamentos Ltda', note: 'Liberação de credenciais de produção' }
+      ];
+
+      var DOD_ITEMS = [
+        { id: 'd1', text: 'Código revisado por pelo menos um colega' },
+        { id: 'd2', text: 'Testado no ambiente de homologação sem erros' },
+        { id: 'd3', text: 'Chamado ou descrição atualizados para o solicitante' }
+      ];
+
+      var pendingConfirmFn = null;
+      var activeTopic = 'projeto:ferramentas';
+
+      function isManager() {
+        return !window.AgileBoxProto || window.AgileBoxProto.getRole() === 'manager';
+      }
+
+      function openConfirm(title, message, okLabel, onConfirm) {
+        document.getElementById('cfg-confirm-title').textContent = title;
+        document.getElementById('cfg-confirm-msg').textContent = message;
+        document.getElementById('cfg-confirm-ok').textContent = okLabel || 'Confirmar';
+        pendingConfirmFn = onConfirm;
+        document.getElementById('cfg-confirm-modal').classList.add('is-open');
+      }
+
+      function closeConfirm() {
+        document.getElementById('cfg-confirm-modal').classList.remove('is-open');
+        pendingConfirmFn = null;
+      }
+
+      document.getElementById('cfg-confirm-close').addEventListener('click', closeConfirm);
+      document.getElementById('cfg-confirm-cancel').addEventListener('click', closeConfirm);
+      document.getElementById('cfg-confirm-modal').addEventListener('click', function (ev) {
+        if (ev.target === this) closeConfirm();
+      });
+      document.getElementById('cfg-confirm-ok').addEventListener('click', function () {
+        var fn = pendingConfirmFn;
+        closeConfirm();
+        if (typeof fn === 'function') fn();
+      });
+
+      function selectTopic(topicId) {
+        activeTopic = topicId;
+        var scopeTab = (window.AgileBoxProto && window.AgileBoxProto.getTab() === 'app') ? 'app' : 'projeto';
+        var isApp = scopeTab === 'app';
+
+        var projRail = document.getElementById('cfg-rail-proj');
+        var appRail = document.getElementById('cfg-rail-app');
+        if (projRail) projRail.hidden = isApp;
+        if (appRail) appRail.hidden = !isApp;
+
+        document.querySelectorAll('[data-cfg-topic]').forEach(function (btn) {
+          var id = btn.getAttribute('data-cfg-topic');
+          var isAct = id === topicId;
+          btn.classList.toggle('is-active', isAct);
+          if (isAct) btn.setAttribute('aria-current', 'true');
+          else btn.removeAttribute('aria-current');
+        });
+
+        document.querySelectorAll('[data-cfg-panel]').forEach(function (panel) {
+          panel.hidden = panel.getAttribute('data-cfg-panel') !== topicId;
+        });
+
+        var titleEl = document.getElementById('cfg-page-title');
+        var subEl = document.getElementById('cfg-page-subtitle');
+        titleEl.textContent = isApp ? 'Ajustes do App' : 'Config. e Ferramentas';
+        subEl.textContent = isApp
+          ? 'Suas preferências visuais, valor/hora privado e nível de apoio do Kan.'
+          : 'Ferramentas ativas, membros da equipe, checklist de conclusão e dados do projeto.';
+      }
+
+      document.querySelectorAll('[data-cfg-topic]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectTopic(this.getAttribute('data-cfg-topic'));
+        });
+      });
+
+      function renderTools() {
+        var total = 0;
+        var active = 0;
+        TOOL_GROUPS.forEach(function (g) {
+          g.items.forEach(function (item) {
+            total += 1;
+            if (item.on) active += 1;
+          });
+        });
+        document.getElementById('tools-counter-text').textContent = active + ' de ' + total + ' ferramentas ativas';
+        document.getElementById('nav-count-tools').textContent = active + '/' + total;
+
+        var mgr = isManager();
+        var container = document.getElementById('tools-groups-container');
+        container.innerHTML = TOOL_GROUPS.map(function (g) {
+          var rows = g.items.map(function (item) {
+            return (
+              '<div class="tool-row">' +
+                '<div class="tool-info">' +
+                  '<span class="tool-name">' + item.name + '</span>' +
+                  '<span class="tool-desc">' + item.desc + '</span>' +
+                '</div>' +
+                '<label class="ab-switch" aria-label="Alternar ' + item.name + '">' +
+                  '<input type="checkbox" data-tool-toggle="' + item.id + '"' + (item.on ? ' checked' : '') + (!mgr ? ' disabled' : '') + '>' +
+                  '<span class="ab-switch-track"></span>' +
+                '</label>' +
+              '</div>'
+            );
+          }).join('');
+          return (
+            '<section class="topic-section">' +
+              '<div class="topic-section-head"><h3 class="topic-section-title">' + g.title + '</h3></div>' +
+              '<div class="clean-list">' + rows + '</div>' +
+            '</section>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('tools-groups-container').addEventListener('change', function (ev) {
+        var cb = ev.target.closest('[data-tool-toggle]');
+        if (!cb || !isManager()) return;
+        var id = cb.getAttribute('data-tool-toggle');
+        var label = '';
+        TOOL_GROUPS.forEach(function (g) {
+          g.items.forEach(function (item) {
+            if (item.id === id) {
+              item.on = cb.checked;
+              label = item.name;
+            }
+          });
+        });
+        renderTools();
+        window.AgileBoxProto.showToast(label + (cb.checked ? ' ativada no projeto.' : ' ocultada no projeto.'), 'info');
+      });
+
+      function renderMembers() {
+        var mgr = isManager();
+        document.getElementById('members-count-badge').textContent = MEMBERS.length + (MEMBERS.length === 1 ? ' pessoa' : ' pessoas');
+        document.getElementById('nav-count-members').textContent = String(MEMBERS.length);
+        document.getElementById('members-list').innerHTML = MEMBERS.map(function (m) {
+          var rateTag = mgr ? m.rate : '•••••';
+          return (
+            '<div class="list-row">' +
+              '<div>' +
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                  '<strong style="font-size:13.5px;font-weight:500;color:var(--color-text-primary);">' + m.name + '</strong>' +
+                  (m.isManager ? '<span class="badge badge-gestor">Gestor</span>' : '') +
+                '</div>' +
+                '<div style="font-size:12px;color:var(--color-text-subtle);margin-top:2px;">' + m.role + ' · Valor/h: <span style="font-variant-numeric:tabular-nums;">' + rateTag + '</span></div>' +
+              '</div>' +
+              (mgr
+                ? '<button type="button" class="btn btn-ghost btn-sm" style="color:var(--color-signal-danger-text);" data-remove-member="' + m.id + '">Remover</button>'
+                : '') +
+            '</div>'
+          );
+        }).join('');
+
+        document.getElementById('external-list').innerHTML = EXTERNALS.map(function (ex) {
+          return (
+            '<div class="list-row">' +
+              '<div>' +
+                '<strong style="font-size:13.5px;font-weight:500;color:var(--color-text-primary);">' + ex.name + '</strong>' +
+                '<div style="font-size:12px;color:var(--color-text-subtle);margin-top:2px;">' + ex.note + ' · Sem login</div>' +
+              '</div>' +
+              (mgr
+                ? '<button type="button" class="btn btn-ghost btn-sm" style="color:var(--color-signal-danger-text);" data-remove-ext="' + ex.id + '">Remover</button>'
+                : '') +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('member-add-btn').addEventListener('click', function () {
+        var val = document.getElementById('member-add-select').value.split('|');
+        var name = val[0];
+        var role = val[1];
+        if (MEMBERS.some(function (m) { return m.name === name; })) {
+          window.AgileBoxProto.showToast(name + ' já participa deste projeto.', 'warning');
+          return;
+        }
+        MEMBERS.push({ id: name.toLowerCase(), name: name, role: role, isManager: role === 'Gestora', rate: 'R$ 120,00' });
+        renderMembers();
+        window.AgileBoxProto.showToast(name + ' adicionado(a) à equipe do projeto.', 'success');
+      });
+
+      document.getElementById('external-add-btn').addEventListener('click', function () {
+        var inp = document.getElementById('external-add-input');
+        var name = inp.value.trim();
+        if (!name) return;
+        EXTERNALS.push({ id: 'ext-' + Date.now(), name: name, note: 'Pessoa externa (só identificação)' });
+        inp.value = '';
+        renderMembers();
+        window.AgileBoxProto.showToast('Pessoa externa "' + name + '" vinculada ao projeto.', 'success');
+      });
+
+      var membersPanel = document.querySelector('[data-cfg-panel="projeto:membros"]');
+      membersPanel.addEventListener('click', function (ev) {
+        var remM = ev.target.closest('[data-remove-member]');
+        if (remM) {
+          var mid = remM.getAttribute('data-remove-member');
+          var target = MEMBERS.filter(function (m) { return m.id === mid; })[0];
+          if (!target) return;
+          openConfirm(
+            'Remover membro do projeto?',
+            'Tem certeza que deseja remover ' + target.name + ' deste projeto? As tarefas já registradas permanecem no histórico.',
+            'Remover membro',
+            function () {
+              MEMBERS = MEMBERS.filter(function (m) { return m.id !== mid; });
+              renderMembers();
+              window.AgileBoxProto.showToast(target.name + ' removido(a) do projeto.', 'info');
+            }
+          );
+          return;
+        }
+        var remE = ev.target.closest('[data-remove-ext]');
+        if (remE) {
+          var eid = remE.getAttribute('data-remove-ext');
+          var ext = EXTERNALS.filter(function (x) { return x.id === eid; })[0];
+          if (!ext) return;
+          openConfirm(
+            'Remover pessoa externa?',
+            'Deseja remover "' + ext.name + '" da lista de pessoas externas deste projeto?',
+            'Remover',
+            function () {
+              EXTERNALS = EXTERNALS.filter(function (x) { return x.id !== eid; });
+              renderMembers();
+              window.AgileBoxProto.showToast('Pessoa externa removida.', 'info');
+            }
+          );
+        }
+      });
+
+      function renderDod() {
+        var mgr = isManager();
+        var list = document.getElementById('dod-list');
+        document.getElementById('nav-count-dod').textContent = String(DOD_ITEMS.length);
+        if (!DOD_ITEMS.length) {
+          list.innerHTML = '<div style="padding:14px 0;font-size:13px;color:var(--color-text-subtle);">Nenhum critério obrigatório. As tarefas vão direto para Concluído.</div>';
+          return;
+        }
+        list.innerHTML = DOD_ITEMS.map(function (item, idx) {
+          return (
+            '<div class="list-row">' +
+              '<div style="display:flex;align-items:baseline;gap:10px;min-width:180px;flex:1;">' +
+                '<span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-subtle);font-variant-numeric:tabular-nums;">' + (idx + 1) + '.</span>' +
+                '<span style="font-size:13.5px;color:var(--color-text-primary);">' + item.text + '</span>' +
+              '</div>' +
+              (mgr
+                ? '<div class="dod-actions">' +
+                    '<button type="button" class="dod-btn" data-dod-up="' + idx + '" aria-label="Mover para cima"' + (idx === 0 ? ' disabled' : '') + '>↑</button>' +
+                    '<button type="button" class="dod-btn" data-dod-down="' + idx + '" aria-label="Mover para baixo"' + (idx === DOD_ITEMS.length - 1 ? ' disabled' : '') + '>↓</button>' +
+                    '<button type="button" class="dod-btn" data-dod-edit="' + item.id + '">Editar</button>' +
+                    '<button type="button" class="dod-btn is-danger" data-dod-del="' + item.id + '">Excluir</button>' +
+                  '</div>'
+                : '') +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('dod-add-open').addEventListener('click', function () {
+        var bar = document.getElementById('dod-add-bar');
+        bar.hidden = false;
+        this.hidden = true;
+        document.getElementById('dod-new-input').focus();
+      });
+
+      document.getElementById('dod-cancel-new').addEventListener('click', function () {
+        document.getElementById('dod-add-bar').hidden = true;
+        document.getElementById('dod-add-open').hidden = false;
+        document.getElementById('dod-new-input').value = '';
+      });
+
+      document.getElementById('dod-save-new').addEventListener('click', function () {
+        var inp = document.getElementById('dod-new-input');
+        var text = inp.value.trim();
+        if (!text) return;
+        DOD_ITEMS.push({ id: 'd-' + Date.now(), text: text });
+        inp.value = '';
+        document.getElementById('dod-add-bar').hidden = true;
+        document.getElementById('dod-add-open').hidden = false;
+        renderDod();
+        window.AgileBoxProto.showToast('Critério adicionado ao checklist de conclusão.', 'success');
+      });
+
+      document.getElementById('dod-list').addEventListener('click', function (ev) {
+        var up = ev.target.closest('[data-dod-up]');
+        if (up) {
+          var i = Number(up.getAttribute('data-dod-up'));
+          if (i > 0) {
+            var tmp = DOD_ITEMS[i - 1];
+            DOD_ITEMS[i - 1] = DOD_ITEMS[i];
+            DOD_ITEMS[i] = tmp;
+            renderDod();
+          }
+          return;
+        }
+        var down = ev.target.closest('[data-dod-down]');
+        if (down) {
+          var j = Number(down.getAttribute('data-dod-down'));
+          if (j < DOD_ITEMS.length - 1) {
+            var tmp2 = DOD_ITEMS[j + 1];
+            DOD_ITEMS[j + 1] = DOD_ITEMS[j];
+            DOD_ITEMS[j] = tmp2;
+            renderDod();
+          }
+          return;
+        }
+        var edit = ev.target.closest('[data-dod-edit]');
+        if (edit) {
+          var eid = edit.getAttribute('data-dod-edit');
+          var row = DOD_ITEMS.filter(function (x) { return x.id === eid; })[0];
+          if (!row) return;
+          var updated = window.prompt('Editar critério do checklist:', row.text);
+          if (updated && updated.trim()) {
+            row.text = updated.trim();
+            renderDod();
+            window.AgileBoxProto.showToast('Critério atualizado.', 'success');
+          }
+          return;
+        }
+        var del = ev.target.closest('[data-dod-del]');
+        if (del) {
+          var did = del.getAttribute('data-dod-del');
+          var target = DOD_ITEMS.filter(function (x) { return x.id === did; })[0];
+          if (!target) return;
+          openConfirm(
+            'Excluir critério do checklist?',
+            'Remover "' + target.text + '" do checklist de conclusão deste projeto?',
+            'Excluir critério',
+            function () {
+              DOD_ITEMS = DOD_ITEMS.filter(function (x) { return x.id !== did; });
+              renderDod();
+              window.AgileBoxProto.showToast('Critério removido.', 'info');
+            }
+          );
+        }
+      });
+
+      document.getElementById('proj-general-save').addEventListener('click', function () {
+        window.AgileBoxProto.showToast('Dados gerais do projeto atualizados.', 'success');
+      });
+
+      document.getElementById('proj-archive-btn').addEventListener('click', function () {
+        var projName = document.getElementById('proj-general-name').value.trim() || 'Projeto atual';
+        openConfirm(
+          'Arquivar "' + projName + '"?',
+          'O projeto sairá da barra lateral ativa, mas todas as tarefas e históricos continuam salvos para consulta.',
+          'Arquivar projeto',
+          function () {
+            window.AgileBoxProto.showToast(projName + ' arquivado (simulação do protótipo).', 'warning');
+          }
+        );
+      });
+
+      function syncGlassUI(glass) {
+        var g = glass || (window.AgileBoxProto ? window.AgileBoxProto.getGlass() : 'glass');
+        var btns = document.querySelectorAll('[data-app-glass]');
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle('is-active', btns[i].getAttribute('data-app-glass') === g);
+        }
+        var slider = document.getElementById('app-opacity-slider');
+        slider.disabled = g === 'opaque';
+      }
+
+      var glassBtns = document.querySelectorAll('[data-app-glass]');
+      for (var gIdx = 0; gIdx < glassBtns.length; gIdx++) {
+        glassBtns[gIdx].addEventListener('click', function () {
+          var mode = this.getAttribute('data-app-glass');
+          if (window.AgileBoxProto) window.AgileBoxProto.setGlass(mode);
+          syncGlassUI(mode);
+        });
+      }
+
+      document.getElementById('app-opacity-slider').addEventListener('input', function () {
+        var pct = Number(this.value);
+        document.getElementById('app-opacity-val').textContent = pct + '%';
+        document.documentElement.style.setProperty('--glass-window-alpha', (pct / 100).toFixed(2));
+      });
+
+      document.getElementById('app-save-rate').addEventListener('click', function () {
+        var val = document.getElementById('app-my-rate').value;
+        window.AgileBoxProto.showToast('Seu Valor/Hora padrão (R$ ' + val + ',00/h) foi salvo com privacidade.', 'success');
+      });
+
+      var kanLevelBtns = document.querySelectorAll('[data-kan-level]');
+      for (var kIdx = 0; kIdx < kanLevelBtns.length; kIdx++) {
+        kanLevelBtns[kIdx].addEventListener('click', function () {
+          var level = this.getAttribute('data-kan-level');
+          for (var j = 0; j < kanLevelBtns.length; j++) {
+            kanLevelBtns[j].classList.toggle('is-active', kanLevelBtns[j] === this);
+          }
+          window.AgileBoxProto.showToast('Nível de apoio do Kan definido como ' + level + '.', 'info');
+        });
+      }
+
+      document.getElementById('app-reset-hints').addEventListener('click', function () {
+        try {
+          window.localStorage.setItem('agilebox_proto_kan_skipped', 'false');
+        } catch (e) {}
+        window.AgileBoxProto.showToast('Dicas do Kan reativadas! Você já pode abrir "? Ajuda" ou pressionar F1.', 'success');
+      });
+
+      document.getElementById('app-save-company').addEventListener('click', function () {
+        window.AgileBoxProto.showToast('Padrões da empresa salvos para novos projetos.', 'success');
+      });
+
+      document.getElementById('app-check-updates').addEventListener('click', function () {
+        var statusEl = document.getElementById('app-update-status');
+        statusEl.textContent = 'Versão desktop 2.4.0 verificada agora · Você já está usando a versão mais recente.';
+        window.AgileBoxProto.showToast('AgileBox Desktop 2.4.0 já está atualizado.', 'success');
+      });
+
+      function syncProjectNames() {
+        if (!window.AgileBoxProto) return;
+        var p = window.AgileBoxProto.getProject();
+        var nameField = document.getElementById('proj-general-name');
+        if (nameField) nameField.value = p.fullName;
+      }
+
+      document.addEventListener('ab:rolechange', function () {
+        if (!isManager() && activeTopic === 'app:empresa') {
+          selectTopic('app:preferencias');
+        }
+        renderTools();
+        renderMembers();
+        renderDod();
+      });
+
+      document.addEventListener('ab:glasschange', function (e) {
+        syncGlassUI(e.detail && e.detail.glass);
+      });
+
+      document.addEventListener('ab:projectchange', function () {
+        syncProjectNames();
+      });
+
+      var initialTopic = (ev.detail && ev.detail.tab === 'app') ? 'app:preferencias' : 'projeto:ferramentas';
+      selectTopic(initialTopic);
+      syncGlassUI(ev.detail && ev.detail.glass);
+      syncProjectNames();
+      renderTools();
+      renderMembers();
+      renderDod();
+    });
+  </script>
+</body>
+</html>

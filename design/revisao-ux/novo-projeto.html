@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Novo Projeto · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    #page-root {
+      max-width: 100%;
+      padding: 0;
+      min-width: 0;
+    }
+
+    .np-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 820px;
+      min-width: 0;
+    }
+
+    /* Stepper discreto monocromático */
+    .np-stepper {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .np-step-sep {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      opacity: 0.5;
+    }
+
+    .np-step-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      background: transparent;
+    }
+
+    .np-step-pill.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    .np-step-pill.is-done {
+      color: var(--color-text-muted);
+    }
+
+    /* Passo 1: entrada única + escolha limpa com divisórias 1px */
+    .np-flow-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .np-form-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-form-fields .input {
+      background: transparent;
+      border-color: var(--color-hairline);
+    }
+
+    .np-form-fields .input:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .np-paths-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      padding-top: 2px;
+    }
+
+    .np-path-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 4px 0;
+    }
+
+    .np-path-col + .np-path-col {
+      padding-left: 20px;
+      border-left: 1px solid var(--color-divider);
+    }
+
+    .np-path-eyebrow {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+    }
+
+    .np-path-col h3 {
+      margin: 6px 0 0;
+      font-family: var(--font-family-display);
+      font-size: 16.5px;
+      font-weight: 650;
+      color: var(--color-text-primary);
+    }
+
+    .np-path-col p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--color-text-muted);
+      line-height: 1.45;
+    }
+
+    .np-states-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .np-state-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .np-state-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .np-state-dot.is-planejamento { background: var(--color-status-planejamento); }
+    .np-state-dot.is-afazer { background: var(--color-status-afazer); }
+    .np-state-dot.is-desenvolvendo { background: var(--color-status-desenvolvendo); }
+    .np-state-dot.is-revisar { background: var(--color-status-revisar); }
+    .np-state-dot.is-concluido { background: var(--color-status-concluido); }
+
+    /* Passo 2: 3 perguntas com divisórias 1px e opções monocromáticas */
+    .np-step2-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-question-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-question-block:last-of-type {
+      border-bottom: 0;
+    }
+
+    .np-question-title {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .np-options-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .np-options-grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .np-option-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      min-height: 54px;
+      padding: 9px 11px;
+      border-radius: 9px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .np-option-card:hover {
+      background: var(--color-tint-faint);
+      border-color: var(--color-hairline-strong);
+    }
+
+    .np-option-card.is-selected {
+      background: var(--color-tint-soft);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .np-option-card strong {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .np-option-card.is-selected strong::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-text-primary);
+      flex: none;
+    }
+
+    .np-option-card span {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      line-height: 1.4;
+    }
+
+    /* Passo 3: Revisão final limpa (1 coluna, zero bordas verdes) */
+    .np-review-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .np-review-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-reassurance {
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-feature-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .np-feature-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .np-feature-row:first-child {
+      padding-top: 2px;
+    }
+
+    .np-feature-row:last-child {
+      border-bottom: 0;
+    }
+
+    .np-feature-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .np-feature-text strong {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .np-feature-text span {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      line-height: 1.35;
+    }
+
+    /* Switch discreto/calmo monocromático */
+    .ab-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 38px;
+      cursor: pointer;
+      flex: none;
+    }
+
+    .ab-switch input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+
+    .ab-switch-track {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--color-hairline-strong);
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+
+    .ab-switch-track::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #757282;
+      transition: transform 180ms var(--ease-ios), background 180ms ease;
+    }
+
+    .ab-switch input:checked + .ab-switch-track {
+      background: rgba(255, 255, 255, 0.32);
+      border-color: rgba(255, 255, 255, 0.42);
+    }
+
+    .ab-switch input:checked + .ab-switch-track::after {
+      transform: translateX(18px);
+      background: #f2f0f6;
+    }
+
+    .ab-switch input:focus-visible + .ab-switch-track {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+    }
+
+    .ab-switch input:disabled + .ab-switch-track {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .np-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 14px;
+      margin-top: 6px;
+      border-top: 1px solid var(--color-divider);
+    }
+
+    .np-error {
+      font-size: 12px;
+      color: var(--color-signal-danger-text);
+      margin-top: 2px;
+    }
+
+    .np-success-box {
+      padding: 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dot-inline {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-ok { background: var(--color-signal-ok); }
+
+    @media (max-width: 780px) {
+      .np-paths-grid,
+      .np-options-grid,
+      .np-options-grid.cols-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .np-path-col + .np-path-col {
+        padding-left: 0;
+        border-left: 0;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-divider);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .np-option-card,
+      .ab-switch-track,
+      .ab-switch-track::after {
+        transition: none;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="novo-projeto">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title">Criar novo projeto</h1>
+        <p class="ab-page-sub">Comece simples em 1 clique ou responda 3 perguntas sem jargão técnico.</p>
+      </div>
+      <div class="ab-page-head-actions">
+        <div class="np-stepper" id="np-stepper" aria-label="Etapas da criação"></div>
+      </div>
+    </header>
+
+    <div class="np-shell">
+
+      <!-- Passo 1: Nome único + Escolha imediata -->
+      <div id="np-step-1" class="np-flow-section">
+        <div class="np-form-fields">
+          <div class="field">
+            <label class="field-label" for="np-name">Nome do projeto</label>
+            <input type="text" class="input" id="np-name" placeholder="Ex.: Portal de Atendimento ao Cliente" autocomplete="off">
+            <div class="np-error" id="np-name-error" hidden>Digite um nome para o projeto antes de continuar.</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="np-desc">Descrição breve (opcional)</label>
+            <input type="text" class="input" id="np-desc" placeholder="Ex.: Organizar chamados e entregas semanais da equipe de TI">
+          </div>
+        </div>
+
+        <div class="np-paths-grid">
+          <div class="np-path-col">
+            <div>
+              <span class="np-path-eyebrow">Mais rápido · 80% dos times</span>
+              <h3>Começar direto com o Quadro</h3>
+              <p>Cria o projeto apenas com o Quadro nos 5 estados oficiais, sem telas extras para configurar.</p>
+              <div class="np-states-preview" aria-label="Os 5 estados oficiais">
+                <span class="np-state-item"><i class="np-state-dot is-planejamento"></i>Planejamento</span>
+                <span class="np-state-item"><i class="np-state-dot is-afazer"></i>A fazer</span>
+                <span class="np-state-item"><i class="np-state-dot is-desenvolvendo"></i>Desenvolvendo</span>
+                <span class="np-state-item"><i class="np-state-dot is-revisar"></i>Revisar</span>
+                <span class="np-state-item"><i class="np-state-dot is-concluido"></i>Concluído</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="np-express-btn" style="width:100%;">
+              Criar projeto simples agora
+            </button>
+          </div>
+
+          <div class="np-path-col">
+            <div>
+              <span class="np-path-eyebrow">Personalizado · 30 seg</span>
+              <h3>Personalizar para o seu ritmo</h3>
+              <p>Responda 3 perguntas rápidas sobre como o time trabalha e veja o formato recomendado antes de criar.</p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="np-guided-btn" style="width:100%;min-height:44px;">
+              Me ajude a escolher em 3 perguntas →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passo 1b: Confirmação rápida Express -->
+      <div id="np-express-done" class="np-success-box" hidden>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--color-text-muted);">
+          <span class="dot-inline is-ok" aria-hidden="true"></span>
+          <span>Projeto criado</span>
+          <span>·</span>
+          <span id="np-done-badge">Quadro simples (5 estados)</span>
+        </div>
+        <h2 style="margin:0;font-family:var(--font-family-display);font-size:20px;" id="np-done-title">Projeto pronto para usar</h2>
+        <p style="margin:0;font-size:13.5px;color:var(--color-text-body);line-height:1.5;max-width:620px;">
+          Criamos apenas o Quadro com os 5 estados para a equipe começar sem atrito. Se quiser adicionar Sprints ou Cronograma depois, basta ativar em Config. e Ferramentas.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;">
+          <a href="quadro.html?projeto=c" class="btn btn-primary">Ir para o Quadro agora →</a>
+          <button type="button" class="btn btn-secondary" id="np-create-another">Criar outro projeto</button>
+        </div>
+      </div>
+
+      <!-- Passo 2: 3 perguntas orientadas a dor (linguagem humana) -->
+      <div id="np-step-2" class="np-flow-section" hidden>
+        <div class="np-step2-head">
+          <div>
+            <span class="eyebrow">Projeto</span>
+            <div style="font-size:15.5px;font-weight:600;margin-top:2px;color:var(--color-text-primary);" id="np-q-proj-name">Novo Projeto</div>
+          </div>
+          <span class="topic-section-meta">3 perguntas rápidas</span>
+        </div>
+
+        <div class="np-question-block">
+          <p class="np-question-title">1. Como o time prefere organizar as entregas?</p>
+          <div class="np-options-grid" id="np-q1">
+            <button type="button" class="np-option-card is-selected" data-q1="continuo">
+              <strong>Fluxo contínuo simples</strong>
+              <span>Demandas entram no quadro e avançam conforme a equipe libera espaço.</span>
+            </button>
+            <button type="button" class="np-option-card" data-q1="ciclos">
+              <strong>Ciclos curtos com metas</strong>
+              <span>Pacotes semanais ou quinzenais com fila priorizada e revisão ao fim do ciclo.</span>
+            </button>
+            <button type="button" class="np-option-card" data-q1="cronograma">
+              <strong>Fases com cronograma e prazos fechados</strong>
+              <span>Grandes entregas quebradas em datas definidas e acompanhamento de desvios.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="np-question-block">
+          <p class="np-question-title">2. Há clientes ou parceiros externos que precisam de previsibilidade?</p>
+          <div class="np-options-grid cols-2" id="np-q2">
+            <button type="button" class="np-option-card" data-q2="sim">
+              <strong>Sim, acompanhamos prazos com externos</strong>
+              <span>Ativa marcos de entrega e registro de pessoas externas (sem login nem avisos).</span>
+            </button>
+            <button type="button" class="np-option-card is-selected" data-q2="nao">
+              <strong>Não, é um projeto interno da equipe</strong>
+              <span>Mantém a navegação mais enxuta, focada apenas na execução diária do time.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="np-question-block">
+          <p class="np-question-title">3. Como você descreve a experiência da equipe com organização?</p>
+          <div class="np-options-grid" id="np-q3">
+            <button type="button" class="np-option-card is-selected" data-q3="Iniciante">
+              <strong>Iniciante</strong>
+              <span>Kan aberto nos primeiros passos, dicas visíveis e explicação de termos.</span>
+            </button>
+            <button type="button" class="np-option-card" data-q3="Intermediário">
+              <strong>Intermediário</strong>
+              <span>Ajuda discreta quando alguém clicar em "?" e limites opcionais no quadro.</span>
+            </button>
+            <button type="button" class="np-option-card" data-q3="Experiente">
+              <strong>Experiente</strong>
+              <span>Interface limpa e silenciosa, mantendo apenas o atalho F1 se precisar.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="np-footer-bar">
+          <button type="button" class="btn btn-ghost" id="np-back-to-1">← Voltar ao nome</button>
+          <button type="button" class="btn btn-primary" id="np-to-review">Ver sugestão de recursos →</button>
+        </div>
+      </div>
+
+      <!-- Passo 3: Revisão final antes de criar -->
+      <div id="np-step-3" class="np-review-wrap" hidden>
+        <div class="np-review-head">
+          <div>
+            <span class="eyebrow">Revisão final</span>
+            <h2 style="margin:4px 0 0;font-family:var(--font-family-display);font-size:19px;" id="np-rev-title">Projeto</h2>
+            <p style="margin:3px 0 0;font-size:12.5px;color:var(--color-text-muted);" id="np-rev-summary"></p>
+          </div>
+          <span class="topic-section-meta" id="np-rev-badge">Formato sugerido</span>
+        </div>
+
+        <div class="np-reassurance">
+          ✓ Você pode ligar ou desligar recursos depois em Config. e Ferramentas sem perder dados.
+        </div>
+
+        <div class="np-feature-list" id="np-feature-list"></div>
+
+        <div class="np-footer-bar">
+          <button type="button" class="btn btn-ghost" id="np-back-to-2">← Voltar às perguntas</button>
+          <button type="button" class="btn btn-primary" id="np-create-final">Criar projeto e ir ao Quadro</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var step = 1;
+      var answers = {
+        q1: 'continuo',
+        q2: 'nao',
+        q3: 'Iniciante'
+      };
+
+      var MODULES_CATALOG = [
+        { key: 'quadro', label: 'Quadro nos 5 estados', desc: 'Planejamento, A fazer, Desenvolvendo, Revisar e Concluído.', locked: true, on: true },
+        { key: 'wip', label: 'Limite simultâneo no Quadro', desc: 'Alerta quando muitas tarefas começam ao mesmo tempo.', locked: false, on: true },
+        { key: 'daily', label: 'Atualização diária (Bandeja)', desc: 'Check-in rápido de fim de dia sem interromper o trabalho.', locked: false, on: true },
+        { key: 'dod', label: 'Checklist de conclusão', desc: 'Conferência rápida antes de finalizar uma tarefa.', locked: false, on: false },
+        { key: 'backlog', label: 'Backlog', desc: 'Fila priorizada das próximas tarefas antes de entrar no quadro.', locked: false, on: false },
+        { key: 'sprints', label: 'Sprints (Ciclos curtos)', desc: 'Organize pacotes semanais ou quinzenais com meta.', locked: false, on: false },
+        { key: 'entregas', label: 'Entregas e Riscos', desc: 'Divida resultados maiores e monitore riscos em matriz 3×3.', locked: false, on: false },
+        { key: 'cronograma', label: 'Cronograma e Marcos', desc: 'Linha do tempo com dependências simples e datas-chave.', locked: false, on: false }
+      ];
+
+      var nameInput = document.getElementById('np-name');
+      var descInput = document.getElementById('np-desc');
+      var nameErr = document.getElementById('np-name-error');
+      var step1 = document.getElementById('np-step-1');
+      var expressDone = document.getElementById('np-express-done');
+      var step2 = document.getElementById('np-step-2');
+      var step3 = document.getElementById('np-step-3');
+      var stepperEl = document.getElementById('np-stepper');
+
+      setTimeout(function () {
+        nameInput.focus();
+      }, 30);
+
+      function renderStepper() {
+        var steps = [
+          { n: 1, label: '1. Nome' },
+          { n: 2, label: '2. Perguntas' },
+          { n: 3, label: '3. Revisão' }
+        ];
+        stepperEl.innerHTML = steps.map(function (s, idx) {
+          var cls = 'np-step-pill' + (step === s.n ? ' is-active' : (step > s.n ? ' is-done' : ''));
+          return (idx > 0 ? '<span class="np-step-sep" aria-hidden="true">·</span>' : '') +
+            '<span class="' + cls + '">' + s.label + '</span>';
+        }).join('');
+      }
+
+      function showStep(n) {
+        step = n;
+        step1.hidden = n !== 1;
+        expressDone.hidden = true;
+        step2.hidden = n !== 2;
+        step3.hidden = n !== 3;
+        renderStepper();
+      }
+
+      function validateName() {
+        var val = nameInput.value.trim();
+        if (!val) {
+          nameErr.hidden = false;
+          nameInput.focus();
+          return '';
+        }
+        nameErr.hidden = true;
+        return val;
+      }
+
+      nameInput.addEventListener('input', function () {
+        if (nameInput.value.trim()) nameErr.hidden = true;
+      });
+
+      function applyRecommendation() {
+        var presetName = 'Fluxo Contínuo';
+        if (answers.q1 === 'ciclos' && answers.q2 === 'sim') presetName = 'Ciclos + Marcos com Cliente';
+        else if (answers.q1 === 'ciclos') presetName = 'Ciclos Ágeis (Sprints)';
+        else if (answers.q1 === 'cronograma') presetName = 'Fases com Cronograma';
+
+        MODULES_CATALOG.forEach(function (m) {
+          if (m.locked) { m.on = true; return; }
+          if (m.key === 'wip') m.on = answers.q1 === 'continuo';
+          if (m.key === 'daily') m.on = answers.q3 !== 'Experiente';
+          if (m.key === 'dod') m.on = answers.q2 === 'sim' || answers.q1 !== 'continuo';
+          if (m.key === 'backlog') m.on = answers.q1 === 'ciclos';
+          if (m.key === 'sprints') m.on = answers.q1 === 'ciclos';
+          if (m.key === 'entregas') m.on = answers.q1 === 'cronograma' || answers.q2 === 'sim';
+          if (m.key === 'cronograma') m.on = answers.q1 === 'cronograma' || answers.q2 === 'sim';
+        });
+
+        document.getElementById('np-rev-title').textContent = nameInput.value.trim() || 'Novo Projeto';
+        document.getElementById('np-rev-badge').textContent = presetName;
+        document.getElementById('np-rev-summary').textContent =
+          'Apoio do Kan configurado para perfil ' + answers.q3 +
+          (answers.q2 === 'sim' ? ' · com visibilidade para clientes e parceiros.' : ' · uso interno da equipe.');
+      }
+
+      function renderFeatureSwitches() {
+        var list = document.getElementById('np-feature-list');
+        list.innerHTML = MODULES_CATALOG.map(function (m) {
+          return (
+            '<div class="np-feature-row">' +
+              '<div class="np-feature-text">' +
+                '<strong>' + m.label + '</strong>' +
+                '<span>' + m.desc + '</span>' +
+              '</div>' +
+              '<label class="ab-switch" aria-label="Ativar ' + m.label + '">' +
+                '<input type="checkbox" data-mod-key="' + m.key + '"' + (m.on ? ' checked' : '') + (m.locked ? ' disabled' : '') + '>' +
+                '<span class="ab-switch-track"></span>' +
+              '</label>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      document.getElementById('np-express-btn').addEventListener('click', function () {
+        var projectName = validateName();
+        if (!projectName) return;
+        step1.hidden = true;
+        expressDone.hidden = false;
+        document.getElementById('np-done-title').textContent = projectName + ' criado!';
+        window.AgileBoxProto.showToast('Projeto "' + projectName + '" criado apenas com o Quadro!', 'success');
+      });
+
+      document.getElementById('np-create-another').addEventListener('click', function () {
+        nameInput.value = '';
+        descInput.value = '';
+        showStep(1);
+        nameInput.focus();
+      });
+
+      document.getElementById('np-guided-btn').addEventListener('click', function () {
+        var projectName = validateName();
+        if (!projectName) return;
+        document.getElementById('np-q-proj-name').textContent = projectName;
+        showStep(2);
+      });
+
+      document.getElementById('np-q1').addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-q1]');
+        if (!btn) return;
+        answers.q1 = btn.getAttribute('data-q1');
+        var all = document.querySelectorAll('[data-q1]');
+        for (var i = 0; i < all.length; i++) all[i].classList.toggle('is-selected', all[i] === btn);
+      });
+
+      document.getElementById('np-q2').addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-q2]');
+        if (!btn) return;
+        answers.q2 = btn.getAttribute('data-q2');
+        var all = document.querySelectorAll('[data-q2]');
+        for (var i = 0; i < all.length; i++) all[i].classList.toggle('is-selected', all[i] === btn);
+      });
+
+      document.getElementById('np-q3').addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-q3]');
+        if (!btn) return;
+        answers.q3 = btn.getAttribute('data-q3');
+        var all = document.querySelectorAll('[data-q3]');
+        for (var i = 0; i < all.length; i++) all[i].classList.toggle('is-selected', all[i] === btn);
+      });
+
+      document.getElementById('np-back-to-1').addEventListener('click', function () {
+        showStep(1);
+      });
+
+      document.getElementById('np-to-review').addEventListener('click', function () {
+        applyRecommendation();
+        renderFeatureSwitches();
+        showStep(3);
+      });
+
+      document.getElementById('np-feature-list').addEventListener('change', function (ev) {
+        var cb = ev.target.closest('[data-mod-key]');
+        if (!cb) return;
+        var key = cb.getAttribute('data-mod-key');
+        MODULES_CATALOG.forEach(function (m) {
+          if (m.key === key && !m.locked) m.on = cb.checked;
+        });
+      });
+
+      document.getElementById('np-back-to-2').addEventListener('click', function () {
+        showStep(2);
+      });
+
+      document.getElementById('np-create-final').addEventListener('click', function () {
+        var projectName = nameInput.value.trim() || 'Novo Projeto';
+        window.AgileBoxProto.showToast('Projeto "' + projectName + '" criado! Abrindo o Quadro...', 'success');
+        setTimeout(function () {
+          window.location.href = 'quadro.html?projeto=c';
+        }, 400);
+      });
+
+      renderStepper();
+    });
+  </script>
+</body>
+</html>

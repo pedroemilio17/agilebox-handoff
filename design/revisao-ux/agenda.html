@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    #page-root {
+      padding: 0;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    #ag-calendar-stage {
+      min-width: 0;
+    }
+
+    .cat-legend {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+    }
+
+    .cat-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Pontinho sutil de 6px indicando o tipo */
+    .cat-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .cat-dot.cat-daily { background: var(--color-manager-dot); }
+    .cat-dot.cat-planejamento { background: var(--color-status-revisar); }
+    .cat-dot.cat-retrospectiva { background: var(--color-primary-bg); }
+    .cat-dot.cat-entrega { background: var(--color-deliverable); }
+
+    .agenda-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 288px;
+      gap: 18px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .agenda-main,
+    .agenda-aside {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .agenda-aside {
+      padding-left: 16px;
+      border-left: 1px solid var(--color-divider);
+      gap: 16px;
+    }
+
+    .agenda-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .agenda-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .ag-nav-btn {
+      min-height: 32px;
+      padding: 0 9px;
+      border: 1px solid var(--color-hairline);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+    }
+
+    .ag-nav-btn:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .agenda-period-title {
+      margin: 0 0 0 8px;
+      font-family: var(--font-family-display);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      text-transform: none;
+    }
+
+    .quiet-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+    }
+
+    .quiet-toggle-btn {
+      min-height: 30px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .quiet-toggle-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .quiet-toggle-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Grade da Semana (7 colunas completas, Seg-Dom visíveis em 1280x780 sem corte) */
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .week-col {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 310px;
+      padding: 7px 6px;
+      border-radius: 10px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      gap: 6px;
+    }
+
+    .week-col.is-today {
+      border-color: var(--color-hairline-strong);
+      background: rgba(255, 255, 255, 0.032);
+    }
+
+    .week-col-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .week-day-name {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--color-text-subtle);
+      text-transform: uppercase;
+    }
+
+    .week-day-num {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-muted);
+    }
+
+    .week-col.is-today .week-day-num {
+      background: var(--color-text-primary);
+      color: var(--surface-canvas);
+    }
+
+    .week-col-events {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    /* Pílulas neutras discretas — apenas pontinho 6px colorido */
+    .event-pill {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      min-height: 40px;
+      padding: 6px 7px;
+      border-radius: 7px;
+      border: 1px solid var(--color-hairline);
+      background: var(--surface-panel);
+      color: var(--color-text-primary);
+      text-align: left;
+      cursor: pointer;
+      min-width: 0;
+      overflow: hidden;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .event-pill:hover {
+      border-color: var(--color-hairline-strong);
+      background: var(--surface-raised);
+    }
+
+    .event-pill-meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .event-pill-time {
+      font-family: var(--font-family-mono);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-subtle);
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .event-pill-title {
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.25;
+      color: var(--color-text-primary);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow-wrap: break-word;
+    }
+
+    /* Visão Dia limpa */
+    .day-view-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-event-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 48px;
+      padding: 10px 4px;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      background: transparent;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: background 140ms ease;
+    }
+
+    .day-event-row:last-child {
+      border-bottom: 0;
+    }
+
+    .day-event-row:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .day-cat-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* Visão Mês */
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .month-head-cell {
+      padding: 4px 6px;
+      text-align: center;
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      color: var(--color-text-subtle);
+      text-transform: uppercase;
+    }
+
+    .month-cell {
+      min-height: 70px;
+      padding: 5px;
+      border-radius: 8px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .month-cell.is-muted {
+      opacity: 0.42;
+    }
+
+    .month-cell.is-today {
+      border-color: var(--color-hairline-strong);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .month-cell-num {
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-muted);
+    }
+
+    .month-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--surface-panel);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-body);
+      font-size: 10.5px;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .month-chip-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    /* Painel direito limpo — sem caixas aninhadas, apenas divisórias 1px */
+    .aside-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .aside-section:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .aside-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .aside-section h2 {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .aside-section-meta {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+    }
+
+    .upcoming-list,
+    .retro-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .upcoming-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 2px;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      transition: background 140ms ease;
+    }
+
+    .upcoming-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .upcoming-item:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .upcoming-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+    }
+
+    .upcoming-day-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .retro-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .retro-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .retro-item.is-done {
+      opacity: 0.65;
+    }
+
+    .retro-check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-height: 32px;
+      padding: 2px 0;
+      cursor: pointer;
+    }
+
+    .retro-check-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      flex: none;
+      accent-color: #d8d5df;
+      cursor: pointer;
+    }
+
+    .retro-item-text {
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: var(--color-text-body);
+    }
+
+    .retro-item.is-done .retro-item-text {
+      text-decoration: line-through;
+      color: var(--color-text-subtle);
+    }
+
+    .retro-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 24px;
+    }
+
+    @media (max-width: 1040px) {
+      .agenda-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .agenda-aside {
+        padding-left: 0;
+        border-left: 0;
+        padding-top: 14px;
+        border-top: 1px solid var(--color-divider);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ag-nav-btn,
+      .quiet-toggle-btn,
+      .event-pill,
+      .day-event-row,
+      .upcoming-item {
+        transition: none;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="agenda">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title">Agenda</h1>
+        <p class="ab-page-sub">Alinhamentos, entregas e combinados da equipe sem cortar o fim de semana.</p>
+      </div>
+      <div class="ab-page-head-actions">
+        <span class="badge" data-role-only="collaborator" title="Agendamentos são gerenciados pelo gestor">Somente leitura</span>
+        <button type="button" class="btn btn-primary" id="ag-new-btn" data-role-only="manager" style="min-height:40px;">
+          + Novo agendamento
+        </button>
+      </div>
+    </header>
+
+    <div class="agenda-layout">
+      <!-- Coluna esquerda: Calendário -->
+      <div class="agenda-main">
+        <div class="agenda-toolbar">
+          <div class="agenda-nav">
+            <button type="button" class="ag-nav-btn" id="ag-prev" aria-label="Período anterior">‹</button>
+            <button type="button" class="ag-nav-btn" id="ag-today">Hoje</button>
+            <button type="button" class="ag-nav-btn" id="ag-next" aria-label="Próximo período">›</button>
+            <h2 class="agenda-period-title" id="ag-period-title">16 – 22 de novembro de 2026</h2>
+          </div>
+          <div class="quiet-toggle" role="group" aria-label="Modo de visualização do calendário">
+            <button type="button" class="quiet-toggle-btn" data-ag-view="day">Dia</button>
+            <button type="button" class="quiet-toggle-btn is-active" data-ag-view="week">Semana</button>
+            <button type="button" class="quiet-toggle-btn" data-ag-view="month">Mês</button>
+          </div>
+        </div>
+
+        <div class="cat-legend" aria-label="Categorias de eventos">
+          <span class="cat-legend-item"><i class="cat-dot cat-daily"></i>Daily</span>
+          <span class="cat-legend-item"><i class="cat-dot cat-planejamento"></i>Planejamento</span>
+          <span class="cat-legend-item"><i class="cat-dot cat-retrospectiva"></i>Retrospectiva</span>
+          <span class="cat-legend-item"><i class="cat-dot cat-entrega"></i>Entrega</span>
+        </div>
+
+        <div id="ag-calendar-stage"></div>
+      </div>
+
+      <!-- Coluna direita: Compromissos e Ações (lista limpa com divisórias 1px) -->
+      <aside class="agenda-aside" aria-label="Compromissos e Ações">
+        <section class="aside-section" aria-label="Próximos 7 dias">
+          <div class="aside-section-head">
+            <h2>Próximos 7 dias</h2>
+            <span class="aside-section-meta" id="ag-upcoming-badge">4 eventos</span>
+          </div>
+          <div class="upcoming-list" id="ag-upcoming-list"></div>
+        </section>
+
+        <section class="aside-section" aria-label="Ações da Retrospectiva">
+          <div class="aside-section-head">
+            <h2>Ações da Retrospectiva</h2>
+            <span class="aside-section-meta" id="ag-retro-badge">2 pendentes</span>
+          </div>
+          <div class="retro-list" id="ag-retro-list"></div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Modal: Criar / Editar / Ver agendamento -->
+    <div class="modal-backdrop" id="ag-event-modal" role="dialog" aria-modal="true" aria-labelledby="ag-modal-heading">
+      <form class="modal" id="ag-event-form">
+        <div class="modal-header">
+          <h3 id="ag-modal-heading">Novo agendamento</h3>
+          <button type="button" class="ab-kan-close-btn" id="ag-modal-close" aria-label="Fechar">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label class="field-label" for="ag-ev-title">Título do encontro</label>
+            <input type="text" class="input" id="ag-ev-title" placeholder="Ex.: Planejamento Sprint 5" required>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field">
+              <label class="field-label" for="ag-ev-category">Categoria</label>
+              <select class="select" id="ag-ev-category">
+                <option value="Daily">Daily</option>
+                <option value="Planejamento">Planejamento</option>
+                <option value="Retrospectiva">Retrospectiva</option>
+                <option value="Entrega">Entrega</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="ag-ev-project">Projeto</label>
+              <select class="select" id="ag-ev-project">
+                <option value="Projeto A">Projeto A</option>
+                <option value="Projeto B">Projeto B</option>
+                <option value="Projeto C">Projeto C</option>
+                <option value="Todos os projetos">Todos os projetos</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field">
+              <label class="field-label" for="ag-ev-date">Data</label>
+              <input type="date" class="input" id="ag-ev-date" required>
+            </div>
+            <div class="field">
+              <label class="field-label" for="ag-ev-time">Horário</label>
+              <input type="time" class="input" id="ag-ev-time" required>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="ag-ev-notes">Pauta ou observações</label>
+            <textarea class="textarea" id="ag-ev-notes" placeholder="Pontos rápidos para alinhar na reunião..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" id="ag-modal-footer">
+          <button type="button" class="btn btn-danger" id="ag-ev-delete" style="margin-right:auto;" hidden>Excluir</button>
+          <button type="button" class="btn btn-ghost" id="ag-modal-cancel">Fechar</button>
+          <button type="submit" class="btn btn-primary" id="ag-ev-save">Salvar agendamento</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var MONTHS_PT = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+      ];
+      var WEEKDAYS_SHORT = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+      var WEEKDAYS_LONG = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+      var TODAY_ISO = '2026-11-18';
+      var focusDateISO = '2026-11-18';
+      var currentView = 'week';
+      var editingEventId = null;
+
+      var events = [
+        { id: 'e1', title: 'Daily de alinhamento', category: 'Daily', date: '2026-11-16', time: '09:30', project: 'Projeto A', notes: 'Checar bloqueios da integração e prioridades do dia.' },
+        { id: 'e2', title: 'Planejamento Sprint 5', category: 'Planejamento', date: '2026-11-17', time: '14:00', project: 'Projeto A', notes: 'Selecionar próximas tarefas do Backlog para o próximo ciclo.' },
+        { id: 'e3', title: 'Daily da equipe', category: 'Daily', date: '2026-11-18', time: '09:30', project: 'Todos os projetos', notes: 'Sincronia rápida de 15 minutos.' },
+        { id: 'e4', title: 'Entrega Beta com Cliente ACME', category: 'Entrega', date: '2026-11-19', time: '16:00', project: 'Projeto B', notes: 'Demonstração do módulo ERP e validação de critérios.' },
+        { id: 'e5', title: 'Retrospectiva Sprint 4', category: 'Retrospectiva', date: '2026-11-20', time: '15:00', project: 'Projeto A', notes: 'O que funcionou bem e combinados para o próximo ciclo.' },
+        { id: 'e6', title: 'Janela de publicação ERP', category: 'Entrega', date: '2026-11-21', time: '10:00', project: 'Projeto B', notes: 'Acompanhamento de deploy assistido no sábado.' },
+        { id: 'e7', title: 'Plantão de monitoramento', category: 'Daily', date: '2026-11-22', time: '11:00', project: 'Projeto C', notes: 'Conferência leve de estabilidade no domingo.' },
+        { id: 'e8', title: 'Revisão mensal de metas', category: 'Planejamento', date: '2026-11-27', time: '10:30', project: 'Todos os projetos', notes: 'Reunião fora da janela de 7 dias para validar filtro.' }
+      ];
+
+      var retroActions = [
+        { id: 'r1', text: 'Padronizar checklist antes de subir homologação', done: false, converted: false },
+        { id: 'r2', text: 'Automatizar envio de alertas de tarefa bloqueada', done: false, converted: false },
+        { id: 'r3', text: 'Documentar credenciais de teste no guia interno', done: true, converted: false }
+      ];
+
+      function parseISO(iso) {
+        var parts = iso.split('-');
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+
+      function toISO(date) {
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + d;
+      }
+
+      function addDays(iso, delta) {
+        var dt = parseISO(iso);
+        dt.setDate(dt.getDate() + delta);
+        return toISO(dt);
+      }
+
+      function formatNaturalDate(iso, withYear) {
+        var dt = parseISO(iso);
+        var base = dt.getDate() + ' de ' + MONTHS_PT[dt.getMonth()];
+        return withYear ? base + ' de ' + dt.getFullYear() : base;
+      }
+
+      function getMondayISO(iso) {
+        var dt = parseISO(iso);
+        var jsDay = dt.getDay();
+        var offset = jsDay === 0 ? -6 : 1 - jsDay;
+        dt.setDate(dt.getDate() + offset);
+        return toISO(dt);
+      }
+
+      function categoryClass(cat) {
+        if (cat === 'Daily') return 'cat-daily';
+        if (cat === 'Planejamento') return 'cat-planejamento';
+        if (cat === 'Retrospectiva') return 'cat-retrospectiva';
+        return 'cat-entrega';
+      }
+
+      function isManager() {
+        return !window.AgileBoxProto || window.AgileBoxProto.getRole() === 'manager';
+      }
+
+      function renderCalendar() {
+        var stage = document.getElementById('ag-calendar-stage');
+        var titleEl = document.getElementById('ag-period-title');
+        if (!stage || !titleEl) return;
+
+        if (currentView === 'week') {
+          var monday = getMondayISO(focusDateISO);
+          var sunday = addDays(monday, 6);
+          var monDt = parseISO(monday);
+          var sunDt = parseISO(sunday);
+          if (monDt.getMonth() === sunDt.getMonth()) {
+            titleEl.textContent = monDt.getDate() + ' – ' + formatNaturalDate(sunday, true);
+          } else {
+            titleEl.textContent = formatNaturalDate(monday, false) + ' – ' + formatNaturalDate(sunday, true);
+          }
+
+          var colsHtml = [];
+          for (var i = 0; i < 7; i++) {
+            var dayISO = addDays(monday, i);
+            var dt = parseISO(dayISO);
+            var dayEvents = events
+              .filter(function (e) { return e.date === dayISO; })
+              .sort(function (a, b) { return a.time.localeCompare(b.time); });
+
+            var evHtml = dayEvents.map(function (e) {
+              return (
+                '<button type="button" class="event-pill" data-open-event="' + e.id + '" title="' + e.time + ' · ' + e.category + ' · ' + e.title + '">' +
+                  '<span class="event-pill-meta">' +
+                    '<span class="cat-dot ' + categoryClass(e.category) + '" aria-hidden="true"></span>' +
+                    '<span class="event-pill-time">' + e.time + '</span>' +
+                  '</span>' +
+                  '<span class="event-pill-title">' + e.title + '</span>' +
+                '</button>'
+              );
+            }).join('');
+
+            colsHtml.push(
+              '<div class="week-col' + (dayISO === TODAY_ISO ? ' is-today' : '') + '">' +
+                '<div class="week-col-head">' +
+                  '<span class="week-day-name">' + WEEKDAYS_SHORT[i] + '</span>' +
+                  '<span class="week-day-num">' + dt.getDate() + '</span>' +
+                '</div>' +
+                '<div class="week-col-events">' +
+                  (evHtml || '<span style="font-size:11.5px;color:var(--color-text-subtle);padding:4px 2px;">Livre</span>') +
+                '</div>' +
+              '</div>'
+            );
+          }
+          stage.innerHTML = '<div class="week-grid">' + colsHtml.join('') + '</div>';
+          return;
+        }
+
+        if (currentView === 'day') {
+          var focusDt = parseISO(focusDateISO);
+          var weekdayLabel = WEEKDAYS_LONG[focusDt.getDay()];
+          titleEl.textContent = weekdayLabel + ', ' + formatNaturalDate(focusDateISO, true);
+
+          var dayList = events
+            .filter(function (e) { return e.date === focusDateISO; })
+            .sort(function (a, b) { return a.time.localeCompare(b.time); });
+
+          if (!dayList.length) {
+            stage.innerHTML =
+              '<div class="empty-state">' +
+                '<h3>Nenhum agendamento em ' + formatNaturalDate(focusDateISO, false) + '</h3>' +
+                '<p>Dia livre de reuniões registradas. Use a grade semanal ou peça ao gestor para adicionar um encontro.</p>' +
+              '</div>';
+            return;
+          }
+
+          stage.innerHTML =
+            '<div class="day-view-list">' +
+              dayList.map(function (e) {
+                return (
+                  '<button type="button" class="day-event-row" data-open-event="' + e.id + '">' +
+                    '<div style="display:flex;align-items:center;gap:12px;">' +
+                      '<span style="font-family:var(--font-family-mono);font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--color-text-muted);">' + e.time + '</span>' +
+                      '<div>' +
+                        '<div style="font-weight:500;font-size:13.5px;">' + e.title + '</div>' +
+                        '<div style="font-size:12px;color:var(--color-text-subtle);">' + e.project + ' · ' + e.notes + '</div>' +
+                      '</div>' +
+                    '</div>' +
+                    '<span class="day-cat-inline"><span class="cat-dot ' + categoryClass(e.category) + '" aria-hidden="true"></span><span>' + e.category + '</span></span>' +
+                  '</button>'
+                );
+              }).join('') +
+            '</div>';
+          return;
+        }
+
+        // Visão Mês
+        var baseDt = parseISO(focusDateISO);
+        var year = baseDt.getFullYear();
+        var month = baseDt.getMonth();
+        var monthName = MONTHS_PT[month];
+        titleEl.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' de ' + year;
+
+        var firstOfMonth = new Date(year, month, 1);
+        var startOffset = firstOfMonth.getDay() === 0 ? -6 : 1 - firstOfMonth.getDay();
+        var gridStart = new Date(year, month, 1 + startOffset);
+
+        var headHtml = WEEKDAYS_SHORT.map(function (w) {
+          return '<div class="month-head-cell">' + w + '</div>';
+        }).join('');
+
+        var cellsHtml = [];
+        for (var c = 0; c < 35; c++) {
+          var cellDt = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + c);
+          var cellISO = toISO(cellDt);
+          var isOtherMonth = cellDt.getMonth() !== month;
+          var cellEvents = events.filter(function (e) { return e.date === cellISO; });
+          var chips = cellEvents.slice(0, 2).map(function (e) {
+            return (
+              '<button type="button" class="month-chip" data-open-event="' + e.id + '">' +
+                '<span class="cat-dot ' + categoryClass(e.category) + '" aria-hidden="true"></span>' +
+                '<span class="month-chip-label">' + e.time + ' ' + e.title + '</span>' +
+              '</button>'
+            );
+          }).join('');
+
+          cellsHtml.push(
+            '<div class="month-cell' + (isOtherMonth ? ' is-muted' : '') + (cellISO === TODAY_ISO ? ' is-today' : '') + '">' +
+              '<span class="month-cell-num">' + cellDt.getDate() + '</span>' +
+              chips +
+              (cellEvents.length > 2 ? '<span style="font-size:10px;color:var(--color-text-subtle);">+' + (cellEvents.length - 2) + ' mais</span>' : '') +
+            '</div>'
+          );
+        }
+
+        stage.innerHTML = '<div class="month-grid">' + headHtml + cellsHtml.join('') + '</div>';
+      }
+
+      function renderUpcoming() {
+        var listEl = document.getElementById('ag-upcoming-list');
+        var badgeEl = document.getElementById('ag-upcoming-badge');
+        if (!listEl || !badgeEl) return;
+
+        var maxISO = addDays(TODAY_ISO, 6);
+        var upcoming = events
+          .filter(function (e) { return e.date >= TODAY_ISO && e.date <= maxISO; })
+          .sort(function (a, b) {
+            return (a.date + a.time).localeCompare(b.date + b.time);
+          });
+
+        badgeEl.textContent = upcoming.length + (upcoming.length === 1 ? ' evento' : ' eventos');
+
+        if (!upcoming.length) {
+          listEl.innerHTML = '<p style="margin:0;font-size:12.5px;color:var(--color-text-subtle);">Nenhum compromisso nos próximos 7 dias.</p>';
+          return;
+        }
+
+        var tomorrowISO = addDays(TODAY_ISO, 1);
+        listEl.innerHTML = upcoming.map(function (e) {
+          var dayText = e.date === TODAY_ISO
+            ? 'Hoje'
+            : (e.date === tomorrowISO ? 'Amanhã' : formatNaturalDate(e.date, false));
+
+          return (
+            '<button type="button" class="upcoming-item" data-open-event="' + e.id + '">' +
+              '<div class="upcoming-meta">' +
+                '<span class="upcoming-day-label">' +
+                  '<span class="cat-dot ' + categoryClass(e.category) + '" aria-hidden="true"></span>' +
+                  '<span>' + dayText + '</span>' +
+                '</span>' +
+                '<span style="font-family:var(--font-family-mono);font-variant-numeric:tabular-nums;">' + e.time + ' · ' + e.category + '</span>' +
+              '</div>' +
+              '<div style="font-size:13px;font-weight:500;color:var(--color-text-primary);">' + e.title + '</div>' +
+              '<div style="font-size:11.5px;color:var(--color-text-subtle);">' + e.project + '</div>' +
+            '</button>'
+          );
+        }).join('');
+      }
+
+      function renderRetro() {
+        var listEl = document.getElementById('ag-retro-list');
+        var badgeEl = document.getElementById('ag-retro-badge');
+        if (!listEl || !badgeEl) return;
+
+        var pendingCount = retroActions.filter(function (r) { return !r.done; }).length;
+        badgeEl.textContent = pendingCount + (pendingCount === 1 ? ' pendente' : ' pendentes');
+
+        listEl.innerHTML = retroActions.map(function (r) {
+          var actionBtn = r.converted
+            ? '<a href="quadro.html" class="btn btn-ghost btn-sm" style="min-height:30px;padding:0 4px;">Criada no Quadro →</a>'
+            : (!r.done
+              ? '<button type="button" class="btn btn-secondary btn-sm" style="min-height:30px;" data-retro-convert="' + r.id + '">Transformar em tarefa</button>'
+              : '<span style="font-size:11.5px;color:var(--color-text-subtle);">Combinado concluído</span>');
+
+          return (
+            '<div class="retro-item' + (r.done ? ' is-done' : '') + '">' +
+              '<label class="retro-check-row">' +
+                '<input type="checkbox" data-retro-check="' + r.id + '"' + (r.done ? ' checked' : '') + '>' +
+                '<span class="retro-item-text">' + r.text + '</span>' +
+              '</label>' +
+              '<div class="retro-actions-row">' +
+                actionBtn +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      // Modal Criar / Editar / Ver
+      var modal = document.getElementById('ag-event-modal');
+      var form = document.getElementById('ag-event-form');
+      var heading = document.getElementById('ag-modal-heading');
+      var titleInput = document.getElementById('ag-ev-title');
+      var catInput = document.getElementById('ag-ev-category');
+      var projInput = document.getElementById('ag-ev-project');
+      var dateInput = document.getElementById('ag-ev-date');
+      var timeInput = document.getElementById('ag-ev-time');
+      var notesInput = document.getElementById('ag-ev-notes');
+      var delBtn = document.getElementById('ag-ev-delete');
+      var saveBtn = document.getElementById('ag-ev-save');
+
+      function openEventModal(eventId) {
+        var mgr = isManager();
+        editingEventId = eventId || null;
+
+        if (eventId) {
+          var ev = events.filter(function (x) { return x.id === eventId; })[0];
+          if (!ev) return;
+          heading.textContent = mgr ? 'Detalhes do agendamento' : 'Visualizar agendamento';
+          titleInput.value = ev.title;
+          catInput.value = ev.category;
+          projInput.value = ev.project;
+          dateInput.value = ev.date;
+          timeInput.value = ev.time;
+          notesInput.value = ev.notes || '';
+          delBtn.hidden = !mgr;
+        } else {
+          heading.textContent = 'Novo agendamento';
+          titleInput.value = '';
+          catInput.value = 'Planejamento';
+          projInput.value = 'Projeto A';
+          dateInput.value = focusDateISO;
+          timeInput.value = '10:00';
+          notesInput.value = '';
+          delBtn.hidden = true;
+        }
+
+        [titleInput, catInput, projInput, dateInput, timeInput, notesInput].forEach(function (el) {
+          el.disabled = !mgr;
+        });
+        saveBtn.hidden = !mgr;
+
+        modal.classList.add('is-open');
+        if (mgr) {
+          setTimeout(function () { titleInput.focus(); }, 20);
+        }
+      }
+
+      function closeEventModal() {
+        modal.classList.remove('is-open');
+      }
+
+      document.getElementById('ag-new-btn').addEventListener('click', function () {
+        openEventModal(null);
+      });
+      document.getElementById('ag-modal-close').addEventListener('click', closeEventModal);
+      document.getElementById('ag-modal-cancel').addEventListener('click', closeEventModal);
+      modal.addEventListener('click', function (ev) {
+        if (ev.target === modal) closeEventModal();
+      });
+
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!isManager()) return;
+        var payload = {
+          id: editingEventId || ('e' + Date.now()),
+          title: titleInput.value.trim(),
+          category: catInput.value,
+          project: projInput.value,
+          date: dateInput.value,
+          time: timeInput.value,
+          notes: notesInput.value.trim()
+        };
+        if (!payload.title) return;
+
+        if (editingEventId) {
+          events = events.map(function (item) { return item.id === editingEventId ? payload : item; });
+          window.AgileBoxProto.showToast('Agendamento atualizado: ' + payload.title, 'success');
+        } else {
+          events.push(payload);
+          window.AgileBoxProto.showToast('Agendamento criado para ' + formatNaturalDate(payload.date, false), 'success');
+        }
+        closeEventModal();
+        renderCalendar();
+        renderUpcoming();
+      });
+
+      delBtn.addEventListener('click', function () {
+        if (!isManager() || !editingEventId) return;
+        events = events.filter(function (item) { return item.id !== editingEventId; });
+        closeEventModal();
+        renderCalendar();
+        renderUpcoming();
+        window.AgileBoxProto.showToast('Agendamento removido da agenda.', 'info');
+      });
+
+      document.getElementById('page-root').addEventListener('click', function (ev) {
+        var openBtn = ev.target.closest('[data-open-event]');
+        if (openBtn) {
+          openEventModal(openBtn.getAttribute('data-open-event'));
+          return;
+        }
+        var convertBtn = ev.target.closest('[data-retro-convert]');
+        if (convertBtn) {
+          var rid = convertBtn.getAttribute('data-retro-convert');
+          retroActions = retroActions.map(function (item) {
+            if (item.id === rid) {
+              window.AgileBoxProto.showToast('Tarefa criada no Quadro: "' + item.text + '"', 'success');
+              return { id: item.id, text: item.text, done: item.done, converted: true };
+            }
+            return item;
+          });
+          renderRetro();
+        }
+      });
+
+      document.getElementById('ag-retro-list').addEventListener('change', function (ev) {
+        var cb = ev.target.closest('[data-retro-check]');
+        if (!cb) return;
+        var rid = cb.getAttribute('data-retro-check');
+        retroActions = retroActions.map(function (item) {
+          return item.id === rid ? { id: item.id, text: item.text, done: cb.checked, converted: item.converted } : item;
+        });
+        renderRetro();
+      });
+
+      var viewBtns = document.querySelectorAll('[data-ag-view]');
+      for (var i = 0; i < viewBtns.length; i++) {
+        viewBtns[i].addEventListener('click', function () {
+          currentView = this.getAttribute('data-ag-view');
+          for (var j = 0; j < viewBtns.length; j++) {
+            viewBtns[j].classList.toggle('is-active', viewBtns[j].getAttribute('data-ag-view') === currentView);
+          }
+          renderCalendar();
+        });
+      }
+
+      document.getElementById('ag-prev').addEventListener('click', function () {
+        var step = currentView === 'day' ? -1 : (currentView === 'week' ? -7 : -30);
+        focusDateISO = addDays(focusDateISO, step);
+        renderCalendar();
+      });
+
+      document.getElementById('ag-next').addEventListener('click', function () {
+        var step = currentView === 'day' ? 1 : (currentView === 'week' ? 7 : 30);
+        focusDateISO = addDays(focusDateISO, step);
+        renderCalendar();
+      });
+
+      document.getElementById('ag-today').addEventListener('click', function () {
+        focusDateISO = TODAY_ISO;
+        renderCalendar();
+      });
+
+      renderCalendar();
+      renderUpcoming();
+      renderRetro();
+    });
+  </script>
+</body>
+</html>

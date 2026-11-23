@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detalhe da Tarefa · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    /* ========================================================================
+       Detalhe da Tarefa — Lei de Hick (tópicos laterais + 1 coluna limpa)
+       Zero caixas aninhadas, paleta neutra, cor somente no CTA principal
+       ======================================================================== */
+    #page-root {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+      padding: 0;
+      max-width: 100%;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .task-sub-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .task-sep {
+      opacity: 0.4;
+    }
+
+    .task-id-mono {
+      font-family: var(--font-family-mono);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .quiet-toggle-btn {
+      height: 22px;
+      padding: 0 7px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .quiet-toggle-btn:hover {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .task-surface {
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .task-title-input {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-family: var(--font-family-display);
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: var(--letter-spacing-display);
+      line-height: 1.2;
+    }
+
+    .task-title-input:hover {
+      border-bottom-color: var(--color-hairline);
+    }
+
+    .task-title-input:focus {
+      outline: none;
+      border-bottom-color: var(--color-hairline-strong);
+    }
+
+    .task-blocked-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-signal-danger-text);
+      white-space: nowrap;
+    }
+
+    .dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+    .dot-inline.is-manager { background: var(--color-manager-dot); }
+
+    .state-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: var(--radius-button);
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .state-select-wrap:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+    }
+
+    .state-select {
+      border: 0;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      min-height: 36px;
+      padding-right: 4px;
+    }
+
+    .state-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .more-actions-wrap {
+      position: relative;
+    }
+
+    .more-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      left: auto;
+      z-index: 60;
+      min-width: 212px;
+      padding: 6px;
+      border-radius: 12px;
+      background: var(--glass-popover);
+      backdrop-filter: var(--glass-popover-backdrop);
+      box-shadow: var(--shadow-popover);
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .more-menu.is-open {
+      display: flex;
+    }
+
+    .more-menu-item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .more-menu-item:hover {
+      background: var(--color-rail-hover);
+    }
+
+    .more-menu-item.is-danger {
+      color: var(--color-signal-danger-text);
+    }
+
+    /* Aviso discreto de tarefa parada (sem caixa marrom/laranja pesada) */
+    .stalled-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 0 0 14px;
+      margin: -4px 0 16px;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    .stalled-notice-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stalled-notice-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Conteúdo interno da coluna única (sem caixas aninhadas) */
+    .clean-textarea {
+      width: 100%;
+      min-height: 92px;
+      padding: 12px 14px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-field);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--color-text-body);
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .clean-textarea:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--color-text-primary);
+    }
+
+    .progress-track {
+      height: 3px;
+      border-radius: 999px;
+      background: var(--color-hairline);
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--color-text-muted);
+      border-radius: 999px;
+      transition: width 220ms var(--ease-ios);
+    }
+
+    .checklist-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .checkbox-row {
+      padding: 6px 4px;
+      border-radius: 8px;
+    }
+
+    .checkbox-row.is-checked span {
+      text-decoration: line-through;
+      color: var(--color-text-subtle);
+    }
+
+    .inline-add-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .inline-add-row .input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border-color: var(--color-hairline);
+    }
+
+    .inline-add-row .input:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Comentários sem caixas — apenas divisórias finas */
+    .comment-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .comment-row {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .comment-row:first-child {
+      padding-top: 4px;
+    }
+
+    .comment-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 8px;
+    }
+
+    .comment-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+    }
+
+    .comment-text {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--color-text-body);
+      line-height: 1.55;
+    }
+
+    /* Pessoas externas — tags neutras sem caixa roxa */
+    .ext-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .ext-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-body);
+      font-size: 12.5px;
+    }
+
+    .ext-chip-remove {
+      border: 0;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    .ext-chip-remove:hover {
+      color: var(--color-text-primary);
+    }
+
+    /* Horas & Custo — limpo, sem caixa ao redor da tabela */
+    .hours-quick-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    .clean-table th {
+      padding: 10px 0;
+      text-align: left;
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-subtle);
+      border-bottom: 1px solid var(--color-hairline);
+    }
+
+    .clean-table td {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-divider);
+      color: var(--color-text-body);
+      vertical-align: middle;
+    }
+
+    .clean-table th.num,
+    .clean-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      padding-left: 16px;
+    }
+
+    .cost-summary-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-top: 14px;
+      font-size: 13.5px;
+      color: var(--color-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cost-total-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .masked-val {
+      font-family: var(--font-family-mono);
+      letter-spacing: 0.14em;
+      color: var(--color-text-subtle);
+    }
+
+    .rate-notice {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      margin-top: 6px;
+    }
+
+    /* Bloqueios & Linha do tempo — lista aberta com divisórias sutis */
+    .impediment-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 13.5px;
+    }
+
+    .impediment-row:last-child {
+      border-bottom: 0;
+    }
+
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      padding-left: 14px;
+      border-left: 1px solid var(--color-divider);
+      gap: 18px;
+    }
+
+    .timeline-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -18px;
+      top: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-text-subtle);
+    }
+
+    .timeline-item.is-manager::before {
+      background: var(--color-manager-dot);
+    }
+
+    .timeline-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--color-text-subtle);
+    }
+
+    .timeline-desc {
+      font-size: 13.5px;
+      color: var(--color-text-body);
+      line-height: 1.5;
+    }
+
+    .kv-select,
+    .kv-input {
+      width: 100%;
+      max-width: 280px;
+      min-height: 38px;
+      padding: 6px 10px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--radius-field);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13.5px;
+    }
+
+    .kv-select:hover,
+    .kv-input:hover {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .kv-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .kv-link {
+      font-size: 13.5px;
+      color: var(--color-text-body);
+      text-decoration: underline;
+      text-decoration-color: var(--color-hairline-strong);
+      text-underline-offset: 4px;
+    }
+
+    .kv-link:hover {
+      color: var(--color-text-primary);
+      text-decoration-color: var(--color-text-primary);
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="tarefa">
+  <section id="page-root">
+    <div class="task-surface">
+      <header class="ab-page-head">
+        <div class="ab-page-head-main">
+          <h1 class="ab-page-title">
+            <input type="text" class="task-title-input" id="task-title-input" value="Revisar contrato com Cliente ACME" aria-label="Título da tarefa">
+          </h1>
+          <p class="ab-page-sub task-sub-row">
+            <span class="task-id-mono" id="task-id-badge">AB-5</span>
+            <span class="task-sep" aria-hidden="true">·</span>
+            <span>Projeto A</span>
+            <span class="task-sep" aria-hidden="true">·</span>
+            <button type="button" class="quiet-toggle-btn" id="btn-toggle-stalled" title="Alternar aviso de tarefa parada">Aviso parada</button>
+            <span class="task-blocked-indicator" id="task-blocked-pill" hidden>
+              <span class="dot-inline is-danger"></span> Bloqueada
+            </span>
+          </p>
+        </div>
+
+        <div class="ab-page-head-actions">
+          <a href="quadro.html" class="btn btn-secondary" id="btn-back-board" style="min-height:40px;">← Voltar ao Quadro</a>
+
+          <div class="state-select-wrap">
+            <span class="status-dot is-desenvolvendo" id="top-status-dot"></span>
+            <select class="state-select" id="top-status-select" aria-label="Estado da tarefa">
+              <option value="Planejamento">Planejamento</option>
+              <option value="A fazer">A fazer</option>
+              <option value="Desenvolvendo" selected>Desenvolvendo</option>
+              <option value="Revisar">Revisar</option>
+              <option value="Concluído">Concluído</option>
+            </select>
+          </div>
+
+          <div class="more-actions-wrap">
+            <button type="button" class="btn btn-ghost" id="btn-more-actions" style="min-height:40px;" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações">
+              ⋯
+            </button>
+            <div class="more-menu" id="more-actions-menu" role="menu">
+              <button type="button" class="more-menu-item" id="btn-menu-block" data-more-action="toggle-block" role="menuitem">Registrar bloqueio</button>
+              <button type="button" class="more-menu-item" data-more-action="duplicate" role="menuitem">Duplicar tarefa</button>
+              <button type="button" class="more-menu-item" data-more-action="copylink" role="menuitem">Copiar link</button>
+              <button type="button" class="more-menu-item is-danger" data-more-action="archive" role="menuitem">Arquivar tarefa</button>
+            </div>
+          </div>
+
+          <!-- ÚNICO botão colorido principal da tela -->
+          <button type="button" class="btn btn-primary" id="btn-complete-task" style="min-height:40px;">
+            Concluir tarefa
+          </button>
+        </div>
+      </header>
+
+        <!-- Aviso discreto de tarefa parada -->
+        <div class="stalled-notice" id="stalled-banner" role="alert">
+          <span class="stalled-notice-text">
+            <span class="dot-inline is-warning"></span>
+            <span>Esta tarefa está há <strong>5 dias</strong> em Desenvolvendo — precisa de ajuda?</span>
+          </span>
+          <div class="stalled-notice-actions">
+            <button type="button" class="btn btn-sm btn-ghost" id="btn-still-working">Ainda trabalhando</button>
+            <button type="button" class="btn btn-sm btn-danger" id="btn-stalled-block">Registrar bloqueio</button>
+          </div>
+        </div>
+
+        <!-- Lei de Hick: Tópicos laterais à esquerda + 1 única coluna limpa à direita -->
+        <div class="topic-layout">
+          <nav class="topic-rail" aria-label="Tópicos da tarefa">
+            <span class="topic-rail-label">Tópicos</span>
+            <button type="button" class="topic-btn is-active" data-topic="geral" aria-current="true">
+              <span>Visão geral</span>
+              <span class="topic-count" id="nav-count-geral">2/3</span>
+            </button>
+            <button type="button" class="topic-btn" data-topic="dod">
+              <span>Checklist &amp; Pronto</span>
+              <span class="topic-count" id="nav-count-dod">1/3</span>
+            </button>
+            <button type="button" class="topic-btn" data-topic="pessoas">
+              <span>Pessoas &amp; Prazo</span>
+              <span class="topic-count" id="nav-count-pessoas">24 nov</span>
+            </button>
+            <button type="button" class="topic-btn" data-topic="horas">
+              <span>Horas &amp; Custo</span>
+              <span class="topic-count" id="nav-count-horas">5,0h</span>
+            </button>
+            <button type="button" class="topic-btn" data-topic="historico">
+              <span>Bloqueios &amp; Histórico</span>
+              <span class="topic-count" id="nav-count-historico">3</span>
+            </button>
+          </nav>
+
+          <div class="topic-stage">
+            <!-- TÓPICO 1: VISÃO GERAL (Descrição, Subtarefas, Comentários) -->
+            <div class="topic-panel" data-topic-panel="geral">
+              <section class="topic-section" aria-labelledby="sec-desc">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-desc">Descrição</h2>
+                  <button type="button" class="btn btn-sm btn-ghost" id="btn-save-desc">Salvar texto</button>
+                </div>
+                <textarea class="clean-textarea" id="task-desc-input" rows="3" aria-label="Descrição da tarefa">Conferir cláusulas de SLA, prazos de entrega e cronograma de implantação junto ao jurídico e validar pontos de pagamento diretamente com o Cliente ACME antes de liberar para faturamento.</textarea>
+              </section>
+
+              <section class="topic-section" aria-labelledby="sec-subtasks">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-subtasks">Subtarefas</h2>
+                  <span class="topic-section-meta" id="subtasks-counter">2 de 3</span>
+                </div>
+                <div class="progress-track"><div class="progress-bar-fill" id="subtasks-progress" style="width:67%"></div></div>
+                <div class="checklist-stack" id="subtasks-list"></div>
+                <form class="inline-add-row" id="subtask-add-form">
+                  <input type="text" class="input" id="subtask-new-input" placeholder="+ Adicionar subtarefa..." aria-label="Nova subtarefa">
+                  <button type="submit" class="btn btn-secondary" style="min-height:40px;">Adicionar</button>
+                </form>
+              </section>
+
+              <section class="topic-section" aria-labelledby="sec-comments">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-comments">Comentários</h2>
+                  <span class="topic-section-meta" id="comments-count">2</span>
+                </div>
+                <div class="comment-list" id="comments-list"></div>
+                <form class="inline-add-row" id="comment-add-form">
+                  <input type="text" class="input" id="comment-new-input" placeholder="Escreva um comentário (@pessoa para mencionar)..." aria-label="Novo comentário">
+                  <button type="submit" class="btn btn-secondary" style="min-height:40px;">Comentar</button>
+                </form>
+              </section>
+            </div>
+
+            <!-- TÓPICO 2: CHECKLIST & PRONTO (DoD) -->
+            <div class="topic-panel" data-topic-panel="dod" hidden>
+              <section class="topic-section" aria-labelledby="sec-dod">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-dod">Critério de conclusão (DoD)</h2>
+                  <span class="topic-section-meta" id="dod-counter">1 de 3</span>
+                </div>
+                <p class="topic-helper">Conferência mínima do projeto antes de mover a tarefa para Concluído.</p>
+                <div class="checklist-stack" id="dod-list"></div>
+              </section>
+            </div>
+
+            <!-- TÓPICO 3: PESSOAS & PRAZO (Metadados limpos em linhas chave-valor) -->
+            <div class="topic-panel" data-topic-panel="pessoas" hidden>
+              <section class="topic-section" aria-labelledby="sec-people">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-people">Responsáveis e agenda</h2>
+                </div>
+                <div class="kv-list">
+                  <div class="kv-row">
+                    <label class="kv-label" for="prop-assignee">Responsável</label>
+                    <div class="kv-value">
+                      <select class="kv-select" id="prop-assignee">
+                        <option value="Ana" selected>Ana</option>
+                        <option value="João">João</option>
+                        <option value="Pedro">Pedro</option>
+                        <option value="Carlos">Carlos</option>
+                        <option value="Maria">Maria</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="kv-row">
+                    <label class="kv-label" for="prop-support">Apoio</label>
+                    <div class="kv-value">
+                      <select class="kv-select" id="prop-support">
+                        <option value="João" selected>João</option>
+                        <option value="Pedro">Pedro</option>
+                        <option value="Ana">Ana</option>
+                        <option value="Carlos">Carlos</option>
+                        <option value="Maria">Maria</option>
+                        <option value="">Sem apoio</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="kv-row">
+                    <label class="kv-label" for="prop-due">Prazo</label>
+                    <div class="kv-value">
+                      <input type="date" class="kv-input" id="prop-due" value="2026-11-24">
+                    </div>
+                  </div>
+                  <div class="kv-row">
+                    <label class="kv-label" for="prop-priority">Prioridade</label>
+                    <div class="kv-value">
+                      <select class="kv-select" id="prop-priority">
+                        <option value="Alta" selected>Alta</option>
+                        <option value="Média">Média</option>
+                        <option value="Baixa">Baixa</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="kv-row">
+                    <span class="kv-label">Vínculos</span>
+                    <div class="kv-value" style="flex-wrap:wrap;gap:14px;">
+                      <a href="agil.html?tab=sprints" class="kv-link">Sprint 4</a>
+                      <a href="preditivo.html?tab=entregas" class="kv-link">Entrega: Contrato &amp; Onboarding</a>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="topic-section" aria-labelledby="sec-ext">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-ext">Pessoas externas (Clientes / Parceiros)</h2>
+                </div>
+                <p class="topic-helper">Apenas identificação — não dá acesso ao aplicativo nem envia avisos.</p>
+                <div class="ext-chips" id="ext-chips"></div>
+                <form class="inline-add-row" id="ext-add-form">
+                  <input type="text" class="input" id="ext-name-input" placeholder="Nome (ex.: Fornecedor Cloud)..." aria-label="Nome da pessoa externa">
+                  <button type="submit" class="btn btn-secondary" style="min-height:40px;">+ Pessoa externa</button>
+                </form>
+              </section>
+            </div>
+
+            <!-- TÓPICO 4: HORAS & CUSTO (Privacidade estrita por papel) -->
+            <div class="topic-panel" data-topic-panel="horas" hidden>
+              <section class="topic-section" aria-labelledby="sec-log-hours">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-log-hours">Lançar horas</h2>
+                  <span class="badge" id="cost-privacy-badge">Privado (só seu R$/h)</span>
+                </div>
+                <div class="hours-quick-row">
+                  <button type="button" class="btn btn-sm btn-secondary" data-add-hours="0.5" style="min-height:40px;">+0,5h</button>
+                  <button type="button" class="btn btn-sm btn-secondary" data-add-hours="1" style="min-height:40px;">+1h</button>
+                  <input type="number" step="0.5" min="0.5" class="input" id="manual-hours-input" placeholder="Outro valor (ex.: 1,5)" aria-label="Lançar horas manualmente" style="max-width:190px;background:transparent;">
+                  <button type="button" class="btn btn-secondary" id="btn-add-manual-hours" style="min-height:40px;">Lançar</button>
+                </div>
+
+                <div style="margin-top:8px;">
+                  <label class="field-label" for="my-rate-input" id="my-rate-label" style="display:block;margin-bottom:6px;">Meu valor/h padrão (Ana · R$)</label>
+                  <div class="inline-add-row" style="max-width:360px;">
+                    <input type="number" step="5" min="0" class="input" id="my-rate-input" value="120">
+                    <button type="button" class="btn btn-secondary" id="btn-save-rate" style="min-height:40px;">Atualizar</button>
+                  </div>
+                  <div class="rate-notice" id="rate-notice" hidden>
+                    Alterar este valor atualiza o seu valor/hora padrão para próximas tarefas.
+                  </div>
+                </div>
+              </section>
+
+              <section class="topic-section" aria-labelledby="sec-cost-table">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-cost-table">Detalhamento por pessoa</h2>
+                </div>
+                <table class="clean-table" aria-label="Detalhamento de horas e custos por pessoa">
+                  <thead>
+                    <tr>
+                      <th>Pessoa</th>
+                      <th class="num">Horas (h)</th>
+                      <th class="num">Valor/h (R$)</th>
+                      <th class="num">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cost-table-body"></tbody>
+                </table>
+                <div class="cost-summary-row" id="cost-total-bar"></div>
+              </section>
+            </div>
+
+            <!-- TÓPICO 5: BLOQUEIOS & HISTÓRICO -->
+            <div class="topic-panel" data-topic-panel="historico" hidden>
+              <section class="topic-section" aria-labelledby="sec-blocks" id="blocks-section">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-blocks">Bloqueios (Impedimentos)</h2>
+                  <span class="topic-section-meta" id="blocks-count">1 resolvido</span>
+                </div>
+                <div id="blocks-list"></div>
+                <form class="inline-add-row" id="block-add-form">
+                  <input type="text" class="input" id="block-reason-input" placeholder="Descreva o motivo do bloqueio (ex.: falta assinatura)..." aria-label="Motivo do bloqueio">
+                  <button type="submit" class="btn btn-danger" style="min-height:40px;">Registrar bloqueio</button>
+                </form>
+              </section>
+
+              <section class="topic-section" aria-labelledby="sec-timeline">
+                <div class="topic-section-head">
+                  <h2 class="topic-section-title" id="sec-timeline">Linha do tempo</h2>
+                  <span class="topic-section-meta" id="timeline-count">3 eventos</span>
+                </div>
+                <div class="timeline-list" id="timeline-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <!-- Modal educativa de bloqueio ao concluir com DoD pendente -->
+  <div class="modal-backdrop" id="dod-gate-modal" role="dialog" aria-modal="true" aria-labelledby="dod-gate-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="dod-gate-title">Antes de concluir: Checklist pendente</h3>
+        <button type="button" class="ab-kan-close-btn" id="dod-gate-x" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0;font-size:13.5px;color:var(--color-text-body);line-height:1.45;">
+          Este projeto usa um <strong>Checklist de conclusão (DoD)</strong> para evitar retrabalho. Ainda há itens pendentes:
+        </p>
+        <div class="checklist-stack" id="dod-modal-items"></div>
+      </div>
+      <div class="modal-footer" style="flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost" id="dod-gate-cancel">Cancelar</button>
+        <button type="button" class="btn btn-secondary" id="dod-gate-force">Concluir mesmo assim</button>
+        <button type="button" class="btn btn-primary" id="dod-gate-check-all">Marcar todos e concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var STATUS_DOT = {
+        Planejamento: 'is-planejamento',
+        'A fazer': 'is-afazer',
+        Desenvolvendo: 'is-desenvolvendo',
+        Revisar: 'is-revisar',
+        'Concluído': 'is-concluido'
+      };
+
+      var urlParams = new URLSearchParams(window.location.search);
+      var requestedId = urlParams.get('id') || 'AB-5';
+
+      var task = {
+        id: requestedId,
+        title: requestedId === 'AB-5' ? 'Revisar contrato com Cliente ACME' : 'Revisar contrato com Cliente ACME (' + requestedId + ')',
+        status: 'Desenvolvendo',
+        stalled: true,
+        priority: 'Alta',
+        due: '2026-11-24',
+        assignee: 'Ana',
+        support: 'João',
+        externals: ['Cliente ACME'],
+        subtasks: [
+          { id: 's1', text: 'Conferir cláusulas de SLA e tempo de resposta', done: true },
+          { id: 's2', text: 'Alinhar cronograma de implantação com suporte', done: true },
+          { id: 's3', text: 'Validar anexo financeiro final', done: false }
+        ],
+        dod: [
+          { id: 'd1', text: 'Cláusulas de SLA conferidas com Jurídico', done: true },
+          { id: 'd2', text: 'Valores e prazos validados com o Cliente ACME', done: false },
+          { id: 'd3', text: 'Aprovação final registrada nos comentários', done: false }
+        ],
+        blocks: [
+          { id: 'b1', reason: 'Aguardando anexo de SLA revisado pelo cliente', resolved: true, date: '18 nov, 14:20' }
+        ],
+        comments: [
+          { author: 'Ana', isManager: false, time: 'Ontem, 16:40', text: 'Enviei a minuta atualizada para conferência dos prazos.' },
+          { author: 'Carla', isManager: true, time: 'Hoje, 09:15', text: 'Priorizem fechar o anexo financeiro ainda hoje para liberar a entrega.' }
+        ],
+        rates: {
+          Ana: 120,
+          'João': 95,
+          Pedro: 100,
+          Carlos: 130,
+          Maria: 110,
+          Carla: 160
+        },
+        hoursByPerson: {
+          Ana: 3.0,
+          'João': 2.0
+        },
+        timeline: [
+          { author: 'Carla', isManager: true, time: 'Hoje, 09:15', text: 'Definiu prioridade como Alta e pediu acompanhamento.' },
+          { author: 'João', isManager: false, time: 'Ontem, 17:05', text: 'Registrou +2,0h na validação técnica.' },
+          { author: 'Ana', isManager: false, time: '18 nov, 14:20', text: 'Resolveu bloqueio: Aguardando anexo de SLA revisado.' }
+        ]
+      };
+
+      var activeTopic = urlParams.get('topico') || 'geral';
+      var statusSelect = document.getElementById('top-status-select');
+      var statusDot = document.getElementById('top-status-dot');
+      var dodModal = document.getElementById('dod-gate-modal');
+
+      function esc(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function formatBRL(val) {
+        return 'R$ ' + Number(val || 0).toFixed(2).replace('.', ',');
+      }
+
+      function formatHours(val) {
+        return Number(val || 0).toFixed(1).replace('.', ',') + ' h';
+      }
+
+      function nowLabel() {
+        var d = new Date();
+        return 'Hoje, ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      }
+
+      function activeActor() {
+        return window.AgileBoxProto.getRole() === 'manager'
+          ? { name: 'Carla', isManager: true }
+          : { name: 'Ana', isManager: false };
+      }
+
+      function selectTopic(topicId) {
+        activeTopic = topicId;
+        document.querySelectorAll('[data-topic]').forEach(function (btn) {
+          var isAct = btn.getAttribute('data-topic') === topicId;
+          btn.classList.toggle('is-active', isAct);
+          if (isAct) btn.setAttribute('aria-current', 'true');
+          else btn.removeAttribute('aria-current');
+        });
+        document.querySelectorAll('[data-topic-panel]').forEach(function (panel) {
+          panel.hidden = panel.getAttribute('data-topic-panel') !== topicId;
+        });
+      }
+
+      document.querySelectorAll('[data-topic]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectTopic(this.getAttribute('data-topic'));
+        });
+      });
+
+      function addTimeline(text) {
+        var actor = activeActor();
+        task.timeline.unshift({
+          author: actor.name,
+          isManager: actor.isManager,
+          time: nowLabel(),
+          text: text
+        });
+        renderTimeline();
+      }
+
+      function hasActiveBlock() {
+        return task.blocks.some(function (b) { return !b.resolved; });
+      }
+
+      function renderHeaderAndBlocks() {
+        document.getElementById('task-id-badge').textContent = task.id;
+        statusSelect.value = task.status;
+        statusDot.className = 'status-dot ' + (STATUS_DOT[task.status] || 'is-desenvolvendo');
+
+        var blocked = hasActiveBlock();
+        document.getElementById('task-blocked-pill').hidden = !blocked;
+        var menuBlockBtn = document.getElementById('btn-menu-block');
+        if (menuBlockBtn) {
+          menuBlockBtn.textContent = blocked ? 'Resolver bloqueio' : 'Registrar bloqueio';
+        }
+
+        var completeBtn = document.getElementById('btn-complete-task');
+        if (task.status === 'Concluído') {
+          completeBtn.textContent = 'Concluída';
+          completeBtn.className = 'btn btn-secondary';
+        } else {
+          completeBtn.textContent = 'Concluir tarefa';
+          completeBtn.className = 'btn btn-primary';
+        }
+
+        document.getElementById('stalled-banner').hidden = !task.stalled;
+
+        var activeCount = task.blocks.filter(function (b) { return !b.resolved; }).length;
+        var resolvedCount = task.blocks.length - activeCount;
+        document.getElementById('blocks-count').textContent =
+          (activeCount ? activeCount + ' ativo · ' : '') + resolvedCount + ' resolvido(s)';
+
+        var blocksEl = document.getElementById('blocks-list');
+        if (!task.blocks.length) {
+          blocksEl.innerHTML = '<div style="font-size:13px;color:var(--color-text-subtle);">Nenhum bloqueio registrado.</div>';
+        } else {
+          blocksEl.innerHTML = task.blocks.map(function (b) {
+            return (
+              '<div class="impediment-row">' +
+                '<div>' +
+                  '<div style="display:flex;align-items:center;gap:8px;font-weight:500;color:var(--color-text-primary);">' +
+                    (!b.resolved ? '<span class="dot-inline is-danger"></span>' : '') +
+                    '<span>' + esc(b.reason) + '</span>' +
+                  '</div>' +
+                  '<div style="font-size:12px;color:var(--color-text-subtle);margin-top:2px;">' + esc(b.date) + ' · ' + (b.resolved ? 'Resolvido' : 'Em aberto') + '</div>' +
+                '</div>' +
+                (b.resolved
+                  ? '<span class="topic-section-meta">Resolvido</span>'
+                  : '<button type="button" class="btn btn-sm btn-secondary" data-resolve-block="' + esc(b.id) + '">Resolver</button>') +
+              '</div>'
+            );
+          }).join('');
+        }
+      }
+
+      function renderSubtasks() {
+        var done = task.subtasks.filter(function (s) { return s.done; }).length;
+        var total = task.subtasks.length;
+        var pct = total ? Math.round((done / total) * 100) : 0;
+        document.getElementById('subtasks-counter').textContent = done + ' de ' + total;
+        document.getElementById('nav-count-geral').textContent = done + '/' + total;
+        document.getElementById('subtasks-progress').style.width = pct + '%';
+
+        document.getElementById('subtasks-list').innerHTML = task.subtasks.map(function (s) {
+          return (
+            '<label class="checkbox-row' + (s.done ? ' is-checked' : '') + '">' +
+              '<input type="checkbox" data-subtask-id="' + esc(s.id) + '"' + (s.done ? ' checked' : '') + '>' +
+              '<span>' + esc(s.text) + '</span>' +
+            '</label>'
+          );
+        }).join('');
+      }
+
+      function renderDod() {
+        var done = task.dod.filter(function (d) { return d.done; }).length;
+        var total = task.dod.length;
+        document.getElementById('dod-counter').textContent = done + ' de ' + total;
+        document.getElementById('nav-count-dod').textContent = done + '/' + total;
+
+        document.getElementById('dod-list').innerHTML = task.dod.map(function (d) {
+          return (
+            '<label class="checkbox-row' + (d.done ? ' is-checked' : '') + '">' +
+              '<input type="checkbox" data-dod-id="' + esc(d.id) + '"' + (d.done ? ' checked' : '') + '>' +
+              '<span>' + esc(d.text) + '</span>' +
+            '</label>'
+          );
+        }).join('');
+      }
+
+      function renderComments() {
+        document.getElementById('comments-count').textContent = String(task.comments.length);
+        document.getElementById('comments-list').innerHTML = task.comments.map(function (c) {
+          return (
+            '<div class="comment-row">' +
+              '<div class="comment-meta">' +
+                '<span style="display:inline-flex;align-items:center;gap:6px;"><strong style="color:var(--color-text-primary);font-weight:500;">' + esc(c.author) + '</strong>' + (c.isManager ? '<span class="badge badge-gestor">Gestor</span>' : '') + '</span>' +
+                '<span>' + esc(c.time) + '</span>' +
+              '</div>' +
+              '<p class="comment-text">' + esc(c.text) + '</p>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      function renderExternals() {
+        var el = document.getElementById('ext-chips');
+        if (!task.externals.length) {
+          el.innerHTML = '<span style="font-size:12.5px;color:var(--color-text-subtle);">Nenhuma pessoa externa vinculada.</span>';
+          return;
+        }
+        el.innerHTML = task.externals.map(function (name, idx) {
+          return (
+            '<span class="ext-chip">' +
+              '<span>' + esc(name) + '</span>' +
+              '<button type="button" class="ext-chip-remove" data-remove-ext="' + idx + '" aria-label="Remover ' + esc(name) + '">×</button>' +
+            '</span>'
+          );
+        }).join('');
+      }
+
+      function renderCostTable() {
+        var isManager = window.AgileBoxProto.getRole() === 'manager';
+        var currentCollab = 'Ana';
+
+        var privacyBadge = document.getElementById('cost-privacy-badge');
+        privacyBadge.textContent = isManager ? 'Visão completa do Gestor' : 'Privado (só seu R$/h)';
+        privacyBadge.className = isManager ? 'badge badge-gestor' : 'badge';
+
+        var peopleKeys = Object.keys(task.hoursByPerson);
+        var totalCost = 0;
+        var totalHours = 0;
+
+        document.getElementById('cost-table-body').innerHTML = peopleKeys.map(function (person) {
+          var hrs = task.hoursByPerson[person] || 0;
+          var rate = task.rates[person] || 100;
+          var sub = hrs * rate;
+          totalHours += hrs;
+          totalCost += sub;
+
+          var canSee = isManager || person === currentCollab;
+          return (
+            '<tr>' +
+              '<td><strong style="font-weight:500;color:var(--color-text-primary);">' + esc(person) + '</strong>' + (person === currentCollab && !isManager ? ' <span style="font-size:11.5px;color:var(--color-text-subtle);">· Você</span>' : '') + '</td>' +
+              '<td class="num">' + formatHours(hrs) + '</td>' +
+              '<td class="num">' + (canSee ? formatBRL(rate) + '/h' : '<span class="masked-val" title="Visível apenas para o Gestor">•••••</span>') + '</td>' +
+              '<td class="num">' + (canSee ? '<strong style="font-weight:500;color:var(--color-text-primary);">' + formatBRL(sub) + '</strong>' : '<span class="masked-val" title="Visível apenas para o Gestor">•••••</span>') + '</td>' +
+            '</tr>'
+          );
+        }).join('');
+
+        document.getElementById('nav-count-horas').textContent = totalHours.toFixed(1).replace('.', ',') + 'h';
+
+        var totalBar = document.getElementById('cost-total-bar');
+        if (isManager) {
+          totalBar.innerHTML =
+            '<span>Total acumulado (' + formatHours(totalHours) + ')</span>' +
+            '<strong class="cost-total-value">' + formatBRL(totalCost) + '</strong>';
+        } else {
+          totalBar.innerHTML =
+            '<span>Total da tarefa (' + formatHours(totalHours) + ')</span>' +
+            '<span class="topic-section-meta" title="Somente o gestor visualiza o custo total em R$">Restrito ao gestor</span>';
+        }
+      }
+
+      function renderTimeline() {
+        document.getElementById('timeline-count').textContent = task.timeline.length + ' eventos';
+        document.getElementById('nav-count-historico').textContent = String(task.timeline.length);
+        document.getElementById('timeline-list').innerHTML = task.timeline.map(function (ev) {
+          return (
+            '<div class="timeline-item' + (ev.isManager ? ' is-manager' : '') + '">' +
+              '<div class="timeline-head">' +
+                '<strong style="color:var(--color-text-primary);font-weight:500;">' + esc(ev.author) + '</strong>' +
+                (ev.isManager ? '<span class="badge badge-gestor">Gestor</span>' : '') +
+                '<span>' + esc(ev.time) + '</span>' +
+              '</div>' +
+              '<div class="timeline-desc">' + esc(ev.text) + '</div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      function applyStatusChange(nextStatus, force) {
+        if (nextStatus === task.status) return;
+        if (nextStatus === 'Concluído' && !force) {
+          var pending = task.dod.filter(function (d) { return !d.done; });
+          if (pending.length > 0) {
+            openDodGateModal();
+            statusSelect.value = task.status;
+            return;
+          }
+        }
+        var prev = task.status;
+        task.status = nextStatus;
+        if (nextStatus === 'Desenvolvendo') {
+          window.AgileBoxProto.completeKanStep('c2');
+        }
+        addTimeline('Alterou o estado de "' + prev + '" para "' + nextStatus + '".');
+        renderHeaderAndBlocks();
+        window.AgileBoxProto.showToast('Estado alterado para ' + nextStatus, 'success');
+      }
+
+      function openDodGateModal() {
+        document.getElementById('dod-modal-items').innerHTML = task.dod.map(function (d) {
+          return (
+            '<label class="checkbox-row' + (d.done ? ' is-checked' : '') + '">' +
+              '<input type="checkbox" data-modal-dod="' + esc(d.id) + '"' + (d.done ? ' checked' : '') + '>' +
+              '<span>' + esc(d.text) + '</span>' +
+            '</label>'
+          );
+        }).join('');
+        dodModal.classList.add('is-open');
+      }
+
+      function closeDodGateModal() {
+        dodModal.classList.remove('is-open');
+      }
+
+      document.getElementById('btn-toggle-stalled').addEventListener('click', function () {
+        task.stalled = !task.stalled;
+        renderHeaderAndBlocks();
+      });
+
+      document.getElementById('task-title-input').addEventListener('change', function () {
+        var v = this.value.trim();
+        if (v && v !== task.title) {
+          task.title = v;
+          addTimeline('Atualizou o título para "' + v + '".');
+          window.AgileBoxProto.showToast('Título salvo', 'success');
+        }
+      });
+
+      document.getElementById('btn-save-desc').addEventListener('click', function () {
+        addTimeline('Atualizou a descrição da tarefa.');
+        window.AgileBoxProto.showToast('Descrição salva', 'success');
+      });
+
+      statusSelect.addEventListener('change', function () {
+        applyStatusChange(this.value, false);
+      });
+
+      document.getElementById('btn-complete-task').addEventListener('click', function () {
+        applyStatusChange('Concluído', false);
+      });
+
+      var moreBtn = document.getElementById('btn-more-actions');
+      var moreMenu = document.getElementById('more-actions-menu');
+      moreBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = !moreMenu.classList.contains('is-open');
+        moreMenu.classList.toggle('is-open', open);
+        moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.more-actions-wrap')) {
+          moreMenu.classList.remove('is-open');
+          moreBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+      moreMenu.addEventListener('click', function (e) {
+        var item = e.target.closest('[data-more-action]');
+        if (!item) return;
+        var act = item.getAttribute('data-more-action');
+        moreMenu.classList.remove('is-open');
+        moreBtn.setAttribute('aria-expanded', 'false');
+        if (act === 'toggle-block') {
+          if (hasActiveBlock()) {
+            task.blocks.forEach(function (b) { b.resolved = true; });
+            addTimeline('Resolveu o bloqueio ativo da tarefa.');
+            renderHeaderAndBlocks();
+            window.AgileBoxProto.showToast('Bloqueio resolvido', 'success');
+          } else {
+            selectTopic('historico');
+            document.getElementById('block-reason-input').focus();
+          }
+        } else if (act === 'duplicate') {
+          addTimeline('Duplicou a tarefa como rascunho.');
+          window.AgileBoxProto.showToast('Cópia criada no quadro', 'success');
+        } else if (act === 'copylink') {
+          window.AgileBoxProto.showToast('Link de ' + task.id + ' copiado', 'info');
+        } else if (act === 'archive') {
+          addTimeline('Arquivou a tarefa.');
+          window.AgileBoxProto.showToast('Tarefa arquivada', 'warning');
+        }
+      });
+
+      document.getElementById('btn-still-working').addEventListener('click', function () {
+        task.stalled = false;
+        addTimeline('Confirmou que a tarefa segue em andamento.');
+        renderHeaderAndBlocks();
+        window.AgileBoxProto.showToast('Alerta dispensado', 'success');
+      });
+
+      document.getElementById('btn-stalled-block').addEventListener('click', function () {
+        task.stalled = false;
+        selectTopic('historico');
+        var reasonInput = document.getElementById('block-reason-input');
+        reasonInput.value = 'Aguardando resposta externa';
+        reasonInput.focus();
+        renderHeaderAndBlocks();
+      });
+
+      document.getElementById('subtasks-list').addEventListener('change', function (e) {
+        var id = e.target.getAttribute('data-subtask-id');
+        var sub = task.subtasks.filter(function (s) { return s.id === id; })[0];
+        if (sub) {
+          sub.done = e.target.checked;
+          renderSubtasks();
+          addTimeline((sub.done ? 'Concluiu' : 'Reabriu') + ' a subtarefa "' + sub.text + '".');
+        }
+      });
+
+      document.getElementById('subtask-add-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('subtask-new-input');
+        var val = inp.value.trim();
+        if (!val) return;
+        task.subtasks.push({ id: 's' + Date.now(), text: val, done: false });
+        inp.value = '';
+        renderSubtasks();
+        addTimeline('Adicionou subtarefa "' + val + '".');
+      });
+
+      document.getElementById('dod-list').addEventListener('change', function (e) {
+        var id = e.target.getAttribute('data-dod-id');
+        var item = task.dod.filter(function (d) { return d.id === id; })[0];
+        if (item) {
+          item.done = e.target.checked;
+          renderDod();
+          addTimeline((item.done ? 'Confirmou' : 'Desmarcou') + ' critério de conclusão: "' + item.text + '".');
+        }
+      });
+
+      document.getElementById('dod-modal-items').addEventListener('change', function (e) {
+        var id = e.target.getAttribute('data-modal-dod');
+        var item = task.dod.filter(function (d) { return d.id === id; })[0];
+        if (item) {
+          item.done = e.target.checked;
+          renderDod();
+        }
+      });
+      document.getElementById('dod-gate-x').addEventListener('click', closeDodGateModal);
+      document.getElementById('dod-gate-cancel').addEventListener('click', closeDodGateModal);
+      document.getElementById('dod-gate-check-all').addEventListener('click', function () {
+        task.dod.forEach(function (d) { d.done = true; });
+        renderDod();
+        closeDodGateModal();
+        applyStatusChange('Concluído', true);
+      });
+      document.getElementById('dod-gate-force').addEventListener('click', function () {
+        closeDodGateModal();
+        addTimeline('Optou por concluir com critérios do DoD pendentes.');
+        applyStatusChange('Concluído', true);
+      });
+
+      document.getElementById('block-add-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('block-reason-input');
+        var reason = inp.value.trim() || 'Bloqueio operacional informado';
+        task.blocks.unshift({ id: 'b' + Date.now(), reason: reason, resolved: false, date: nowLabel() });
+        task.stalled = false;
+        inp.value = '';
+        window.AgileBoxProto.completeKanStep('c3');
+        addTimeline('Registrou bloqueio: "' + reason + '".');
+        renderHeaderAndBlocks();
+        window.AgileBoxProto.showToast('Bloqueio registrado', 'warning');
+      });
+
+      document.getElementById('blocks-list').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-resolve-block]');
+        if (!btn) return;
+        var bid = btn.getAttribute('data-resolve-block');
+        var b = task.blocks.filter(function (item) { return item.id === bid; })[0];
+        if (b) {
+          b.resolved = true;
+          addTimeline('Resolveu o bloqueio "' + b.reason + '".');
+          renderHeaderAndBlocks();
+          window.AgileBoxProto.showToast('Bloqueio resolvido', 'success');
+        }
+      });
+
+      document.getElementById('comment-add-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('comment-new-input');
+        var txt = inp.value.trim();
+        if (!txt) return;
+        var actor = activeActor();
+        task.comments.push({ author: actor.name, isManager: actor.isManager, time: nowLabel(), text: txt });
+        inp.value = '';
+        renderComments();
+        addTimeline('Comentou: "' + txt + '".');
+      });
+
+      document.getElementById('prop-assignee').addEventListener('change', function () {
+        task.assignee = this.value;
+        addTimeline('Alterou o responsável para ' + this.value + '.');
+      });
+
+      document.getElementById('prop-support').addEventListener('change', function () {
+        task.support = this.value;
+        addTimeline('Atualizou o apoio para ' + (this.value || 'nenhum') + '.');
+      });
+
+      document.getElementById('prop-due').addEventListener('change', function () {
+        task.due = this.value;
+        var parts = this.value.split('-');
+        if (parts.length === 3) {
+          document.getElementById('nav-count-pessoas').textContent = parts[2] + '/' + parts[1];
+        }
+        addTimeline('Alterou o prazo para ' + this.value + '.');
+      });
+
+      document.getElementById('prop-priority').addEventListener('change', function () {
+        task.priority = this.value;
+        addTimeline('Alterou a prioridade para ' + this.value + '.');
+      });
+
+      document.getElementById('ext-add-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = document.getElementById('ext-name-input');
+        var name = inp.value.trim();
+        if (!name) return;
+        task.externals.push(name);
+        inp.value = '';
+        renderExternals();
+        addTimeline('Vinculou pessoa externa: ' + name + ' (sem acesso ou avisos).');
+        window.AgileBoxProto.showToast('Pessoa externa vinculada', 'success');
+      });
+
+      document.getElementById('ext-chips').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-remove-ext]');
+        if (!btn) return;
+        var idx = parseInt(btn.getAttribute('data-remove-ext'), 10);
+        var removed = task.externals.splice(idx, 1)[0];
+        renderExternals();
+        if (removed) addTimeline('Desvinculou pessoa externa: ' + removed + '.');
+      });
+
+      function logHours(amount) {
+        if (!amount || amount <= 0) return;
+        var person = window.AgileBoxProto.getRole() === 'manager' ? 'Carla' : 'Ana';
+        task.hoursByPerson[person] = (task.hoursByPerson[person] || 0) + amount;
+        window.AgileBoxProto.completeKanStep('c3');
+        renderCostTable();
+        addTimeline('Lançou +' + formatHours(amount) + ' na tarefa.');
+        window.AgileBoxProto.showToast('+' + formatHours(amount) + ' registradas', 'success');
+      }
+
+      document.querySelectorAll('[data-add-hours]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          logHours(parseFloat(this.getAttribute('data-add-hours')));
+        });
+      });
+
+      document.getElementById('btn-add-manual-hours').addEventListener('click', function () {
+        var inp = document.getElementById('manual-hours-input');
+        var val = parseFloat(inp.value);
+        if (!val || val <= 0) return;
+        inp.value = '';
+        logHours(val);
+      });
+
+      var rateInput = document.getElementById('my-rate-input');
+      var rateNotice = document.getElementById('rate-notice');
+      rateInput.addEventListener('input', function () {
+        rateNotice.hidden = false;
+      });
+      document.getElementById('btn-save-rate').addEventListener('click', function () {
+        var v = parseFloat(rateInput.value);
+        if (isNaN(v) || v < 0) return;
+        var person = window.AgileBoxProto.getRole() === 'manager' ? 'Carla' : 'Ana';
+        task.rates[person] = v;
+        rateNotice.hidden = false;
+        renderCostTable();
+        addTimeline('Atualizou o valor/hora padrão de ' + person + ' para ' + formatBRL(v) + '/h.');
+        window.AgileBoxProto.showToast('Valor/hora padrão atualizado', 'success');
+      });
+
+      function syncFromAIStore(skipRender) {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st || !Array.isArray(st.tasks)) return;
+        var found = null;
+        for (var i = 0; i < st.tasks.length; i++) {
+          if (st.tasks[i].id.toUpperCase() === task.id.toUpperCase()) {
+            found = st.tasks[i];
+            break;
+          }
+        }
+        if (!found) return;
+        task.title = found.title;
+        task.status = found.status;
+        task.priority = found.priority || task.priority;
+        task.due = found.dueDate || task.due;
+        task.assignee = found.assignee || task.assignee;
+        task.support = found.support || task.support;
+        if (Array.isArray(found.subtasks) && found.subtasks.length) {
+          task.subtasks = JSON.parse(JSON.stringify(found.subtasks));
+        }
+        if (found.hoursByPerson) {
+          task.hoursByPerson = JSON.parse(JSON.stringify(found.hoursByPerson));
+        }
+        if (found.blocked) {
+          var hasOpen = task.blocks.some(function (b) { return !b.resolved; });
+          if (!hasOpen) {
+            task.blocks.unshift({ id: 'ai-blk', reason: found.blockReason || 'Bloqueio registrado via Kan', resolved: false, date: nowLabel() });
+          }
+        } else {
+          task.blocks.forEach(function (b) { b.resolved = true; });
+        }
+        if (Array.isArray(found.timeline) && found.timeline.length) {
+          task.timeline = JSON.parse(JSON.stringify(found.timeline));
+        }
+        var titleInp = document.getElementById('task-title-input');
+        if (titleInp) titleInp.value = task.title;
+        if (!skipRender) {
+          renderHeaderAndBlocks();
+          renderSubtasks();
+          renderDod();
+          renderComments();
+          renderExternals();
+          renderCostTable();
+          renderTimeline();
+        }
+      }
+
+      window.addEventListener('ab:storechange', function () {
+        syncFromAIStore(false);
+      });
+
+      window.addEventListener('ab:rolechange', function (e) {
+        var isMgr = e.detail && e.detail.role === 'manager';
+        var person = isMgr ? 'Carla' : 'Ana';
+        document.getElementById('my-rate-label').textContent = 'Meu valor/h padrão (' + person + ' · R$)';
+        rateInput.value = task.rates[person] || 120;
+        renderCostTable();
+      });
+
+      syncFromAIStore(true);
+      selectTopic(activeTopic);
+      renderHeaderAndBlocks();
+      renderSubtasks();
+      renderDod();
+      renderComments();
+      renderExternals();
+      renderCostTable();
+      renderTimeline();
+    });
+  </script>
+</body>
+</html>

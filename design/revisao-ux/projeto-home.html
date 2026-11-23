@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início do Projeto · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    #page-root {
+      max-width: 100%;
+      padding: 0;
+      min-width: 0;
+    }
+
+    .ph-body {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      min-width: 0;
+    }
+
+    .dot-inline {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+    .dot-inline.is-ok { background: var(--color-signal-ok); }
+    .dot-inline.is-muted { background: var(--color-text-subtle); }
+
+    /* Faixa KPI horizontal 100% largura */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .kpi-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 0 18px;
+      border-right: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .kpi-cell:first-child {
+      padding-left: 0;
+    }
+
+    .kpi-cell:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    .kpi-label {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-eyebrow);
+      color: var(--color-text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-value {
+      font-family: var(--font-family-display);
+      font-size: 24px;
+      font-weight: 650;
+      line-height: 1.15;
+      color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Cabeçalho de seção limpa */
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .sec-title {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .sec-meta {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sec-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      text-decoration: none;
+    }
+
+    .sec-link:hover {
+      color: var(--color-text-primary);
+    }
+
+    /* Grades 2 colunas separadas por divisória inferior 1px */
+    .dash-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--color-divider);
+      align-items: start;
+    }
+
+    .state-bar-full {
+      display: flex;
+      height: 5px;
+      width: 100%;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--color-tint-chip);
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .state-seg { height: 100%; opacity: 0.72; }
+    .state-seg.is-planejamento { background: var(--color-status-planejamento); }
+    .state-seg.is-afazer { background: var(--color-status-afazer); }
+    .state-seg.is-desenvolvendo { background: var(--color-status-desenvolvendo); }
+    .state-seg.is-revisar { background: var(--color-status-revisar); }
+    .state-seg.is-concluido { background: var(--color-status-concluido); }
+
+    .cat-list,
+    .attention-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cat-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1.2fr) minmax(70px, 1fr) 64px;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 4px;
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 13px;
+      color: var(--color-text-body);
+      text-decoration: none;
+      transition: background 140ms ease;
+    }
+
+    .cat-row:last-child { border-bottom: 0; }
+    .cat-row:hover { background: var(--color-tint-faint); }
+
+    .cat-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    .cat-mini-track {
+      height: 3px;
+      border-radius: 999px;
+      background: var(--color-tint-chip);
+      overflow: hidden;
+    }
+
+    .cat-mini-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--color-text-muted);
+      opacity: 0.55;
+    }
+
+    .cat-num {
+      text-align: right;
+      font-family: var(--font-family-mono);
+      font-size: 12px;
+      color: var(--color-text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .attention-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 4px;
+      border-bottom: 1px solid var(--color-divider);
+      color: var(--color-text-primary);
+      text-decoration: none;
+      transition: background 140ms ease;
+    }
+
+    .attention-row:last-child { border-bottom: 0; }
+    .attention-row:hover { background: var(--color-tint-faint); }
+
+    .attention-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .attention-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .attention-meta {
+      padding-left: 14px;
+      font-size: 12px;
+      color: var(--color-text-subtle);
+    }
+
+    .row-action-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      flex: none;
+    }
+
+    .attention-row:hover .row-action-link {
+      color: var(--color-text-primary);
+    }
+
+    .task-code-mono {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      flex: none;
+    }
+
+    /* Rodapé do projeto: Time + Pessoas externas */
+    .people-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
+
+    .team-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+    }
+
+    .team-person {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .team-avatar {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--color-tint-chip);
+      border: 1px solid var(--color-hairline);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      flex: none;
+    }
+
+    .team-person-name {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .team-person-role {
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+    }
+
+    .ext-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ext-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      font-size: 12px;
+      color: var(--color-text-body);
+    }
+
+    @media (max-width: 1040px) {
+      .kpi-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 14px;
+      }
+
+      .kpi-cell {
+        border-right: 0;
+        padding-left: 0;
+      }
+
+      .dash-split,
+      .people-strip {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="projeto-home">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title" id="ph-title">Projeto A · App de Vendas</h1>
+        <p class="ab-page-sub" id="ph-subtitle">Fluxo principal de vendas, checkout simplificado e acompanhamento de clientes.</p>
+      </div>
+      <div class="ab-page-head-actions">
+        <a href="quadro.html" class="btn btn-secondary" id="ph-go-board" style="min-height:40px;">Ir ao Quadro</a>
+        <button type="button" class="btn btn-primary" id="ph-new-task" style="min-height:40px;">+ Nova tarefa</button>
+      </div>
+    </header>
+
+    <div class="ph-body" id="ph-content"></div>
+  </section>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var proto = window.AgileBoxProto;
+
+      var HOME_DATA = {
+        a: {
+          title: 'Projeto A · App de Vendas',
+          subtitle: 'Fluxo principal de vendas, checkout simplificado e acompanhamento de entregas.',
+          boardHref: 'quadro.html?projeto=a',
+          backlogHref: 'agil.html?tab=backlog',
+          kpis: [
+            { label: 'Andamento', value: '45%', sub: '5 de 11 concluídas' },
+            { label: 'Tempo médio', value: '4,8 dias', sub: '2,1d em execução' },
+            { label: 'Próximo marco', value: 'Beta · 04 dez', sub: '+3 dias vs. plano salvo' },
+            { label: 'Sprint ativa', value: 'Sprint 14', sub: 'Restam 4 dias · 6/10' },
+            { label: 'Custo acumulado', value: 'R$ 9.840,00', sub: 'Visão exclusiva Gestor', managerOnly: true }
+          ],
+          states: [
+            { label: 'Planejamento', cls: 'is-planejamento', count: 1 },
+            { label: 'A fazer', cls: 'is-afazer', count: 2 },
+            { label: 'Desenvolvendo', cls: 'is-desenvolvendo', count: 2 },
+            { label: 'Revisar', cls: 'is-revisar', count: 1 },
+            { label: 'Concluído', cls: 'is-concluido', count: 5 }
+          ],
+          attention: [
+            { dot: 'is-danger', title: 'AB-8 bloqueada há 2 dias', meta: 'Corrigir filtro de datas · aguardando homologação', href: 'tarefa.html?id=AB-8', cta: 'Abrir →' },
+            { dot: 'is-warning', title: 'AB-5 há 5 dias em Desenvolvendo', meta: 'Revisar contrato com Cliente ACME · sem edição recente', href: 'tarefa.html?id=AB-5', cta: 'Abrir →' },
+            { dot: 'is-warning', title: 'Coluna Revisar com acúmulo (1,6d média)', meta: 'Verifique entregas prontas para liberar fluxo', href: 'quadro.html?projeto=a', cta: 'Ir ao Quadro →' }
+          ],
+          highlights: [
+            { id: 'AB-5', title: 'Revisar contrato com Cliente ACME', meta: 'Ana · Desenvolvendo · Hoje', href: 'tarefa.html?id=AB-5' },
+            { id: 'AB-11', title: 'Validar tela de login no Fedora e Windows', meta: 'Maria · Revisar · 24 nov', href: 'tarefa.html?id=AB-11' },
+            { id: 'AB-3', title: 'Ajustar webhook de confirmação de boleto', meta: 'Pedro · A fazer · 25 nov', href: 'tarefa.html?id=AB-3' },
+            { id: 'AB-8', title: 'Corrigir filtro de datas no relatório mensal', meta: 'João · Bloqueada · 26 nov', href: 'tarefa.html?id=AB-8' }
+          ],
+          events: [
+            { dot: 'is-ok', title: 'Hoje · 09:30 · Daily da equipe', meta: 'Alinhamento rápido (15 min)' },
+            { dot: 'is-muted', title: '20 nov · 15:00 · Retrospectiva Sprint 4', meta: 'Revisar combinados e melhorias' },
+            { dot: 'is-warning', title: '24 nov · Prazo contrato Cliente ACME', meta: 'Validação com jurídico e financeiro' }
+          ],
+          team: [
+            { initials: 'CM', name: 'Carla Mendes', role: 'Gestora' },
+            { initials: 'AS', name: 'Ana Silva', role: 'Design & UX' },
+            { initials: 'JP', name: 'João Pereira', role: 'Suporte & Dev' },
+            { initials: 'CR', name: 'Carlos Rocha', role: 'Backend' },
+            { initials: 'MS', name: 'Maria Souza', role: 'QA & Testes' }
+          ],
+          externals: ['Cliente ACME · Apenas identificação', 'Parceiro QA · Apenas identificação']
+        },
+        b: {
+          title: 'Projeto B · Migração ERP',
+          subtitle: 'Unificação de cadastros fiscais, centros de custo e virada assistida sem parada operacional.',
+          boardHref: 'quadro.html?projeto=b',
+          backlogHref: 'agil.html?tab=backlog',
+          kpis: [
+            { label: 'Andamento', value: '67%', sub: '4 de 6 concluídas' },
+            { label: 'Tempo médio', value: '5,4 dias', sub: '2,6d em execução' },
+            { label: 'Próximo marco', value: 'Beta · 06 dez', sub: 'No prazo previsto' },
+            { label: 'Custo acumulado', value: 'R$ 6.180,00', sub: 'Visão exclusiva Gestor', managerOnly: true }
+          ],
+          states: [
+            { label: 'Planejamento', cls: 'is-planejamento', count: 0 },
+            { label: 'A fazer', cls: 'is-afazer', count: 1 },
+            { label: 'Desenvolvendo', cls: 'is-desenvolvendo', count: 1 },
+            { label: 'Revisar', cls: 'is-revisar', count: 0 },
+            { label: 'Concluído', cls: 'is-concluido', count: 4 }
+          ],
+          attention: [
+            { dot: 'is-danger', title: 'ERP-02 aguardando planilha estadual', meta: 'Mapear CNPJs duplicados · bloqueio há 1 dia', href: 'tarefa.html?id=ERP-02', cta: 'Abrir →' },
+            { dot: 'is-warning', title: 'Janela de publicação ERP em 21 nov', meta: 'Validar importação financeira antes da virada', href: 'agenda.html', cta: 'Agenda →' }
+          ],
+          highlights: [
+            { id: 'ERP-02', title: 'Mapear CNPJs duplicados na planilha antiga', meta: 'Carlos · Desenvolvendo · Bloqueada', href: 'tarefa.html?id=ERP-02' },
+            { id: 'ERP-03', title: 'Validar importação com financeiro', meta: 'Maria · Revisar · 21 nov', href: 'tarefa.html?id=ERP-03' },
+            { id: 'ERP-04', title: 'Importar catálogo base de produtos', meta: 'Pedro · Concluído', href: 'tarefa.html?id=ERP-04' }
+          ],
+          events: [
+            { dot: 'is-warning', title: 'Amanhã · 16:00 · Entrega Beta Cliente ACME', meta: 'Conferir checklist de homologação' },
+            { dot: 'is-muted', title: '21 nov · 10:00 · Janela de publicação ERP', meta: 'Acompanhamento com financeiro' }
+          ],
+          team: [
+            { initials: 'CM', name: 'Carla Mendes', role: 'Gestora' },
+            { initials: 'CR', name: 'Carlos Rocha', role: 'Backend' },
+            { initials: 'MS', name: 'Maria Souza', role: 'QA & Financeiro' },
+            { initials: 'PA', name: 'Pedro Alves', role: 'Operação' }
+          ],
+          externals: ['Contabilidade Externa · Apenas identificação']
+        },
+        c: {
+          title: 'Projeto C · Projeto Simples',
+          subtitle: 'Fluxo contínuo direto no Quadro (5 estados), sem sprints nem cronograma complexo.',
+          boardHref: 'quadro.html?projeto=c',
+          backlogHref: 'configuracoes.html?tab=projeto',
+          kpis: [
+            { label: 'Andamento', value: '33%', sub: '1 de 3 concluídas' },
+            { label: 'Tempo médio', value: '1,9 dias', sub: 'Fluxo contínuo leve' },
+            { label: 'Bloqueios ativos', value: '0', sub: 'Tudo fluindo sem travas' },
+            { label: 'Custo acumulado', value: 'R$ 2.400,00', sub: 'Visão exclusiva Gestor', managerOnly: true }
+          ],
+          states: [
+            { label: 'Planejamento', cls: 'is-planejamento', count: 0 },
+            { label: 'A fazer', cls: 'is-afazer', count: 1 },
+            { label: 'Desenvolvendo', cls: 'is-desenvolvendo', count: 1 },
+            { label: 'Revisar', cls: 'is-revisar', count: 0 },
+            { label: 'Concluído', cls: 'is-concluido', count: 1 }
+          ],
+          attention: [
+            { dot: 'is-ok', title: 'Nenhum bloqueio ativo no momento', meta: 'Projeto operando no modo Simples apenas com o Quadro', href: 'quadro.html?projeto=c', cta: 'Abrir Quadro →' }
+          ],
+          highlights: [
+            { id: 'AB-14', title: 'Configurar mensagens de aviso da loja', meta: 'Pedro · Desenvolvendo', href: 'tarefa.html?id=AB-14' },
+            { id: 'AB-15', title: 'Revisar checklist de publicação semanal', meta: 'Ana · A fazer', href: 'tarefa.html?id=AB-15' }
+          ],
+          events: [
+            { dot: 'is-muted', title: '22 nov · 11:00 · Plantão de monitoramento', meta: 'Checagem rápida semanal' }
+          ],
+          team: [
+            { initials: 'PA', name: 'Pedro Alves', role: 'Colaborador' },
+            { initials: 'AS', name: 'Ana Silva', role: 'Design & UX' }
+          ],
+          externals: []
+        }
+      };
+
+      function esc(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function getLiveProjectData(pid, base) {
+        var copy = JSON.parse(JSON.stringify(base));
+        if (!window.AgileBoxKanAI) return copy;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st || !Array.isArray(st.tasks)) return copy;
+        var projTasks = st.tasks.filter(function (t) { return t.projectId === pid; });
+        if (!projTasks.length) return copy;
+        var hasCustom = st.nextIdNum > 16 || projTasks.some(function (t) { return t.timeline && t.timeline.some(function (ev) { return String(ev.text || '').indexOf('Via Kan') !== -1; }); });
+        if (!hasCustom) return copy;
+
+        var counts = { Planejamento: 0, 'A fazer': 0, Desenvolvendo: 0, Revisar: 0, 'Concluído': 0 };
+        projTasks.forEach(function (t) {
+          if (Object.prototype.hasOwnProperty.call(counts, t.status)) counts[t.status] += 1;
+        });
+        copy.states.forEach(function (s) {
+          if (Object.prototype.hasOwnProperty.call(counts, s.label)) s.count = counts[s.label];
+        });
+        var total = projTasks.length;
+        var done = counts['Concluído'];
+        var pct = total ? Math.round((done / total) * 100) : 0;
+        copy.kpis[0].value = pct + '%';
+        copy.kpis[0].sub = done + ' de ' + total + ' concluídas';
+        copy.highlights = projTasks.slice(-4).reverse().map(function (t) {
+          return {
+            id: t.id,
+            title: t.title,
+            meta: t.assignee + ' · ' + (t.blocked ? 'Bloqueada' : t.status) + ' · ' + (t.due || '30 nov'),
+            href: 'tarefa.html?id=' + t.id
+          };
+        });
+        return copy;
+      }
+
+      function renderHome() {
+        var pid = proto.getProjectId();
+        var data = getLiveProjectData(pid, HOME_DATA[pid] || HOME_DATA.a);
+
+        document.getElementById('ph-title').textContent = data.title;
+        document.getElementById('ph-subtitle').textContent = data.subtitle;
+        document.getElementById('ph-go-board').setAttribute('href', data.boardHref);
+
+        var totalTasks = data.states.reduce(function (acc, s) { return acc + s.count; }, 0);
+
+        var kpiHtml = data.kpis.map(function (k) {
+          return (
+            '<div class="kpi-cell"' + (k.managerOnly ? ' data-role-only="manager"' : '') + '>' +
+              '<span class="kpi-label">' + esc(k.label) + '</span>' +
+              '<span class="kpi-value">' + esc(k.value) + '</span>' +
+              '<span class="kpi-sub">' + esc(k.sub) + '</span>' +
+            '</div>'
+          );
+        }).join('');
+
+        var barSegs = data.states.map(function (s) {
+          var w = totalTasks ? Math.round((s.count / totalTasks) * 100) : 0;
+          return w > 0 ? '<span class="state-seg ' + s.cls + '" style="width:' + w + '%"></span>' : '';
+        }).join('');
+
+        var statesRows = data.states.map(function (s) {
+          var pct = totalTasks ? Math.round((s.count / totalTasks) * 100) : 0;
+          return (
+            '<a href="' + data.boardHref + '" class="cat-row">' +
+              '<span class="cat-name"><span class="status-dot ' + s.cls + '"></span>' + esc(s.label) + '</span>' +
+              '<span class="cat-mini-track"><span class="cat-mini-fill" style="width:' + pct + '%"></span></span>' +
+              '<span class="cat-num">' + s.count + ' · ' + pct + '%</span>' +
+            '</a>'
+          );
+        }).join('');
+
+        var attentionRows = data.attention.map(function (a) {
+          return (
+            '<a href="' + a.href + '" class="attention-row">' +
+              '<div class="attention-main">' +
+                '<span class="attention-title"><span class="dot-inline ' + a.dot + '"></span>' + esc(a.title) + '</span>' +
+                '<span class="attention-meta">' + esc(a.meta) + '</span>' +
+              '</div>' +
+              '<span class="row-action-link">' + esc(a.cta) + '</span>' +
+            '</a>'
+          );
+        }).join('');
+
+        var highlightsRows = data.highlights.map(function (h) {
+          return (
+            '<a href="' + h.href + '" class="attention-row">' +
+              '<div class="attention-main">' +
+                '<span class="attention-title"><span class="task-code-mono">' + esc(h.id) + '</span>' + esc(h.title) + '</span>' +
+                '<span class="attention-meta">' + esc(h.meta) + '</span>' +
+              '</div>' +
+              '<span class="row-action-link">Abrir →</span>' +
+            '</a>'
+          );
+        }).join('');
+
+        var eventsRows = data.events.map(function (ev) {
+          return (
+            '<a href="agenda.html" class="attention-row">' +
+              '<div class="attention-main">' +
+                '<span class="attention-title"><span class="dot-inline ' + ev.dot + '"></span>' + esc(ev.title) + '</span>' +
+                '<span class="attention-meta">' + esc(ev.meta) + '</span>' +
+              '</div>' +
+              '<span class="row-action-link">Agenda →</span>' +
+            '</a>'
+          );
+        }).join('');
+
+        var teamHtml = data.team.map(function (m) {
+          return (
+            '<div class="team-person">' +
+              '<span class="team-avatar">' + esc(m.initials) + '</span>' +
+              '<div>' +
+                '<div class="team-person-name">' + esc(m.name) + '</div>' +
+                '<div class="team-person-role">' + esc(m.role) + '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+
+        var extHtml = data.externals.length
+          ? '<div class="ext-list">' + data.externals.map(function (ex) { return '<span class="ext-pill">' + esc(ex) + '</span>'; }).join('') + '</div>'
+          : '<span style="font-size:12.5px;color:var(--color-text-subtle);">Nenhuma pessoa externa vinculada neste projeto.</span>';
+
+        document.getElementById('ph-content').innerHTML =
+          '<section class="kpi-strip" aria-label="Resumo do projeto">' + kpiHtml + '</section>' +
+          '<section class="dash-split" aria-label="Estados e atenção">' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Tarefas por estado</h2>' +
+                '<span class="sec-meta">' + totalTasks + ' tarefas no total</span>' +
+              '</div>' +
+              '<div class="state-bar-full" aria-hidden="true">' + barSegs + '</div>' +
+              '<div class="cat-list">' + statesRows + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Precisa de atenção</h2>' +
+                '<span class="sec-meta">Acesso rápido</span>' +
+              '</div>' +
+              '<div class="attention-list">' + attentionRows + '</div>' +
+            '</div>' +
+          '</section>' +
+          '<section class="dash-split" aria-label="Tarefas e agenda">' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Em destaque neste projeto</h2>' +
+                '<a href="' + data.backlogHref + '" class="sec-link">' + (pid === 'c' ? 'Ativar ferramentas →' : 'Ver Backlog →') + '</a>' +
+              '</div>' +
+              '<div class="attention-list">' + highlightsRows + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Próximos compromissos</h2>' +
+                '<a href="agenda.html" class="sec-link">Abrir Agenda →</a>' +
+              '</div>' +
+              '<div class="attention-list">' + eventsRows + '</div>' +
+            '</div>' +
+          '</section>' +
+          '<section class="people-strip" aria-label="Time e pessoas externas">' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Time do projeto</h2>' +
+                '<a href="configuracoes.html?tab=projeto" class="sec-link" data-role-only="manager">Gerenciar em Config. e Ferramentas →</a>' +
+              '</div>' +
+              '<div class="team-chips">' + teamHtml + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="sec-head">' +
+                '<h2 class="sec-title">Pessoas externas</h2>' +
+                '<span class="sec-meta">Sem login nem avisos</span>' +
+              '</div>' +
+              extHtml +
+            '</div>' +
+          '</section>';
+      }
+
+      document.getElementById('ph-new-task').addEventListener('click', function () {
+        proto.openNewTaskModal('A fazer');
+      });
+
+      window.addEventListener('ab:projectchange', renderHome);
+      window.addEventListener('ab:storechange', renderHome);
+      renderHome();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2096 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quadro · AgileBox</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/app-shell.css">
+  <style>
+    /* ========================================================================
+       Quadro Kanban — Monocromático, menor contraste, sem caixas aninhadas
+       Zero overflow em 1280x780 (com e sem Kan) e 960x720
+       ======================================================================== */
+    #page-root {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 100%;
+      padding: 0;
+      max-width: 100%;
+      gap: 0;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    /* Faixa limpa e compacta de filtros/busca (sem caixa com borda) */
+    .board-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      padding: 2px 0 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .board-controls-left,
+    .board-controls-right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    /* Controles segmentados discretos sem caixa externa pesada */
+    .quiet-toggle-group {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .quiet-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .quiet-toggle-btn:hover {
+      color: var(--color-text-primary);
+      background: var(--color-tint-faint);
+    }
+
+    .quiet-toggle-btn.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .controls-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--color-divider);
+      flex: none;
+    }
+
+    .board-search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-width: 170px;
+      flex: 1 1 190px;
+      max-width: 260px;
+    }
+
+    .board-search-wrap svg {
+      position: absolute;
+      left: 10px;
+      color: var(--color-text-subtle);
+      pointer-events: none;
+    }
+
+    .board-search-input {
+      padding-left: 30px !important;
+      height: 32px;
+      min-height: 32px;
+      background: transparent;
+      border-color: var(--color-hairline);
+      font-size: 12.5px;
+    }
+
+    .board-search-input:hover,
+    .board-search-input:focus {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+      outline: none;
+    }
+
+    .filter-pill-group {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .filter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .filter-pill:hover {
+      background: var(--color-tint-faint);
+      color: var(--color-text-primary);
+    }
+
+    .filter-pill.is-active {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    /* Faixas de aviso discretas (sem caixas coloridas) */
+    .scope-notice,
+    #page-root .manager-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 4px 0 10px;
+      margin: 0 0 10px;
+      border: 0;
+      border-bottom: 1px solid var(--color-divider);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: 12.5px;
+    }
+
+    /* Grade de 5 colunas responsiva sem overflow horizontal */
+    #board-stage {
+      min-width: 0;
+      overflow-x: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kanban-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .kanban-col {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 320px;
+      border-radius: 12px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      padding: 8px 6px;
+      gap: 6px;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .kanban-col.is-drop-target {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-soft);
+    }
+
+    /* Cabeçalho em 2 linhas por coluna (ZERO overflow em 1280x780 e 960x720) */
+    .col-header {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 0 2px 6px;
+      border-bottom: 1px solid var(--color-divider);
+      min-width: 0;
+    }
+
+    .col-head-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .col-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .col-title-wrap .status-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .col-title {
+      margin: 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .col-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 18px;
+      padding: 0 4px;
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      flex: none;
+    }
+
+    .col-add-btn {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .col-add-btn:hover {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .col-head-row2 {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      min-width: 0;
+      min-height: 20px;
+      font-size: 11px;
+      color: var(--color-text-subtle);
+    }
+
+    .col-wip-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      color: var(--color-text-subtle);
+      font-size: 11px;
+    }
+
+    .col-wip-info.is-over {
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    .col-wip-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .kanban-col .jargon-tip {
+      min-width: 0;
+    }
+
+    .kanban-col .jargon-tip-btn {
+      width: 15px;
+      height: 15px;
+      font-size: 10px;
+      background: transparent;
+      border-color: var(--color-hairline);
+      flex: none;
+    }
+
+    .kanban-col .jargon-tip-popover {
+      display: none;
+      left: 0;
+      right: auto;
+      transform: none;
+      max-width: 180px;
+    }
+
+    .kanban-col:last-child .jargon-tip-popover {
+      left: auto;
+      right: 0;
+    }
+
+    .kanban-col .jargon-tip:hover .jargon-tip-popover,
+    .kanban-col .jargon-tip:focus-within .jargon-tip-popover {
+      display: block;
+    }
+
+    .col-gear-btn {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      width: 20px;
+      height: 20px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .col-gear-btn:hover {
+      background: var(--color-tint-soft);
+      color: var(--color-text-primary);
+    }
+
+    .wip-popover {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 40;
+      width: 192px;
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--glass-popover);
+      backdrop-filter: var(--glass-popover-backdrop);
+      box-shadow: var(--shadow-popover);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wip-popover.is-open {
+      display: flex;
+    }
+
+    .wip-popover-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .wip-popover-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .wip-step-btn {
+      min-width: 30px;
+      min-height: 30px;
+      border: 1px solid var(--color-hairline-strong);
+      border-radius: 7px;
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+
+    .wip-step-btn:hover {
+      background: var(--surface-raised);
+    }
+
+    .wip-val {
+      font-family: var(--font-family-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    /* Pontinhos sutis de 6px */
+    .dot-inline {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot-inline.is-danger { background: var(--color-signal-danger); }
+    .dot-inline.is-warning { background: var(--color-signal-warning); }
+    .dot-inline.is-manager { background: var(--color-manager-dot); }
+
+    /* Cards do quadro (monocromáticos e compactos) */
+    .col-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 1px;
+    }
+
+    .task-card {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      padding: 8px 9px;
+      border-radius: 10px;
+      background: var(--surface-card);
+      border: 1px solid var(--color-hairline);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .task-card:hover {
+      border-color: var(--color-hairline-strong);
+      background: var(--surface-raised);
+    }
+
+    .task-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .task-id {
+      font-family: var(--font-family-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--color-text-subtle);
+      flex: none;
+    }
+
+    .task-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .task-blocked-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .task-tag-neutral {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-muted);
+      font-size: 10.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-title {
+      margin: 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--color-text-primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .task-people {
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-people strong {
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    .task-ext-chip {
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      max-width: 100%;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      color: var(--color-text-muted);
+      font-size: 10.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid var(--color-divider);
+      font-size: 10.5px;
+      color: var(--color-text-subtle);
+      font-family: var(--font-family-mono);
+      min-width: 0;
+    }
+
+    .task-due-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-text-body);
+    }
+
+    .col-empty-mini {
+      padding: 14px 8px;
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+    }
+
+    /* Estado vazio inteligente (Projeto C / Primeiro acesso) */
+    .board-empty-hero {
+      margin: 18px auto 0;
+      width: min(620px, 100%);
+      padding: 28px 22px;
+    }
+
+    .quick-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .suggestion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 9px;
+      border: 1px solid var(--color-hairline);
+      background: var(--surface-card);
+      color: var(--color-text-body);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .suggestion-chip:hover {
+      background: var(--surface-raised);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    /* ========================================================================
+       Gaveta lateral (520px) — Lei de Hick, zero caixas aninhadas
+       Lista vertical limpa separada apenas por 1px solid var(--color-divider)
+       ======================================================================== */
+    #task-drawer {
+      background: var(--surface-panel);
+      border: 1px solid var(--color-hairline);
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--color-divider);
+      flex: none;
+    }
+
+    .drawer-head-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .drawer-id-mono {
+      font-family: var(--font-family-mono);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .drawer-status-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--color-text-primary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .drawer-status-inline .status-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .drawer-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .drawer-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .drawer-block:first-child {
+      padding-top: 0;
+    }
+
+    .drawer-block:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .drawer-title-input {
+      width: 100%;
+      padding: 2px 0;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-family: var(--font-family-display);
+      font-size: 19px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .drawer-title-input:hover {
+      border-bottom-color: var(--color-hairline);
+    }
+
+    .drawer-title-input:focus {
+      outline: none;
+      border-bottom-color: var(--color-hairline-strong);
+    }
+
+    .drawer-state-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .state-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .state-select-wrap:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+    }
+
+    .state-select-wrap .status-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .state-select {
+      border: 0;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      height: 32px;
+      padding-right: 4px;
+    }
+
+    .state-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .drawer-blocked-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    /* Linhas chave-valor compactas dentro da gaveta */
+    .drawer-kv-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #task-drawer .kv-row {
+      grid-template-columns: 104px minmax(0, 1fr);
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    #task-drawer .kv-row:last-child {
+      border-bottom: 0;
+    }
+
+    #task-drawer .kv-label {
+      font-size: 12.5px;
+    }
+
+    .kv-select,
+    .kv-input {
+      width: 100%;
+      max-width: 240px;
+      height: 32px;
+      min-height: 32px;
+      padding: 4px 9px;
+      border: 1px solid var(--color-hairline);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: 13px;
+    }
+
+    .kv-select:hover,
+    .kv-input:hover {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .kv-select option {
+      background: var(--surface-card);
+      color: var(--color-text-primary);
+    }
+
+    .drawer-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .drawer-section-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .drawer-section-meta {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .clean-textarea {
+      width: 100%;
+      min-height: 62px;
+      padding: 8px 10px;
+      border: 1px solid var(--color-hairline);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--color-text-body);
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .clean-textarea:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--color-text-primary);
+    }
+
+    .progress-track {
+      height: 3px;
+      border-radius: 999px;
+      background: var(--color-hairline);
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--color-text-muted);
+      border-radius: 999px;
+      transition: width 200ms var(--ease-ios);
+    }
+
+    .drawer-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    #task-drawer .checkbox-row {
+      min-height: 30px;
+      padding: 4px 2px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--color-text-body);
+    }
+
+    #task-drawer .checkbox-row.is-checked span {
+      text-decoration: line-through;
+      color: var(--color-text-subtle);
+    }
+
+    .drawer-inline-form {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drawer-inline-input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      min-height: 32px;
+      padding: 4px 9px;
+      background: transparent;
+      border: 1px solid var(--color-hairline);
+      border-radius: 8px;
+      font-size: 12.5px;
+    }
+
+    .drawer-inline-input:focus {
+      outline: none;
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-faint);
+    }
+
+    .drawer-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 18px;
+      border-top: 1px solid var(--color-divider);
+      flex: none;
+    }
+
+    .drawer-foot-note {
+      font-size: 11.5px;
+      color: var(--color-text-subtle);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drawer-foot-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-foot .btn-primary {
+      min-height: 34px;
+      padding: 0 14px;
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 1180px) {
+      .kanban-grid {
+        gap: 6px;
+      }
+      .kanban-col {
+        padding: 7px 5px;
+      }
+      .col-title {
+        font-size: 12px;
+      }
+      .task-card {
+        padding: 7px 8px;
+      }
+    }
+  </style>
+  <script src="assets/kan-model-data.js" defer></script>
+  <script src="assets/kan-3d.js" defer></script>
+  <script src="assets/kan-ai.js" defer></script>
+  <script src="assets/app-shell.js" defer></script>
+</head>
+<body data-page="quadro">
+  <section id="page-root">
+    <header class="ab-page-head">
+      <div class="ab-page-head-main">
+        <h1 class="ab-page-title" id="board-heading">Quadro · Projeto A</h1>
+        <p class="ab-page-sub" id="board-subtitle">Acompanhe o trabalho nos 5 estados sem atrito.</p>
+      </div>
+      <div class="ab-page-head-actions">
+        <button type="button" class="btn btn-sm btn-secondary" id="btn-demo-proj-c" title="Alternar entre o quadro com tarefas e o Projeto C (primeiro acesso)">
+          Projeto C (Primeiro acesso)
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-board-new-task" style="min-height:40px;">
+          + Nova tarefa
+        </button>
+      </div>
+    </header>
+
+    <!-- Faixa limpa de controles (sem caixa com borda) -->
+    <div class="board-controls" role="region" aria-label="Controles do quadro">
+      <div class="board-controls-left">
+        <div class="quiet-toggle-group" role="group" aria-label="Escopo das tarefas">
+          <button type="button" class="quiet-toggle-btn is-active" data-scope-btn="mine">Minhas tarefas</button>
+          <button type="button" class="quiet-toggle-btn" data-scope-btn="team">Equipe</button>
+        </div>
+
+        <span class="controls-sep" data-role-only="manager" aria-hidden="true"></span>
+
+        <div class="quiet-toggle-group" role="group" aria-label="Visão do gestor" data-role-only="manager">
+          <button type="button" class="quiet-toggle-btn is-active" data-manager-view="mine">Meu quadro</button>
+          <button type="button" class="quiet-toggle-btn" data-manager-view="joao">Tarefas de João</button>
+          <button type="button" class="quiet-toggle-btn" data-manager-view="projc">Projeto C (Vazio)</button>
+        </div>
+      </div>
+
+      <div class="board-controls-right">
+        <div class="board-search-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M21 21l-4.3-4.3"></path>
+          </svg>
+          <input type="search" class="input board-search-input" id="board-search" placeholder="Buscar por ID, título ou pessoa..." aria-label="Buscar tarefas no quadro">
+        </div>
+
+        <div class="filter-pill-group" role="group" aria-label="Filtrar prioridade ou bloqueio">
+          <button type="button" class="filter-pill is-active" data-filter-btn="all">Todas</button>
+          <button type="button" class="filter-pill" data-filter-btn="high">Alta</button>
+          <button type="button" class="filter-pill" data-filter-btn="blocked">Bloqueadas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aviso de visualização Equipe (read-only) -->
+    <div class="scope-notice" id="team-readonly-notice" hidden>
+      <span><strong style="color:var(--color-text-primary);font-weight:500;">Visualização Equipe (somente leitura):</strong> em breve você acompanha todas as tarefas do time em visão compartilhada.</span>
+      <button type="button" class="btn btn-sm btn-ghost" id="btn-back-mine-scope">Voltar para Minhas tarefas</button>
+    </div>
+
+    <!-- Faixa discreta do Gestor -->
+    <div class="manager-banner" id="manager-joao-banner" hidden>
+      <span>Visualizando tarefas de <strong style="color:var(--color-text-primary);font-weight:500;">João</strong> · Edições marcadas como <span class="badge badge-gestor">Gestor</span></span>
+      <button type="button" class="btn btn-sm btn-ghost" id="btn-back-manager-mine">← Voltar às minhas</button>
+    </div>
+
+    <!-- Área principal: ou Estado Vazio inteligente (Projeto C), ou as 5 colunas -->
+    <div id="board-stage"></div>
+  </section>
+
+  <!-- Drawer lateral de prévia/edição (520px) -->
+  <div class="drawer-backdrop" id="task-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="drawer-title-input">
+    <aside class="drawer" id="task-drawer">
+      <div class="drawer-head">
+        <div class="drawer-head-left">
+          <span class="drawer-id-mono" id="drawer-task-id">AB-5</span>
+          <span style="opacity:0.35;">·</span>
+          <span class="drawer-status-inline" id="drawer-status-pill"></span>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" id="drawer-close" aria-label="Fechar prévia">×</button>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+      <div class="drawer-foot">
+        <span class="drawer-foot-note" id="drawer-foot-note">Edições salvas automaticamente</span>
+        <div class="drawer-foot-actions">
+          <button type="button" class="btn btn-sm btn-secondary" id="drawer-close-foot">Fechar</button>
+          <a class="btn btn-sm btn-primary" id="drawer-open-full-foot" href="tarefa.html">Abrir tela cheia ↗</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script defer>
+    document.addEventListener('ab:ready', function () {
+      var STATES = [
+        { id: 'planejamento', label: 'Planejamento', dot: 'is-planejamento' },
+        { id: 'afazer', label: 'A fazer', dot: 'is-afazer' },
+        { id: 'desenvolvendo', label: 'Desenvolvendo', dot: 'is-desenvolvendo' },
+        { id: 'revisar', label: 'Revisar', dot: 'is-revisar' },
+        { id: 'concluido', label: 'Concluído', dot: 'is-concluido' }
+      ];
+
+      var PEOPLE_LIST = ['Ana', 'João', 'Pedro', 'Carlos', 'Maria', 'Carla'];
+      var MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+      var initialTasks = [
+        {
+          id: 'AB-1',
+          projectId: 'a',
+          status: 'Planejamento',
+          title: 'Mapear fluxo de aprovação de pedidos B2B',
+          assignee: 'Ana',
+          support: 'Pedro',
+          external: '',
+          priority: 'Média',
+          due: '28 nov',
+          dueDate: '2026-11-28',
+          dueWarn: false,
+          subtasks: [
+            { id: 's1-1', text: 'Levantar alçadas por faixa de valor', done: true },
+            { id: 's1-2', text: 'Validar exceções com o comercial', done: false },
+            { id: 's1-3', text: 'Documentar fluxo aprovado', done: false }
+          ],
+          subtasksDone: 1,
+          subtasksTotal: 3,
+          blocked: false,
+          blockReason: '',
+          hours: 1.5,
+          summary: 'Levantar regras de desconto com o time comercial antes de iniciar a implementação.'
+        },
+        {
+          id: 'AB-3',
+          projectId: 'a',
+          status: 'A fazer',
+          title: 'Ajustar webhook de confirmação de boleto',
+          assignee: 'Pedro',
+          support: 'Carlos',
+          external: '',
+          priority: 'Alta',
+          due: '25 nov',
+          dueDate: '2026-11-25',
+          dueWarn: true,
+          subtasks: [
+            { id: 's3-1', text: 'Simular retorno bancário com atraso', done: false },
+            { id: 's3-2', text: 'Adicionar fila de reprocessamento', done: false }
+          ],
+          subtasksDone: 0,
+          subtasksTotal: 2,
+          blocked: false,
+          blockReason: '',
+          hours: 0,
+          summary: 'Garantir reprocessamento automático quando o retorno bancário chegar com atraso.'
+        },
+        {
+          id: 'AB-5',
+          projectId: 'a',
+          status: 'Desenvolvendo',
+          title: 'Revisar contrato com Cliente ACME',
+          assignee: 'Ana',
+          support: 'João',
+          external: 'Cliente ACME · Externa',
+          priority: 'Alta',
+          due: 'Hoje',
+          dueDate: '2026-11-22',
+          dueWarn: true,
+          subtasks: [
+            { id: 's5-1', text: 'Conferir cláusulas de SLA e tempo de resposta', done: true },
+            { id: 's5-2', text: 'Alinhar cronograma de implantação com suporte', done: true },
+            { id: 's5-3', text: 'Validar anexo financeiro final', done: false }
+          ],
+          subtasksDone: 2,
+          subtasksTotal: 3,
+          blocked: false,
+          blockReason: '',
+          hours: 3.0,
+          summary: 'Conferir cláusulas de SLA, prazos de entrega e cronograma de implantação com o cliente.'
+        },
+        {
+          id: 'AB-8',
+          projectId: 'a',
+          status: 'A fazer',
+          title: 'Corrigir filtro de datas no relatório mensal',
+          assignee: 'João',
+          support: 'Maria',
+          external: '',
+          priority: 'Média',
+          due: '26 nov',
+          dueDate: '2026-11-26',
+          dueWarn: false,
+          subtasks: [
+            { id: 's8-1', text: 'Reproduzir erro de fuso após 21h', done: true },
+            { id: 's8-2', text: 'Normalizar exportação CSV em UTC-3', done: false }
+          ],
+          subtasksDone: 1,
+          subtasksTotal: 2,
+          blocked: true,
+          blockReason: 'Aguardando massa de dados de homologação.',
+          hours: 1.0,
+          summary: 'Exportação CSV não considera fuso horário local nos registros após 21h.'
+        },
+        {
+          id: 'AB-11',
+          projectId: 'a',
+          status: 'Revisar',
+          title: 'Validar tela de login no Fedora e Windows',
+          assignee: 'Maria',
+          support: 'Pedro',
+          external: '',
+          priority: 'Média',
+          due: '24 nov',
+          dueDate: '2026-11-24',
+          dueWarn: false,
+          subtasks: [
+            { id: 's11-1', text: 'Testar modo sólido opaco no Fedora', done: true },
+            { id: 's11-2', text: 'Conferir foco por teclado no Windows', done: true },
+            { id: 's11-3', text: 'Validar escala 125%', done: true }
+          ],
+          subtasksDone: 3,
+          subtasksTotal: 3,
+          blocked: false,
+          blockReason: '',
+          hours: 2.5,
+          summary: 'Conferir contraste no modo sólido opaco e navegação por teclado.'
+        },
+        {
+          id: 'AB-12',
+          projectId: 'a',
+          status: 'Desenvolvendo',
+          title: 'Migrar autenticação de sessão da Bandeja',
+          assignee: 'João',
+          support: 'Carlos',
+          external: '',
+          priority: 'Alta',
+          due: '27 nov',
+          dueDate: '2026-11-27',
+          dueWarn: false,
+          subtasks: [
+            { id: 's12-1', text: 'Extrair provedor de token local', done: true },
+            { id: 's12-2', text: 'Compartilhar sessão via IPC seguro', done: false },
+            { id: 's12-3', text: 'Tratar expiração silenciosa', done: false },
+            { id: 's12-4', text: 'Atualizar testes de integração', done: false }
+          ],
+          subtasksDone: 1,
+          subtasksTotal: 4,
+          blocked: true,
+          blockReason: 'Sem acesso à chave de staging do servidor.',
+          hours: 2.0,
+          summary: 'Compartilhar token local de forma segura entre Painel principal e Bandeja.'
+        },
+        {
+          id: 'AB-2',
+          projectId: 'a',
+          status: 'Concluído',
+          title: 'Publicar pacote base de ícones do sistema',
+          assignee: 'Ana',
+          support: 'Pedro',
+          external: '',
+          priority: 'Baixa',
+          due: '19 nov',
+          dueDate: '2026-11-19',
+          dueWarn: false,
+          subtasks: [
+            { id: 's2-1', text: 'Padronizar stroke 1.75px em SVGs', done: true },
+            { id: 's2-2', text: 'Publicar sprites e tokens', done: true }
+          ],
+          subtasksDone: 2,
+          subtasksTotal: 2,
+          blocked: false,
+          blockReason: '',
+          hours: 4.0,
+          summary: 'Padronização dos ícones SVG de navegação e estados.'
+        },
+        {
+          id: 'AB-14',
+          projectId: 'b',
+          status: 'Planejamento',
+          title: 'Inventário de tabelas legadas do ERP',
+          assignee: 'Carlos',
+          support: 'João',
+          external: 'Parceiro SysERP · Externa',
+          priority: 'Alta',
+          due: '29 nov',
+          dueDate: '2026-11-29',
+          dueWarn: false,
+          subtasks: [
+            { id: 's14-1', text: 'Exportar dicionário de dados atual', done: true },
+            { id: 's14-2', text: 'Mapear chaves estrangeiras críticas', done: false },
+            { id: 's14-3', text: 'Definir campos obrigatórios de corte', done: false },
+            { id: 's14-4', text: 'Validar mapeamento com Parceiro SysERP', done: false }
+          ],
+          subtasksDone: 1,
+          subtasksTotal: 4,
+          blocked: false,
+          blockReason: '',
+          hours: 2.0,
+          summary: 'Mapear campos obrigatórios antes da importação piloto.'
+        },
+        {
+          id: 'AB-15',
+          projectId: 'b',
+          status: 'Desenvolvendo',
+          title: 'Script de migração de centros de custo',
+          assignee: 'Pedro',
+          support: 'Ana',
+          external: '',
+          priority: 'Média',
+          due: '30 nov',
+          dueDate: '2026-11-30',
+          dueWarn: false,
+          subtasks: [
+            { id: 's15-1', text: 'Ler planilha consolidada do financeiro', done: true },
+            { id: 's15-2', text: 'Validar hierarquia de contas', done: true },
+            { id: 's15-3', text: 'Executar carga de teste em staging', done: false }
+          ],
+          subtasksDone: 2,
+          subtasksTotal: 3,
+          blocked: false,
+          blockReason: '',
+          hours: 3.5,
+          summary: 'Importar plano de contas validado pela equipe financeira.'
+        }
+      ];
+
+      var urlParams = new URLSearchParams(window.location.search);
+      var state = {
+        scope: urlParams.get('scope') === 'team' ? 'team' : 'mine',
+        managerView: 'mine', // 'mine' | 'joao' | 'projc'
+        isProjectCEmpty: (window.AgileBoxProto.getProjectId() === 'c'),
+        query: '',
+        filter: 'all', // 'all' | 'high' | 'blocked'
+        wipLimits: {
+          Planejamento: 4,
+          'A fazer': 4,
+          Desenvolvendo: 3,
+          Revisar: 2
+        },
+        openWipCol: null,
+        selectedTaskId: null,
+        tasks: initialTasks,
+        nextIdNum: 16
+      };
+
+      var stageEl = document.getElementById('board-stage');
+      var searchEl = document.getElementById('board-search');
+      var teamNoticeEl = document.getElementById('team-readonly-notice');
+      var managerBannerEl = document.getElementById('manager-joao-banner');
+      var projCBtn = document.getElementById('btn-demo-proj-c');
+      var newTaskBtn = document.getElementById('btn-board-new-task');
+      var drawerBackdrop = document.getElementById('task-drawer-backdrop');
+      var drawerBody = document.getElementById('drawer-body');
+      var draggingId = null;
+
+      function esc(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function formatShortDue(isoDate) {
+        if (!isoDate) return 'Sem prazo';
+        if (isoDate === '2026-11-22') return 'Hoje';
+        var parts = isoDate.split('-');
+        if (parts.length !== 3) return isoDate;
+        var mIdx = parseInt(parts[1], 10) - 1;
+        var day = parseInt(parts[2], 10);
+        return day + ' ' + (MONTHS_PT[mIdx] || parts[1]);
+      }
+
+      function syncSubtaskCounts(task) {
+        if (!Array.isArray(task.subtasks)) task.subtasks = [];
+        task.subtasksTotal = task.subtasks.length;
+        task.subtasksDone = task.subtasks.filter(function (s) { return s.done; }).length;
+      }
+
+      function getTaskById(id) {
+        for (var i = 0; i < state.tasks.length; i++) {
+          if (state.tasks[i].id === id) return state.tasks[i];
+        }
+        return null;
+      }
+
+      function getVisibleTasks() {
+        var pid = state.isProjectCEmpty ? 'c' : window.AgileBoxProto.getProjectId();
+        var role = window.AgileBoxProto.getRole();
+        var q = state.query.trim().toLowerCase();
+
+        return state.tasks.filter(function (t) {
+          if (t.projectId !== pid) return false;
+
+          if (role === 'manager' && state.managerView === 'joao') {
+            if (t.assignee !== 'João' && t.support !== 'João') return false;
+          } else if (state.scope === 'mine') {
+            if (pid === 'a' && role === 'collaborator' && t.assignee === 'Maria' && t.support !== 'Pedro') {
+              return true;
+            }
+          }
+
+          if (state.filter === 'high' && t.priority !== 'Alta') return false;
+          if (state.filter === 'blocked' && !t.blocked) return false;
+
+          if (q) {
+            var hay = (t.id + ' ' + t.title + ' ' + t.assignee + ' ' + t.support + ' ' + t.external).toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+          }
+          return true;
+        });
+      }
+
+      function createQuickTask(title, statusLabel, projectIdOverride) {
+        var pid = projectIdOverride || (state.isProjectCEmpty ? 'c' : window.AgileBoxProto.getProjectId());
+        var newTask = {
+          id: 'AB-' + state.nextIdNum++,
+          projectId: pid,
+          status: statusLabel || 'A fazer',
+          title: title,
+          assignee: (window.AgileBoxProto.getRole() === 'manager' && state.managerView === 'joao') ? 'João' : 'Pedro',
+          support: 'Ana',
+          external: '',
+          priority: 'Média',
+          due: '30 nov',
+          dueDate: '2026-11-30',
+          dueWarn: false,
+          subtasks: [],
+          subtasksDone: 0,
+          subtasksTotal: 0,
+          blocked: false,
+          blockReason: '',
+          hours: 0,
+          summary: 'Tarefa criada diretamente no quadro.'
+        };
+        state.tasks.unshift(newTask);
+        if (pid === 'c') {
+          state.isProjectCEmpty = false;
+        }
+        window.AgileBoxProto.completeKanStep('c1');
+        render();
+        return newTask;
+      }
+
+      function renderEmptyProjectC() {
+        stageEl.innerHTML =
+          '<div class="empty-state board-empty-hero">' +
+            '<span class="badge">Projeto C · Primeiro acesso</span>' +
+            '<h3>Seu quadro está pronto</h3>' +
+            '<p>Crie sua primeira tarefa para organizar o trabalho em menos de 1 minuto. Todo trabalho segue 5 passos claros: Planejamento até Concluído.</p>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px;">' +
+              '<button type="button" class="btn btn-primary" id="empty-create-first">+ Criar primeira tarefa</button>' +
+              '<button type="button" class="btn btn-secondary" id="empty-back-proja">Voltar ao Projeto A</button>' +
+            '</div>' +
+            '<div style="margin-top:10px;width:100%;">' +
+              '<div class="eyebrow" style="margin-bottom:6px;">Ou comece com 1 clique:</div>' +
+              '<div class="quick-suggestions">' +
+                '<button type="button" class="suggestion-chip" data-quick-seed="Configurar ambiente inicial">+ Configurar ambiente inicial</button>' +
+                '<button type="button" class="suggestion-chip" data-quick-seed="Revisar acessos da equipe">+ Revisar acessos da equipe</button>' +
+                '<button type="button" class="suggestion-chip" data-quick-seed="Alinhar entregas da semana">+ Alinhar entregas da semana</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        document.getElementById('empty-create-first').addEventListener('click', function () {
+          window.AgileBoxProto.openNewTaskModal('A fazer');
+        });
+        document.getElementById('empty-back-proja').addEventListener('click', function () {
+          state.isProjectCEmpty = false;
+          state.managerView = 'mine';
+          window.AgileBoxProto.setProject('a');
+          render();
+        });
+        var seedBtns = stageEl.querySelectorAll('[data-quick-seed]');
+        for (var i = 0; i < seedBtns.length; i++) {
+          seedBtns[i].addEventListener('click', function () {
+            var title = this.getAttribute('data-quick-seed');
+            createQuickTask(title, 'A fazer', 'c');
+            window.AgileBoxProto.showToast('Primeira tarefa "' + title + '" criada no Projeto C!', 'success');
+          });
+        }
+      }
+
+      function renderBoardColumns() {
+        var visible = getVisibleTasks();
+        var isReadOnly = state.scope === 'team';
+
+        var colsHtml = STATES.map(function (st) {
+          var colTasks = visible.filter(function (t) { return t.status === st.label; });
+          var count = colTasks.length;
+          var isDone = st.id === 'concluido';
+          var limit = state.wipLimits[st.label] || 3;
+          var overLimit = !isDone && count > limit;
+          var popOpen = state.openWipCol === st.label;
+
+          var row2Html = isDone
+            ? '<span class="jargon-tip">' +
+                '<span class="col-wip-text">Ciclo: 2,4d</span>' +
+                '<button type="button" class="jargon-tip-btn" aria-label="Explicar tempo de ciclo">?</button>' +
+                '<span class="jargon-tip-popover" role="tooltip">Tempo médio que as tarefas levam desde o início até Concluído.</span>' +
+              '</span>'
+            : '<div class="col-wip-info' + (overLimit ? ' is-over' : '') + '">' +
+                (overLimit ? '<span class="dot-inline is-warning" aria-hidden="true"></span>' : '') +
+                '<span class="jargon-tip">' +
+                  '<span class="col-wip-text">' + count + '/' + limit + ' simult.</span>' +
+                  '<button type="button" class="jargon-tip-btn" aria-label="Explicar limite simultâneo">?</button>' +
+                  '<span class="jargon-tip-popover" role="tooltip">Máximo recomendado de tarefas ao mesmo tempo nesta coluna.</span>' +
+                '</span>' +
+              '</div>' +
+              '<button type="button" class="col-gear-btn" data-wip-gear="' + esc(st.label) + '" title="Ajustar limite simultâneo" aria-label="Configurar limite simultâneo de ' + esc(st.label) + '">⚙</button>' +
+              '<div class="wip-popover' + (popOpen ? ' is-open' : '') + '" data-wip-popover="' + esc(st.label) + '">' +
+                '<div class="wip-popover-title">Limite em ' + esc(st.label) + '</div>' +
+                '<div class="wip-popover-row">' +
+                  '<button type="button" class="wip-step-btn" data-wip-delta="-1" data-wip-col="' + esc(st.label) + '" aria-label="Diminuir limite">−</button>' +
+                  '<span class="wip-val">' + limit + ' tarefas</span>' +
+                  '<button type="button" class="wip-step-btn" data-wip-delta="1" data-wip-col="' + esc(st.label) + '" aria-label="Aumentar limite">+</button>' +
+                '</div>' +
+                '<button type="button" class="btn btn-sm btn-secondary" data-wip-close="true">Concluir</button>' +
+              '</div>';
+
+          var cardsHtml = colTasks.length
+            ? colTasks.map(function (t) {
+                syncSubtaskCounts(t);
+                var prioBadge = t.priority === 'Alta'
+                  ? '<span class="task-tag-neutral">Alta</span>'
+                  : '';
+                var blockBadge = t.blocked
+                  ? '<span class="task-blocked-inline"><span class="dot-inline is-danger"></span>Bloqueada</span>'
+                  : '';
+                var extChip = t.external
+                  ? '<span class="task-ext-chip">' + esc(t.external) + '</span>'
+                  : '';
+                var subText = t.subtasksTotal > 0
+                  ? '☑ ' + t.subtasksDone + '/' + t.subtasksTotal
+                  : '0/0';
+                var dueHtml = t.dueWarn
+                  ? '<span class="task-due-inline"><span class="dot-inline is-warning"></span><span>' + esc(t.due) + '</span></span>'
+                  : '<span>' + esc(t.due) + '</span>';
+
+                return (
+                  '<article class="task-card" tabindex="0" role="button"' +
+                  ' draggable="' + (isReadOnly ? 'false' : 'true') + '" data-task-id="' + esc(t.id) + '" aria-label="Abrir tarefa ' + esc(t.id) + ': ' + esc(t.title) + '">' +
+                    '<div class="task-card-top">' +
+                      '<span class="task-id">' + esc(t.id) + '</span>' +
+                      '<div class="task-badges">' + blockBadge + prioBadge + '</div>' +
+                    '</div>' +
+                    '<h3 class="task-title">' + esc(t.title) + '</h3>' +
+                    '<div class="task-people"><strong>' + esc(t.assignee) + '</strong>' + (t.support ? ' · ' + esc(t.support) : '') + '</div>' +
+                    extChip +
+                    '<div class="task-card-foot">' +
+                      dueHtml +
+                      '<span>' + subText + '</span>' +
+                    '</div>' +
+                  '</article>'
+                );
+              }).join('')
+            : '<div class="col-empty-mini">Nenhuma tarefa</div>';
+
+          return (
+            '<section class="kanban-col" data-col-status="' + esc(st.label) + '" aria-label="Coluna ' + esc(st.label) + '">' +
+              '<header class="col-header">' +
+                '<div class="col-head-row1">' +
+                  '<div class="col-title-wrap">' +
+                    '<span class="status-dot ' + st.dot + '" aria-hidden="true"></span>' +
+                    '<h2 class="col-title">' + esc(st.label) + '</h2>' +
+                    '<span class="col-count">' + count + '</span>' +
+                  '</div>' +
+                  '<button type="button" class="col-add-btn" data-col-add="' + esc(st.label) + '" title="Nova tarefa em ' + esc(st.label) + '" aria-label="Nova tarefa em ' + esc(st.label) + '">+</button>' +
+                '</div>' +
+                '<div class="col-head-row2">' + row2Html + '</div>' +
+              '</header>' +
+              '<div class="col-cards">' + cardsHtml + '</div>' +
+            '</section>'
+          );
+        }).join('');
+
+        stageEl.innerHTML = '<div class="kanban-grid">' + colsHtml + '</div>';
+        wireBoardEvents();
+      }
+
+      function wireBoardEvents() {
+        var addBtns = stageEl.querySelectorAll('[data-col-add]');
+        for (var i = 0; i < addBtns.length; i++) {
+          addBtns[i].addEventListener('click', function () {
+            if (state.scope === 'team') {
+              window.AgileBoxProto.showToast('Aba Equipe está em modo leitura (Em breve).', 'info');
+              return;
+            }
+            window.AgileBoxProto.openNewTaskModal(this.getAttribute('data-col-add'));
+          });
+        }
+
+        var gearBtns = stageEl.querySelectorAll('[data-wip-gear]');
+        for (var g = 0; g < gearBtns.length; g++) {
+          gearBtns[g].addEventListener('click', function (e) {
+            e.stopPropagation();
+            var col = this.getAttribute('data-wip-gear');
+            state.openWipCol = state.openWipCol === col ? null : col;
+            renderBoardColumns();
+          });
+        }
+
+        var deltaBtns = stageEl.querySelectorAll('[data-wip-delta]');
+        for (var d = 0; d < deltaBtns.length; d++) {
+          deltaBtns[d].addEventListener('click', function (e) {
+            e.stopPropagation();
+            var col = this.getAttribute('data-wip-col');
+            var delta = parseInt(this.getAttribute('data-wip-delta'), 10);
+            var next = Math.max(1, Math.min(10, (state.wipLimits[col] || 3) + delta));
+            state.wipLimits[col] = next;
+            renderBoardColumns();
+          });
+        }
+
+        var closeWipBtns = stageEl.querySelectorAll('[data-wip-close]');
+        for (var c = 0; c < closeWipBtns.length; c++) {
+          closeWipBtns[c].addEventListener('click', function (e) {
+            e.stopPropagation();
+            state.openWipCol = null;
+            renderBoardColumns();
+          });
+        }
+
+        var cards = stageEl.querySelectorAll('.task-card');
+        for (var k = 0; k < cards.length; k++) {
+          cards[k].addEventListener('click', function () {
+            openTaskDrawer(this.getAttribute('data-task-id'));
+          });
+          cards[k].addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openTaskDrawer(this.getAttribute('data-task-id'));
+            }
+          });
+          cards[k].addEventListener('dragstart', function (e) {
+            if (state.scope === 'team') {
+              e.preventDefault();
+              return;
+            }
+            draggingId = this.getAttribute('data-task-id');
+          });
+        }
+
+        var cols = stageEl.querySelectorAll('.kanban-col');
+        for (var m = 0; m < cols.length; m++) {
+          cols[m].addEventListener('dragover', function (e) {
+            if (state.scope === 'team') return;
+            e.preventDefault();
+            this.classList.add('is-drop-target');
+          });
+          cols[m].addEventListener('dragleave', function () {
+            this.classList.remove('is-drop-target');
+          });
+          cols[m].addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.classList.remove('is-drop-target');
+            if (state.scope === 'team' || !draggingId) return;
+            var targetStatus = this.getAttribute('data-col-status');
+            moveTaskStatus(draggingId, targetStatus);
+            draggingId = null;
+          });
+        }
+      }
+
+      function moveTaskStatus(taskId, newStatus) {
+        var task = getTaskById(taskId);
+        if (!task || task.status === newStatus) return;
+        task.status = newStatus;
+        var role = window.AgileBoxProto.getRole();
+        var suffix = role === 'manager' ? ' · marcado como Gestor' : '';
+        if (newStatus === 'Desenvolvendo') {
+          window.AgileBoxProto.completeKanStep('c2');
+        }
+        window.AgileBoxProto.showToast(task.id + ' movida para ' + newStatus + suffix, 'success');
+        render();
+        if (state.selectedTaskId === taskId) {
+          renderDrawerContent(task);
+        }
+      }
+
+      function openTaskDrawer(taskId) {
+        var task = getTaskById(taskId);
+        if (!task) return;
+        state.selectedTaskId = taskId;
+        renderDrawerContent(task);
+        drawerBackdrop.classList.add('is-open');
+      }
+
+      function closeTaskDrawer() {
+        state.selectedTaskId = null;
+        drawerBackdrop.classList.remove('is-open');
+      }
+
+      function renderDrawerContent(task) {
+        syncSubtaskCounts(task);
+        var isReadOnly = state.scope === 'team';
+        var role = window.AgileBoxProto.getRole();
+        var stObj = STATES.filter(function (s) { return s.label === task.status; })[0] || STATES[0];
+
+        document.getElementById('drawer-task-id').textContent = task.id;
+        document.getElementById('drawer-status-pill').innerHTML =
+          '<span class="status-dot ' + stObj.dot + '"></span><span>' + esc(task.status) + '</span>';
+
+        var targetHref = 'tarefa.html?id=' + encodeURIComponent(task.id);
+        document.getElementById('drawer-open-full-foot').setAttribute('href', targetHref);
+        document.getElementById('drawer-foot-note').innerHTML = isReadOnly
+          ? 'Modo Equipe · somente leitura'
+          : (role === 'manager'
+            ? 'Editando como <span class="badge badge-gestor">Gestor</span>'
+            : 'Edições salvas automaticamente');
+
+        var stateOptions = STATES.map(function (s) {
+          return '<option value="' + esc(s.label) + '"' + (s.label === task.status ? ' selected' : '') + '>' + esc(s.label) + '</option>';
+        }).join('');
+
+        var assigneeOptions = PEOPLE_LIST.map(function (p) {
+          return '<option value="' + esc(p) + '"' + (p === task.assignee ? ' selected' : '') + '>' + esc(p) + '</option>';
+        }).join('');
+
+        var priorityOptions = ['Alta', 'Média', 'Baixa'].map(function (pr) {
+          return '<option value="' + pr + '"' + (pr === task.priority ? ' selected' : '') + '>' + pr + '</option>';
+        }).join('');
+
+        var pct = task.subtasksTotal ? Math.round((task.subtasksDone / task.subtasksTotal) * 100) : 0;
+        var subtasksHtml = task.subtasks.length
+          ? task.subtasks.map(function (sub) {
+              return (
+                '<label class="checkbox-row' + (sub.done ? ' is-checked' : '') + '">' +
+                  '<input type="checkbox" data-drawer-subtask="' + esc(sub.id) + '"' + (sub.done ? ' checked' : '') + (isReadOnly ? ' disabled' : '') + '>' +
+                  '<span>' + esc(sub.text) + '</span>' +
+                '</label>'
+              );
+            }).join('')
+          : '<div style="font-size:12px;color:var(--color-text-subtle);padding:2px 0;">Nenhuma subtarefa ainda.</div>';
+
+        drawerBody.innerHTML =
+          '<div class="drawer-block">' +
+            '<input type="text" class="drawer-title-input" id="drawer-title-input" value="' + esc(task.title) + '" aria-label="Título da tarefa"' + (isReadOnly ? ' disabled' : '') + '>' +
+            '<div class="drawer-state-row">' +
+              '<div class="state-select-wrap">' +
+                '<span class="status-dot ' + stObj.dot + '" id="drawer-status-dot"></span>' +
+                '<select class="state-select" id="drawer-status-select" aria-label="Estado da tarefa"' + (isReadOnly ? ' disabled' : '') + '>' +
+                  stateOptions +
+                '</select>' +
+              '</div>' +
+              '<span class="drawer-blocked-inline"' + (task.blocked ? '' : ' hidden') + '>' +
+                '<span class="dot-inline is-danger"></span> Bloqueada' +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="drawer-block">' +
+            '<div class="drawer-kv-list">' +
+              '<div class="kv-row">' +
+                '<label class="kv-label" for="drawer-assignee-select">Responsável</label>' +
+                '<div class="kv-value">' +
+                  '<select class="kv-select" id="drawer-assignee-select"' + (isReadOnly ? ' disabled' : '') + '>' + assigneeOptions + '</select>' +
+                '</div>' +
+              '</div>' +
+              '<div class="kv-row">' +
+                '<label class="kv-label" for="drawer-due-input">Prazo</label>' +
+                '<div class="kv-value">' +
+                  '<input type="date" class="kv-input" id="drawer-due-input" value="' + esc(task.dueDate || '2026-11-28') + '"' + (isReadOnly ? ' disabled' : '') + '>' +
+                '</div>' +
+              '</div>' +
+              '<div class="kv-row">' +
+                '<label class="kv-label" for="drawer-priority-select">Prioridade</label>' +
+                '<div class="kv-value">' +
+                  '<select class="kv-select" id="drawer-priority-select"' + (isReadOnly ? ' disabled' : '') + '>' + priorityOptions + '</select>' +
+                '</div>' +
+              '</div>' +
+              (task.external
+                ? '<div class="kv-row">' +
+                    '<span class="kv-label">Externa</span>' +
+                    '<div class="kv-value"><span class="task-ext-chip">' + esc(task.external) + '</span></div>' +
+                  '</div>'
+                : '') +
+            '</div>' +
+          '</div>' +
+
+          '<div class="drawer-block">' +
+            '<div class="drawer-section-head">' +
+              '<label class="drawer-section-label" for="drawer-summary-input">Resumo</label>' +
+            '</div>' +
+            '<textarea class="clean-textarea" id="drawer-summary-input" rows="2"' + (isReadOnly ? ' disabled' : '') + '>' + esc(task.summary) + '</textarea>' +
+          '</div>' +
+
+          '<div class="drawer-block">' +
+            '<div class="drawer-section-head">' +
+              '<span class="drawer-section-label">Subtarefas</span>' +
+              '<span class="drawer-section-meta" id="drawer-subtasks-count">' + task.subtasksDone + '/' + task.subtasksTotal + '</span>' +
+            '</div>' +
+            '<div class="progress-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="drawer-checklist" id="drawer-subtasks-list">' + subtasksHtml + '</div>' +
+            (isReadOnly ? '' :
+              '<form class="drawer-inline-form" id="drawer-subtask-form">' +
+                '<input type="text" class="drawer-inline-input" id="drawer-subtask-input" placeholder="+ Adicionar subtarefa..." aria-label="Nova subtarefa">' +
+                '<button type="submit" class="btn btn-sm btn-secondary" style="min-height:32px;">Adicionar</button>' +
+              '</form>') +
+          '</div>' +
+
+          '<div class="drawer-block">' +
+            '<div class="drawer-kv-list">' +
+              '<div class="kv-row">' +
+                '<span class="kv-label">Horas</span>' +
+                '<div class="kv-value" style="justify-content:space-between;flex-wrap:wrap;">' +
+                  '<strong id="drawer-hours-val" style="font-size:13px;font-weight:600;">' + task.hours.toFixed(1).replace('.', ',') + ' h</strong>' +
+                  '<div style="display:flex;gap:6px;">' +
+                    '<button type="button" class="btn btn-sm btn-secondary" style="min-height:30px;" data-drawer-hours="0.5"' + (isReadOnly ? ' disabled' : '') + '>+0,5h</button>' +
+                    '<button type="button" class="btn btn-sm btn-secondary" style="min-height:30px;" data-drawer-hours="1"' + (isReadOnly ? ' disabled' : '') + '>+1h</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="kv-row">' +
+                '<span class="kv-label">Bloqueio</span>' +
+                '<div class="kv-value" style="justify-content:space-between;flex-wrap:wrap;width:100%;">' +
+                  (task.blocked
+                    ? '<span class="drawer-blocked-inline" style="flex:1;min-width:0;">' +
+                        '<span class="dot-inline is-danger"></span>' +
+                        '<span style="overflow:hidden;text-overflow:ellipsis;">' + esc(task.blockReason || 'Impedimento registrado') + '</span>' +
+                      '</span>' +
+                      '<button type="button" class="btn btn-sm btn-secondary" style="min-height:30px;" id="drawer-unblock"' + (isReadOnly ? ' disabled' : '') + '>Resolver</button>'
+                    : '<div class="drawer-inline-form" style="width:100%;">' +
+                        '<input type="text" class="drawer-inline-input" id="drawer-block-reason" placeholder="Motivo (opcional)..."' + (isReadOnly ? ' disabled' : '') + '>' +
+                        '<button type="button" class="btn btn-sm btn-secondary" style="min-height:32px;" id="drawer-block-btn"' + (isReadOnly ? ' disabled' : '') + '>Bloquear</button>' +
+                      '</div>') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        var titleInp = drawerBody.querySelector('#drawer-title-input');
+        if (titleInp && !isReadOnly) {
+          titleInp.addEventListener('change', function () {
+            var v = this.value.trim();
+            if (v) {
+              task.title = v;
+              render();
+              window.AgileBoxProto.showToast('Título atualizado', 'success');
+            }
+          });
+        }
+
+        var statusSel = drawerBody.querySelector('#drawer-status-select');
+        if (statusSel && !isReadOnly) {
+          statusSel.addEventListener('change', function () {
+            moveTaskStatus(task.id, this.value);
+          });
+        }
+
+        var assigneeSel = drawerBody.querySelector('#drawer-assignee-select');
+        if (assigneeSel && !isReadOnly) {
+          assigneeSel.addEventListener('change', function () {
+            task.assignee = this.value;
+            render();
+            window.AgileBoxProto.showToast('Responsável alterado para ' + task.assignee, 'success');
+          });
+        }
+
+        var dueInp = drawerBody.querySelector('#drawer-due-input');
+        if (dueInp && !isReadOnly) {
+          dueInp.addEventListener('change', function () {
+            if (!this.value) return;
+            task.dueDate = this.value;
+            task.due = formatShortDue(this.value);
+            task.dueWarn = (this.value <= '2026-11-23');
+            render();
+            window.AgileBoxProto.showToast('Prazo atualizado para ' + task.due, 'success');
+          });
+        }
+
+        var prioSel = drawerBody.querySelector('#drawer-priority-select');
+        if (prioSel && !isReadOnly) {
+          prioSel.addEventListener('change', function () {
+            task.priority = this.value;
+            render();
+            window.AgileBoxProto.showToast('Prioridade alterada para ' + task.priority, 'success');
+          });
+        }
+
+        var sumInp = drawerBody.querySelector('#drawer-summary-input');
+        if (sumInp && !isReadOnly) {
+          sumInp.addEventListener('change', function () {
+            task.summary = this.value.trim();
+            window.AgileBoxProto.showToast('Resumo atualizado', 'success');
+          });
+        }
+
+        var subList = drawerBody.querySelector('#drawer-subtasks-list');
+        if (subList && !isReadOnly) {
+          subList.addEventListener('change', function (e) {
+            var sid = e.target.getAttribute('data-drawer-subtask');
+            if (!sid) return;
+            for (var i = 0; i < task.subtasks.length; i++) {
+              if (task.subtasks[i].id === sid) {
+                task.subtasks[i].done = e.target.checked;
+                break;
+              }
+            }
+            syncSubtaskCounts(task);
+            render();
+            renderDrawerContent(task);
+          });
+        }
+
+        var subForm = drawerBody.querySelector('#drawer-subtask-form');
+        if (subForm && !isReadOnly) {
+          subForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var inp = drawerBody.querySelector('#drawer-subtask-input');
+            var text = (inp.value || '').trim();
+            if (!text) return;
+            task.subtasks.push({ id: 'sub-' + Date.now(), text: text, done: false });
+            syncSubtaskCounts(task);
+            render();
+            renderDrawerContent(task);
+            var nextInp = drawerBody.querySelector('#drawer-subtask-input');
+            if (nextInp) nextInp.focus();
+          });
+        }
+
+        var unblockBtn = drawerBody.querySelector('#drawer-unblock');
+        if (unblockBtn) {
+          unblockBtn.addEventListener('click', function () {
+            task.blocked = false;
+            task.blockReason = '';
+            render();
+            renderDrawerContent(task);
+            window.AgileBoxProto.showToast('Bloqueio resolvido em ' + task.id, 'success');
+          });
+        }
+
+        var blockBtn = drawerBody.querySelector('#drawer-block-btn');
+        if (blockBtn) {
+          blockBtn.addEventListener('click', function () {
+            var reason = (drawerBody.querySelector('#drawer-block-reason').value || '').trim();
+            task.blocked = true;
+            task.blockReason = reason || 'Aguardando retorno externo';
+            window.AgileBoxProto.completeKanStep('c3');
+            render();
+            renderDrawerContent(task);
+            window.AgileBoxProto.showToast('Bloqueio registrado em ' + task.id, 'warning');
+          });
+        }
+
+        var hBtns = drawerBody.querySelectorAll('[data-drawer-hours]');
+        for (var h = 0; h < hBtns.length; h++) {
+          hBtns[h].addEventListener('click', function () {
+            var add = parseFloat(this.getAttribute('data-drawer-hours'));
+            task.hours += add;
+            window.AgileBoxProto.completeKanStep('c3');
+            renderDrawerContent(task);
+            window.AgileBoxProto.showToast('+' + add.toString().replace('.', ',') + 'h lançadas em ' + task.id, 'success');
+          });
+        }
+      }
+
+      function render() {
+        var role = window.AgileBoxProto.getRole();
+        var pid = window.AgileBoxProto.getProjectId();
+        var projCMode = state.isProjectCEmpty || pid === 'c' || (role === 'manager' && state.managerView === 'projc');
+
+        var scopeBtns = document.querySelectorAll('[data-scope-btn]');
+        for (var i = 0; i < scopeBtns.length; i++) {
+          scopeBtns[i].classList.toggle('is-active', scopeBtns[i].getAttribute('data-scope-btn') === state.scope);
+        }
+        teamNoticeEl.hidden = state.scope !== 'team';
+
+        var mgrBtns = document.querySelectorAll('[data-manager-view]');
+        for (var m = 0; m < mgrBtns.length; m++) {
+          var mv = mgrBtns[m].getAttribute('data-manager-view');
+          var activeMv = projCMode ? mv === 'projc' : mv === state.managerView;
+          mgrBtns[m].classList.toggle('is-active', activeMv);
+        }
+        managerBannerEl.hidden = !(role === 'manager' && state.managerView === 'joao' && !projCMode);
+
+        var filterBtns = document.querySelectorAll('[data-filter-btn]');
+        for (var f = 0; f < filterBtns.length; f++) {
+          filterBtns[f].classList.toggle('is-active', filterBtns[f].getAttribute('data-filter-btn') === state.filter);
+        }
+
+        projCBtn.textContent = projCMode ? 'Sair do Projeto C (Vazio)' : 'Projeto C (Primeiro acesso)';
+        newTaskBtn.hidden = projCMode;
+
+        var heading = document.getElementById('board-heading');
+        if (projCMode) {
+          heading.textContent = 'Quadro · Projeto C';
+          renderEmptyProjectC();
+        } else {
+          var p = window.AgileBoxProto.getProject();
+          heading.textContent = 'Quadro · ' + p.name;
+          renderBoardColumns();
+        }
+      }
+
+      document.querySelectorAll('[data-scope-btn]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          state.scope = this.getAttribute('data-scope-btn');
+          render();
+        });
+      });
+
+      document.getElementById('btn-back-mine-scope').addEventListener('click', function () {
+        state.scope = 'mine';
+        render();
+      });
+
+      document.querySelectorAll('[data-manager-view]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var v = this.getAttribute('data-manager-view');
+          state.managerView = v;
+          if (v === 'projc') {
+            state.isProjectCEmpty = true;
+          } else {
+            state.isProjectCEmpty = false;
+            if (window.AgileBoxProto.getProjectId() === 'c') {
+              window.AgileBoxProto.setProject('a');
+            }
+            if (v === 'joao') {
+              window.AgileBoxProto.completeKanStep('m2');
+            }
+          }
+          render();
+        });
+      });
+
+      document.getElementById('btn-back-manager-mine').addEventListener('click', function () {
+        state.managerView = 'mine';
+        render();
+      });
+
+      document.querySelectorAll('[data-filter-btn]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          state.filter = this.getAttribute('data-filter-btn');
+          render();
+        });
+      });
+
+      searchEl.addEventListener('input', function () {
+        state.query = this.value;
+        render();
+      });
+
+      projCBtn.addEventListener('click', function () {
+        if (state.isProjectCEmpty || window.AgileBoxProto.getProjectId() === 'c') {
+          state.isProjectCEmpty = false;
+          state.managerView = 'mine';
+          window.AgileBoxProto.setProject('a');
+        } else {
+          state.isProjectCEmpty = true;
+          state.managerView = 'projc';
+          window.AgileBoxProto.setProject('c');
+        }
+        render();
+      });
+
+      newTaskBtn.addEventListener('click', function () {
+        window.AgileBoxProto.openNewTaskModal('A fazer');
+      });
+
+      document.addEventListener('click', function (e) {
+        if (state.openWipCol && !e.target.closest('.wip-popover') && !e.target.closest('[data-wip-gear]')) {
+          state.openWipCol = null;
+          render();
+        }
+      });
+
+      document.getElementById('drawer-close').addEventListener('click', closeTaskDrawer);
+      document.getElementById('drawer-close-foot').addEventListener('click', closeTaskDrawer);
+      drawerBackdrop.addEventListener('click', function (e) {
+        if (e.target === drawerBackdrop) closeTaskDrawer();
+      });
+
+      function syncFromAIStore(skipRender) {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (st && Array.isArray(st.tasks)) {
+          state.tasks = st.tasks.map(function (t) {
+            var copy = JSON.parse(JSON.stringify(t));
+            syncSubtaskCounts(copy);
+            return copy;
+          });
+          if (typeof st.nextIdNum === 'number') state.nextIdNum = st.nextIdNum;
+        }
+        if (state.selectedTaskId && !getTaskById(state.selectedTaskId)) {
+          closeTaskDrawer();
+        }
+        if (!skipRender) {
+          render();
+          if (state.selectedTaskId) {
+            var cur = getTaskById(state.selectedTaskId);
+            if (cur) renderDrawerContent(cur);
+          }
+        }
+      }
+
+      window.addEventListener('ab:taskcreated', function (e) {
+        var d = e.detail || {};
+        if (d.source === 'kan-ai') return;
+        createQuickTask(d.title || 'Nova tarefa', d.status || 'A fazer', d.projectId || 'a');
+      });
+
+      window.addEventListener('ab:storechange', function () {
+        syncFromAIStore(false);
+      });
+
+      window.addEventListener('ab:rolechange', function () {
+        render();
+        if (state.selectedTaskId) {
+          var t = getTaskById(state.selectedTaskId);
+          if (t) renderDrawerContent(t);
+        }
+      });
+
+      window.addEventListener('ab:projectchange', function (e) {
+        var pid = (e.detail && e.detail.projectId) || 'a';
+        state.isProjectCEmpty = (pid === 'c');
+        if (pid !== 'c' && state.managerView === 'projc') {
+          state.managerView = 'mine';
+        }
+        render();
+      });
+
+      syncFromAIStore(true);
+      render();
+    });
+  </script>
+</body>
+</html>
