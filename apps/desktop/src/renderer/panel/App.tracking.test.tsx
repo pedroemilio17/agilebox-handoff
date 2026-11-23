@@ -74,30 +74,34 @@ function projectButton(name: string) {
   return within(railNav()).getByRole('button', { name: new RegExp(name) })
 }
 
-describe('item Acompanhamento na barra lateral', () => {
-  it('aparece com o módulo do cronograma ligado no projeto e leva à tela', async () => {
+describe('Acompanhamento dentro de Cronograma', () => {
+  it('aparece em TopicTabs quando Cronograma está ligado e leva à tela', async () => {
     const { user, api } = renderApp()
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(within(railNav()).queryByRole('button', { name: 'Acompanhamento' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Cronograma' })).toBeNull()
 
     await user.click(projectButton(FLOW_PROJECT.name))
-    await user.click(await within(railNav()).findByRole('button', { name: 'Acompanhamento' }))
+    await user.click(await within(railNav()).findByRole('button', { name: 'Cronograma' }))
+    const tabs = within(await screen.findByRole('navigation', { name: 'Seções de Cronograma' }))
+    await user.click(tabs.getByRole('button', { name: 'Acompanhamento' }))
 
     expect(await screen.findByRole('heading', { name: 'Acompanhamento', level: 2 })).toBeTruthy()
     expect(api.tracking.get).toHaveBeenCalledWith({ projectId: FLOW_PROJECT.id })
   })
 
-  it('projeto sem o módulo não mostra o item', async () => {
+  it('projeto sem o módulo não mostra Cronograma nem Acompanhamento', async () => {
     const { user } = renderApp({ enabled: [] })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     await user.click(projectButton(FLOW_PROJECT.name))
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    expect(within(railNav()).queryByRole('button', { name: 'Cronograma' })).toBeNull()
     expect(within(railNav()).queryByRole('button', { name: 'Acompanhamento' })).toBeNull()
   })
 
   it('sem projeto selecionado não mostra o item', async () => {
     renderApp()
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    expect(within(railNav()).queryByRole('button', { name: 'Cronograma' })).toBeNull()
     expect(within(railNav()).queryByRole('button', { name: 'Acompanhamento' })).toBeNull()
   })
 })

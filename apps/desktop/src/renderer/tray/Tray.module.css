@@ -312,10 +312,13 @@ li + li .row {
 
 @media (prefers-reduced-motion: reduce) {
   .window,
+  .windowCompact,
   .slideForward,
   .slideBack,
-  .rowHighlight {
+  .rowHighlight,
+  .promptDot::after {
     animation: none;
+    transition: none;
   }
 }
 .home {
@@ -424,11 +427,11 @@ li + li .row {
   color: var(--color-on-primary);
   font-size: 13px;
 }
-/* Duas linhas de 64 px com 8 px entre cartões: a lista rola além disso. */
+/* Três linhas de 64 px com 8 px entre cartões: a lista rola além disso. */
 .home .list {
   flex-shrink: 0;
   gap: 8px;
-  max-height: 136px;
+  max-height: 216px;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -445,4 +448,156 @@ li + li .row {
 }
 .home .list li + li .row {
   border-top: 0;
+}
+
+.windowCompact {
+  border-radius: 16px;
+}
+
+.promptShell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 12px 14px;
+  -webkit-app-region: drag;
+}
+
+.promptMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px 2px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.promptMain:focus-visible,
+.trayIconBtn:focus-visible,
+.trayKanBtn:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.promptDot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  border: var(--glass-group-border);
+  background: var(--glass-control);
+  color: var(--color-text-primary);
+}
+
+.promptDot::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.9);
+}
+
+.promptCopy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.promptPhrase {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.promptSub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--color-text-subtle);
+}
+
+.promptActions,
+.trayHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.trayIconBtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: var(--glass-group-border);
+  border-radius: 9px;
+  background: var(--glass-group);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.trayIconBtn:hover {
+  background: var(--glass-control);
+  color: var(--color-text-primary);
+}
+
+.trayIconBtnClose:hover {
+  background: rgba(255, 86, 86, 0.2);
+  color: var(--color-text-primary);
+}
+
+.trayKanBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px 0 6px;
+  border: var(--glass-group-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-group);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.trayKanBtn:hover {
+  background: var(--glass-control);
+}
+
+.trayKanMini,
+.kanAvatar {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: none;
+}
+
+.kanHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }

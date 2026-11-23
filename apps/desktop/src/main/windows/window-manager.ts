@@ -4,7 +4,7 @@ import type { ChangeWindow } from '../ipc/change-broadcaster'
 import type { GlassMode } from './glass'
 import { createPanelWindow } from './panel-window'
 import { getTrayPosition } from './tray-position'
-import { createTrayWindow, TRAY_WINDOW_SIZE } from './tray-window'
+import { createTrayWindow, TRAY_COMPACT_SIZE } from './tray-window'
 
 export class WindowManager implements ShellWindows {
   private panel: BrowserWindow | undefined
@@ -47,7 +47,7 @@ export class WindowManager implements ShellWindows {
     if (this.tray && !this.tray.isDestroyed()) return this.tray
     this.tray = createTrayWindow(
       this.glassMode,
-      getTrayPosition(screen.getPrimaryDisplay().workArea, TRAY_WINDOW_SIZE),
+      getTrayPosition(screen.getPrimaryDisplay().workArea, TRAY_COMPACT_SIZE),
     )
     const tray = this.tray
     tray.on('closed', () => {
@@ -68,11 +68,14 @@ export class WindowManager implements ShellWindows {
     const display = iconBounds
       ? screen.getDisplayNearestPoint({ x: iconBounds.x, y: iconBounds.y })
       : screen.getPrimaryDisplay()
-    const height = tray.getBounds().height
+    const current = tray.getBounds()
+    const size = {
+      width: current.width > 0 ? current.width : TRAY_COMPACT_SIZE.width,
+      height: current.height > 0 ? current.height : TRAY_COMPACT_SIZE.height,
+    }
     tray.setBounds({
-      ...getTrayPosition(display.workArea, { width: TRAY_WINDOW_SIZE.width, height }),
-      width: TRAY_WINDOW_SIZE.width,
-      height,
+      ...getTrayPosition(display.workArea, size),
+      ...size,
     })
     tray.show()
     tray.focus()
@@ -137,13 +140,15 @@ export class WindowManager implements ShellWindows {
     oldPanel?.destroy()
   }
 
-  setTrayHeight(height: number): void {
+  setTrayHeight(height: number, width?: number): void {
     if (this.tray === undefined || this.tray.isDestroyed()) return
     const bounds = this.tray.getBounds()
-    // Mantém a borda inferior fixa: a bandeja cresce para cima.
+    const nextWidth = width ?? bounds.width
+    // Mantém o canto inferior direito fixo: a bandeja cresce para cima e para a esquerda.
     this.tray.setBounds({
-      ...bounds,
+      x: bounds.x + bounds.width - nextWidth,
       y: bounds.y + bounds.height - height,
+      width: nextWidth,
       height,
     })
   }

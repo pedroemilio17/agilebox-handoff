@@ -54,6 +54,8 @@ function renderShell(
     view: 'projects',
     isManager: true,
     onViewChange: vi.fn(),
+    onBack: vi.fn(),
+    canGoBack: false,
     onMinimize: vi.fn(),
     onToggleExpand: vi.fn(),
     onClose: vi.fn(),
@@ -62,6 +64,7 @@ function renderShell(
     selectedProjectId: agil.id,
     onProjectSelect: vi.fn(),
     onNewProject: vi.fn(),
+    onOpenTray: vi.fn(),
     activeSprintNumber: 4,
     projectModuleCount: 6,
     ...overrides,
@@ -76,7 +79,7 @@ function renderShell(
   return { props, nav: within(screen.getByRole('navigation', { name: 'Navegação principal' })) }
 }
 
-/** Nomes acessíveis dos subitens do projeto (o grupo que contém "Quadro"), na ordem da tela. */
+/** Nomes acessíveis dos sub-itens do projeto ativo (o grupo que contém "Quadro"), na ordem da tela. */
 function subitemNames(): string[] {
   const group = screen.getByRole('button', { name: 'Quadro' }).parentElement
   if (!group) throw new Error('grupo de subitens não encontrado')
@@ -85,15 +88,31 @@ function subitemNames(): string[] {
   )
 }
 
-describe('barra lateral conforme o design', () => {
+describe('barra lateral estilo Claude e cabeçalho revisado', () => {
   afterEach(cleanup)
 
-  it('mostra o projeto selecionado com a metodologia de partida à direita', () => {
+  it('mostra a seção unificada Projetos + e destaca o projeto selecionado com acordeão aberto', () => {
     const { nav } = renderShell()
+    expect(nav.getByText('Projetos')).toBeTruthy()
+    expect(nav.queryByText('Outros projetos')).toBeNull()
     const selected = nav.getByRole('button', { name: /App de Chamados/ })
     expect(selected.getAttribute('aria-pressed')).toBe('true')
+    expect(selected.getAttribute('aria-expanded')).toBe('true')
     expect(within(selected).getByText('Ágil')).toBeTruthy()
-    expect(nav.getByText('Projeto')).toBeTruthy()
+  })
+
+  it('recolhe e reabre o acordeão ao clicar no cabeçalho do projeto já selecionado', async () => {
+    const { nav } = renderShell()
+    const toggle = nav.getByRole('button', { name: /App de Chamados/ })
+    expect(nav.getByRole('button', { name: 'Quadro' })).toBeTruthy()
+
+    await userEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(nav.queryByRole('button', { name: 'Quadro' })).toBeNull()
+
+    await userEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    expect(nav.getByRole('button', { name: 'Quadro' })).toBeTruthy()
   })
 
   it('projeto criado sem o assistente não mostra rótulo de metodologia', () => {
@@ -103,133 +122,126 @@ describe('barra lateral conforme o design', () => {
     expect(row.textContent).not.toMatch(/Ágil|Trad\.|Kanban|Híbrido|Simples/)
   })
 
-  it('subitens do ágil na ordem do design, com S4 e a contagem de módulos fora do nome', () => {
+  it('consolida em no máximo 6 sub-itens na árvore, com S4 e contagem fora do nome acessível', () => {
     const { nav } = renderShell()
-    expect(nav.getByRole('button', { name: 'Quadro' })).toBeTruthy()
-    expect(nav.getByRole('button', { name: 'Backlog' })).toBeTruthy()
-    expect(nav.getByRole('button', { name: 'Sprints' }).textContent).toContain('S4')
-    expect(nav.getByRole('button', { name: 'Burndown' })).toBeTruthy()
-    expect(nav.getByRole('button', { name: 'Módulos' }).textContent).toContain('6')
-    // "Plano" entra antes do Quadro quando a EAP e as sprints estão ligadas (design 17 e 18).
-    expect(subitemNames().slice(0, 6)).toEqual([
-      'Plano',
+    expect(subitemNames()).toEqual([
       'Quadro',
       'Backlog',
       'Sprints',
-      'Burndown',
-      'Entregas (EAP)',
+      'Entregas',
+      'Cronograma',
+      'Configurações',
     ])
+    expect(nav.getByRole('button', { name: 'Sprints' }).textContent).toContain('S4')
+    expect(nav.getByRole('button', { name: 'Configurações' }).textContent).toContain('6')
   })
 
-  it('subitens que dependem de módulo seguem o gate e não aparecem desligados', () => {
+  it('sub-itens seguem o gate dos módulos sem mostrar o que está desligado', () => {
     const { nav } = renderShell({}, ['backlog'])
-    expect(nav.queryByRole('button', { name: 'Burndown' })).toBeNull()
+    expect(subitemNames()).toEqual(['Quadro', 'Backlog', 'Configurações'])
     expect(nav.queryByRole('button', { name: 'Sprints' })).toBeNull()
-    expect(nav.queryByRole('button', { name: 'Entregas (EAP)' })).toBeNull()
-    expect(nav.getByRole('button', { name: 'Backlog' })).toBeTruthy()
+    expect(nav.queryByRole('button', { name: 'Entregas' })).toBeNull()
+    expect(nav.queryByRole('button', { name: 'Cronograma' })).toBeNull()
   })
 
-  it('o item da tela atual leva aria-current', () => {
-    const { nav } = renderShell({ view: 'backlog' })
+  it('exibe TopicTabs nas telas consolidadas e destaca o grupo pai na árvore', async () => {
+    const { nav, props } = renderShell({ view: 'burndown', burndown: <p>Burndown tela</p> })
+    expect(nav.getByRole('button', { name: 'Sprints' }).getAttribute('aria-current')).toBe('page')
+    const tabs = within(screen.getByRole('navigation', { name: 'Seções de Sprints' }))
+    expect(tabs.getByRole('button', { name: 'Burndown' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByText('Burndown tela')).toBeTruthy()
+
+    await userEvent.click(tabs.getByRole('button', { name: 'Impedimentos' }))
+    expect(props.onViewChange).toHaveBeenCalledWith('impediments')
+  })
+
+  it('o item da tela atual leva aria-current; planSprint destaca Entregas sem exibir TopicTabs', () => {
+    const { nav } = renderShell({ view: 'backlog', backlog: <p>Backlog tela</p> })
     expect(nav.getByRole('button', { name: 'Backlog' }).getAttribute('aria-current')).toBe('page')
     expect(nav.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBeNull()
-  })
-
-  it('Plano aparece antes do Quadro só com EAP e sprints ligados, no projeto selecionado', () => {
-    const { nav } = renderShell()
-    expect(subitemNames()[0]).toBe('Plano')
-    expect(nav.getByRole('button', { name: 'Plano' })).toBeTruthy()
-  })
-
-  it('Plano some sem a EAP ou sem as sprints ligadas', () => {
-    const { nav } = renderShell({}, ['backlog', 'sprints'])
-    expect(nav.queryByRole('button', { name: 'Plano' })).toBeNull()
     cleanup()
-    const second = renderShell({}, ['backlog', 'wbs'])
-    expect(second.nav.queryByRole('button', { name: 'Plano' })).toBeNull()
-  })
 
-  it('sem projeto selecionado, Plano não aparece', () => {
-    const { nav } = renderShell({ selectedProjectId: null })
-    expect(nav.queryByRole('button', { name: 'Plano' })).toBeNull()
-  })
-
-  it('clicar em Plano abre o plano; a sprint aberta dentro da entrega destaca Quadro', () => {
-    const { nav, props } = renderShell({ view: 'plan', plan: <p>Plano do projeto</p> })
-    expect(nav.getByRole('button', { name: 'Plano' }).getAttribute('aria-current')).toBe('page')
-    expect(screen.getByText('Plano do projeto')).toBeTruthy()
-    cleanup()
     const inSprint = renderShell({ view: 'planSprint', planSprint: <p>Sprint na entrega</p> })
-    expect(inSprint.nav.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBe(
-      'page',
-    )
+    expect(
+      inSprint.nav.getByRole('button', { name: 'Entregas' }).getAttribute('aria-current'),
+    ).toBe('page')
+    expect(screen.queryByRole('navigation', { name: 'Seções de Entregas' })).toBeNull()
     expect(screen.getByText('Sprint na entrega')).toBeTruthy()
-    expect(props).toBeDefined()
   })
 
-  it('clicar num subitem chama a troca de tela', async () => {
+  it('lista outros projetos na mesma seção e clicar troca o projeto', async () => {
     const { nav, props } = renderShell()
-    await userEvent.click(nav.getByRole('button', { name: 'Backlog' }))
-    expect(props.onViewChange).toHaveBeenCalledWith('backlog')
-  })
-
-  it('"Outros projetos" lista os demais com metodologia, e escolher um troca o projeto', async () => {
-    const { nav, props } = renderShell()
-    expect(nav.getByText('Outros projetos')).toBeTruthy()
     const other = nav.getByRole('button', { name: /Implantação ERP/ })
     expect(other.getAttribute('aria-pressed')).toBe('false')
+    expect(other.getAttribute('aria-expanded')).toBe('false')
     expect(within(other).getByText('Trad.')).toBeTruthy()
     await userEvent.click(other)
     expect(props.onProjectSelect).toHaveBeenCalledWith(traditional.id)
   })
 
-  it('em "Outros projetos" há "Todos os projetos" para voltar à visão geral', async () => {
+  it('clicar em Todos os projetos chama onProjectSelect(null)', async () => {
     const { nav, props } = renderShell()
     await userEvent.click(nav.getByRole('button', { name: 'Todos os projetos' }))
     expect(props.onProjectSelect).toHaveBeenCalledWith(null)
   })
 
-  it('"Novo projeto" com + abre a criação', async () => {
+  it('botão + de Novo projeto abre a criação', async () => {
     const { nav, props } = renderShell()
     await userEvent.click(nav.getByRole('button', { name: 'Novo projeto' }))
     expect(props.onNewProject).toHaveBeenCalledTimes(1)
   })
 
-  it('sem projeto selecionado: "Todos os projetos" marcado, lista de projetos e subitens da organização', () => {
+  it('sem projeto selecionado: Todos os projetos fica marcado e expandido sem Configurações', () => {
     const { nav } = renderShell({ selectedProjectId: null })
-    // A seção "Todos os projetos" abre os subitens da organização; não há linha de projeto marcada.
-    expect(nav.getByText('Todos os projetos')).toBeTruthy()
-    expect(nav.queryByRole('button', { name: 'Todos os projetos' })).toBeNull()
-    expect(nav.getByText('Projetos')).toBeTruthy()
-    expect(nav.queryByText('Outros projetos')).toBeNull()
+    const allBtn = nav.getByRole('button', { name: 'Todos os projetos' })
+    expect(allBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(allBtn.getAttribute('aria-expanded')).toBe('true')
     expect(nav.getByRole('button', { name: /App de Chamados/ }).getAttribute('aria-pressed')).toBe(
       'false',
     )
-    expect(nav.getByRole('button', { name: 'Quadro' })).toBeTruthy()
-    expect(nav.getByRole('button', { name: 'Backlog' })).toBeTruthy()
-    expect(nav.queryByRole('button', { name: 'Burndown' })).toBeNull()
-    expect(nav.queryByRole('button', { name: 'Módulos' })).toBeNull()
+    expect(subitemNames()).toEqual(['Quadro', 'Backlog', 'Sprints'])
   })
 
-  it('Plug-ins segue em breve e desabilitado; Ajustes e a conta ficam no rodapé', () => {
-    const { nav } = renderShell()
-    const plugins = nav.getByRole('button', { name: 'Plug-ins, Em breve' })
-    expect(plugins.hasAttribute('disabled')).toBe(true)
-    expect(nav.getByRole('button', { name: 'Ajustes' })).toBeTruthy()
+  it('TitleBar exibe Voltar e breadcrumb em telas do projeto e omite projeto em telas globais', async () => {
+    const { props } = renderShell({ view: 'backlog', canGoBack: true, backlog: <p>B</p> })
+    const banner = within(screen.getByRole('banner'))
+    expect(banner.getByText('App de Chamados')).toBeTruthy()
+    expect(banner.getByRole('heading', { level: 1, name: 'Backlog' })).toBeTruthy()
+    const back = banner.getByRole<HTMLButtonElement>('button', { name: 'Voltar' })
+    expect(back.disabled).toBe(false)
+    await userEvent.click(back)
+    expect(props.onBack).toHaveBeenCalledTimes(1)
+    cleanup()
+
+    renderShell({ view: 'dashboard', canGoBack: false, dashboard: <p>Dash</p> })
+    const dashBanner = within(screen.getByRole('banner'))
+    expect(dashBanner.queryByText('App de Chamados')).toBeNull()
+    expect(dashBanner.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeTruthy()
+    expect(dashBanner.getByRole<HTMLButtonElement>('button', { name: 'Voltar' }).disabled).toBe(
+      true,
+    )
   })
 
-  it('Início, Agenda e Dashboard ficam no topo, nessa ordem, antes do projeto', () => {
+  it('Global exibe Dashboard e Agenda nessa ordem; colaborador não vê Dashboard', () => {
     const { nav } = renderShell()
-    const top = nav.getByRole('button', { name: 'Início' }).parentElement!
+    const top = nav.getByRole('button', { name: 'Dashboard' }).parentElement!
     const labels = Array.from(top.querySelectorAll('button')).map(
       (button) => button.getAttribute('aria-label') ?? button.textContent ?? '',
     )
-    expect(labels).toEqual(['Início', 'Agenda', 'Dashboard'])
+    expect(labels).toEqual(['Dashboard', 'Agenda'])
+    cleanup()
+
+    const collab = renderShell({ isManager: false })
+    expect(collab.nav.queryByRole('button', { name: 'Dashboard' })).toBeNull()
   })
 
-  it('o colaborador não vê Dashboard', () => {
-    const { nav } = renderShell({ isManager: false })
-    expect(nav.queryByRole('button', { name: 'Dashboard' })).toBeNull()
+  it('Plug-ins, Ajustes e Abrir Bandeja ficam no rodapé', async () => {
+    const { nav, props } = renderShell()
+    const plugins = nav.getByRole('button', { name: 'Plug-ins, Em breve' })
+    expect(plugins.hasAttribute('disabled')).toBe(true)
+    expect(nav.getByRole('button', { name: 'Ajustes' })).toBeTruthy()
+    await userEvent.click(nav.getByRole('button', { name: 'Abrir Bandeja' }))
+    expect(props.onOpenTray).toHaveBeenCalledTimes(1)
   })
 
   it('recolher a barra mantém os itens e troca o rótulo do botão', async () => {

@@ -1,7 +1,9 @@
 import type { TrayScreenKind } from './auto-height'
 
 export type TrayScreen =
+  | { readonly kind: 'prompt' }
   | { readonly kind: 'home' }
+  | { readonly kind: 'kan' }
   | { readonly kind: 'update'; readonly taskId: string; readonly created: boolean }
   | { readonly kind: 'new' }
   | { readonly kind: 'daily' }
@@ -18,6 +20,9 @@ export interface TrayState {
 }
 
 export type TrayEvent =
+  | { readonly type: 'expand' }
+  | { readonly type: 'collapse' }
+  | { readonly type: 'openKan' }
   | { readonly type: 'openTask'; readonly taskId: string }
   | { readonly type: 'newTask' }
   | { readonly type: 'taskCreated'; readonly taskId: string }
@@ -32,12 +37,16 @@ export const TRAY_NOTICES = {
   daily: 'Daily registrada.',
 } as const
 
-export const initialTrayState: TrayState = {
-  screen: { kind: 'home' },
-  direction: 'forward',
-  highlightTaskId: null,
-  notice: null,
+export function createInitialTrayState(initialScreen: 'prompt' | 'home' = 'prompt'): TrayState {
+  return {
+    screen: { kind: initialScreen },
+    direction: 'forward',
+    highlightTaskId: null,
+    notice: null,
+  }
 }
+
+export const initialTrayState: TrayState = createInitialTrayState('prompt')
 
 const home = (direction: TrayDirection, patch: Partial<TrayState> = {}): TrayState => ({
   screen: { kind: 'home' },
@@ -49,6 +58,22 @@ const home = (direction: TrayDirection, patch: Partial<TrayState> = {}): TraySta
 
 export function trayReducer(state: TrayState, event: TrayEvent): TrayState {
   switch (event.type) {
+    case 'expand':
+      return home('forward')
+    case 'collapse':
+      return {
+        screen: { kind: 'prompt' },
+        direction: 'back',
+        highlightTaskId: null,
+        notice: null,
+      }
+    case 'openKan':
+      return {
+        ...state,
+        screen: { kind: 'kan' },
+        direction: 'forward',
+        notice: null,
+      }
     case 'openTask':
       return {
         ...state,
@@ -76,6 +101,7 @@ export function trayReducer(state: TrayState, event: TrayEvent): TrayState {
       })
     }
     case 'back': {
+      if (state.screen.kind === 'prompt') return state
       if (state.screen.kind === 'update' && state.screen.created) {
         return home('back', { highlightTaskId: state.screen.taskId, notice: TRAY_NOTICES.created })
       }

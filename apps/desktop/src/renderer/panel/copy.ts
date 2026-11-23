@@ -474,4 +474,33 @@ export const panelCopy = {
   estimateNone: 'Sem estimativa',
   estimateCost: 'Custo estimado',
   estimateMarker: (hours: string) => `estimativa ${hours}`,
+  // Assistente Kan / Gemini em Ajustes do App (sem badge nem chave no chat da bandeja).
+  aiSectionTitle: 'Assistente Kan',
+  aiSectionHint:
+    'Conecte sua chave gratuita do Google AI Studio para conversar em linguagem natural com o Kan. Sem chave, os comandos locais seguem funcionando.',
+  aiApiKeyLabel: 'Chave da API Google AI Studio',
+  aiApiKeyPlaceholder: 'AIza...',
+  aiApiKeyReplacePlaceholder: 'Chave salva — digite outra para substituir',
+  aiModelLabel: 'Modelo Gemini',
+  aiModelLabels: {
+    'gemini-2.5-flash': 'gemini-2.5-flash (Recomendado)',
+    'gemini-2.0-flash': 'gemini-2.0-flash',
+    'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite (Mais rápido)',
+  },
+  aiStatusConnected: (model: string) => `Conectado · ${model}`,
+  aiStatusLocal: 'Modo local (sem chave salva)',
+  aiSaveConfig: 'Salvar',
+  aiSavingConfig: 'Salvando…',
+  aiTestConnection: 'Testar conexão',
+  aiTestingConnection: 'Testando…',
+  aiClearKey: 'Remover chave',
+  aiSavedNotice: 'Configuração do assistente salva.',
+  aiClearedNotice: 'Chave removida. O Kan voltou ao modo local.',
+  aiConnectionOk: (model: string) => `Conexão confirmada com ${model}.`,
+  aiUnavailable: 'Configuração de IA disponível no aplicativo desktop.',
+  aiErrorFallback: 'Não foi possível salvar a configuração do assistente.',
+  aiPrivacyHint: (encrypted: boolean) =>
+    encrypted
+      ? 'A chave fica armazenada apenas neste computador com proteção do sistema.'
+      : 'A chave fica armazenada apenas neste computador.',
 } as const

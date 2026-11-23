@@ -55,7 +55,11 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
 const A = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC1', 'Revisão do relatório')
 const B = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC2', 'Publicar versão', 'Boreal')
 
-function setup(recent: TaskDto[] = [A, B], configure?: (api: AgileBoxApi) => void) {
+function setup(
+  recent: TaskDto[] = [A, B],
+  configure?: (api: AgileBoxApi) => void,
+  initialScreen: 'prompt' | 'home' = 'home',
+) {
   const shell = {
     minimize: vi.fn(),
     close: vi.fn(),
@@ -73,7 +77,7 @@ function setup(recent: TaskDto[] = [A, B], configure?: (api: AgileBoxApi) => voi
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen={initialScreen} />
       </QueryProvider>
     </ApiProvider>,
   )
@@ -117,13 +121,17 @@ describe('Bandeja: tela inicial', () => {
   it('lista as tarefas recentes e ajusta a altura pelo número de linhas', async () => {
     const { shell } = setup()
     expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 374 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+    )
   })
 
   it('com uma tarefa a altura é de uma linha', async () => {
     const { shell } = setup([A])
     await screen.findByRole('button', { name: /Revisão do relatório/ })
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 310 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 404, width: 430 }),
+    )
   })
 
   it('busca por título e projeto sem acentos e mostra o vazio', async () => {
@@ -207,7 +215,9 @@ describe('Bandeja: atualizar tarefa', () => {
 
     await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
     expect(api.tasks.recordOpen).toHaveBeenCalledWith({ taskId: A.id })
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 560 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 600, width: 430 }),
+    )
 
     const doing = await screen.findByLabelText('O que será feito')
     await user.clear(doing)
@@ -292,7 +302,9 @@ describe('Bandeja: nova tarefa', () => {
     )
 
     await user.click(await screen.findByRole('button', { name: 'Nova tarefa' }))
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 316 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 430, width: 430 }),
+    )
     const submit = screen.getByRole<HTMLButtonElement>('button', { name: 'Criar tarefa' })
     expect(submit.disabled).toBe(true)
     await user.type(screen.getByLabelText('Título'), 'Nova coisa')
@@ -308,23 +320,70 @@ describe('Bandeja: nova tarefa', () => {
   })
 })
 
+describe('Bandeja: aviso inicial compacto e Chat com o Kan', () => {
+  it('abre compacta (340×88), mantém seta ↗ sem texto em todos os estados e entra no Kan limpo', async () => {
+    const { shell, user } = setup([A, B], undefined, 'prompt')
+
+    expect(await screen.findByText('Vamos atualizar as atividades de hoje?')).toBeTruthy()
+    expect(await screen.findByText('2 tarefas em foco · clique para abrir')).toBeTruthy()
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+    )
+
+    const openPanelCompact = screen.getByRole('button', { name: 'Abrir sistema completo' })
+    expect(openPanelCompact.textContent).toBe('')
+    await user.click(openPanelCompact)
+    expect(shell.openPanel).toHaveBeenCalledTimes(1)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Expandir bandeja para atualizar atividades' }),
+    )
+    expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+    )
+    expect(screen.getByRole('button', { name: 'Abrir sistema completo' }).textContent).toBe('')
+
+    await user.click(screen.getByRole('button', { name: 'Abrir chat com o Kan' }))
+    expect(await screen.findByRole('log', { name: 'Conversa com o Kan' })).toBeTruthy()
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
+    )
+    expect(screen.queryByText(/GEMINI ON/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Chave AI/i })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Abrir sistema completo' }).textContent).toBe('')
+
+    await user.click(screen.getByRole('button', { name: 'Recolher para aviso' }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+    )
+    expect(await screen.findByText('Como estão as entregas de hoje?')).toBeTruthy()
+  })
+})
+
 describe('Bandeja: janela', () => {
-  it('expandir abre o painel e fechar esconde a bandeja', async () => {
+  it('abrir sistema completo (↗) abre o painel e fechar esconde a bandeja', async () => {
     const { shell, user } = setup()
-    await user.click(await screen.findByRole('button', { name: 'Expandir' }))
+    await user.click(await screen.findByRole('button', { name: 'Abrir sistema completo' }))
     await user.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(shell.openPanel).toHaveBeenCalledTimes(1)
     expect(shell.close).toHaveBeenCalledTimes(1)
   })
 
-  it('minimizar recolhe para o cabeçalho de 52 px e restaura', async () => {
+  it('recolher volta para o aviso compacto de 340×88 e clicar expande de novo', async () => {
     const { shell, user } = setup()
     await screen.findByRole('button', { name: /Revisão do relatório/ })
-    await user.click(screen.getByRole('button', { name: 'Minimizar' }))
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 52 }))
+    await user.click(screen.getByRole('button', { name: 'Recolher para aviso' }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+    )
     expect(screen.queryByRole('button', { name: 'Nova tarefa' })).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Minimizar' }))
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 374 }))
+    await user.click(
+      screen.getByRole('button', { name: 'Expandir bandeja para atualizar atividades' }),
+    )
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+    )
   })
 
   it('a barrinha ajusta a altura pelo teclado e volta ao automático com Home', async () => {
@@ -333,21 +392,31 @@ describe('Bandeja: janela', () => {
     const handle = screen.getByRole('separator')
     handle.focus()
     await user.keyboard('{ArrowUp}')
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 398 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 492, width: 430 }),
+    )
     await user.keyboard('{ArrowDown}{ArrowDown}')
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 350 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 444, width: 430 }),
+    )
     await user.keyboard('{Home}')
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 374 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+    )
   })
 
-  it('respeita os limites de 260 e 600 px', async () => {
+  it('respeita os limites de 280 e 660 px', async () => {
     const { shell, user } = setup()
     await screen.findByRole('button', { name: /Revisão do relatório/ })
     screen.getByRole('separator').focus()
     for (let i = 0; i < 20; i += 1) await user.keyboard('{ArrowUp}')
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 600 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 660, width: 430 }),
+    )
     for (let i = 0; i < 30; i += 1) await user.keyboard('{ArrowDown}')
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 260 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 280, width: 430 }),
+    )
   })
 })
 

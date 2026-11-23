@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { EmptyState, WindowControls, ProjectSwatch, Kbd, SegmentedControl } from '@agilebox/ui'
 import type { ProjectPresetKey } from '@agilebox/core'
 import type { SessionUserDto } from '@agilebox/contract'
@@ -16,6 +16,13 @@ import { burndownCopy } from '../burndown/burndown-screen'
 import { flowMetricsCopy } from '../flow-metrics/flow-metrics-screen'
 import { planCopy } from '../plan/plan-screen'
 import { swatchIndexOf } from '../../shared/lib/project-swatch'
+import {
+  buildProjectNavGroups,
+  findActiveProjectNavGroup,
+  isProjectScopedView,
+  type ProjectNavGroup,
+} from './project-nav'
+import { TopicTabs } from './TopicTabs'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -49,11 +56,12 @@ export interface RailProject {
 }
 
 export interface PanelShellProps {
-  readonly projectSelector?: ReactNode
   readonly managerContext?: ReactNode
   readonly view: PanelView
   readonly isManager: boolean
   readonly onViewChange: (view: PanelView) => void
+  readonly canGoBack?: boolean
+  readonly onBack?: () => void
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
@@ -63,11 +71,13 @@ export interface PanelShellProps {
   readonly projects?: readonly RailProject[]
   readonly selectedProjectId?: string | null
   readonly onProjectSelect?: (id: string | null) => void
-  /** "Novo projeto" na barra: abre a mesma criação do seletor de projeto. */
+  /** "Novo projeto" na barra: abre o assistente de criação de projeto. */
   readonly onNewProject?: () => void
+  readonly showArchivedProjects?: boolean
+  readonly onShowArchivedProjectsChange?: (show: boolean) => void
   /** Número da sprint ativa do projeto selecionado (ex.: "S4" no subitem Sprints). */
   readonly activeSprintNumber?: number | null
-  /** Quantos módulos estão ligados no projeto selecionado (contagem do subitem Módulos). */
+  /** Quantos módulos estão ligados no projeto selecionado (contagem do subitem Configurações). */
   readonly projectModuleCount?: number | null
   readonly onSearch?: () => void
   readonly onOpenTray?: () => void
@@ -85,14 +95,14 @@ export interface PanelShellProps {
    */
   readonly guide?: ReactNode
   readonly agenda?: ReactNode
-  /** Tela "Módulos" do projeto selecionado. O item da barra só aparece com projeto selecionado. */
+  /** Tela "Configurações" do projeto selecionado (Módulos, Membros, DoD e Geral). */
   readonly modules?: ReactNode
   readonly backlog?: ReactNode
   /** Entregas (EAP). O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly wbs?: ReactNode
   /** Plano do projeto híbrido (tela 17). O item da barra só aparece com a EAP e as sprints ligadas. */
   readonly plan?: ReactNode
-  /** Sprint dentro da entrega (tela 18), aberta pelo plano. Destaca "Quadro" na barra, como no design. */
+  /** Sprint dentro da entrega (tela 18), aberta pelo plano. */
   readonly planSprint?: ReactNode
   /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly milestones?: ReactNode
@@ -134,26 +144,24 @@ const viewTitles: Record<PanelView, string> = {
   sprints: sprintCopy.title,
   impediments: impedimentCopy.title,
   agenda: panelCopy.agenda,
-  modules: 'Módulos',
+  modules: 'Configurações',
   plugins: panelCopy.plugins,
   settings: panelCopy.settings,
 }
 
-/** Item da barra: tela, rótulo, ícone (só aparece recolhida), contagem à direita e "em breve". */
-interface RailEntry {
+interface TopNavEntry {
   readonly id: PanelView
   readonly label: string
   readonly icon: string
-  readonly count?: string | null
-  readonly soon?: boolean
 }
 
 export function PanelShell({
   view,
-  projectSelector,
   managerContext,
   isManager,
   onViewChange,
+  canGoBack = false,
+  onBack,
   onMinimize,
   onToggleExpand,
   onClose,
@@ -164,6 +172,8 @@ export function PanelShell({
   selectedProjectId = null,
   onProjectSelect,
   onNewProject,
+  showArchivedProjects = false,
+  onShowArchivedProjectsChange,
   activeSprintNumber = null,
   projectModuleCount = null,
   onOpenTray,
@@ -192,99 +202,38 @@ export function PanelShell({
 }: PanelShellProps) {
   const [railExpanded, setRailExpanded] = useState(true)
   const capabilities = useCapabilities()
-  const visibleView = (view === 'dashboard' || view === 'updates') && !isManager ? 'projects' : view
+  const visibleView: PanelView =
+    (view === 'dashboard' || view === 'updates') && !isManager ? 'projects' : view
   const hasProject = selectedProjectId !== null
-  // Início, Agenda e Dashboard ficam no topo, como no design. Agenda só com o módulo ligado.
-  const topEntries: readonly RailEntry[] = [
+  const selectedProject = projects.find((project) => project.id === selectedProjectId)
+
+  const topEntries: readonly TopNavEntry[] = [
+    ...(isManager
+      ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: 'dashboard' }]
+      : []),
     ...(capabilities.showScreen('agenda')
-      ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: '▣' }]
+      ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: 'agenda' }]
       : []),
-    ...(isManager ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: '▥' }] : []),
   ]
-  // Subitens da seção do projeto, na ordem do design (Quadro, Backlog, Sprints, Burndown, Módulos).
-  // Os de módulo seguem o mesmo gate de antes; sem projeto selecionado, só os da organização.
-  // Backlog e Sprints são da organização quando não há projeto: a tela continua alcançável.
-  // Plano (híbrido): com projeto selecionado e a EAP e as sprints ligadas. Vem antes do Quadro, como no design.
-  const planVisible =
-    hasProject && capabilities.showScreen('wbs') && capabilities.showScreen('sprints')
-  const contextEntries: readonly RailEntry[] = [
-    ...(planVisible ? [{ id: 'plan' as const, label: planCopy.title, icon: '◫' }] : []),
-    { id: 'projects', label: 'Quadro', icon: '▦' },
-    ...(capabilities.showScreen('backlog')
-      ? [{ id: 'backlog' as const, label: panelCopy.backlogTitle, icon: '☰' }]
-      : []),
-    ...(capabilities.showScreen('sprints')
-      ? [
-          {
-            id: 'sprints' as const,
-            label: sprintCopy.title,
-            icon: '◷',
-            count: hasProject && activeSprintNumber !== null ? `S${activeSprintNumber}` : null,
-          },
-        ]
-      : []),
-    ...(hasProject && capabilities.showScreen('burndown')
-      ? [{ id: 'burndown' as const, label: viewTitles.burndown, icon: '↘' }]
-      : []),
-    // Entregas (EAP): só com projeto selecionado e o módulo ligado no projeto.
-    ...(hasProject && capabilities.showScreen('wbs')
-      ? [{ id: 'wbs' as const, label: viewTitles.wbs, icon: '▤' }]
-      : []),
-    // Marcos: com projeto selecionado e o módulo ligado no projeto (sem EAP, a tela continua).
-    ...(hasProject && capabilities.showScreen('milestones')
-      ? [{ id: 'milestones' as const, label: viewTitles.milestones, icon: '◇' }]
-      : []),
-    // Cronograma: com projeto selecionado e o módulo ligado no projeto.
-    ...(hasProject && capabilities.showScreen('schedule')
-      ? [{ id: 'schedule' as const, label: viewTitles.schedule, icon: '≋' }]
-      : []),
-    // Acompanhamento: no mesmo módulo do cronograma (só com projeto selecionado).
-    ...(hasProject && capabilities.showScreen('schedule')
-      ? [{ id: 'tracking' as const, label: viewTitles.tracking, icon: '◔' }]
-      : []),
-    // Linha de base: módulo `baseline` ligado no projeto selecionado (N3; o nível não esconde a tela).
-    ...(hasProject && capabilities.showScreen('baseline')
-      ? [{ id: 'baseline' as const, label: viewTitles.baseline, icon: '▥' }]
-      : []),
-    // Métricas de fluxo: módulo `flowMetrics` ligado no projeto selecionado (N3; o nível não esconde a tela).
-    ...(hasProject && capabilities.showScreen('flowMetrics')
-      ? [{ id: 'flowMetrics' as const, label: viewTitles.flowMetrics, icon: '▁' }]
-      : []),
-    // Riscos: módulo `risks` ligado no projeto selecionado (N3; o nível não esconde a tela).
-    ...(hasProject && capabilities.showScreen('risks')
-      ? [{ id: 'risks' as const, label: viewTitles.risks, icon: '△' }]
-      : []),
-    // Impedimentos: Intermediário em diante, com o módulo ligado (ou encerrando). Básico não vê a tela.
-    ...(capabilities.showScreen('impediments')
-      ? [{ id: 'impediments' as const, label: impedimentCopy.title, icon: '⚑' }]
-      : []),
-    // Módulos: qualquer pessoa vê a lista do projeto selecionado (o colaborador só lê).
-    ...(hasProject
-      ? [
-          {
-            id: 'modules' as const,
-            label: viewTitles.modules,
-            icon: '⚙',
-            count: projectModuleCount !== null ? String(projectModuleCount) : null,
-          },
-        ]
-      : []),
-    { id: 'plugins', label: panelCopy.plugins, icon: '⌘', soon: true },
-  ]
+
+  const projectGroups = buildProjectNavGroups(capabilities, {
+    hasProject,
+    activeSprintNumber,
+    projectModuleCount,
+  })
+  const activeProjectGroup = findActiveProjectNavGroup(projectGroups, visibleView)
+  const effectiveSelected = visibleView === 'updates' ? 'dashboard' : visibleView
+
+  const projectContextLabel = selectedProject?.name ?? panelCopy.allProjects
 
   return (
     <main className={styles.window} aria-label={panelCopy.title}>
       <Rail
         expanded={railExpanded}
         topEntries={topEntries}
-        contextEntries={contextEntries}
-        selected={
-          visibleView === 'planSprint'
-            ? 'projects'
-            : visibleView === 'updates'
-              ? 'dashboard'
-              : visibleView
-        }
+        projectGroups={projectGroups}
+        activeGroupId={activeProjectGroup?.id ?? null}
+        selectedView={effectiveSelected}
         onExpandChange={setRailExpanded}
         onSelect={onViewChange}
         account={account}
@@ -292,14 +241,18 @@ export function PanelShell({
         selectedProjectId={selectedProjectId}
         onProjectSelect={onProjectSelect}
         onNewProject={onNewProject}
+        showArchivedProjects={showArchivedProjects}
+        onShowArchivedProjectsChange={onShowArchivedProjectsChange}
         onOpenTray={onOpenTray}
         onSearch={onSearch}
       />
       <section className={styles.main}>
         <TitleBar
           title={viewTitles[visibleView]}
+          projectContext={isProjectScopedView(visibleView) ? projectContextLabel : null}
           board={visibleView === 'projects'}
-          projectSelector={projectSelector}
+          canGoBack={canGoBack}
+          onBack={onBack}
           managerContext={managerContext}
           onMinimize={onMinimize}
           onToggleExpand={onToggleExpand}
@@ -311,6 +264,16 @@ export function PanelShell({
         />
         <div className={styles.content} key={visibleView}>
           {guide}
+          {activeProjectGroup &&
+          activeProjectGroup.tabs.length > 1 &&
+          visibleView !== 'planSprint' ? (
+            <TopicTabs
+              ariaLabel={`Seções de ${activeProjectGroup.label}`}
+              items={activeProjectGroup.tabs}
+              activeId={visibleView}
+              onSelect={onViewChange}
+            />
+          ) : null}
           {visibleView === 'projects' ? (
             children
           ) : visibleView === 'dashboard' && dashboard ? (
@@ -362,25 +325,31 @@ export function PanelShell({
 
 interface RailProps {
   readonly expanded: boolean
-  readonly topEntries: readonly RailEntry[]
-  readonly contextEntries: readonly RailEntry[]
-  readonly selected: PanelView
+  readonly topEntries: readonly TopNavEntry[]
+  readonly projectGroups: readonly ProjectNavGroup[]
+  readonly activeGroupId: ProjectNavGroup['id'] | null
+  readonly selectedView: PanelView
   readonly onExpandChange: (expanded: boolean) => void
   readonly onSelect: (view: PanelView) => void
   readonly projects: readonly RailProject[]
   readonly selectedProjectId: string | null
   readonly onProjectSelect: PanelShellProps['onProjectSelect']
   readonly onNewProject: PanelShellProps['onNewProject']
+  readonly showArchivedProjects: boolean
+  readonly onShowArchivedProjectsChange: PanelShellProps['onShowArchivedProjectsChange']
   readonly onSearch: PanelShellProps['onSearch']
   readonly onOpenTray: PanelShellProps['onOpenTray']
   readonly account: PanelShellProps['account']
 }
 
+const ALL_PROJECTS_KEY = '__all__'
+
 function Rail({
   expanded,
   topEntries,
-  contextEntries,
-  selected,
+  projectGroups,
+  activeGroupId,
+  selectedView,
   onExpandChange,
   onSelect,
   account,
@@ -388,43 +357,60 @@ function Rail({
   selectedProjectId,
   onProjectSelect,
   onNewProject,
+  showArchivedProjects,
+  onShowArchivedProjectsChange,
   onOpenTray,
   onSearch,
 }: RailProps) {
-  const selectedProject = projects.find((project) => project.id === selectedProjectId)
-  const otherProjects = projects.filter((project) => project.id !== selectedProjectId)
+  const [collapsedSelectedKey, setCollapsedSelectedKey] = useState<string | null>(null)
+
+  // Ao trocar de projeto, reabre automaticamente o acordeão da árvore recém-selecionada.
+  useEffect(() => {
+    setCollapsedSelectedKey(null)
+  }, [selectedProjectId])
+
   const railClass = `${styles.rail} ${expanded ? styles.expanded : ''}`
+  const allSelected = selectedProjectId === null
+  const allExpanded = allSelected && collapsedSelectedKey !== ALL_PROJECTS_KEY
+
+  function toggleSelectedAccordion(key: string) {
+    setCollapsedSelectedKey((current) => (current === key ? null : key))
+  }
+
   return (
     <nav className={railClass} aria-label={panelCopy.navigation}>
-      <div className={styles.brand}>
-        <span className={styles.mark} aria-hidden="true">
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M4 7h7v10H4z" />
-            <path d="M13 4h7v7h-7z" />
-            <path d="M13 14h7v6h-7z" />
-          </svg>
-        </span>
-        <span className={styles.brandName}>AgileBox</span>
+      <div className={styles.railHeader}>
+        <div className={styles.brand}>
+          <span className={styles.mark} aria-hidden="true">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M4 7h7v10H4z" />
+              <path d="M13 4h7v7h-7z" />
+              <path d="M13 14h7v6h-7z" />
+            </svg>
+          </span>
+          <span className={styles.brandName}>AgileBox</span>
+        </div>
+        <button
+          className={styles.expand}
+          type="button"
+          aria-label={expanded ? panelCopy.collapseRail : panelCopy.expandRail}
+          aria-expanded={expanded}
+          onClick={() => onExpandChange(!expanded)}
+          title={expanded ? panelCopy.collapseRail : panelCopy.expandRail}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
       </div>
-      <button
-        className={styles.expand}
-        type="button"
-        aria-label={expanded ? panelCopy.collapseRail : panelCopy.expandRail}
-        aria-expanded={expanded}
-        onClick={() => onExpandChange(!expanded)}
-        title={expanded ? panelCopy.collapseRail : panelCopy.expandRail}
-      >
-        <span aria-hidden="true">☰</span>
-      </button>
+
       <button
         type="button"
         className={styles.search}
@@ -436,182 +422,240 @@ function Rail({
         <span className={styles.railLabel}>Buscar ou criar</span>
         <Kbd className={styles.kbd}>Ctrl K</Kbd>
       </button>
-      <div className={styles.topGroup}>
+
+      {topEntries.length > 0 ? (
+        <div className={styles.topGroup}>
+          <span className={styles.sectionLabel}>Global</span>
+          {topEntries.map((entry) => {
+            const isSelected = selectedView === entry.id
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                aria-current={isSelected ? 'page' : undefined}
+                aria-label={entry.label}
+                data-tip={entry.label}
+                title={entry.label}
+                className={`${styles.railItem} ${styles.navItem} ${isSelected ? styles.selected : ''}`}
+                onClick={() => onSelect(entry.id)}
+              >
+                <NavIcon kind={entry.icon} />
+                <span className={styles.railLabel}>{entry.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
+      <div className={styles.scroll}>
+        <div className={styles.sectionHead}>
+          <span className={styles.sectionLabel}>Projetos</span>
+          {onNewProject ? (
+            <button
+              type="button"
+              className={styles.sectionAddBtn}
+              aria-label={panelCopy.newProject}
+              title={panelCopy.newProject}
+              data-tip={panelCopy.newProject}
+              onClick={onNewProject}
+            >
+              <NavIcon kind="plus" />
+            </button>
+          ) : null}
+        </div>
+
+        <div className={styles.projectsTree}>
+          <div
+            className={`${styles.projectGroup} ${allExpanded ? styles.projectGroupOpen : ''} ${allSelected ? styles.projectGroupCurrent : ''}`}
+          >
+            <button
+              type="button"
+              className={`${styles.railItem} ${styles.navItem} ${styles.projectToggle} ${allSelected ? styles.projectPressed : ''}`}
+              aria-pressed={allSelected}
+              aria-expanded={allExpanded}
+              title={panelCopy.allProjects}
+              data-tip={panelCopy.allProjects}
+              onClick={() => {
+                if (allSelected) {
+                  toggleSelectedAccordion(ALL_PROJECTS_KEY)
+                } else {
+                  onProjectSelect?.(null)
+                }
+              }}
+            >
+              <span className={styles.allProjectsMark} aria-hidden="true" />
+              <span className={`${styles.railLabel} ${styles.projectName}`}>
+                {panelCopy.allProjects}
+              </span>
+              <NavIcon kind="chevron" className={styles.projectChevron} />
+            </button>
+            {allExpanded ? (
+              <ProjectSubItems
+                groups={projectGroups}
+                activeGroupId={activeGroupId}
+                onSelect={onSelect}
+              />
+            ) : null}
+          </div>
+
+          {projects.map((project) => {
+            const isSelected = selectedProjectId === project.id
+            const isExpanded = isSelected && collapsedSelectedKey !== project.id
+            const method = methodologyLabel(project.startedFromPreset)
+            return (
+              <div
+                key={project.id}
+                className={`${styles.projectGroup} ${isExpanded ? styles.projectGroupOpen : ''} ${isSelected ? styles.projectGroupCurrent : ''}`}
+              >
+                <button
+                  type="button"
+                  className={`${styles.railItem} ${styles.navItem} ${styles.projectToggle} ${isSelected ? styles.projectPressed : ''}`}
+                  aria-pressed={isSelected}
+                  aria-expanded={isExpanded}
+                  title={project.name}
+                  data-tip={project.name}
+                  onClick={() => {
+                    if (isSelected) {
+                      toggleSelectedAccordion(project.id)
+                    } else {
+                      onProjectSelect?.(project.id)
+                    }
+                  }}
+                >
+                  <ProjectSwatch index={swatchIndexOf(project.id)} name={project.name} />
+                  <span className={`${styles.railLabel} ${styles.projectName}`}>
+                    {project.name}
+                  </span>
+                  {project.archivedAt != null ? (
+                    <span className={styles.archivedLabel}>{panelCopy.archivedProject}</span>
+                  ) : null}
+                  {method ? <span className={styles.methodology}>{method}</span> : null}
+                  <NavIcon kind="chevron" className={styles.projectChevron} />
+                </button>
+                {isExpanded ? (
+                  <ProjectSubItems
+                    groups={projectGroups}
+                    activeGroupId={activeGroupId}
+                    onSelect={onSelect}
+                  />
+                ) : null}
+              </div>
+            )
+          })}
+
+          {onShowArchivedProjectsChange ? (
+            <button
+              type="button"
+              className={`${styles.railItem} ${styles.archivedToggle}`}
+              aria-label="Mostrar projetos arquivados"
+              aria-pressed={showArchivedProjects}
+              title="Mostrar projetos arquivados"
+              data-tip="Mostrar projetos arquivados"
+              onClick={() => onShowArchivedProjectsChange(!showArchivedProjects)}
+            >
+              <span className={styles.railLabel}>{panelCopy.showArchived}</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className={styles.footer}>
+        <span className={styles.sectionLabel}>Sistema</span>
+        <button
+          type="button"
+          className={`${styles.railItem} ${styles.navItem} ${selectedView === 'settings' ? styles.selected : ''}`}
+          aria-label="Ajustes"
+          aria-current={selectedView === 'settings' ? 'page' : undefined}
+          data-tip="Ajustes"
+          title="Ajustes"
+          onClick={() => onSelect('settings')}
+        >
+          <NavIcon kind="settings" />
+          <span className={styles.railLabel}>Ajustes</span>
+        </button>
         <button
           type="button"
           className={`${styles.railItem} ${styles.navItem}`}
-          aria-label="Início"
-          title="Início"
-          onClick={onOpenTray}
+          aria-label={`${panelCopy.plugins}, ${panelCopy.comingSoon}`}
+          data-tip={panelCopy.plugins}
+          title={panelCopy.plugins}
+          disabled
         >
-          <NavIcon kind="home" />
-          <span className={styles.railLabel}>Início</span>
+          <NavIcon kind="plugins" />
+          <span className={styles.railLabel}>{panelCopy.plugins}</span>
+          <span className={styles.soon}>{panelCopy.comingSoon}</span>
         </button>
-        {topEntries.map((entry) => (
-          <RailButton
-            key={entry.id}
-            entry={entry}
-            kind="top"
-            selected={selected === entry.id}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
-      <div className={styles.scroll}>
-        <span className={styles.sectionLabel}>
-          {selectedProject ? 'Projeto' : panelCopy.allProjects}
-        </span>
-        {selectedProject ? (
-          <ProjectRow
-            project={selectedProject}
-            pressed
-            // Clicar no projeto já selecionado leva ao quadro dele.
-            onSelect={() => onSelect('projects')}
-          />
-        ) : null}
-        <div className={styles.subGroup}>
-          {contextEntries.map((entry) => (
-            <RailButton
-              key={entry.id}
-              entry={entry}
-              kind="sub"
-              selected={selected === entry.id}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-        <span className={styles.sectionLabel}>
-          {selectedProject ? 'Outros projetos' : 'Projetos'}
-        </span>
-        {selectedProject ? (
+        {onOpenTray ? (
           <button
             type="button"
-            className={`${styles.railItem} ${styles.navItem} ${styles.allProjects}`}
-            aria-pressed="false"
-            onClick={() => onProjectSelect?.(null)}
+            className={`${styles.railItem} ${styles.navItem}`}
+            aria-label="Abrir Bandeja"
+            data-tip="Abrir Bandeja"
+            title="Abrir Bandeja"
+            onClick={onOpenTray}
           >
-            <span className={styles.allProjectsMark} aria-hidden="true" />
-            <span className={styles.railLabel}>{panelCopy.allProjects}</span>
+            <NavIcon kind="tray" />
+            <span className={styles.railLabel}>Abrir Bandeja</span>
           </button>
         ) : null}
-        {(selectedProject ? otherProjects : projects).map((project) => (
-          <ProjectRow
-            key={project.id}
-            project={project}
-            pressed={false}
-            onSelect={() => onProjectSelect?.(project.id)}
-          />
-        ))}
-        {onNewProject ? (
-          <button
-            type="button"
-            className={`${styles.railItem} ${styles.navItem} ${styles.newProject}`}
-            onClick={onNewProject}
-          >
-            <NavIcon kind="plus" />
-            <span className={styles.railLabel}>Novo projeto</span>
-          </button>
-        ) : null}
+        <AccountMenu
+          users={account?.users ?? []}
+          currentUserId={account?.currentUserId}
+          onSwitch={account?.onSwitch ?? (() => undefined)}
+          buttonClassName={`${styles.railItem} ${styles.account}`}
+          avatarClassName={styles.avatar}
+          labelClassName={styles.railLabel}
+        />
       </div>
-      <button
-        type="button"
-        className={`${styles.railItem} ${styles.navItem} ${selected === 'settings' ? styles.selected : ''}`}
-        aria-label="Ajustes"
-        aria-current={selected === 'settings' ? 'page' : undefined}
-        onClick={() => onSelect('settings')}
-      >
-        <NavIcon kind="settings" />
-        <span className={styles.railLabel}>Ajustes</span>
-      </button>
-      <div className={styles.divider} />
-      <AccountMenu
-        users={account?.users ?? []}
-        currentUserId={account?.currentUserId}
-        onSwitch={account?.onSwitch ?? (() => undefined)}
-        buttonClassName={`${styles.railItem} ${styles.account}`}
-        avatarClassName={styles.avatar}
-        labelClassName={styles.railLabel}
-      />
     </nav>
   )
 }
 
-/** Linha de projeto: quadradinho, nome e, à direita, o rótulo da metodologia (ou "Arquivado"). */
-function ProjectRow({
-  project,
-  pressed,
+function ProjectSubItems({
+  groups,
+  activeGroupId,
   onSelect,
 }: {
-  readonly project: RailProject
-  readonly pressed: boolean
-  readonly onSelect: () => void
-}) {
-  const method = methodologyLabel(project.startedFromPreset)
-  return (
-    <button
-      type="button"
-      className={`${styles.railItem} ${styles.navItem} ${styles.projectRow} ${pressed ? styles.projectPressed : ''}`}
-      aria-pressed={pressed}
-      title={project.name}
-      onClick={onSelect}
-    >
-      <ProjectSwatch index={swatchIndexOf(project.id)} name={project.name} />
-      <span className={`${styles.railLabel} ${styles.projectName}`}>{project.name}</span>
-      {project.archivedAt != null ? (
-        <span className={styles.archivedLabel}>{panelCopy.archivedProject}</span>
-      ) : null}
-      {method ? <span className={styles.methodology}>{method}</span> : null}
-    </button>
-  )
-}
-
-/** Item de topo ("nav") ou subitem do projeto ("sub"). Subitem com contagem à direita (fora do nome). */
-function RailButton({
-  entry,
-  kind,
-  selected,
-  onSelect,
-}: {
-  readonly entry: RailEntry
-  readonly kind: 'top' | 'sub'
-  readonly selected: boolean
+  readonly groups: readonly ProjectNavGroup[]
+  readonly activeGroupId: ProjectNavGroup['id'] | null
   readonly onSelect: (view: PanelView) => void
 }) {
-  const className = [
-    styles.railItem,
-    kind === 'top' ? styles.navItem : styles.subItem,
-    selected ? styles.selected : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
   return (
-    <button
-      aria-current={selected ? 'page' : undefined}
-      aria-label={entry.soon ? `${entry.label}, ${panelCopy.comingSoon}` : entry.label}
-      className={className}
-      data-tip={entry.label}
-      disabled={entry.soon}
-      onClick={() => onSelect(entry.id)}
-      title={entry.label}
-      type="button"
-    >
-      <NavIcon kind={entry.id} className={styles.subIcon} />
-      <span className={styles.railLabel}>{entry.label}</span>
-      {entry.count ? (
-        <span className={styles.count} aria-hidden="true">
-          {entry.count}
-        </span>
-      ) : null}
-      {entry.soon ? <span className={styles.soon}>{panelCopy.comingSoon}</span> : null}
-    </button>
+    <div className={styles.projectChildren}>
+      {groups.map((group) => {
+        const selected = activeGroupId === group.id
+        return (
+          <button
+            key={group.id}
+            type="button"
+            aria-current={selected ? 'page' : undefined}
+            aria-label={group.label}
+            className={`${styles.railItem} ${styles.subItem} ${selected ? styles.selected : ''}`}
+            data-tip={group.label}
+            title={group.label}
+            onClick={() => onSelect(group.defaultView)}
+          >
+            <NavIcon kind={group.icon} className={styles.subIcon} />
+            <span className={styles.railLabel}>{group.label}</span>
+            {group.count ? (
+              <span className={styles.count} aria-hidden="true">
+                {group.count}
+              </span>
+            ) : null}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
 interface TitleBarProps {
   readonly board: boolean
-  readonly projectSelector: ReactNode
+  readonly projectContext: string | null
   readonly managerContext: ReactNode
   readonly title: string
+  readonly canGoBack: boolean
+  readonly onBack: (() => void) | undefined
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
@@ -623,8 +667,10 @@ interface TitleBarProps {
 
 function TitleBar({
   title,
+  projectContext,
   board,
-  projectSelector,
+  canGoBack,
+  onBack,
   managerContext,
   onMinimize,
   onToggleExpand,
@@ -637,8 +683,27 @@ function TitleBar({
   return (
     <header className={styles.titleBar}>
       <div className={styles.titleGroup}>
-        <h1>{title}</h1>
-        {board && projectSelector}
+        <button
+          type="button"
+          className={styles.backButton}
+          aria-label="Voltar"
+          title="Voltar (Alt + ←)"
+          disabled={!canGoBack}
+          onClick={onBack}
+        >
+          <NavIcon kind="back" />
+        </button>
+        <div className={styles.breadcrumb}>
+          {projectContext ? (
+            <>
+              <span className={styles.breadcrumbProject}>{projectContext}</span>
+              <span className={styles.breadcrumbSep} aria-hidden="true">
+                ›
+              </span>
+            </>
+          ) : null}
+          <h1 className={styles.title}>{title}</h1>
+        </div>
         {board && onTaskScopeChange && (
           <SegmentedControl<TaskScope>
             aria-label={panelCopy.taskScope}
@@ -685,10 +750,10 @@ function NavIcon({
   readonly kind: string
   readonly className?: string | undefined
 }) {
-  // Caminhos dos ícones do design (Modulos.dc.html) para os itens de topo; os demais seguem o app.
   const paths: Record<string, string> = {
     search: 'M21 21l-5-5M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14',
     home: 'M3 13l3-8h12l3 8v7H3v-7Z M3 13h5l1 2h6l1-2h5',
+    tray: 'M4 4h16v16H4z M4 14h5l1.5 2h3L15 14h5',
     projects: 'M3 4h5v16H3ZM10 4h5v11h-5ZM17 4h4v8h-4Z',
     dashboard: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
     agenda: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
@@ -708,16 +773,20 @@ function NavIcon({
     flowMetrics: 'M6 19v-6M12 19V8M18 19V4',
     risks: 'M4 4h12l4 4v12H4Z M8 12h8M8 16h5',
     wbs: 'M4 6h16M4 12h10M4 18h7',
+    plan: 'M4 5h16v4H4zM7 11h10v4H7zM10 17h10v3H10z',
+    back: 'M19 12H5M12 19l-7-7 7-7',
+    chevron: 'M9 6l6 6-6 6',
   }
+  const size = kind === 'chevron' ? '12' : kind === 'back' || kind === 'plus' ? '15' : '16'
   return (
     <span aria-hidden="true" className={className}>
       <svg
-        width="16"
-        height="16"
+        width={size}
+        height={size}
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth={kind === 'chevron' || kind === 'back' ? '2.1' : '1.8'}
         strokeLinecap="round"
         strokeLinejoin="round"
       >

@@ -5,9 +5,13 @@ import type { ApiResult } from './result'
 import type { ApiChannel } from './channels'
 import type { ChangeEvent } from './changes'
 import type { DesktopUpdatesApi } from './updates'
+import type { DesktopAiApi } from './ai'
 
 const voidSchema = z.void()
-const trayHeightInputSchema = z.object({ height: z.number().int().positive() })
+const trayHeightInputSchema = z.object({
+  height: z.number().int().positive(),
+  width: z.number().int().positive().optional(),
+})
 export const appearanceModeSchema = z.enum(['translucent', 'opaque'])
 const appearanceInputSchema = z.object({ mode: appearanceModeSchema })
 
@@ -40,6 +44,7 @@ export interface AgileBoxBridge {
   onChanges(callback: (change: ChangeEvent) => void): () => void
   shell: DesktopShellApi
   updates: DesktopUpdatesApi
+  ai?: DesktopAiApi
 }
 
 export const shellApiChannels: readonly ShellChannel[] = SHELL_CHANNELS

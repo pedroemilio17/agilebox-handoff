@@ -30,6 +30,8 @@ describe('ponte preload', () => {
     expect(typeof bridge.invoke).toBe('function')
     expect(typeof bridge.onChanges).toBe('function')
     expect(Object.values(bridge.shell).every((method) => typeof method === 'function')).toBe(true)
+    expect(bridge.ai).toBeDefined()
+    expect(Object.values(bridge.ai!).every((method) => typeof method === 'function')).toBe(true)
   })
 
   it('remove o listener de mudanças ao cancelar a assinatura', async () => {
@@ -49,6 +51,20 @@ describe('ponte preload', () => {
     bridge.shell.setTrayHeight({ height: 320 })
 
     expect(invoke).toHaveBeenCalledWith('window.setTrayHeight', { height: 320 })
+  })
+
+  it('encaminha chamadas de IA para os canais ai.*', async () => {
+    await import('./index')
+    const bridge = getExposedBridge()
+
+    await bridge.ai?.getConfig()
+    await bridge.ai?.saveConfig({ apiKey: 'AIza1', model: 'gemini-2.5-flash' })
+
+    expect(invoke).toHaveBeenCalledWith('ai.getConfig')
+    expect(invoke).toHaveBeenCalledWith('ai.saveConfig', {
+      apiKey: 'AIza1',
+      model: 'gemini-2.5-flash',
+    })
   })
 })
 

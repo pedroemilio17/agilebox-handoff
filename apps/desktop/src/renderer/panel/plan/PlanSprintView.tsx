@@ -1,14 +1,18 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { TaskStatus } from '@agilebox/core'
+import type { TaskDto } from '@agilebox/contract'
 import { Button, EmptyState, TaskKey } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { todayDateOnly } from '../../shared/lib/today'
+import { refusalMessage } from '../backlog/refusal-message'
 import { ActiveBoard } from '../sprints/ActiveBoard'
 import { sprintCopy } from '../sprints/sprint-copy'
 import { arrowRange, midSprintTaskIds, sumHours } from '../sprints/sprint-rules'
 import {
   refreshSprintsEverywhere,
+  useMoveSprintTask,
   useSprintDetail,
   useSprintItemMutations,
 } from '../sprints/use-sprints'
@@ -28,6 +32,8 @@ export interface PlanSprintViewProps {
   readonly onOpenTask: (taskId: string) => void
   /** Abre o diálogo de nova tarefa (o mesmo do topo da janela). */
   readonly onNewTask?: () => void
+  /** Move tarefa no quadro da sprint dentro da entrega. */
+  readonly onMoveTask?: (task: TaskDto, status: TaskStatus) => void
 }
 
 /**
@@ -43,6 +49,7 @@ export function PlanSprintView({
   onBack,
   onOpenTask,
   onNewTask,
+  onMoveTask,
 }: PlanSprintViewProps) {
   const api = useApi()
   const queryClient = useQueryClient()
@@ -50,6 +57,10 @@ export function PlanSprintView({
   const data = usePlanData(projectId)
   const detail = useSprintDetail(sprintId)
   const items = useSprintItemMutations()
+  const [moveError, setMoveError] = useState<string | null>(null)
+  const moveSprintTask = useMoveSprintTask((error) =>
+    setMoveError(refusalMessage(error, sprintCopy.forbidden)),
+  )
   const sendBack = useMutation({
     mutationFn: (taskId: string) => api.backlog.sendBack({ taskId }),
     onSettled: () => refreshSprintsEverywhere(queryClient),
@@ -186,6 +197,12 @@ export function PlanSprintView({
         </section>
       ) : null}
 
+      {moveError ? (
+        <p role="alert" className={styles.error}>
+          {moveError}
+        </p>
+      ) : null}
+
       <ActiveBoard
         items={sprintItems}
         midSprint={midSprint}
@@ -193,6 +210,11 @@ export function PlanSprintView({
         removeDisabled={items.remove.isPending}
         onOpenTask={onOpenTask}
         onRemove={(taskId) => items.remove.mutate({ sprintId: sprint.id, taskId })}
+        onMoveTask={(task, status) => {
+          setMoveError(null)
+          if (onMoveTask) onMoveTask(task, status)
+          else moveSprintTask.mutate({ taskId: task.id, status })
+        }}
         cardTag={(task) => {
           const entry = tagById.get(task.id)
           if (!entry) return null

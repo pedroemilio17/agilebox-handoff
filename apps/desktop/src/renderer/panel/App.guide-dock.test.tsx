@@ -56,12 +56,8 @@ function renderApp(options: {
 }
 
 async function selectProject(user: ReturnType<typeof userEvent.setup>, name: string) {
-  await user.click(
-    await screen.findByRole('button', {
-      name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-    }),
-  )
-  await user.click(await screen.findByRole('option', { name }))
+  const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
+  await user.click(await nav.findByRole('button', { name: new RegExp(name) }))
 }
 
 /** Clica num item da barra lateral (o nome é o rótulo do item). */
@@ -72,7 +68,7 @@ async function goTo(user: ReturnType<typeof userEvent.setup>, label: string) {
 describe('App · guia nas telas do projeto', () => {
   it('sem projeto escolhido, o cartão não aparece nem em outras telas', async () => {
     const { user, guide } = renderApp({ doneCount: 1 })
-    await screen.findByRole('button', { name: /Trocar de projeto/ })
+    await screen.findByRole('button', { name: 'Todos os projetos' })
     await goTo(user, 'Backlog')
     await screen.findByRole('heading', { level: 1, name: 'Backlog' })
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -80,19 +76,19 @@ describe('App · guia nas telas do projeto', () => {
     expect(screen.queryByRole('heading', HEADING)).toBeNull()
   })
 
-  it('com projeto, o cartão segue nas telas do fluxo, pela barra lateral', async () => {
+  it('com projeto, o cartão segue nas telas do fluxo, pela barra lateral e abas internas', async () => {
     const { user } = renderApp({ doneCount: 1 })
     await selectProject(user, FLOW_PROJECT.name)
     expect(await screen.findByRole('heading', HEADING)).not.toBeNull()
     for (const label of [
       'Backlog',
       'Sprints',
-      'Entregas (EAP)',
-      'Marcos',
-      'Cronograma',
       'Burndown',
+      'Entregas',
       'Riscos',
-      'Módulos',
+      'Cronograma',
+      'Marcos',
+      'Configurações',
     ]) {
       await goTo(user, label)
       await waitFor(() => expect(screen.getByRole('heading', HEADING)).not.toBeNull())

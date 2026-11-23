@@ -391,6 +391,51 @@ describe('Ativa: progresso e mini-quadro', () => {
     await user.click(screen.getByRole('button', { name: sprintCopy.openItem('Em curso') }))
     expect(onOpenTask).toHaveBeenCalledWith(doing.id)
   })
+
+  it('move cartão entre colunas na sprint ativa com atualização otimista e contagem', async () => {
+    const user = userEvent.setup()
+    let releaseMove!: () => void
+    const movePromise = new Promise<TaskDto>((resolve) => {
+      releaseMove = () => resolve({ ...doing, status: 'review' })
+    })
+    const { api } = setup({
+      sprints: [active],
+      details: { [active.id]: detail(active, [done, doing, late], history) },
+    })
+    const move = vi.spyOn(api.tasks, 'move').mockReturnValue(movePromise)
+    await ready(api)
+    await goTo(user, 'Ativa')
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Mover Em curso para outro estado' }),
+      'review',
+    )
+
+    expect(move).toHaveBeenCalledWith({ taskId: doing.id, status: 'review' })
+    const reviewCol = screen.getByRole('region', { name: 'Revisar' })
+    expect(within(reviewCol).getByText('Em curso')).toBeTruthy()
+    releaseMove()
+  })
+
+  it('em erro FORBIDDEN ao mover na sprint ativa, restaura a coluna original e mostra alerta', async () => {
+    const user = userEvent.setup()
+    const { api } = setup({
+      sprints: [active],
+      details: { [active.id]: detail(active, [done, doing, late], history) },
+    })
+    vi.spyOn(api.tasks, 'move').mockRejectedValue(new ApiError('FORBIDDEN', 'Sem permissão'))
+    await ready(api)
+    await goTo(user, 'Ativa')
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Mover Em curso para outro estado' }),
+      'done',
+    )
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    const doingCol = screen.getByRole('region', { name: 'Desenvolvendo' })
+    expect(within(doingCol).getByText('Em curso')).toBeTruthy()
+  })
 })
 
 describe('Ativa: encerrar com as duas políticas', () => {

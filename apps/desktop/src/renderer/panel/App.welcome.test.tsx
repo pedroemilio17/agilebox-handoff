@@ -55,18 +55,14 @@ function renderApp(options: { firstStepsCard?: 'open' | 'collapsed' | 'hidden' }
 }
 
 async function selectProject(user: ReturnType<typeof userEvent.setup>, name: string) {
-  await user.click(
-    await screen.findByRole('button', {
-      name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-    }),
-  )
-  await user.click(await screen.findByRole('option', { name }))
+  const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
+  await user.click(await nav.findByRole('button', { name: new RegExp(name) }))
 }
 
 describe('App · janela de boas-vindas', () => {
   it('em "Todos os projetos" não aparece e nem consulta o guia', async () => {
     const { guide } = renderApp()
-    await screen.findByRole('button', { name: /Trocar de projeto/ })
+    await screen.findByRole('button', { name: 'Todos os projetos' })
     await new Promise((resolve) => setTimeout(resolve, 10))
     expect(guide).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog', { name: /Boas-vindas/ })).toBeNull()

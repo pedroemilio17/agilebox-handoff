@@ -146,7 +146,7 @@ function setup({
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen="home" />
       </QueryProvider>
     </ApiProvider>,
   )

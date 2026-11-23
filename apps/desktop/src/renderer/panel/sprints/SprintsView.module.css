@@ -755,9 +755,19 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  min-height: 160px;
   padding: 10px;
+  border: 1px solid transparent;
   border-radius: 14px;
   background: var(--surface-column);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.boardColumnOver {
+  border-color: var(--color-focus-ring);
+  background: var(--color-accent-soft);
 }
 
 .boardColumnHead {
@@ -818,6 +828,100 @@
   background: var(--surface-card);
 }
 
+.boardCardDraggable {
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.boardCardDraggable:hover {
+  background: var(--surface-raised);
+  border-color: var(--color-hairline-strong);
+}
+
+.boardCardGhost {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.45;
+}
+
+.boardCardGhost > * {
+  visibility: hidden;
+}
+
+.boardOverlay {
+  display: grid;
+  gap: var(--space-2);
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-popover);
+  cursor: grabbing;
+  transform: rotate(2deg) scale(1.03);
+}
+
+.dragHandle {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.45;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    opacity 180ms ease,
+    color 180ms ease;
+}
+
+.boardCardDraggable:hover .dragHandle,
+.dragHandle:focus-visible {
+  opacity: 1;
+  color: var(--color-text-primary);
+}
+
+.dragHandle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+/* Alternativa por teclado ao arraste: só aparece quando recebe foco. */
+.statusSelect {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  border: 0;
+}
+
+.statusSelect:focus-visible {
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: auto;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: var(--glass-control-border);
+  border-radius: var(--radius-chip);
+  background: var(--glass-popover);
+  clip-path: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-label);
+}
+
 .boardCard[data-done='yes'] {
   opacity: 0.6;
 }
@@ -873,8 +977,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .boardColumn,
+  .boardCardDraggable,
+  .dragHandle,
   .boardCard .iconButton {
     transition: none;
+  }
+
+  .boardOverlay {
+    transform: none;
   }
 }
 

@@ -37,13 +37,15 @@ describe('handlers IPC da janela', () => {
     expect(windows.toggleTray).toHaveBeenCalledWith(sender)
   })
 
-  it('abre o painel e ajusta a altura da bandeja', () => {
+  it('abre o painel e ajusta a altura e largura da bandeja', () => {
     const { listeners, windows } = setup()
     const sender = { id: 2 }
     listeners.get('window.openPanel')!({ sender }, undefined)
     listeners.get('window.setTrayHeight')!({ sender: {} }, { height: 480 })
+    listeners.get('window.setTrayHeight')!({ sender: {} }, { height: 88, width: 340 })
     expect(windows.openPanel).toHaveBeenCalledWith(sender)
     expect(windows.setTrayHeight).toHaveBeenCalledWith(480)
+    expect(windows.setTrayHeight).toHaveBeenCalledWith(88, 340)
   })
 
   it('repassa a escolha de aparência e ignora valores desconhecidos', () => {

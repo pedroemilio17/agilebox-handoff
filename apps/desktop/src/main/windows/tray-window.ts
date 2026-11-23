@@ -4,11 +4,12 @@ import { windowChrome } from './glass'
 import type { GlassMode } from './glass'
 import type { WindowPosition } from './tray-position'
 
-export const TRAY_WINDOW_SIZE = { width: 360, height: 640 } as const
+export const TRAY_COMPACT_SIZE = { width: 340, height: 88 } as const
+export const TRAY_WINDOW_SIZE = { width: 430, height: 630 } as const
 
 export function createTrayWindow(glassMode: GlassMode, position: WindowPosition): BrowserWindow {
   const window = new BrowserWindow({
-    ...TRAY_WINDOW_SIZE,
+    ...TRAY_COMPACT_SIZE,
     ...position,
     ...windowChrome(glassMode),
     alwaysOnTop: true,

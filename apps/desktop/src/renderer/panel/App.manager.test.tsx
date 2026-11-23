@@ -258,36 +258,31 @@ describe('Dashboard do gestor', () => {
 })
 
 describe('Membros do projeto', () => {
-  async function openDialog(user: ReturnType<typeof userEvent.setup>, projectName: string) {
-    await user.click(
-      await screen.findByRole('button', { name: /Projeto atual: Todos os projetos/ }),
-    )
-    await user.click(screen.getByRole('option', { name: projectName }))
-    await user.click(
-      await screen.findByRole('button', { name: new RegExp(`Projeto atual: ${projectName}`) }),
-    )
+  async function openMembersTab(user: ReturnType<typeof userEvent.setup>, projectName: string) {
+    const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: new RegExp(projectName) }))
+    await user.click(await nav.findByRole('button', { name: 'Configurações' }))
+    await user.click(await screen.findByRole('button', { name: 'Membros' }))
   }
 
-  it('o criador vê o botão; quem não criou não vê', async () => {
+  it('o criador gerencia membros; quem não criou vê somente leitura', async () => {
     const { user } = setup(ANA)
-    await openDialog(user, 'Projeto Aurora')
-    expect(screen.getByRole('button', { name: 'Membros' })).toBeTruthy()
-    await user.keyboard('{Escape}')
-    await user.click(screen.getByRole('button', { name: /Projeto atual: Projeto Aurora/ }))
-    await user.click(screen.getByRole('option', { name: 'Projeto Boreal' }))
-    await user.click(await screen.findByRole('button', { name: /Projeto atual: Projeto Boreal/ }))
-    expect(screen.queryByRole('button', { name: 'Membros' })).toBeNull()
+    await openMembersTab(user, 'Projeto Aurora')
+    expect(screen.getByRole('button', { name: 'Adicionar membro' })).toBeTruthy()
+
+    await openMembersTab(user, 'Projeto Boreal')
+    expect(await screen.findByText(/só o gestor e o criador/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Adicionar membro' })).toBeNull()
   })
 
-  it('o gestor vê o botão em qualquer projeto e gerencia os membros', async () => {
+  it('o gestor edita em qualquer projeto e gerencia os membros', async () => {
     const { api, user } = setup(MANAGER)
     vi.spyOn(api.projects, 'listMembers').mockResolvedValue(
       [users[1]!].map(({ id, name, initials, role }) => ({ id, name, initials, role })),
     )
     const addMember = vi.spyOn(api.projects, 'addMember').mockResolvedValue(undefined)
     const removeMember = vi.spyOn(api.projects, 'removeMember').mockResolvedValue(undefined)
-    await openDialog(user, 'Projeto Boreal')
-    await user.click(screen.getByRole('button', { name: 'Membros' }))
+    await openMembersTab(user, 'Projeto Boreal')
     expect(await screen.findByText('Ana Souza', { selector: 'span' })).toBeTruthy()
 
     await user.selectOptions(screen.getByLabelText('Adicionar membro'), 'Bruno Lima')

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ import { ApiProvider } from '../../shared/api/ApiProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { presetModules, teamToolsView } from '../../shared/testing/team-tools-fixture'
 import {
+  FLOW_PROJECT,
   FLOW_TASK_WITH_PLANNING,
   installFlowApi,
   stubDesktopBridge,
@@ -167,5 +168,67 @@ describe('Marcador "Sprint N" nas superfícies', () => {
     const { api } = renderApp(KANBAN, 'advanced')
     await settleCapabilities(api)
     expect(await cardLabel()).not.toMatch(/Sprint/)
+  })
+
+  it('mover para Concluído na sprint ativa aciona a conferência da Definição de pronto', async () => {
+    const DOD_ITEM_ID = '01J8Y4G2XK8Z1S6M3Q9W0DOD01'
+    const activeSprint = {
+      id: SPRINT_ID,
+      projectId: FLOW_PROJECT.id,
+      number: 4,
+      label: 'Sprint 4',
+      name: 'Sprint 4',
+      goal: null,
+      plannedStart: '2026-11-10',
+      plannedEnd: '2026-11-24',
+      status: 'active' as const,
+      startedAt: '2026-11-10T10:00:00.000Z',
+      closedAt: null,
+      closePolicy: null,
+      createdBy: FLOW_PROJECT.createdBy,
+      createdAt: '2026-10-31T12:00:00.000Z',
+    }
+    const { user, api } = renderApp(SCRUM, 'intermediate', (fakeApi) => {
+      vi.spyOn(fakeApi.projects, 'list').mockResolvedValue([
+        { ...FLOW_PROJECT, definitionOfDoneCount: 1 },
+      ])
+      vi.spyOn(fakeApi.projects.definitionOfDone, 'list').mockResolvedValue([
+        { id: DOD_ITEM_ID, projectId: FLOW_PROJECT.id, title: 'Revisado por par', position: 0 },
+      ])
+      vi.spyOn(fakeApi.sprints, 'list').mockResolvedValue([activeSprint])
+      vi.spyOn(fakeApi.sprints, 'get').mockResolvedValue({
+        sprint: activeSprint,
+        items: [toTaskDto(IN_SPRINT)],
+        history: [],
+      })
+    })
+    const move = vi
+      .spyOn(api.tasks, 'move')
+      .mockResolvedValue(toTaskDto({ ...IN_SPRINT, status: 'done' }))
+    await settleCapabilities(api)
+
+    await user.click(await screen.findByRole('button', { name: 'Sprints' }))
+    await user.click(await screen.findByRole('button', { name: sprintCopy.tabActive }))
+    await user.selectOptions(
+      await screen.findByRole('combobox', {
+        name: `Mover ${IN_SPRINT.title} para outro estado`,
+      }),
+      'done',
+    )
+
+    const dialog = await screen.findByRole('dialog', {
+      name: `${IN_SPRINT.key} · ${IN_SPRINT.title}`,
+    })
+    expect(move).not.toHaveBeenCalled()
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Concluir' }))
+
+    await waitFor(() =>
+      expect(move).toHaveBeenCalledWith({
+        taskId: IN_SPRINT.id,
+        status: 'done',
+        confirmedDefinitionItemIds: [DOD_ITEM_ID],
+      }),
+    )
   })
 })

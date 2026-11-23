@@ -84,7 +84,7 @@ function railNames(): string[] {
   const nav = screen.getByRole('navigation', { name: 'Navegação principal' })
   return Array.from(nav.querySelectorAll('button'))
     .map((button) => button.getAttribute('aria-label') ?? button.textContent ?? '')
-    .filter((name) => !/^(Recolher|Expandir|Início|Buscar ou criar)/.test(name))
+    .filter((name) => !/^(Recolher|Expandir|Abrir Bandeja|Buscar ou criar)/.test(name))
 }
 
 describe('Impedimentos por time e nível', () => {
@@ -92,30 +92,43 @@ describe('Impedimentos por time e nível', () => {
     const { user } = renderApp({ modules: KANBAN, level: 'basic' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     expect(railNames()).not.toContain('Impedimentos')
+    expect(railNames()).not.toContain('Sprints')
     await user.keyboard('gi')
     expect(screen.queryByRole('region', { name: impedimentCopy.title })).toBeNull()
     expect(forbiddenTermsIn(visibleTextOf(document.body))).toEqual([])
   })
 
-  it('Scrum · Básico: a tela aparece (o nível não esconde tela), e o card mostra o marcador com o responsável', async () => {
+  it('Scrum · Básico: a tela abre dentro de Sprints, e o card mostra o marcador com o responsável', async () => {
     const { user } = renderApp({ modules: SCRUM, level: 'basic' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(railNames()).toContain('Impedimentos')
+    expect(railNames()).toContain('Sprints')
 
     const card = screen.getByRole('button', { name: /^AB-121 · / })
     expect(card.getAttribute('aria-label')).toContain('bloqueada, responsável Ana Souza')
     expect(card.getAttribute('title')).toBe('Bloqueada: Aguardando API · Responsável: Ana Souza')
     expect(within(card).getByText('Bloqueada')).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Impedimentos' }))
+    await user.click(screen.getByRole('button', { name: 'Sprints' }))
+    await user.click(
+      within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
+        'button',
+        { name: 'Impedimentos' },
+      ),
+    )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
   })
 
-  it('Scrum · Intermediário: item na barra lateral e atalho G I abrem a tela', async () => {
+  it('Scrum · Intermediário: aba dentro de Sprints e atalho G I abrem a tela', async () => {
     const { user } = renderApp({ modules: SCRUM, level: 'intermediate' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(railNames()).toContain('Impedimentos')
-    await user.click(screen.getByRole('button', { name: 'Impedimentos' }))
+    expect(railNames()).toContain('Sprints')
+    await user.click(screen.getByRole('button', { name: 'Sprints' }))
+    await user.click(
+      within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
+        'button',
+        { name: 'Impedimentos' },
+      ),
+    )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Quadro' }))
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
@@ -130,11 +143,17 @@ describe('Impedimentos por time e nível', () => {
     expect(card.getAttribute('aria-label')).toContain('responsável Ana Souza')
   })
 
-  it('Encerrando: a tela e o item seguem (só o abrir some, testado no detalhe)', async () => {
+  it('Encerrando: a tela e a aba seguem (só o abrir some, testado no detalhe)', async () => {
     const { user } = renderApp({ modules: ENDING, level: 'intermediate', winding: ['impediments'] })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(railNames()).toContain('Impedimentos')
-    await user.click(screen.getByRole('button', { name: 'Impedimentos' }))
+    expect(railNames()).toContain('Sprints')
+    await user.click(screen.getByRole('button', { name: 'Sprints' }))
+    await user.click(
+      within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
+        'button',
+        { name: 'Impedimentos' },
+      ),
+    )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
   })
 

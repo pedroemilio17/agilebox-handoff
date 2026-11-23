@@ -37,6 +37,22 @@ const bridge: AgileBoxBridge = {
     info: () => Promise.resolve({ version: '0.0.0', mode: 'source' }),
     onProgress: () => () => undefined,
   },
+  ai: {
+    getConfig: () =>
+      Promise.resolve({ configured: false, model: 'gemini-2.5-flash', encrypted: false }),
+    saveConfig: (input) =>
+      Promise.resolve({ configured: Boolean(input.apiKey), model: input.model, encrypted: false }),
+    clearKey: () =>
+      Promise.resolve({ configured: false, model: 'gemini-2.5-flash', encrypted: false }),
+    testConnection: () =>
+      Promise.resolve({ ok: false, message: 'Salve uma chave da API antes de testar.' }),
+    complete: () =>
+      Promise.resolve({
+        ok: false,
+        reason: 'not_configured',
+        message: 'Nenhuma chave da API configurada em Ajustes.',
+      }),
+  },
 }
 
 /** Resposta do quadro para os testes: tarefas, sem limites de WIP e sem contagem por coluna. */

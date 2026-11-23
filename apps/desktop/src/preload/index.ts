@@ -1,8 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
+  AI_CHANNELS,
   CHANGE_CHANNEL,
   UPDATE_CHANNELS,
   type AgileBoxBridge,
+  type AiCompleteResult,
+  type AiConfigStatus,
+  type AiTestResult,
   type ShellChannel,
 } from '@agilebox/contract'
 
@@ -34,6 +38,15 @@ const bridge: AgileBoxBridge = {
       ipcRenderer.on(UPDATE_CHANNELS.progress, listener)
       return () => ipcRenderer.removeListener(UPDATE_CHANNELS.progress, listener)
     },
+  },
+  ai: {
+    getConfig: () => ipcRenderer.invoke(AI_CHANNELS.getConfig) as Promise<AiConfigStatus>,
+    saveConfig: (input) =>
+      ipcRenderer.invoke(AI_CHANNELS.saveConfig, input) as Promise<AiConfigStatus>,
+    clearKey: () => ipcRenderer.invoke(AI_CHANNELS.clearKey) as Promise<AiConfigStatus>,
+    testConnection: () => ipcRenderer.invoke(AI_CHANNELS.testConnection) as Promise<AiTestResult>,
+    complete: (input) =>
+      ipcRenderer.invoke(AI_CHANNELS.complete, input) as Promise<AiCompleteResult>,
   },
 }
 

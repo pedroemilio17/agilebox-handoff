@@ -48,11 +48,11 @@ function railNav() {
   return screen.getByRole('navigation', { name: 'Navegação principal' })
 }
 
-describe('Módulos na navegação', () => {
+describe('Configurações (Módulos) na navegação', () => {
   it('sem projeto selecionado, o item não aparece', async () => {
     renderApp()
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(within(railNav()).queryByRole('button', { name: 'Módulos' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Configurações' })).toBeNull()
   })
 
   it('com projeto selecionado, o colaborador abre a tela em leitura', async () => {
@@ -60,7 +60,7 @@ describe('Módulos na navegação', () => {
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     await user.click(within(railNav()).getByRole('button', { name: new RegExp(FLOW_PROJECT.name) }))
 
-    await user.click(await within(railNav()).findByRole('button', { name: 'Módulos' }))
+    await user.click(await within(railNav()).findByRole('button', { name: 'Configurações' }))
     const region = await screen.findByRole('region', { name: 'Módulos' })
     expect(api.projectModules.get).toHaveBeenCalledWith({ projectId: FLOW_PROJECT.id })
     expect(within(region).getByRole('note').textContent).toContain(

@@ -1,19 +1,50 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
-import type { CloseSprintInput, CreateSprintInput, UpdateSprintInput } from '@agilebox/contract'
+import type {
+  CloseSprintInput,
+  CreateSprintInput,
+  SprintDetailDto,
+  UpdateSprintInput,
+} from '@agilebox/contract'
+import type { TaskStatus } from '@agilebox/core'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 
 /**
- * Sprint muda o quadro, o backlog, o detalhe das tarefas, o dashboard e a bandeja (que recebe pelo
- * evento de mudança). Por isso toda gravação invalida o conjunto, não só a sprint.
+ * Sprint muda o quadro, o backlog, o detalhe das tarefas, o burndown, a EAP, o dashboard e a
+ * bandeja (que recebe pelo evento de mudança). Por isso toda gravação invalida o conjunto.
  */
 export function refreshSprintsEverywhere(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.sprints.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.backlog.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.burndown.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.wbs.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.guide.all })
+}
+
+/** Atualiza otimisticamente o status de uma tarefa nos dados cacheados de detalhe da sprint. */
+export function applyTaskStatusToSprintDetail(
+  detail: SprintDetailDto | undefined,
+  taskId: string,
+  status: TaskStatus,
+  movedAt: string,
+): SprintDetailDto | undefined {
+  if (!detail || !Array.isArray(detail.items)) return detail
+  let changed = false
+  const items = detail.items.map((item) => {
+    if (item.id !== taskId) return item
+    changed = true
+    return {
+      ...item,
+      status,
+      updatedAt: movedAt,
+      agingDays: status === 'in_progress' || status === 'review' ? 0 : null,
+      ...(status === 'done' ? { overdue: false } : {}),
+    }
+  })
+  return changed ? { ...detail, items } : detail
 }
 
 /** Sprints do projeto (todas as situações; a tela separa por aba). */
@@ -100,4 +131,32 @@ export function useSprintItemMutations() {
     onSettled: () => refreshSprintsEverywhere(queryClient),
   })
   return { add, remove }
+}
+
+/** Mutação de fallback para mover tarefas quando o quadro da sprint é montado fora de `App`. */
+export function useMoveSprintTask(onError?: (error: unknown) => void) {
+  const api = useApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ taskId, status }: { readonly taskId: string; readonly status: TaskStatus }) =>
+      api.tasks.move({ taskId, status }),
+    onMutate: async ({ taskId, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.sprints.all })
+      const snapshot = queryClient.getQueriesData<SprintDetailDto>({
+        queryKey: queryKeys.sprints.all,
+      })
+      const movedAt = new Date().toISOString()
+      queryClient.setQueriesData<SprintDetailDto>({ queryKey: queryKeys.sprints.all }, (current) =>
+        applyTaskStatusToSprintDetail(current, taskId, status, movedAt),
+      )
+      return { snapshot }
+    },
+    onError: (error, _input, context) => {
+      for (const [key, data] of context?.snapshot ?? []) {
+        queryClient.setQueryData(key, data)
+      }
+      onError?.(error)
+    },
+    onSettled: () => refreshSprintsEverywhere(queryClient),
+  })
 }

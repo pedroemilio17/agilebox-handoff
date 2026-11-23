@@ -1,29 +1,47 @@
 import { describe, expect, it } from 'vitest'
 import {
   autoHeight,
+  autoWidth,
   clampHeight,
   DAILY_INVITE_HEIGHT,
+  TRAY_COMPACT_HEIGHT,
+  TRAY_COMPACT_WIDTH,
+  TRAY_EXPANDED_WIDTH,
   tweenHeight,
   TRAY_HEIGHT_DURATION_MS,
 } from './auto-height'
 
-describe('altura automática da bandeja', () => {
-  it('no início: 246 + 64 por linha visível, de 1 a 2 linhas', () => {
-    expect(autoHeight('home', 0)).toBe(310)
-    expect(autoHeight('home', 1)).toBe(310)
-    expect(autoHeight('home', 2)).toBe(374)
-    expect(autoHeight('home', 9)).toBe(374)
+describe('dimensões automáticas da nova bandeja', () => {
+  it('aviso compacto mede 340×88 e telas expandidas usam largura 430', () => {
+    expect(autoWidth('prompt')).toBe(TRAY_COMPACT_WIDTH)
+    expect(TRAY_COMPACT_WIDTH).toBe(340)
+    expect(autoHeight('prompt', 5)).toBe(TRAY_COMPACT_HEIGHT)
+    expect(TRAY_COMPACT_HEIGHT).toBe(88)
+
+    for (const kind of ['home', 'kan', 'new', 'update', 'daily'] as const) {
+      expect(autoWidth(kind)).toBe(TRAY_EXPANDED_WIDTH)
+      expect(TRAY_EXPANDED_WIDTH).toBe(430)
+    }
   })
 
-  it('atualizar tem 560 e nova tarefa 316', () => {
-    expect(autoHeight('update', 5)).toBe(560)
-    expect(autoHeight('new', 5)).toBe(316)
+  it('no início: 340 + 64 por linha visível, de 1 a 3 linhas', () => {
+    expect(autoHeight('home', 0)).toBe(404)
+    expect(autoHeight('home', 1)).toBe(404)
+    expect(autoHeight('home', 2)).toBe(468)
+    expect(autoHeight('home', 3)).toBe(532)
+    expect(autoHeight('home', 9)).toBe(532)
   })
 
-  it('o ajuste manual fica entre 260 e 600', () => {
-    expect(clampHeight(100)).toBe(260)
-    expect(clampHeight(900)).toBe(600)
-    expect(clampHeight(333.4)).toBe(333)
+  it('kan usa 630, atualizar usa 600 e nova tarefa 430', () => {
+    expect(autoHeight('kan', 5)).toBe(630)
+    expect(autoHeight('update', 5)).toBe(600)
+    expect(autoHeight('new', 5)).toBe(430)
+  })
+
+  it('o ajuste manual fica entre 280 e 660', () => {
+    expect(clampHeight(100)).toBe(280)
+    expect(clampHeight(900)).toBe(660)
+    expect(clampHeight(444.4)).toBe(444)
   })
 })
 
@@ -33,26 +51,27 @@ describe('transição da altura automática', () => {
   })
 
   it('começa na altura anterior, termina na nova e passa por valores intermediários', () => {
-    expect(tweenHeight(374, 310, 0)).toBe(374)
-    expect(tweenHeight(374, 310, 1)).toBe(310)
-    const middle = tweenHeight(374, 310, 0.5)
-    expect(middle).toBeLessThan(374)
-    expect(middle).toBeGreaterThan(310)
+    expect(tweenHeight(468, 404, 0)).toBe(468)
+    expect(tweenHeight(468, 404, 1)).toBe(404)
+    const middle = tweenHeight(468, 404, 0.5)
+    expect(middle).toBeLessThan(468)
+    expect(middle).toBeGreaterThan(404)
   })
 
   it('ignora progresso fora de 0 a 1', () => {
-    expect(tweenHeight(374, 560, -1)).toBe(374)
-    expect(tweenHeight(374, 560, 3)).toBe(560)
+    expect(tweenHeight(468, 600, -1)).toBe(468)
+    expect(tweenHeight(468, 600, 3)).toBe(600)
   })
 })
 
-describe('altura automática com o cartão de convite da daily', () => {
-  it('o cartão soma sua altura à tela inicial', () => {
-    expect(autoHeight('home', 2, true)).toBe(374 + DAILY_INVITE_HEIGHT)
-    expect(autoHeight('home', 1, true)).toBe(310 + DAILY_INVITE_HEIGHT)
+describe('altura automática com a barra de convite da daily', () => {
+  it('a barra soma sua altura à tela inicial respeitando o teto de 630', () => {
+    expect(autoHeight('home', 1, true)).toBe(404 + DAILY_INVITE_HEIGHT)
+    expect(autoHeight('home', 2, true)).toBe(468 + DAILY_INVITE_HEIGHT)
+    expect(autoHeight('home', 3, true)).toBe(630)
   })
 
   it('a daily usa a mesma altura de atualização de tarefa', () => {
-    expect(autoHeight('daily', 2)).toBe(560)
+    expect(autoHeight('daily', 2)).toBe(600)
   })
 })

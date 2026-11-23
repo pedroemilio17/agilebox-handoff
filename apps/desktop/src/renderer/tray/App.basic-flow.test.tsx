@@ -66,6 +66,7 @@ const BLOCKED: TaskDto = {
 
 function renderTray(
   tools: TeamToolsViewDto = teamToolsView({ modules: presetModules('kanban'), level: 'basic' }),
+  initialScreen: 'prompt' | 'home' = 'home',
 ) {
   const shell = {
     minimize: vi.fn(),
@@ -106,7 +107,7 @@ function renderTray(
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen={initialScreen} />
       </QueryProvider>
     </ApiProvider>,
   )
@@ -170,7 +171,9 @@ describe('Bandeja · Kanban simples · Básico', () => {
     const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(BLOCKED)
 
     await user.click(await screen.findByRole('button', { name: /Integração com API/ }))
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 560 }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 600, width: 430 }),
+    )
     expect(await screen.findByLabelText('O que será feito')).toBeTruthy()
     expect(screen.queryByText('Aguardando API')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
@@ -182,5 +185,28 @@ describe('Bandeja · Kanban simples · Básico', () => {
 
     await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: BLOCKED.id, status: 'review' }))
     expect(await screen.findByText('Atualização salva')).toBeTruthy()
+  })
+
+  it('fluxo padrão inicia no aviso compacto e abre o Kan sem termos de Scrum no Básico', async () => {
+    const { user, shell } = renderTray(
+      teamToolsView({ modules: presetModules('kanban'), level: 'basic' }),
+      'prompt',
+    )
+
+    expect(await screen.findByText('Vamos atualizar as atividades de hoje?')).toBeTruthy()
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+    )
+    expectNoScrumTerms()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Expandir bandeja para atualizar atividades' }),
+    )
+    expect(await screen.findByText(BLOCKED.title)).toBeTruthy()
+    expectNoScrumTerms()
+
+    await user.click(screen.getByRole('button', { name: 'Abrir chat com o Kan' }))
+    expect(await screen.findByRole('log', { name: 'Conversa com o Kan' })).toBeTruthy()
+    expectNoScrumTerms()
   })
 })

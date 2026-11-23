@@ -115,13 +115,10 @@ describe('Arquivadas no painel', () => {
 
   it('projeto arquivado selecionado desabilita a criação de tarefa', async () => {
     const { user } = setup()
-    // Abre o seletor de projetos, mostra os arquivados e escolhe o Boreal.
-    await user.click(
-      within(await screen.findByRole('banner')).getByRole('button', { name: /Todos os projetos/ }),
-    )
-    const dialog = await screen.findByRole('dialog')
-    await user.click(within(dialog).getByRole('button', { name: panelCopy.showArchived }))
-    await user.click(within(dialog).getByRole('option', { name: /Projeto Boreal/ }))
+    const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
+    // Liga "Mostrar projetos arquivados" na barra lateral e escolhe o Boreal.
+    await user.click(nav.getByRole('button', { name: 'Mostrar projetos arquivados' }))
+    await user.click(await nav.findByRole('button', { name: /Projeto Boreal/ }))
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Nova tarefa' }).hasAttribute('disabled')).toBe(
         true,

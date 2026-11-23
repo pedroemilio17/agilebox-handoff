@@ -14,7 +14,8 @@
     kanPos: 'agilebox_proto_kan_pos',
     kanSkipped: 'agilebox_proto_kan_skipped',
     kanSteps: 'agilebox_proto_kan_steps',
-    sidebarCollapsed: 'agilebox_proto_sidebar_collapsed'
+    sidebarCollapsed: 'agilebox_proto_sidebar_collapsed',
+    sidebarExpandedProject: 'agilebox_proto_sidebar_expanded_proj'
   };
 
   var STATES = [
@@ -541,6 +542,8 @@
     tray: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 14h5l1.5 2h3L15 14h5"/></svg>',
     search: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
     chevDown: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
+    chevRight: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    arrowLeft: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>',
     collapse: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>'
   };
 
@@ -641,10 +644,80 @@
     return false;
   }
 
+  function getProjectNavItems(project) {
+    var pid = project.id;
+    var items = [
+      { navKey: 'projeto-home', label: 'Início', href: 'projeto-home.html?projeto=' + pid },
+      { navKey: 'quadro', label: 'Quadro', href: 'quadro.html?projeto=' + pid }
+    ];
+    if (project.preset === 'Híbrido') {
+      items.push(
+        { navKey: 'agil:backlog', label: 'Backlog', href: 'agil.html?tab=backlog&projeto=' + pid },
+        { navKey: 'agil:sprints', label: 'Sprints', href: 'agil.html?tab=sprints&projeto=' + pid, meta: 'S4' },
+        { navKey: 'preditivo:entregas', label: 'Entregas', href: 'preditivo.html?tab=entregas&projeto=' + pid },
+        { navKey: 'preditivo:cronograma', label: 'Cronograma', href: 'preditivo.html?tab=cronograma&projeto=' + pid }
+      );
+    } else if (project.preset === 'Tradicional') {
+      items.push(
+        { navKey: 'preditivo:entregas', label: 'Entregas', href: 'preditivo.html?tab=entregas&projeto=' + pid },
+        { navKey: 'preditivo:cronograma', label: 'Cronograma', href: 'preditivo.html?tab=cronograma&projeto=' + pid }
+      );
+    }
+    items.push({ navKey: 'configuracoes:projeto', label: 'Configurações', href: 'configuracoes.html?tab=projeto&projeto=' + pid });
+    return items;
+  }
+
+  function isActiveProjectSubItem(navKey, projectId, page, tab) {
+    if (projectId !== getProjectId()) return false;
+    var scope = getUrlParam('scope');
+    if (navKey === 'projeto-home') return page === 'projeto-home';
+    if (navKey === 'quadro') return (page === 'quadro' && scope !== 'mine') || page === 'tarefa';
+    if (navKey === 'agil:backlog') return page === 'agil' && tab === 'backlog';
+    if (navKey === 'agil:sprints') return page === 'agil' && tab === 'sprints';
+    if (navKey === 'preditivo:entregas') return page === 'preditivo' && tab === 'entregas';
+    if (navKey === 'preditivo:cronograma') return page === 'preditivo' && tab === 'cronograma';
+    if (navKey === 'configuracoes:projeto') return page === 'configuracoes' && tab === 'projeto';
+    return false;
+  }
+
+  function renderProjectsTree(treeEl, page, tab, expandedProjectId) {
+    if (!treeEl) return;
+    var currentProjectId = getProjectId();
+    shellRefs.expandedProjectId = expandedProjectId;
+
+    treeEl.innerHTML = PROJECTS.map(function (p) {
+      var isExpanded = expandedProjectId === p.id;
+      var isCurrent = currentProjectId === p.id;
+      var subItemsHtml = getProjectNavItems(p).map(function (item) {
+        var active = isActiveProjectSubItem(item.navKey, p.id, page, tab);
+        return (
+          '<button type="button" class="ab-proj-subitem' + (active ? ' is-active' : '') + '"' +
+          ' data-href="' + item.href + '" data-project-id="' + p.id + '" data-nav-key="' + item.navKey + '"' +
+          (active ? ' aria-current="page"' : '') + '>' +
+            '<span class="ab-proj-subitem-label">' + escapeHtml(item.label) + '</span>' +
+            (item.meta ? '<span class="ab-nav-meta">' + escapeHtml(item.meta) + '</span>' : '') +
+          '</button>'
+        );
+      }).join('');
+
+      return (
+        '<div class="ab-proj-group' + (isExpanded ? ' is-open' : '') + (isCurrent ? ' is-current' : '') + '" data-proj-group="' + p.id + '">' +
+          '<button type="button" class="ab-proj-toggle" data-proj-toggle="' + p.id + '" data-tip="' + escapeHtml(p.name + ' (' + p.preset + ')') + '" aria-expanded="' + (isExpanded ? 'true' : 'false') + '">' +
+            '<span class="ab-nav-icon" aria-hidden="true"><span class="ab-proj-dot ' + p.dotClass + '"></span></span>' +
+            '<span class="ab-sidebar-label">' + escapeHtml(p.name) + '</span>' +
+            '<span class="ab-proj-chevron" aria-hidden="true">' + ICONS.chevRight + '</span>' +
+          '</button>' +
+          '<div class="ab-proj-children"' + (isExpanded ? '' : ' hidden') + '>' +
+            subItemsHtml +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
   function buildSidebar(page, tab) {
     var collapsed = readStorage(STORAGE.sidebarCollapsed, 'false') === 'true';
     var project = getProject();
-    var otherProjects = PROJECTS.filter(function (p) { return p.id !== project.id; });
     var role = getRole();
 
     var nav = document.createElement('aside');
@@ -657,7 +730,6 @@
       var attrs = '';
       if (opts.roleOnly) attrs += ' data-role-only="' + opts.roleOnly + '"';
       if (opts.disabled) attrs += ' disabled aria-disabled="true"';
-      if (opts.meta) attrs += '';
       return (
         '<button type="button" class="ab-nav-item' + (active ? ' is-active' : '') + (opts.extraClass ? ' ' + opts.extraClass : '') + '"' +
         ' data-href="' + href + '" data-tip="' + escapeHtml(label) + '"' + attrs +
@@ -670,16 +742,7 @@
       );
     }
 
-    var otherHtml = otherProjects.map(function (p) {
-      var label = p.id === 'c' ? 'Projeto C (Simples)' : p.name;
-      return (
-        '<button type="button" class="ab-nav-item" data-switch-project="' + p.id + '" data-href="quadro.html?projeto=' + p.id + '" data-tip="' + escapeHtml(label) + '">' +
-          '<span class="ab-nav-icon" aria-hidden="true"><span class="ab-proj-dot ' + p.dotClass + '"></span></span>' +
-          '<span class="ab-sidebar-label">' + escapeHtml(label) + '</span>' +
-          '<span class="ab-nav-meta">' + escapeHtml(p.preset) + '</span>' +
-        '</button>'
-      );
-    }).join('');
+    var newProjActive = page === 'novo-projeto';
 
     nav.innerHTML =
       '<div class="ab-sidebar-head">' +
@@ -699,18 +762,13 @@
         navLink('dashboard.html', 'Dashboard Gestor', ICONS.dashboard, { roleOnly: 'manager' }) +
         navLink('agenda.html', 'Agenda', ICONS.agenda) +
 
-        '<span class="ab-section-label" id="ab-sidebar-proj-label">Projeto atual · ' + escapeHtml(project.name) + '</span>' +
-        navLink('projeto-home.html', 'Início do projeto', ICONS.home) +
-        navLink('quadro.html', 'Quadro', ICONS.board) +
-        navLink('agil.html?tab=backlog', 'Backlog', ICONS.backlog) +
-        navLink('agil.html?tab=sprints', 'Sprints', ICONS.sprints, { meta: 'S4' }) +
-        navLink('preditivo.html?tab=entregas', 'Entregas', ICONS.entregas) +
-        navLink('preditivo.html?tab=cronograma', 'Cronograma', ICONS.cronograma) +
-        navLink('configuracoes.html?tab=projeto', 'Config. e Ferramentas', ICONS.config) +
-
-        '<span class="ab-section-label">Outros projetos</span>' +
-        '<div id="ab-other-projects">' + otherHtml + '</div>' +
-        navLink('novo-projeto.html', '+ Novo projeto', ICONS.plus, { extraClass: 'is-new-proj' }) +
+        '<div class="ab-section-head">' +
+          '<span class="ab-section-label">Projetos</span>' +
+          '<button type="button" class="ab-section-add-btn' + (newProjActive ? ' is-active' : '') + '" id="ab-sidebar-new-project" data-href="novo-projeto.html" data-tip="Novo projeto" aria-label="Novo projeto" title="Novo projeto"' + (newProjActive ? ' aria-current="page"' : '') + '>' +
+            ICONS.plus +
+          '</button>' +
+        '</div>' +
+        '<div class="ab-projects-tree" id="ab-projects-tree"></div>' +
       '</div>' +
       '<div class="ab-sidebar-footer">' +
         '<span class="ab-section-label">Sistema</span>' +
@@ -727,6 +785,9 @@
         '</button>' +
       '</div>';
 
+    var treeEl = nav.querySelector('#ab-projects-tree');
+    renderProjectsTree(treeEl, page, tab, project.id);
+
     nav.addEventListener('click', function (ev) {
       if (ev.target.closest('#ab-collapse-sidebar')) {
         var next = !nav.classList.contains('is-collapsed');
@@ -739,12 +800,53 @@
         showToast('Papel alternado para ' + (getRole() === 'manager' ? 'Gestor (Carla)' : 'Colaborador (Pedro)'), 'info');
         return;
       }
+
+      var newProjBtn = ev.target.closest('#ab-sidebar-new-project');
+      if (newProjBtn) {
+        window.location.href = newProjBtn.getAttribute('data-href') || 'novo-projeto.html';
+        return;
+      }
+
+      var toggleBtn = ev.target.closest('[data-proj-toggle]');
+      if (toggleBtn) {
+        var pid = toggleBtn.getAttribute('data-proj-toggle');
+        var isCollapsedNow = nav.classList.contains('is-collapsed') || (window.innerWidth && window.innerWidth <= 1100);
+        if (isCollapsedNow) {
+          writeStorage(STORAGE.project, pid);
+          writeStorage(STORAGE.sidebarExpandedProject, pid);
+          window.location.href = 'quadro.html?projeto=' + pid;
+          return;
+        }
+        var nextExpanded = shellRefs.expandedProjectId === pid ? null : pid;
+        shellRefs.expandedProjectId = nextExpanded;
+        writeStorage(STORAGE.sidebarExpandedProject, nextExpanded || '');
+        var groups = treeEl.querySelectorAll('.ab-proj-group');
+        for (var g = 0; g < groups.length; g++) {
+          var gId = groups[g].getAttribute('data-proj-group');
+          var openNow = gId === nextExpanded;
+          groups[g].classList.toggle('is-open', openNow);
+          var gToggle = groups[g].querySelector('[data-proj-toggle]');
+          var gChildren = groups[g].querySelector('.ab-proj-children');
+          if (gToggle) gToggle.setAttribute('aria-expanded', openNow ? 'true' : 'false');
+          if (gChildren) gChildren.hidden = !openNow;
+        }
+        return;
+      }
+
+      var subBtn = ev.target.closest('.ab-proj-subitem[data-href]');
+      if (subBtn) {
+        var subProjId = subBtn.getAttribute('data-project-id');
+        if (subProjId) {
+          writeStorage(STORAGE.project, subProjId);
+          writeStorage(STORAGE.sidebarExpandedProject, subProjId);
+        }
+        var subHref = subBtn.getAttribute('data-href');
+        if (subHref) window.location.href = subHref;
+        return;
+      }
+
       var btn = ev.target.closest('.ab-nav-item[data-href]');
       if (!btn || btn.disabled) return;
-      var projSwitch = btn.getAttribute('data-switch-project');
-      if (projSwitch) {
-        writeStorage(STORAGE.project, projSwitch);
-      }
       var href = btn.getAttribute('data-href');
       if (href && href !== '#plugins') {
         window.location.href = href;
@@ -765,16 +867,6 @@
     var header = document.createElement('header');
     header.className = 'ab-titlebar';
 
-    var switcherItems = PROJECTS.map(function (p) {
-      return (
-        '<button type="button" class="ab-switcher-item' + (p.id === project.id ? ' is-selected' : '') + '" data-select-project="' + p.id + '">' +
-          '<span class="ab-proj-dot ' + p.dotClass + '"></span>' +
-          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(p.fullName) + '</span>' +
-          '<span class="ab-nav-meta">' + escapeHtml(p.preset) + '</span>' +
-        '</button>'
-      );
-    }).join('');
-
     var breadcrumbMiddle = '';
     if (page === 'tarefa') {
       var taskId = getUrlParam('id') || 'AB-5';
@@ -786,20 +878,9 @@
 
     header.innerHTML =
       '<div class="ab-titlebar-left">' +
-        '<div class="ab-switcher-wrap">' +
-          '<button type="button" class="ab-switcher-btn" id="ab-switcher-btn" aria-haspopup="menu" aria-expanded="false">' +
-            '<span class="ab-proj-dot ' + project.dotClass + '" id="ab-switcher-dot"></span>' +
-            '<span id="ab-switcher-label">' + escapeHtml(project.name) + '</span>' +
-            ICONS.chevDown +
-          '</button>' +
-          '<div class="ab-switcher-menu" id="ab-switcher-menu" role="menu">' +
-            switcherItems +
-            '<div class="ab-switcher-divider"></div>' +
-            '<a class="ab-switcher-item" href="novo-projeto.html" role="menuitem">' +
-              ICONS.plus + '<span>Novo projeto</span>' +
-            '</a>' +
-          '</div>' +
-        '</div>' +
+        '<button type="button" class="ab-back-btn" id="ab-titlebar-back" aria-label="Voltar" title="Voltar">' +
+          ICONS.arrowLeft +
+        '</button>' +
         '<div class="ab-breadcrumb" aria-label="Localização atual">' +
           '<span class="ab-breadcrumb-proj" id="ab-breadcrumb-proj">' + escapeHtml(project.name) + '</span>' +
           '<span class="ab-breadcrumb-sep" aria-hidden="true">›</span>' +
@@ -828,30 +909,12 @@
         '</div>' +
       '</div>';
 
-    var switcherBtn = header.querySelector('#ab-switcher-btn');
-    var switcherMenu = header.querySelector('#ab-switcher-menu');
-
-    switcherBtn.addEventListener('click', function (ev) {
-      ev.stopPropagation();
-      var open = !switcherMenu.classList.contains('is-open');
-      switcherMenu.classList.toggle('is-open', open);
-      switcherBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    document.addEventListener('click', function (ev) {
-      if (!ev.target.closest('.ab-switcher-wrap')) {
-        switcherMenu.classList.remove('is-open');
-        switcherBtn.setAttribute('aria-expanded', 'false');
+    header.querySelector('#ab-titlebar-back').addEventListener('click', function () {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = page === 'projeto-home' ? 'quadro.html' : 'projeto-home.html';
       }
-    });
-
-    switcherMenu.addEventListener('click', function (ev) {
-      var item = ev.target.closest('[data-select-project]');
-      if (!item) return;
-      var pid = item.getAttribute('data-select-project');
-      setProject(pid);
-      switcherMenu.classList.remove('is-open');
-      switcherBtn.setAttribute('aria-expanded', 'false');
     });
 
     header.querySelector('#ab-title-search').addEventListener('click', function () {
@@ -2066,6 +2129,7 @@
   function setProject(projectId) {
     var valid = projectId === 'b' || projectId === 'c' ? projectId : 'a';
     writeStorage(STORAGE.project, valid);
+    writeStorage(STORAGE.sidebarExpandedProject, valid);
     try {
       var url = new URL(window.location.href);
       if (url.searchParams.has('projeto')) {
@@ -2083,32 +2147,12 @@
       }
     }
 
-    var dot = document.getElementById('ab-switcher-dot');
-    var lbl = document.getElementById('ab-switcher-label');
     var bcProj = document.getElementById('ab-breadcrumb-proj');
-    var sideProj = document.getElementById('ab-sidebar-proj-label');
-    if (dot) dot.className = 'ab-proj-dot ' + p.dotClass;
-    if (lbl) lbl.textContent = p.name;
     if (bcProj) bcProj.textContent = p.name;
-    if (sideProj) sideProj.textContent = 'Projeto atual · ' + p.name;
 
-    var items = document.querySelectorAll('[data-select-project]');
-    for (var i = 0; i < items.length; i++) {
-      items[i].classList.toggle('is-selected', items[i].getAttribute('data-select-project') === valid);
-    }
-
-    var otherWrap = document.getElementById('ab-other-projects');
-    if (otherWrap) {
-      otherWrap.innerHTML = PROJECTS.filter(function (item) { return item.id !== valid; }).map(function (item) {
-        var label = item.id === 'c' ? 'Projeto C (Simples)' : item.name;
-        return (
-          '<button type="button" class="ab-nav-item" data-switch-project="' + item.id + '" data-href="quadro.html?projeto=' + item.id + '" data-tip="' + escapeHtml(label) + '">' +
-            '<span class="ab-nav-icon" aria-hidden="true"><span class="ab-proj-dot ' + item.dotClass + '"></span></span>' +
-            '<span class="ab-sidebar-label">' + escapeHtml(label) + '</span>' +
-            '<span class="ab-nav-meta">' + escapeHtml(item.preset) + '</span>' +
-          '</button>'
-        );
-      }).join('');
+    var treeEl = document.getElementById('ab-projects-tree');
+    if (treeEl) {
+      renderProjectsTree(treeEl, getPage(), getTab(), valid);
     }
 
     emit('ab:projectchange', { projectId: valid, project: p });
@@ -2124,6 +2168,17 @@
       navItems[i].classList.toggle('is-active', isMatch);
       if (isMatch) navItems[i].setAttribute('aria-current', 'page');
       else navItems[i].removeAttribute('aria-current');
+    }
+    var curProj = getProjectId();
+    var targetKey = page + ':' + tabId;
+    var subItems = document.querySelectorAll('.ab-proj-subitem[data-nav-key]');
+    for (var s = 0; s < subItems.length; s++) {
+      var isSubMatch =
+        subItems[s].getAttribute('data-project-id') === curProj &&
+        subItems[s].getAttribute('data-nav-key') === targetKey;
+      subItems[s].classList.toggle('is-active', isSubMatch);
+      if (isSubMatch) subItems[s].setAttribute('aria-current', 'page');
+      else subItems[s].removeAttribute('aria-current');
     }
     try {
       var url = new URL(window.location.href);

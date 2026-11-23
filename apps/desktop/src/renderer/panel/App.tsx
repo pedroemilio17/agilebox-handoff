@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Drawer, ScopeBanner, Toast } from '@agilebox/ui'
 import { TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
 import { ApiError } from '@agilebox/contract'
-import type { SetWipLimitsInput, TaskDto, WipLimitsDto } from '@agilebox/contract'
+import type { SetWipLimitsInput, SprintDetailDto, TaskDto, WipLimitsDto } from '@agilebox/contract'
 import { useApi } from '../shared/api/ApiProvider'
 import { CapabilitiesProvider } from '../shared/capabilities/CapabilitiesProvider'
 import { useCapabilities } from '../shared/capabilities/capabilities-context'
@@ -27,17 +27,18 @@ import { SprintsView } from './sprints/SprintsView'
 import { PlanView } from './plan/PlanView'
 import { PlanSprintView } from './plan/PlanSprintView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
-import { ModulesView } from './modules/ModulesView'
 import { summarizeModules } from './modules/modules-screen'
+import { ProjectConfigView } from './project-config/ProjectConfigView'
+import { projectNameKey } from './project-config/project-name-key'
 import { useProjectModules } from './hooks/use-project-modules'
-import { useSprintList } from './sprints/use-sprints'
+import { useCreateProjectWithSetup } from './hooks/use-create-project-with-setup'
+import { applyTaskStatusToSprintDetail, useSprintList } from './sprints/use-sprints'
 import { REOPEN_SETTINGS_KEY } from './settings/SettingsView'
 import { DashboardView } from './dashboard/DashboardView'
 import { UpdatesView } from './dashboard/UpdatesView'
 import { ManagerBanner } from './board/ManagerBanner'
-import { ProjectMembersDialog } from './board/ProjectMembersDialog'
-import { ProjectTitle } from './board/ProjectTitle'
-import { ProjectDialog } from './board/ProjectDialog'
+import { NewProjectFlow, type NewProjectPayload } from './new-project/NewProjectFlow'
+import { refusalMessage } from './backlog/refusal-message'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
 import { GuideDock } from './guide/GuideDock'
@@ -48,6 +49,7 @@ import { teamWipColumns } from './board/team-board'
 import { ScopeAnnouncement } from './board/ScopeAnnouncement'
 import { TaskDetailView } from './task-detail/TaskDetailView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
+import { popNavHistory, pushNavHistory, type NavEntry } from './layout/nav-history'
 import { PanelCommands } from './commands/PanelCommands'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
@@ -136,7 +138,8 @@ function PanelContent({
     (view === 'modules' && selectedProjectId === null)
       ? 'projects'
       : view
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
+  const [newProjectOpen, setNewProjectOpen] = useState(false)
+  const [navHistory, setNavHistory] = useState<readonly NavEntry[]>([])
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false)
   const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus | undefined>()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -146,7 +149,7 @@ function PanelContent({
   // Escopo do quadro só em memória da sessão: a Equipe é somente leitura e não grava nada.
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
-  const [membersProject, setMembersProject] = useState<ProjectDto | null>(null)
+  const createProject = useCreateProjectWithSetup()
   // Contador: cada "Ver a trilha" da janela de boas-vindas abre o cartão "Primeiros passos".
   const [trailRequest, setTrailRequest] = useState(0)
   // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
@@ -224,10 +227,16 @@ function PanelContent({
   const definitionGate = useDefinitionOfDoneGate()
   const moveTask = useMutation({
     mutationFn: (input: Parameters<typeof api.tasks.move>[0]) => api.tasks.move(input),
-    // O card muda de coluna na hora; se o servidor recusar, a lista volta ao que era.
+    // O card muda de coluna na hora; se o servidor recusar, quadro e sprint voltam ao que eram.
     onMutate: async ({ taskId, status }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.tasks.all }),
+        queryClient.cancelQueries({ queryKey: queryKeys.sprints.all }),
+      ])
       const snapshot = queryClient.getQueriesData<TaskDto[]>({ queryKey: queryKeys.tasks.all })
+      const sprintSnapshot = queryClient.getQueriesData<SprintDetailDto>({
+        queryKey: queryKeys.sprints.all,
+      })
       const movedAt = new Date().toISOString()
       queryClient.setQueriesData<TaskDto[]>({ queryKey: queryKeys.tasks.all }, (current) =>
         Array.isArray(current)
@@ -244,20 +253,35 @@ function PanelContent({
             )
           : current,
       )
-      return { snapshot }
+      queryClient.setQueriesData<SprintDetailDto>({ queryKey: queryKeys.sprints.all }, (current) =>
+        applyTaskStatusToSprintDetail(current, taskId, status, movedAt),
+      )
+      return { snapshot, sprintSnapshot }
     },
-    onError: (_error, _input, context) => {
+    onError: (error, _input, context) => {
       for (const [key, data] of context?.snapshot ?? []) queryClient.setQueryData(key, data)
+      for (const [key, data] of context?.sprintSnapshot ?? []) queryClient.setQueryData(key, data)
+      if (error instanceof ApiError && error.code === 'FORBIDDEN') {
+        showNotice(panelCopy.forbidden, 'warning')
+      }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.sprints.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.burndown.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.wbs.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.guide.all }),
+      ]),
   })
   function showNotice(message: string, tone: 'default' | 'warning' = 'default') {
     noticeSeq.current += 1
     setNotice({ id: noticeSeq.current, message, tone })
   }
   /** Mover segue permitido acima do limite: a tela só avisa quando a coluna passa a ficar acima. */
-  function moveTaskFromBoard(taskId: string, status: TaskStatus) {
-    const task = tasks.data?.tasks.find((item) => item.id === taskId)
+  function moveTaskFromBoard(taskId: string, status: TaskStatus, fallbackTask?: TaskDto) {
+    const task = fallbackTask ?? tasks.data?.tasks.find((item) => item.id === taskId)
     if (status === 'done' && task && task.status !== 'done') {
       // Concluir passa pela conferência da definição de pronto (drag, seletor e detalhe).
       definitionGate.conclude({
@@ -317,16 +341,69 @@ function PanelContent({
     else wipLimits[status] = limit
     setWipLimit.mutate({ wipLimits })
   }
+  function navigate(nextView: PanelView, nextProjectId: string | null = selectedProjectId) {
+    setNavHistory((history) =>
+      pushNavHistory(
+        history,
+        { view: currentView, projectId: selectedProjectId },
+        { view: nextView, projectId: nextProjectId },
+      ),
+    )
+    if (nextProjectId !== selectedProjectId) {
+      setSelectedProjectId(nextProjectId)
+      setActiveTaskId(null)
+      setTaskFullScreen(false)
+    }
+    setView(nextView)
+  }
+
+  function goBack() {
+    if (activeTaskId !== null && taskFullScreen) {
+      closeTask()
+      return
+    }
+    const { entry, rest } = popNavHistory(navHistory)
+    if (!entry) return
+    setNavHistory(rest)
+    if (entry.projectId !== selectedProjectId) {
+      setSelectedProjectId(entry.projectId)
+    }
+    setActiveTaskId(null)
+    setTaskFullScreen(false)
+    setView(entry.view)
+  }
+
+  async function createProjectFromWizard(payload: NewProjectPayload) {
+    const duplicate = (projects.data ?? []).find(
+      (project) => projectNameKey(project.name) === projectNameKey(payload.name),
+    )
+    if (duplicate) {
+      createProject.reset()
+      setNewProjectOpen(false)
+      navigate('projects', duplicate.id)
+      return
+    }
+    try {
+      const created = await createProject.mutateAsync(payload)
+      setNewProjectOpen(false)
+      navigate('projects', created.id)
+    } catch {
+      // A mensagem aparece no próprio assistente, que continua aberto.
+    }
+  }
+
   const switchUser = useMutation({
     mutationFn: (userId: string) => api.session.switchUser({ userId }),
     onSuccess: () => {
       setCommandsOpen(false)
+      setNewProjectOpen(false)
+      setNavHistory([])
       setView('projects')
       setSelectedProjectId(null)
       setActiveTaskId(null)
+      setTaskFullScreen(false)
       setViewingUser(null)
       setTaskScope('mine')
-      setMembersProject(null)
       return queryClient.invalidateQueries()
     },
   })
@@ -349,6 +426,8 @@ function PanelContent({
   // Membros e definição de pronto: gestor e criador do projeto.
   const canManageProject = (project: ProjectDto) =>
     isManager || project.createdBy === actor.actor?.userId
+  const navActionsRef = useRef({ navigate, goBack })
+  navActionsRef.current = { navigate, goBack }
   useEffect(() => {
     let goTo = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -359,16 +438,22 @@ function PanelContent({
         setCommandsOpen((open) => !open)
         return
       }
-      if (event.ctrlKey || event.metaKey || event.altKey || event.repeat || event.isComposing)
-        return
       const target = event.target
-      if (
+      const blockedByFocusOrModal =
         (target instanceof Element &&
           target.closest(
             'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
           )) ||
         document.querySelector('[role="dialog"][aria-modal="true"]')
-      ) {
+      if (event.altKey && event.key === 'ArrowLeft' && !event.ctrlKey && !event.metaKey) {
+        if (blockedByFocusOrModal) return
+        event.preventDefault()
+        navActionsRef.current.goBack()
+        return
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey || event.repeat || event.isComposing)
+        return
+      if (blockedByFocusOrModal) {
         goTo = false
         return
       }
@@ -384,7 +469,7 @@ function PanelContent({
           (key === 'd' && isManager)
         ) {
           event.preventDefault()
-          setView(
+          navActionsRef.current.navigate(
             key === 'q'
               ? 'projects'
               : key === 'b'
@@ -410,7 +495,7 @@ function PanelContent({
         event.preventDefault()
         setNewTaskStatus(undefined)
         setNewTaskDialogOpen(true)
-        setView('projects')
+        navActionsRef.current.navigate('projects')
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -424,23 +509,15 @@ function PanelContent({
     <>
       <PanelShell
         onSearch={() => setCommandsOpen(true)}
-        projectSelector={
-          <ProjectTitle
-            expanded={projectDialogOpen}
-            onClick={() => setProjectDialogOpen(true)}
-            projectName={
-              projects.data?.find((project) => project.id === selectedProjectId)?.name ??
-              panelCopy.allProjects
-            }
-          />
-        }
         managerContext={
           viewingUser ? (
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
           ) : null
         }
         view={currentView}
-        onViewChange={setView}
+        onViewChange={(next) => navigate(next)}
+        canGoBack={navHistory.length > 0 || (activeTaskId !== null && taskFullScreen)}
+        onBack={goBack}
         taskScope={taskScope}
         onTaskScopeChange={changeTaskScope}
         isManager={isManager}
@@ -450,11 +527,19 @@ function PanelContent({
         activeSprintNumber={activeSprintNumber}
         projectModuleCount={projectModuleCount}
         onProjectSelect={(id) => {
-          setSelectedProjectId(id)
-          setActiveTaskId(null)
-          setView('projects')
+          setBoardException(null)
+          navigate('projects', id)
         }}
-        onNewProject={() => setProjectDialogOpen(true)}
+        onNewProject={() => {
+          createProject.reset()
+          setNewProjectOpen(true)
+        }}
+        showArchivedProjects={showArchivedProjects}
+        onShowArchivedProjectsChange={(show) => {
+          setShowArchivedProjects(show)
+          // Escondido o projeto selecionado, o quadro volta a todos os projetos.
+          if (!show && selectedArchived) navigate('projects', null)
+        }}
         onOpenTray={openTray}
         // O guia vai no topo de cada tela do projeto (ver GuideDock). Na tarefa em tela cheia, não.
         guide={
@@ -462,7 +547,7 @@ function PanelContent({
             <GuideDock
               projectId={selectedProjectId}
               view={currentView}
-              onNavigate={setView}
+              onNavigate={(next) => navigate(next)}
               onOpenTray={openTray}
               openRequest={trailRequest}
             />
@@ -478,7 +563,7 @@ function PanelContent({
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         wbs={
@@ -486,7 +571,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         plan={
@@ -496,7 +581,7 @@ function PanelContent({
             projectName={selectedProject?.name ?? null}
             onOpenSprint={(sprintId, deliverableId) => {
               setPlanSprint({ sprintId, deliverableId })
-              setView('planSprint')
+              navigate('planSprint')
             }}
           />
         }
@@ -508,15 +593,16 @@ function PanelContent({
               sprintId={planSprint.sprintId}
               deliverableId={planSprint.deliverableId}
               showEstimates={capabilities.can('estimates.hours:passive')}
-              onBack={() => setView('plan')}
+              onBack={() => navigate('plan')}
               onOpenTask={(id) => {
                 openTask(id)
-                setView('projects')
+                navigate('projects')
               }}
               onNewTask={() => {
                 setNewTaskStatus(undefined)
                 setNewTaskDialogOpen(true)
               }}
+              onMoveTask={(task, status) => moveTaskFromBoard(task.id, status, task)}
             />
           ) : null
         }
@@ -525,7 +611,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         milestones={
@@ -533,7 +619,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         schedule={
@@ -541,7 +627,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         tracking={
@@ -549,7 +635,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         baseline={
@@ -557,14 +643,14 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         burndown={
           <BurndownView
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         flowMetrics={
@@ -572,7 +658,7 @@ function PanelContent({
             key={selectedProjectId ?? 'none'}
             projectId={selectedProjectId}
             projectName={selectedProject?.name ?? null}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
           />
         }
         sprints={
@@ -580,44 +666,44 @@ function PanelContent({
             initialProjectId={selectedProjectId}
             projects={activeProjects}
             isManager={isManager}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
             onOpenTask={(id) => {
               openTask(id)
-              setView('projects')
+              navigate('projects')
             }}
             onNewTask={() => {
               setNewTaskStatus(undefined)
               setNewTaskDialogOpen(true)
             }}
+            onMoveTask={(task, status) => moveTaskFromBoard(task.id, status, task)}
           />
         }
         impediments={
           <ImpedimentsView
             selectedProjectId={selectedProjectId}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
             onOpenTask={(id) => {
               openTask(id)
-              setView('projects')
+              navigate('projects')
             }}
           />
         }
         agenda={
           <AgendaView
             selectedProjectId={selectedProjectId}
-            onNavigate={setView}
+            onNavigate={(next) => navigate(next)}
             onOpenTask={(id) => {
               openTask(id)
-              setView('projects')
+              navigate('projects')
             }}
           />
         }
         modules={
-          <ModulesView
-            projectId={selectedProjectId}
-            projectName={selectedProject?.name ?? null}
-            startedFromPreset={selectedProject?.startedFromPreset ?? null}
-            archived={selectedArchived}
-            onNavigate={setView}
+          <ProjectConfigView
+            project={selectedProject ?? null}
+            projects={projects.data ?? []}
+            canManage={selectedProject !== undefined && canManageProject(selectedProject)}
+            onNavigate={(next) => navigate(next)}
           />
         }
         dashboard={
@@ -626,28 +712,22 @@ function PanelContent({
             onOpenException={(exception) => {
               setBoardException(exception)
               setViewingUser(null)
-              setSelectedProjectId(null)
-              setActiveTaskId(null)
-              setView('projects')
+              navigate('projects', null)
             }}
             onOpenTask={(id) => {
               openTask(id)
-              setView('projects')
+              navigate('projects')
             }}
             onOpenProject={(projectId, screen) => {
               setBoardException(null)
               setViewingUser(null)
-              setActiveTaskId(null)
-              setSelectedProjectId(projectId)
-              setView(screen === 'board' ? 'projects' : 'schedule')
+              navigate(screen === 'board' ? 'projects' : 'schedule', projectId)
             }}
-            onOpenUpdates={() => setView('updates')}
+            onOpenUpdates={() => navigate('updates')}
             onOpenProjects={(user) => {
               setBoardException(null)
               setViewingUser({ id: user.id, name: user.name })
-              setSelectedProjectId(null)
-              setActiveTaskId(null)
-              setView('projects')
+              navigate('projects', null)
             }}
           />
         }
@@ -655,14 +735,12 @@ function PanelContent({
           <UpdatesView
             onOpenTask={(id) => {
               openTask(id)
-              setView('projects')
+              navigate('projects')
             }}
             onOpenProject={(projectId, screen) => {
               setBoardException(null)
               setViewingUser(null)
-              setActiveTaskId(null)
-              setSelectedProjectId(projectId)
-              setView(screen === 'board' ? 'projects' : 'schedule')
+              navigate(screen === 'board' ? 'projects' : 'schedule', projectId)
             }}
           />
         }
@@ -748,39 +826,35 @@ function PanelContent({
                 />
               )}
             </Drawer>
-            <ProjectDialog
-              open={projectDialogOpen}
-              projects={projects.data ?? []}
-              selectedProjectId={selectedProjectId}
-              onSelect={setSelectedProjectId}
-              onClose={() => setProjectDialogOpen(false)}
-              canManageMembers={canManageProject}
-              canEditDefinition={canManageProject}
-              canArchiveProject={canManageProject}
-              canRenameProject={canManageProject}
-              onManageMembers={setMembersProject}
-              showArchived={showArchivedProjects}
-              onShowArchivedChange={(show) => {
-                setShowArchivedProjects(show)
-                // Escondido o projeto selecionado, o quadro volta a todos os projetos.
-                if (!show && selectedArchived) setSelectedProjectId(null)
-              }}
-            />
-            <ProjectMembersDialog
-              project={membersProject}
-              onClose={() => setMembersProject(null)}
-            />
-            <NewTaskDialog
-              {...(newTaskStatus ? { initialStatus: newTaskStatus } : {})}
-              open={newTaskDialogOpen}
-              projects={activeProjects}
-              selectedProjectId={selectedArchived ? null : selectedProjectId}
-              onClose={() => setNewTaskDialogOpen(false)}
-              onCreated={(createdTask) => openTask(createdTask.id)}
-            />
           </>
         ) : null}
       </PanelShell>
+      <NewTaskDialog
+        {...(newTaskStatus ? { initialStatus: newTaskStatus } : {})}
+        open={newTaskDialogOpen}
+        projects={activeProjects}
+        selectedProjectId={selectedArchived ? null : selectedProjectId}
+        onClose={() => setNewTaskDialogOpen(false)}
+        onCreated={(createdTask) => {
+          openTask(createdTask.id)
+          if (currentView !== 'projects') navigate('projects')
+        }}
+      />
+      {newProjectOpen ? (
+        <NewProjectFlow
+          submitting={createProject.isPending}
+          error={
+            createProject.isError
+              ? refusalMessage(createProject.error, panelCopy.createProjectError)
+              : null
+          }
+          onCancel={() => {
+            createProject.reset()
+            setNewProjectOpen(false)
+          }}
+          onCreate={createProjectFromWizard}
+        />
+      ) : null}
       {notice ? <Toast key={notice.id} message={notice.message} tone={notice.tone} /> : null}
       {definitionGate.dialog}
       {commandsOpen && (
@@ -792,9 +866,9 @@ function PanelContent({
           onClose={() => setCommandsOpen(false)}
           onOpenTask={(id) => {
             openTask(id)
-            setView('projects')
+            navigate('projects')
           }}
-          onNavigate={setView}
+          onNavigate={(next) => navigate(next)}
         />
       )}
     </>

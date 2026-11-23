@@ -257,13 +257,25 @@
       flex-direction: column;
       gap: 6px;
       min-width: 0;
-      padding-right: 8px;
-      border-right: 1px solid var(--color-divider);
+      min-height: 280px;
+      border-radius: 10px;
+      background: var(--color-tint-faint);
+      border: 1px solid var(--color-hairline);
+      padding: 8px 7px;
+      transition: border-color 150ms ease, background 150ms ease;
     }
 
-    .sprint-col:last-child {
-      padding-right: 0;
-      border-right: 0;
+    .sprint-col.is-drop-target {
+      border-color: var(--color-hairline-strong);
+      background: var(--color-tint-soft);
+    }
+
+    .sprint-col-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-height: 120px;
     }
 
     .sprint-col-head {
@@ -309,6 +321,21 @@
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--color-hairline);
       min-width: 0;
+      cursor: grab;
+      user-select: none;
+      transition: border-color 140ms ease, background 140ms ease, opacity 140ms ease;
+    }
+
+    .sprint-task-card:active {
+      cursor: grabbing;
+    }
+
+    .sprint-task-card.is-dragging {
+      opacity: 0.45;
+    }
+
+    .sprint-task-card[draggable='false'] {
+      cursor: default;
     }
 
     .sprint-task-card:hover {
@@ -344,28 +371,6 @@
       font-size: 11.5px;
       color: var(--color-text-subtle);
       font-variant-numeric: tabular-nums;
-    }
-
-    .sprint-move-select {
-      min-height: 30px;
-      width: 100%;
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 1px solid var(--color-hairline);
-      background: transparent;
-      color: var(--color-text-muted);
-      font-size: 11.5px;
-      cursor: pointer;
-    }
-
-    .sprint-move-select:hover {
-      border-color: var(--color-hairline-strong);
-      color: var(--color-text-primary);
-    }
-
-    .sprint-move-select option {
-      background: var(--surface-card);
-      color: var(--color-text-primary);
     }
 
     /* Planejamento */
@@ -1091,37 +1096,31 @@
           var dotCls = STATE_DOT[st] || 'is-afazer';
           var cardsHtml = colTasks.length
             ? colTasks.map(function (t) {
-                var optionsHtml = STATES.map(function (opt) {
-                  return '<option value="' + esc(opt) + '"' + (opt === t.status ? ' selected' : '') + '>' + esc(opt) + '</option>';
-                }).join('');
                 var roleBadge = t.editedByManager ? '<span class="badge badge-gestor">Gestor</span>' : '';
                 return (
-                  '<div class="sprint-task-card" data-sprint-task="' + esc(t.id) + '">' +
+                  '<article class="sprint-task-card" draggable="' + (state.sprint14Closed ? 'false' : 'true') + '" data-sprint-task="' + esc(t.id) + '">' +
                     '<div class="sprint-task-top">' +
                       '<span class="task-code-mono">' + esc(t.id) + '</span>' +
                       roleBadge +
                     '</div>' +
-                    '<a class="sprint-task-title" href="tarefa.html?id=' + encodeURIComponent(t.id) + '">' + esc(t.title) + '</a>' +
+                    '<a class="sprint-task-title" draggable="false" href="tarefa.html?id=' + encodeURIComponent(t.id) + '">' + esc(t.title) + '</a>' +
                     '<div class="sprint-task-foot">' +
                       '<span>' + esc(t.owner) + '</span>' +
                       '<span>' + t.hours + 'h</span>' +
                     '</div>' +
-                    '<select class="sprint-move-select" data-move-sprint-task="' + esc(t.id) + '" aria-label="Mover ' + esc(t.id) + ' para outro estado">' +
-                      optionsHtml +
-                    '</select>' +
-                  '</div>'
+                  '</article>'
                 );
               }).join('')
             : '<div style="padding:10px 4px;font-size:11.5px;color:var(--color-text-subtle);">Vazia</div>';
 
           return (
-            '<div class="sprint-col">' +
+            '<section class="sprint-col" data-sprint-col-status="' + esc(st) + '" aria-label="Coluna ' + esc(st) + '">' +
               '<div class="sprint-col-head">' +
                 '<span class="sprint-col-title"><span class="status-dot ' + dotCls + '"></span>' + esc(st) + '</span>' +
                 '<span class="sprint-col-count">' + colTasks.length + '</span>' +
               '</div>' +
-              cardsHtml +
-            '</div>'
+              '<div class="sprint-col-cards">' + cardsHtml + '</div>' +
+            '</section>'
           );
         }).join('');
 
@@ -1641,21 +1640,108 @@
         }
       });
 
-      // Mover cartão dentro da Sprint Ativa
-      document.getElementById('agil-view-root').addEventListener('change', function (ev) {
-        var sel = ev.target.closest('[data-move-sprint-task]');
-        if (!sel) return;
-        var tid = sel.getAttribute('data-move-sprint-task');
-        var newStatus = sel.value;
+      // Mover cartão dentro da Sprint Ativa por arrastar e soltar (igual ao Quadro)
+      var draggingSprintTaskId = null;
+      var agilViewRoot = document.getElementById('agil-view-root');
+
+      function clearSprintDropTargets() {
+        var cols = agilViewRoot.querySelectorAll('.sprint-col.is-drop-target');
+        for (var i = 0; i < cols.length; i++) {
+          cols[i].classList.remove('is-drop-target');
+        }
+      }
+
+      function moveSprintTask(taskId, newStatus) {
+        if (!taskId || !newStatus) return;
         var data = getCurrentData();
-        data.sprint14.tasks.forEach(function (t) {
-          if (t.id === tid) {
-            t.status = newStatus;
-            if (proto.getRole() === 'manager') t.editedByManager = true;
+        var movedTask = null;
+        for (var i = 0; i < data.sprint14.tasks.length; i++) {
+          if (data.sprint14.tasks[i].id === taskId) {
+            movedTask = data.sprint14.tasks[i];
+            break;
           }
-        });
-        proto.showToast(tid + ' movida para ' + newStatus + (proto.getRole() === 'manager' ? ' (marca Gestor).' : '.'), 'success');
+        }
+        if (!movedTask || movedTask.status === newStatus) return;
+        movedTask.status = newStatus;
+        var isManager = proto.getRole() === 'manager';
+        if (isManager) movedTask.editedByManager = true;
+        if (newStatus === 'Desenvolvendo') {
+          proto.completeKanStep('c2');
+        }
+        if (window.AgileBoxKanAI) {
+          var aiStore = window.AgileBoxKanAI.getStore();
+          var sprintStore = aiStore && aiStore.sprints && aiStore.sprints[state.projectId];
+          if (sprintStore && Array.isArray(sprintStore.tasks)) {
+            for (var j = 0; j < sprintStore.tasks.length; j++) {
+              if (sprintStore.tasks[j].id === taskId) {
+                sprintStore.tasks[j].status = newStatus;
+                if (isManager) sprintStore.tasks[j].editedByManager = true;
+                break;
+              }
+            }
+            window.AgileBoxKanAI.saveStore(aiStore);
+          }
+        }
+        proto.showToast(taskId + ' movida para ' + newStatus + (isManager ? ' (marca Gestor).' : '.'), 'success');
         render();
+      }
+
+      agilViewRoot.addEventListener('dragstart', function (ev) {
+        var card = ev.target.closest('.sprint-task-card[data-sprint-task]');
+        if (!card) return;
+        if (state.sprint14Closed) {
+          ev.preventDefault();
+          return;
+        }
+        draggingSprintTaskId = card.getAttribute('data-sprint-task');
+        if (ev.dataTransfer) {
+          ev.dataTransfer.setData('text/plain', draggingSprintTaskId);
+          ev.dataTransfer.effectAllowed = 'move';
+        }
+        card.classList.add('is-dragging');
+      });
+
+      agilViewRoot.addEventListener('dragend', function () {
+        draggingSprintTaskId = null;
+        clearSprintDropTargets();
+        var dragging = agilViewRoot.querySelectorAll('.sprint-task-card.is-dragging');
+        for (var i = 0; i < dragging.length; i++) {
+          dragging[i].classList.remove('is-dragging');
+        }
+      });
+
+      agilViewRoot.addEventListener('dragover', function (ev) {
+        var col = ev.target.closest('.sprint-col[data-sprint-col-status]');
+        if (!col || !draggingSprintTaskId || state.sprint14Closed) return;
+        ev.preventDefault();
+        if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+        if (!col.classList.contains('is-drop-target')) {
+          clearSprintDropTargets();
+          col.classList.add('is-drop-target');
+        }
+      });
+
+      agilViewRoot.addEventListener('dragleave', function (ev) {
+        var col = ev.target.closest('.sprint-col[data-sprint-col-status]');
+        if (!col) return;
+        if (!ev.relatedTarget || !col.contains(ev.relatedTarget)) {
+          col.classList.remove('is-drop-target');
+        }
+      });
+
+      agilViewRoot.addEventListener('drop', function (ev) {
+        var col = ev.target.closest('.sprint-col[data-sprint-col-status]');
+        if (!col) return;
+        ev.preventDefault();
+        clearSprintDropTargets();
+        if (state.sprint14Closed) {
+          draggingSprintTaskId = null;
+          return;
+        }
+        var tid = draggingSprintTaskId || (ev.dataTransfer ? ev.dataTransfer.getData('text/plain') : '');
+        var targetStatus = col.getAttribute('data-sprint-col-status');
+        draggingSprintTaskId = null;
+        moveSprintTask(tid, targetStatus);
       });
 
       // Fechar modais (clique e Escape)

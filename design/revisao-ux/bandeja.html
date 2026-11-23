@@ -57,15 +57,35 @@
       color: var(--color-text-primary);
     }
 
-    /* Caixa fixa exatamente 360x560 */
+    /* Bandeja expandida (430x630) e estado inicial compacto (340xauto) */
     .ab-tray-window {
       position: relative;
-      width: 360px;
-      height: 560px;
+      width: 430px;
+      height: 630px;
+      max-width: calc(100vw - 24px);
       max-height: calc(100vh - 104px);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition:
+        width 240ms var(--ease-ios),
+        height 240ms var(--ease-ios),
+        border-radius 240ms var(--ease-ios);
+    }
+
+    .ab-tray-window.is-compact {
+      width: 340px;
+      height: auto;
+      min-height: 0;
+      max-width: calc(100vw - 24px);
+      border-radius: 16px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ab-tray-window,
+      .tray-prompt-phrase {
+        transition: none !important;
+      }
     }
 
     .ab-tray-window .status-dot {
@@ -101,6 +121,13 @@
       align-items: center;
       gap: 8px;
       min-width: 0;
+    }
+
+    .tray-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: none;
     }
 
     .tray-brand-dot {
@@ -145,25 +172,149 @@
       text-overflow: ellipsis;
     }
 
-    .tray-panel-link {
+    .tray-icon-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 7px;
+      border: 1px solid var(--color-hairline);
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      flex: none;
+      text-decoration: none;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .tray-icon-btn:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .tray-kan-btn {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       height: 28px;
       padding: 0 8px;
-      border-radius: 6px;
+      border-radius: 7px;
       border: 1px solid var(--color-hairline);
       background: transparent;
       color: var(--color-text-muted);
       font-size: 11.5px;
       font-weight: 500;
-      white-space: nowrap;
+      cursor: pointer;
+      flex: none;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .tray-kan-btn:hover {
+      background: var(--color-tint-soft);
+      border-color: var(--color-hairline-strong);
+      color: var(--color-text-primary);
+    }
+
+    .tray-kan-mini {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
       flex: none;
     }
 
-    .tray-panel-link:hover {
-      background: var(--color-tint-soft);
+    /* Estado 1: Aviso inicial compacto */
+    .tray-prompt-shell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 10px 10px 12px;
+    }
+
+    .tray-prompt-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 6px 4px 2px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background 140ms ease;
+    }
+
+    .tray-prompt-main:hover {
+      background: var(--color-tint-faint);
+    }
+
+    .tray-prompt-dot-wrap {
+      position: relative;
+    }
+
+    .tray-prompt-dot-wrap::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-primary-bg);
+      border: 1.5px solid var(--surface-panel);
+    }
+
+    .tray-prompt-copy {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tray-prompt-phrase {
+      font-size: 13px;
+      font-weight: 550;
+      line-height: 1.3;
       color: var(--color-text-primary);
+      transition: opacity 180ms ease;
+    }
+
+    .tray-prompt-phrase.is-fading {
+      opacity: 0.2;
+    }
+
+    .tray-prompt-sub {
+      font-size: 11px;
+      color: var(--color-text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tray-prompt-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: none;
+    }
+
+    /* Cabeçalho do Chat com o Kan */
+    .tray-kan-title-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .tray-kan-subtitle {
+      font-size: 10.5px;
+      color: var(--color-text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Estrutura interna das telas */
@@ -824,21 +975,44 @@
       border-color: var(--color-hairline-strong);
     }
   </style>
+  <script src="assets/kan-ai.js" defer></script>
   <script src="assets/app-shell.js" defer></script>
 </head>
 <body data-page="bandeja">
   <div class="tray-stage-wrap">
-    <!-- Seletor externo do protótipo para saltar direto entre as 4 telas -->
+    <!-- Seletor externo do protótipo para saltar direto entre as 6 telas -->
     <div class="tray-proto-switcher" role="tablist" aria-label="Telas da Bandeja">
-      <button type="button" class="tray-proto-tab is-active" role="tab" data-tray-screen="home">1. Início</button>
-      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="new">2. Nova tarefa</button>
-      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="update">3. Atualizar tarefa</button>
-      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="daily">4. Atualização do dia</button>
+      <button type="button" class="tray-proto-tab is-active" role="tab" data-tray-screen="prompt">1. Aviso</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="home">2. Tarefas</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="kan">3. Chat Kan</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="new">4. Nova tarefa</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="update">5. Atualizar</button>
+      <button type="button" class="tray-proto-tab" role="tab" data-tray-screen="daily">6. Daily</button>
     </div>
 
-    <section class="ab-tray-window" aria-label="AgileBox Bandeja">
-      <!-- ==================== TELA 1: INÍCIO ==================== -->
-      <div class="tray-screen" id="screen-home">
+    <section class="ab-tray-window is-compact" id="tray-window" aria-label="AgileBox Bandeja">
+      <!-- ==================== TELA 1: AVISO INICIAL COMPACTO ==================== -->
+      <div class="tray-screen" id="screen-prompt">
+        <div class="tray-prompt-shell">
+          <button type="button" class="tray-prompt-main" id="prompt-expand-trigger" aria-label="Expandir bandeja para atualizar atividades">
+            <span class="tray-brand-dot tray-prompt-dot-wrap" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h7v10H4z"/><path d="M13 4h7v7h-7z"/><path d="M13 14h7v6h-7z"/></svg>
+            </span>
+            <span class="tray-prompt-copy">
+              <span class="tray-prompt-phrase" id="prompt-phrase-text">Vamos atualizar as atividades de hoje?</span>
+              <span class="tray-prompt-sub" id="prompt-sub-text">5 tarefas em foco · clique para abrir</span>
+            </span>
+          </button>
+          <div class="tray-prompt-actions">
+            <a class="tray-icon-btn" href="quadro.html" aria-label="Abrir sistema completo" title="Abrir sistema completo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TELA 2: INÍCIO EXPANDIDO (TAREFAS) ==================== -->
+      <div class="tray-screen" id="screen-home" hidden>
         <header class="tray-header">
           <div class="tray-header-left">
             <span class="tray-brand-dot" aria-hidden="true">
@@ -846,7 +1020,18 @@
             </span>
             <span class="tray-header-title">AgileBox Bandeja</span>
           </div>
-          <a class="tray-panel-link" href="quadro.html">Abrir Painel ↗</a>
+          <div class="tray-header-actions">
+            <button type="button" class="tray-kan-btn" id="home-open-kan" aria-label="Abrir chat com o Kan" title="Abrir chat com o Kan">
+              <img src="assets/img/kan_fechado.png" alt="" class="tray-kan-mini">
+              <span>Kan</span>
+            </button>
+            <button type="button" class="tray-icon-btn" id="home-collapse-btn" aria-label="Recolher para aviso" title="Recolher para aviso">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+            </button>
+            <a class="tray-icon-btn" href="quadro.html" aria-label="Abrir sistema completo" title="Abrir sistema completo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          </div>
         </header>
 
         <div class="tray-top-strip">
@@ -884,14 +1069,73 @@
         </form>
       </div>
 
-      <!-- ==================== TELA 2: NOVA TAREFA ==================== -->
+      <!-- ==================== TELA 3: CHAT COM O KAN ==================== -->
+      <div class="tray-screen" id="screen-kan" hidden>
+        <header class="tray-header">
+          <div class="tray-header-left">
+            <button type="button" class="tray-back-btn" id="kan-back-btn" aria-label="Voltar para tarefas" style="width:28px;padding:0;justify-content:center;">←</button>
+            <img src="assets/img/kan_aberto.png" alt="Kan" style="width:22px;height:22px;object-fit:contain;flex:none;">
+            <div class="tray-kan-title-wrap">
+              <span class="tray-header-title">Kan</span>
+              <span class="tray-kan-subtitle" id="tray-kan-subtitle">Modo local</span>
+            </div>
+          </div>
+          <div class="tray-header-actions">
+            <button type="button" class="ab-kan-icon-btn" id="tray-kan-api-toggle" aria-expanded="false" title="Conectar API gratuita do Google AI Studio (Gemini)">Chave AI</button>
+            <button type="button" class="tray-icon-btn" id="kan-collapse-btn" aria-label="Recolher para aviso" title="Recolher para aviso">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+            </button>
+            <a class="tray-icon-btn" href="quadro.html" aria-label="Abrir sistema completo" title="Abrir sistema completo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          </div>
+        </header>
+
+        <div class="ab-kan-api-panel" id="tray-kan-api-panel" hidden>
+          <div class="ab-kan-api-row">
+            <input type="password" class="ab-kan-input" id="tray-kan-api-input" placeholder="Cole sua chave do Google AI Studio (AIza...)" aria-label="Chave da API Google AI Studio">
+            <button type="button" class="btn btn-sm btn-primary" id="tray-kan-api-save">Salvar</button>
+          </div>
+          <div class="ab-kan-api-row">
+            <select class="select" id="tray-kan-model-select" aria-label="Modelo Gemini" style="flex:1;height:30px;font-size:11.5px;">
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Recomendado · Grátis)</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Mais rápido)</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-secondary" id="tray-kan-api-test">Testar</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="tray-kan-api-clear">Limpar</button>
+          </div>
+          <div class="ab-kan-api-meta">
+            <span id="tray-kan-api-status">Chave salva só no seu navegador.</span>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Obter chave ↗</a>
+          </div>
+        </div>
+
+        <div class="ab-kan-chat-shell">
+          <div class="ab-kan-chat-list" id="tray-kan-chat-list"></div>
+          <div class="ab-kan-suggestions" id="tray-kan-suggestions">
+            <button type="button" class="ab-kan-chip" data-tray-kan-prompt="Criar tarefa Validar webhook de pagamento em A fazer para Pedro">+ Nova tarefa</button>
+            <button type="button" class="ab-kan-chip" data-tray-kan-prompt="Mover AB-5 para Revisar">AB-5 → Revisar</button>
+            <button type="button" class="ab-kan-chip" data-tray-kan-prompt="Lançar 1h em AB-5">+1h em AB-5</button>
+            <button type="button" class="ab-kan-chip" data-tray-kan-prompt="Registrar daily: avancei no checkout, 3h, sem bloqueios">Daily</button>
+          </div>
+          <form class="ab-kan-composer" id="tray-kan-chat-form">
+            <input type="text" class="ab-kan-input" id="tray-kan-chat-input" placeholder="Peça ao Kan ou tire uma dúvida..." autocomplete="off">
+            <button type="submit" class="ab-kan-send-btn" id="tray-kan-send-btn">Enviar</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==================== TELA 4: NOVA TAREFA ==================== -->
       <div class="tray-screen" id="screen-new" hidden>
         <header class="tray-header">
           <div class="tray-header-left">
             <button type="button" class="tray-back-btn" id="new-back-btn">← Voltar</button>
             <span class="tray-header-title">Nova tarefa</span>
           </div>
-          <a class="tray-panel-link" href="quadro.html">Abrir Painel ↗</a>
+          <a class="tray-icon-btn" href="quadro.html" aria-label="Abrir sistema completo" title="Abrir sistema completo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+          </a>
         </header>
 
         <form class="tray-body" id="tray-new-form" style="padding:12px 14px;gap:10px;">
@@ -936,14 +1180,16 @@
         </footer>
       </div>
 
-      <!-- ==================== TELA 3: ATUALIZAR TAREFA (AB-5) ==================== -->
+      <!-- ==================== TELA 5: ATUALIZAR TAREFA (AB-5) ==================== -->
       <div class="tray-screen" id="screen-update" hidden>
         <header class="tray-header">
           <div class="tray-header-left">
             <button type="button" class="tray-back-btn" id="upd-header-back" aria-label="Voltar para início" style="width:28px;padding:0;justify-content:center;">←</button>
             <span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-muted);" id="upd-task-id">AB-5</span>
           </div>
-          <a class="tray-panel-link" id="upd-panel-link" href="tarefa.html?id=AB-5">Abrir no Painel ↗</a>
+          <a class="tray-icon-btn" id="upd-panel-link" href="tarefa.html?id=AB-5" aria-label="Abrir tarefa no sistema completo" title="Abrir tarefa no sistema completo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+          </a>
         </header>
 
         <div class="tray-body" style="padding:10px 14px;gap:0;">
@@ -1017,14 +1263,19 @@
         </div>
       </div>
 
-      <!-- ==================== TELA 4: ATUALIZAÇÃO DO DIA (DAILY 3 PASSOS) ==================== -->
+      <!-- ==================== TELA 6: ATUALIZAÇÃO DO DIA (DAILY 3 PASSOS) ==================== -->
       <div class="tray-screen" id="screen-daily" hidden>
         <header class="tray-header">
           <div class="tray-header-left">
             <button type="button" class="tray-back-btn" id="daily-back-btn">← Voltar</button>
             <span class="tray-header-title">Atualização do dia</span>
           </div>
-          <span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-subtle);" id="daily-step-badge">1 de 3</span>
+          <div class="tray-header-actions">
+            <span style="font-family:var(--font-family-mono);font-size:11.5px;color:var(--color-text-subtle);" id="daily-step-badge">1 de 3</span>
+            <a class="tray-icon-btn" href="quadro.html" aria-label="Abrir sistema completo" title="Abrir sistema completo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          </div>
         </header>
         <div class="daily-progress"><div class="daily-progress-fill" id="daily-progress-fill" style="width:33%"></div></div>
 
@@ -1056,9 +1307,17 @@
         { tag: '#ProjetoC', name: 'Projeto C' }
       ];
 
+      var PROMPT_PHRASES = [
+        'Vamos atualizar as atividades de hoje?',
+        'Como estão as entregas de hoje?',
+        'Algum avanço para registrar agora?',
+        'Quer revisar suas tarefas em foco?',
+        'Dois minutos para deixar o quadro em dia?'
+      ];
+
       var tasks = [
         {
-          id: 'AB-5', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Revisar contrato com Cliente ACME',
+          id: 'AB-5', projectId: 'a', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Revisar contrato com Cliente ACME',
           assignee: 'Ana', due: '24 nov', hours: 3.0, blocked: false, note: '',
           subtasks: [
             { id: 's1', text: 'Conferir cláusulas de SLA e tempo de resposta', done: true },
@@ -1067,7 +1326,7 @@
           ]
         },
         {
-          id: 'AB-11', project: 'Projeto A', status: 'Revisar', dot: 'is-revisar', title: 'Validar tela de login no Fedora e Windows',
+          id: 'AB-11', projectId: 'a', project: 'Projeto A', status: 'Revisar', dot: 'is-revisar', title: 'Validar tela de login no Fedora e Windows',
           assignee: 'Maria', due: '24 nov', hours: 2.5, blocked: false, note: '',
           subtasks: [
             { id: 's1', text: 'Testar atalho global no Windows 11', done: true },
@@ -1075,7 +1334,7 @@
           ]
         },
         {
-          id: 'AB-3', project: 'Projeto A', status: 'A fazer', dot: 'is-afazer', title: 'Ajustar webhook de confirmação de boleto',
+          id: 'AB-3', projectId: 'a', project: 'Projeto A', status: 'A fazer', dot: 'is-afazer', title: 'Ajustar webhook de confirmação de boleto',
           assignee: 'Pedro', due: '25 nov', hours: 0, blocked: false, note: '',
           subtasks: [
             { id: 's1', text: 'Validar assinatura do payload', done: false },
@@ -1083,7 +1342,7 @@
           ]
         },
         {
-          id: 'AB-8', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Corrigir filtro de datas no relatório mensal',
+          id: 'AB-8', projectId: 'a', project: 'Projeto A', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Corrigir filtro de datas no relatório mensal',
           assignee: 'João', due: '26 nov', hours: 1.0, blocked: true, note: 'Aguardando homologação',
           subtasks: [
             { id: 's1', text: 'Reproduzir fuso horário na virada do mês', done: true },
@@ -1091,7 +1350,7 @@
           ]
         },
         {
-          id: 'AB-15', project: 'Projeto B', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Script de migração de centros de custo',
+          id: 'AB-15', projectId: 'b', project: 'Projeto B', status: 'Desenvolvendo', dot: 'is-desenvolvendo', title: 'Script de migração de centros de custo',
           assignee: 'Carlos', due: '28 nov', hours: 3.5, blocked: false, note: '',
           subtasks: [
             { id: 's1', text: 'Mapear códigos legados', done: true },
@@ -1100,17 +1359,20 @@
         }
       ];
 
-      var currentScreen = 'home'; // 'home' | 'new' | 'update' | 'daily'
+      var currentScreen = 'prompt'; // 'prompt' | 'home' | 'kan' | 'new' | 'update' | 'daily'
+      var promptPhraseIndex = 0;
+      var promptHovered = false;
       var dailyDismissed = false;
       var searchQuery = '';
       var activeTaskId = 'AB-5';
       var nextNum = 16;
+      var kanChatBusy = false;
 
-      // Estado de edição da Tela 3 + dirty guard
+      // Estado de edição da Tela Atualizar + dirty guard
       var draftUpdate = null;
       var pendingNavigationAfterDirty = null;
 
-      // Estado da Daily (Tela 4)
+      // Estado da Daily
       var dailyState = {
         step: 1,
         checkedIds: ['AB-5', 'AB-11'],
@@ -1127,6 +1389,31 @@
           .replace(/"/g, '&quot;');
       }
 
+      function formatInlineMd(raw) {
+        return esc(raw || '').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      }
+
+      function prefersReducedMotion() {
+        try {
+          return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function projectNameFromId(pid) {
+        if (pid === 'b') return 'Projeto B';
+        if (pid === 'c') return 'Projeto C';
+        return 'Projeto A';
+      }
+
+      function projectIdFromName(name) {
+        var low = String(name || '').toLowerCase();
+        if (low.indexOf('projeto b') !== -1 || low === 'b') return 'b';
+        if (low.indexOf('projeto c') !== -1 || low === 'c') return 'c';
+        return 'a';
+      }
+
       function dotForStatus(label) {
         for (var i = 0; i < STATES.length; i++) {
           if (STATES[i].label === label) return STATES[i].dot;
@@ -1141,6 +1428,101 @@
         return tasks[0];
       }
 
+      function syncTasksFromAIStore() {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st || !Array.isArray(st.tasks)) return;
+        tasks = st.tasks.map(function (t) {
+          return {
+            id: t.id,
+            projectId: t.projectId || 'a',
+            project: projectNameFromId(t.projectId),
+            status: t.status || 'A fazer',
+            dot: dotForStatus(t.status || 'A fazer'),
+            title: t.title,
+            assignee: t.assignee || 'Ana',
+            due: t.due || 'Em aberto',
+            hours: typeof t.hours === 'number' ? t.hours : 0,
+            blocked: Boolean(t.blocked),
+            note: t.note || '',
+            subtasks: Array.isArray(t.subtasks)
+              ? t.subtasks.map(function (s) {
+                  return { id: s.id, text: s.text, done: Boolean(s.done) };
+                })
+              : []
+          };
+        });
+        if (typeof st.nextIdNum === 'number') nextNum = st.nextIdNum;
+      }
+
+      function persistCreatedTaskToAIStore(created) {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st || !Array.isArray(st.tasks)) return;
+        st.tasks.unshift({
+          id: created.id,
+          projectId: created.projectId || projectIdFromName(created.project),
+          status: created.status,
+          title: created.title,
+          assignee: created.assignee || 'Ana',
+          support: '',
+          external: '',
+          priority: 'Média',
+          due: created.due || 'Em aberto',
+          dueDate: '',
+          dueWarn: false,
+          subtasks: [],
+          blocked: false,
+          blockReason: '',
+          hours: 0,
+          note: '',
+          summary: '',
+          timeline: []
+        });
+        st.nextIdNum = nextNum;
+        window.AgileBoxKanAI.saveStore(st);
+      }
+
+      function persistUpdatedTaskToAIStore(updated) {
+        if (!window.AgileBoxKanAI) return;
+        var st = window.AgileBoxKanAI.getStore();
+        if (!st || !Array.isArray(st.tasks)) return;
+        for (var i = 0; i < st.tasks.length; i++) {
+          if (st.tasks[i].id === updated.id) {
+            st.tasks[i].status = updated.status;
+            st.tasks[i].hours = updated.hours;
+            st.tasks[i].note = updated.note;
+            st.tasks[i].blocked = updated.blocked;
+            st.tasks[i].subtasks = (updated.subtasks || []).map(function (s) {
+              return { id: s.id, text: s.text, done: Boolean(s.done) };
+            });
+            break;
+          }
+        }
+        window.AgileBoxKanAI.saveStore(st);
+      }
+
+      function renderPrompt(animate) {
+        var phraseEl = document.getElementById('prompt-phrase-text');
+        var subEl = document.getElementById('prompt-sub-text');
+        if (subEl) {
+          var openCount = tasks.filter(function (t) { return t.status !== 'Concluído'; }).length;
+          subEl.textContent = openCount + ' tarefas em foco · clique para abrir';
+        }
+        if (!phraseEl) return;
+        var nextText = PROMPT_PHRASES[promptPhraseIndex] || PROMPT_PHRASES[0];
+        if (!animate || prefersReducedMotion()) {
+          phraseEl.classList.remove('is-fading');
+          phraseEl.textContent = nextText;
+          return;
+        }
+        phraseEl.classList.add('is-fading');
+        setTimeout(function () {
+          phraseEl.textContent = nextText;
+          phraseEl.classList.remove('is-fading');
+        }, 160);
+      }
+
       function switchScreen(target, skipDirtyCheck) {
         if (currentScreen === 'update' && !skipDirtyCheck && isUpdateDirty() && target !== 'update') {
           pendingNavigationAfterDirty = target;
@@ -1148,8 +1530,14 @@
           document.getElementById('upd-dirty-overlay').classList.add('is-open');
           return;
         }
+        var prevScreen = currentScreen;
         currentScreen = target;
+        var win = document.getElementById('tray-window');
+        if (win) win.classList.toggle('is-compact', target === 'prompt');
+
+        document.getElementById('screen-prompt').hidden = target !== 'prompt';
         document.getElementById('screen-home').hidden = target !== 'home';
+        document.getElementById('screen-kan').hidden = target !== 'kan';
         document.getElementById('screen-new').hidden = target !== 'new';
         document.getElementById('screen-update').hidden = target !== 'update';
         document.getElementById('screen-daily').hidden = target !== 'daily';
@@ -1158,13 +1546,43 @@
           tab.classList.toggle('is-active', tab.getAttribute('data-tray-screen') === target);
         });
 
+        if (target === 'prompt') {
+          if (!skipDirtyCheck && prevScreen !== 'prompt') {
+            promptPhraseIndex = (promptPhraseIndex + 1) % PROMPT_PHRASES.length;
+          }
+          renderPrompt(false);
+        }
         if (target === 'home') renderHome();
+        if (target === 'kan') {
+          renderTrayKanChat();
+          setTimeout(function () {
+            var inp = document.getElementById('tray-kan-chat-input');
+            if (inp) inp.focus();
+          }, 20);
+        }
         if (target === 'new') {
           setTimeout(function () { document.getElementById('tray-new-title').focus(); }, 20);
         }
         if (target === 'update') loadUpdateScreen(activeTaskId);
         if (target === 'daily') renderDaily();
       }
+
+      /* -------------------- TELA 1: AVISO COMPACTO -------------------- */
+      var promptEl = document.getElementById('screen-prompt');
+      if (promptEl) {
+        promptEl.addEventListener('mouseenter', function () { promptHovered = true; });
+        promptEl.addEventListener('mouseleave', function () { promptHovered = false; });
+        promptEl.addEventListener('focusin', function () { promptHovered = true; });
+        promptEl.addEventListener('focusout', function () { promptHovered = false; });
+      }
+      document.getElementById('prompt-expand-trigger').addEventListener('click', function () {
+        switchScreen('home');
+      });
+      setInterval(function () {
+        if (currentScreen !== 'prompt' || promptHovered || prefersReducedMotion()) return;
+        promptPhraseIndex = (promptPhraseIndex + 1) % PROMPT_PHRASES.length;
+        renderPrompt(true);
+      }, 6000);
 
       /* -------------------- TELA 1: INÍCIO -------------------- */
       function renderHome() {
@@ -1217,6 +1635,238 @@
 
         body.innerHTML = headerHtml + cardsHtml;
       }
+
+      document.getElementById('home-open-kan').addEventListener('click', function () {
+        switchScreen('kan');
+      });
+
+      document.getElementById('home-collapse-btn').addEventListener('click', function () {
+        switchScreen('prompt');
+      });
+
+      /* -------------------- TELA 3: CHAT COM O KAN -------------------- */
+      function updateTrayKanApiState() {
+        var ai = window.AgileBoxKanAI;
+        var hasKey = Boolean(ai && ai.getApiKey && ai.getApiKey());
+        var model = (ai && ai.getModel && ai.getModel()) || 'gemini-2.5-flash';
+        var sub = document.getElementById('tray-kan-subtitle');
+        var toggleBtn = document.getElementById('tray-kan-api-toggle');
+        if (sub) sub.textContent = hasKey ? ('Gemini · ' + model) : 'Modo local';
+        if (toggleBtn) {
+          toggleBtn.classList.toggle('is-connected', hasKey);
+          toggleBtn.textContent = hasKey ? 'Gemini ON' : 'Chave AI';
+        }
+      }
+
+      function renderTrayKanChat() {
+        updateTrayKanApiState();
+        var listEl = document.getElementById('tray-kan-chat-list');
+        if (!listEl) return;
+        var ai = window.AgileBoxKanAI;
+        var messages = ai ? ai.loadChatHistory() : [];
+        var html = messages.map(function (msg, msgIdx) {
+          var roleCls = msg.role === 'user' ? 'is-user' : 'is-assistant';
+          var actionsHtml = (msg.actions || []).map(function (act, actIdx) {
+            var isUndone = Boolean(act.undone || (ai && ai.isUndone && ai.isUndone(act.undoId)));
+            return (
+              '<div class="ab-kan-action-receipt' + (isUndone ? ' is-undone' : '') + '">' +
+                '<div class="ab-kan-action-info">' +
+                  '<div class="ab-kan-action-title">' + esc(act.summary) + '</div>' +
+                  '<div class="ab-kan-action-detail">' + esc(act.detail || '') + '</div>' +
+                '</div>' +
+                '<button type="button" class="ab-kan-undo-btn" data-undo-id="' + esc(act.undoId) + '" data-msg-idx="' + msgIdx + '" data-act-idx="' + actIdx + '"' + (isUndone ? ' disabled' : '') + '>' +
+                  (isUndone ? 'Desfeito' : 'Desfazer') +
+                '</button>' +
+              '</div>'
+            );
+          }).join('');
+
+          var confirmHtml = (msg.confirmations || []).map(function (conf, cIdx) {
+            if (conf.resolved) return '';
+            return (
+              '<div class="ab-kan-confirm-card">' +
+                '<div class="ab-kan-action-title">' + esc(conf.actionTitle) + '</div>' +
+                '<div style="font-size:11.5px;color:var(--color-text-muted);line-height:1.4;">' + esc(conf.detail) + '</div>' +
+                '<div class="ab-kan-confirm-btns">' +
+                  '<button type="button" class="btn btn-sm btn-ghost" data-conf-cancel="' + msgIdx + ':' + cIdx + '">Cancelar</button>' +
+                  '<button type="button" class="btn btn-sm btn-primary" data-conf-ok="' + msgIdx + ':' + cIdx + '">Confirmar</button>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('');
+
+          return (
+            '<div class="ab-kan-msg ' + roleCls + '">' +
+              '<div class="ab-kan-msg-bubble">' + formatInlineMd(msg.text) + '</div>' +
+              actionsHtml +
+              confirmHtml +
+            '</div>'
+          );
+        }).join('');
+
+        if (kanChatBusy) {
+          html += '<div class="ab-kan-msg is-assistant"><div class="ab-kan-msg-bubble" style="color:var(--color-text-subtle);">Kan pensando e executando...</div></div>';
+        }
+        listEl.innerHTML = html;
+        listEl.scrollTop = listEl.scrollHeight;
+      }
+
+      function submitTrayKanPrompt(rawText) {
+        var text = String(rawText || '').trim();
+        if (!text || kanChatBusy) return;
+        var ai = window.AgileBoxKanAI;
+        var messages = ai ? ai.loadChatHistory() : [];
+        var inputEl = document.getElementById('tray-kan-chat-input');
+        var sendBtn = document.getElementById('tray-kan-send-btn');
+
+        messages.push({ id: 'u_' + Date.now(), role: 'user', text: text, actions: [], confirmations: [] });
+        if (ai) ai.saveChatHistory(messages);
+        if (inputEl) inputEl.value = '';
+        kanChatBusy = true;
+        if (sendBtn) sendBtn.disabled = true;
+        renderTrayKanChat();
+
+        var runner = ai
+          ? ai.sendMessage(messages.slice(0, -1), text)
+          : Promise.resolve({ text: 'Módulo de IA não carregado.', actions: [], confirmations: [] });
+
+        runner.then(function (resp) {
+          kanChatBusy = false;
+          if (sendBtn) sendBtn.disabled = false;
+          var latest = ai ? ai.loadChatHistory() : messages;
+          latest.push({
+            id: 'a_' + Date.now(),
+            role: 'assistant',
+            text: resp.text || 'Concluído.',
+            actions: resp.actions || [],
+            confirmations: resp.confirmations || []
+          });
+          if (ai) ai.saveChatHistory(latest);
+          renderTrayKanChat();
+          if (inputEl) inputEl.focus();
+        });
+      }
+
+      document.getElementById('kan-back-btn').addEventListener('click', function () {
+        switchScreen('home');
+      });
+
+      document.getElementById('kan-collapse-btn').addEventListener('click', function () {
+        switchScreen('prompt');
+      });
+
+      document.getElementById('tray-kan-chat-form').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        submitTrayKanPrompt(document.getElementById('tray-kan-chat-input').value);
+      });
+
+      document.getElementById('tray-kan-suggestions').addEventListener('click', function (ev) {
+        var chip = ev.target.closest('[data-tray-kan-prompt]');
+        if (!chip) return;
+        submitTrayKanPrompt(chip.getAttribute('data-tray-kan-prompt'));
+      });
+
+      document.getElementById('tray-kan-chat-list').addEventListener('click', function (ev) {
+        var ai = window.AgileBoxKanAI;
+        if (!ai) return;
+        var messages = ai.loadChatHistory();
+
+        var undoBtn = ev.target.closest('[data-undo-id]');
+        if (undoBtn) {
+          var uid = undoBtn.getAttribute('data-undo-id');
+          var mIdx = parseInt(undoBtn.getAttribute('data-msg-idx'), 10);
+          var aIdx = parseInt(undoBtn.getAttribute('data-act-idx'), 10);
+          var resUndo = ai.undoAction(uid);
+          if (resUndo && resUndo.ok && messages[mIdx] && messages[mIdx].actions && messages[mIdx].actions[aIdx]) {
+            messages[mIdx].actions[aIdx].undone = true;
+            ai.saveChatHistory(messages);
+            renderTrayKanChat();
+          }
+          return;
+        }
+
+        var okBtn = ev.target.closest('[data-conf-ok]');
+        if (okBtn) {
+          var partsOk = okBtn.getAttribute('data-conf-ok').split(':');
+          var mOk = messages[parseInt(partsOk[0], 10)];
+          var cOk = mOk && mOk.confirmations[parseInt(partsOk[1], 10)];
+          if (cOk && !cOk.resolved) {
+            cOk.resolved = true;
+            var executed = ai.confirmAction(cOk);
+            if (executed && executed.ok) {
+              mOk.actions = mOk.actions || [];
+              mOk.actions.push(executed);
+            }
+            ai.saveChatHistory(messages);
+            renderTrayKanChat();
+          }
+          return;
+        }
+
+        var cancelBtn = ev.target.closest('[data-conf-cancel]');
+        if (cancelBtn) {
+          var partsCancel = cancelBtn.getAttribute('data-conf-cancel').split(':');
+          var mCan = messages[parseInt(partsCancel[0], 10)];
+          var cCan = mCan && mCan.confirmations[parseInt(partsCancel[1], 10)];
+          if (cCan && !cCan.resolved) {
+            cCan.resolved = true;
+            mCan.text += '\n(Ação crítica cancelada.)';
+            ai.saveChatHistory(messages);
+            renderTrayKanChat();
+          }
+        }
+      });
+
+      var trayKanApiToggle = document.getElementById('tray-kan-api-toggle');
+      var trayKanApiPanel = document.getElementById('tray-kan-api-panel');
+      var trayKanApiInput = document.getElementById('tray-kan-api-input');
+      var trayKanModelSelect = document.getElementById('tray-kan-model-select');
+      var trayKanApiStatus = document.getElementById('tray-kan-api-status');
+
+      trayKanApiToggle.addEventListener('click', function () {
+        var open = trayKanApiPanel.hidden;
+        trayKanApiPanel.hidden = !open;
+        trayKanApiToggle.classList.toggle('is-active', open);
+        trayKanApiToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open && window.AgileBoxKanAI) {
+          trayKanApiInput.value = window.AgileBoxKanAI.getApiKey();
+          trayKanModelSelect.value = window.AgileBoxKanAI.getModel();
+          trayKanApiInput.focus();
+        }
+      });
+
+      document.getElementById('tray-kan-api-save').addEventListener('click', function () {
+        if (!window.AgileBoxKanAI) return;
+        var val = trayKanApiInput.value.trim();
+        window.AgileBoxKanAI.setApiKey(val);
+        window.AgileBoxKanAI.setModel(trayKanModelSelect.value);
+        updateTrayKanApiState();
+        trayKanApiStatus.textContent = val ? 'Chave salva com segurança neste navegador.' : 'Chave removida. Usando modo local.';
+        window.AgileBoxProto.showToast(val ? 'Chave Google AI Studio conectada.' : 'Modo local ativado.', 'success');
+        if (val) trayKanApiPanel.hidden = true;
+      });
+
+      document.getElementById('tray-kan-api-clear').addEventListener('click', function () {
+        if (!window.AgileBoxKanAI) return;
+        trayKanApiInput.value = '';
+        window.AgileBoxKanAI.setApiKey('');
+        updateTrayKanApiState();
+        trayKanApiStatus.textContent = 'Chave removida. Modo local ativo.';
+      });
+
+      document.getElementById('tray-kan-api-test').addEventListener('click', function () {
+        if (!window.AgileBoxKanAI) return;
+        var candidate = trayKanApiInput.value.trim() || window.AgileBoxKanAI.getApiKey();
+        window.AgileBoxKanAI.setModel(trayKanModelSelect.value);
+        trayKanApiStatus.textContent = 'Testando conexão com Google AI Studio...';
+        window.AgileBoxKanAI.testApiKey(candidate, trayKanModelSelect.value).then(function (res) {
+          trayKanApiStatus.textContent = res.message;
+          if (res.ok && candidate) {
+            window.AgileBoxKanAI.setApiKey(candidate);
+            updateTrayKanApiState();
+          }
+        });
+      });
 
       document.getElementById('home-tasks-body').addEventListener('click', function (e) {
         if (e.target.closest('#home-open-new')) {
@@ -1312,16 +1962,26 @@
         if (!raw) return;
         var cleanTitle = raw.replace(/@[a-zA-ZÀ-ÿ_-]+/g, '').replace(/#[a-zA-Z0-9À-ÿ_-]+/g, '').replace(/\s+/g, ' ').trim() || raw;
         var proj = 'Projeto A';
-        if (/#.*b/i.test(raw)) proj = 'Projeto B';
-        if (/#.*c/i.test(raw)) proj = 'Projeto C';
+        var projId = 'a';
+        if (/#.*b/i.test(raw)) { proj = 'Projeto B'; projId = 'b'; }
+        if (/#.*c/i.test(raw)) { proj = 'Projeto C'; projId = 'c'; }
+        var atMatch = raw.match(/@([a-zA-ZÀ-ÿ]+)/);
+        var assignee = 'Ana';
+        if (atMatch) {
+          var qAt = atMatch[1].toLowerCase();
+          PEOPLE.forEach(function (p) {
+            if (p.toLowerCase().indexOf(qAt) === 0) assignee = p;
+          });
+        }
 
         var created = {
           id: 'AB-' + nextNum++,
+          projectId: projId,
           project: proj,
           status: 'A fazer',
           dot: 'is-afazer',
           title: cleanTitle,
-          assignee: 'Ana',
+          assignee: assignee,
           due: 'Em aberto',
           hours: 0,
           blocked: false,
@@ -1329,6 +1989,7 @@
           subtasks: []
         };
         tasks.unshift(created);
+        persistCreatedTaskToAIStore(created);
         quickInput.value = '';
         mentionPop.classList.remove('is-open');
         updateQuickAddUi();
@@ -1337,7 +1998,7 @@
         window.AgileBoxProto.showToast('Tarefa ' + created.id + ' criada em ' + proj + ' · A fazer', 'success');
       });
 
-      /* -------------------- TELA 2: NOVA TAREFA -------------------- */
+      /* -------------------- TELA 4: NOVA TAREFA -------------------- */
       document.getElementById('new-back-btn').addEventListener('click', function () { switchScreen('home'); });
       document.getElementById('new-cancel-btn').addEventListener('click', function () { switchScreen('home'); });
       document.getElementById('new-submit-btn').addEventListener('click', function () {
@@ -1352,6 +2013,7 @@
         var st = document.getElementById('tray-new-status').value;
         var created = {
           id: 'AB-' + nextNum++,
+          projectId: projectIdFromName(proj),
           project: proj,
           status: st,
           dot: dotForStatus(st),
@@ -1364,6 +2026,7 @@
           subtasks: []
         };
         tasks.unshift(created);
+        persistCreatedTaskToAIStore(created);
         titleEl.value = '';
         window.AgileBoxProto.completeKanStep('c1');
         window.AgileBoxProto.showToast(created.id + ' criada em ' + proj, 'success');
@@ -1475,6 +2138,7 @@
         t.subtasks = (draftUpdate.subtasks || []).map(function (s) {
           return { id: s.id, text: s.text, done: !!s.done };
         });
+        persistUpdatedTaskToAIStore(t);
         window.AgileBoxProto.completeKanStep('c3');
         window.AgileBoxProto.showToast('Alterações em ' + t.id + ' salvas!', 'success');
         switchScreen('home', true);
@@ -1624,14 +2288,27 @@
         }
       });
 
-      // Seletor externo das 4 telas
+      window.addEventListener('ab:storechange', function () {
+        syncTasksFromAIStore();
+        if (currentScreen === 'prompt') renderPrompt(false);
+        if (currentScreen === 'home') renderHome();
+        if (currentScreen === 'daily') renderDaily();
+      });
+
+      window.addEventListener('ab:dailyupdated', function () {
+        dailyDismissed = true;
+        if (currentScreen === 'home') renderHome();
+      });
+
+      // Seletor externo das 6 telas
       document.querySelectorAll('.tray-proto-tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
           switchScreen(this.getAttribute('data-tray-screen'));
         });
       });
 
-      renderHome();
+      syncTasksFromAIStore();
+      switchScreen('prompt', true);
     });
   </script>
 </body>

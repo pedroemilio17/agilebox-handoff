@@ -1,7 +1,11 @@
+import { Buffer } from 'node:buffer'
 import console from 'node:console'
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron'
 import { writeFile } from 'node:fs/promises'
 import { UPDATE_CHANNELS } from '@agilebox/contract'
+import { createAiConfigStore } from './ai/ai-config-store'
+import { createGeminiClient } from './ai/gemini-client'
+import { registerAiHandlers } from './ai/register-ai-handlers'
 import { createCompositionRoot } from './composition-root'
 import { registerHandlers } from './ipc/register-handlers'
 import { registerShellHandlers } from './ipc/register-shell-handlers'
@@ -111,6 +115,12 @@ function startApp(): void {
   })
 
   registerShellHandlers(ipcMain, windows)
+  const aiConfigStore = createAiConfigStore(userDataPath, {
+    isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain).toString('base64'),
+    decrypt: (cipher) => safeStorage.decryptString(Buffer.from(cipher, 'base64')),
+  })
+  registerAiHandlers(ipcMain, aiConfigStore, createGeminiClient())
   const notifyUpdate = (step: Parameters<typeof windows.broadcast>[1]) =>
     windows.broadcast(UPDATE_CHANNELS.progress, step)
   const sourceUpdater = createSourceUpdater({

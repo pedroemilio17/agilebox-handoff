@@ -10,6 +10,7 @@ import {
 } from '../../shared/lib/window-opacity'
 import { panelCopy } from '../copy'
 import { TeamToolsSection } from '../team-tools/TeamToolsSection'
+import { KanAiSection } from './KanAiSection'
 import { UpdatesSection } from './UpdatesSection'
 import styles from './SettingsView.module.css'
 
@@ -88,6 +89,7 @@ export function SettingsView() {
           </Button>
         </div>
       </GlassSurface>
+      <KanAiSection />
       <UpdatesSection />
     </div>
   )

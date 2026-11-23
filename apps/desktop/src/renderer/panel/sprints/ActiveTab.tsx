@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TaskStatus } from '@agilebox/core'
 import type { BurndownViewDto, SprintDto, TaskDto } from '@agilebox/contract'
 import { Button, EmptyState } from '@agilebox/ui'
 import { refusalMessage } from '../backlog/refusal-message'
@@ -25,6 +26,7 @@ import {
 import type { SprintFormValues } from './sprint-rules'
 import {
   useCloseSprint,
+  useMoveSprintTask,
   useSprintDetail,
   useSprintItemMutations,
   useSprintList,
@@ -46,6 +48,8 @@ export interface ActiveTabProps {
   readonly burndown: BurndownViewDto | null
   /** Abre o diálogo de nova tarefa (o mesmo do topo da janela). */
   readonly onNewTask?: () => void
+  /** Move uma tarefa de coluna; quando omitido, usa a mutação local de sprint. */
+  readonly onMoveTask?: (task: TaskDto, status: TaskStatus) => void
 }
 
 /** Aba Ativa: a sprint em andamento, com faixa de resumo, quadro por estado e encerramento. */
@@ -60,6 +64,7 @@ export function ActiveTab({
   onNavigate,
   burndown,
   onNewTask,
+  onMoveTask,
 }: ActiveTabProps) {
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId = actives.find((sprint) => sprint.id === chosenId)?.id ?? actives[0]?.id ?? null
@@ -75,6 +80,9 @@ export function ActiveTab({
   const [formError, setFormError] = useState<string | null>(null)
   const [itemError, setItemError] = useState<string | null>(null)
   const [closeError, setCloseError] = useState<string | null>(null)
+  const moveSprintTask = useMoveSprintTask((error) =>
+    setItemError(refusalMessage(error, sprintCopy.forbidden)),
+  )
 
   const sprint = detail.data?.sprint
   const sprintItems: readonly TaskDto[] = detail.data?.items ?? []
@@ -264,6 +272,11 @@ export function ActiveTab({
             removeDisabled={items.remove.isPending}
             onOpenTask={onOpenTask}
             onRemove={removeItem}
+            onMoveTask={(task, status) => {
+              setItemError(null)
+              if (onMoveTask) onMoveTask(task, status)
+              else moveSprintTask.mutate({ taskId: task.id, status })
+            }}
           />
 
           {ceremoniesVisible ? (

@@ -221,7 +221,6 @@ describe('Painel', () => {
     const nav = within(screen.getByRole('navigation'))
     await userEvent.click(await nav.findByRole('button', { name: /Projeto Boreal/ }))
     expect(listBoard).toHaveBeenLastCalledWith({ projectId: projects[1]!.id })
-    // Ao ser escolhido, o projeto sobe para a seção "Projeto" (o botão é outro nó na tela).
     expect(nav.getByRole('button', { name: /Projeto Boreal/ }).getAttribute('aria-pressed')).toBe(
       'true',
     )
@@ -318,12 +317,8 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-      }),
-    )
-    await user.click(await screen.findByRole('option', { name: 'Projeto Boreal' }))
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: /Projeto Boreal/ }))
     expect(listBoard).toHaveBeenLastCalledWith({ projectId: projects[1]?.id })
   })
 
@@ -383,7 +378,27 @@ describe('Painel', () => {
     expect(screen.queryByRole('button', { name: 'Dashboard' })).toBeNull()
   })
 
-  it('abre a lista com todos os projetos primeiro e marca a opção atual', async () => {
+  it('lista Todos os projetos primeiro e destaca o projeto atual na barra lateral', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    const allButton = await nav.findByRole('button', { name: 'Todos os projetos' })
+    expect(allButton.getAttribute('aria-pressed')).toBe('true')
+    const aurora = await nav.findByRole('button', { name: /Projeto Aurora/ })
+    const boreal = nav.getByRole('button', { name: /Projeto Boreal/ })
+    expect(aurora.getAttribute('aria-pressed')).toBe('false')
+    expect(boreal.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('troca para um projeto escolhido e mostra o breadcrumb no cabeçalho', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     const user = userEvent.setup()
@@ -395,44 +410,17 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    const title = await screen.findByRole('button', {
-      name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-    })
-    await user.click(title)
-    const options = await screen.findAllByRole('option')
-    expect(options.map((option) => option.firstElementChild?.textContent)).toEqual([
-      'Todos os projetos',
-      'Projeto Aurora',
-      'Projeto Boreal',
-    ])
-    expect(options[0]?.getAttribute('aria-selected')).toBe('true')
+    const titleBar = () => screen.getByRole('heading', { level: 1 }).closest('header')!
+
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: /Projeto Aurora/ }))
+    expect(within(titleBar()).getByText('Projeto Aurora')).toBeTruthy()
+    expect(nav.getByRole('button', { name: /Projeto Aurora/ }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
   })
 
-  it('troca para um projeto escolhido', async () => {
-    const api = createFakeApi()
-    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-    const user = userEvent.setup()
-    render(
-      <ApiProvider api={api}>
-        <QueryProvider>
-          <App />
-        </QueryProvider>
-      </ApiProvider>,
-    )
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-      }),
-    )
-    await user.click(await screen.findByRole('option', { name: 'Projeto Aurora' }))
-    expect(
-      screen.getByRole('button', { name: 'Projeto atual: Projeto Aurora. Trocar de projeto' }),
-    ).toBeTruthy()
-    expect(screen.queryByRole('dialog', { name: 'Projetos' })).toBeNull()
-  })
-
-  it('cria projeto e seleciona o projeto criado', async () => {
+  it('cria projeto pelo + e seleciona o projeto criado', async () => {
     const created = { ...projects[0]!, name: 'Projeto Novo' }
     let hasCreated = false
     const api = createFakeApi()
@@ -452,23 +440,13 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-      }),
-    )
-    // "Novo projeto" também existe na barra lateral; aqui vale o botão do seletor aberto.
-    await user.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Novo projeto' }),
-    )
-    await user.type(screen.getByRole('textbox', { name: 'Nome do novo projeto' }), 'Projeto Novo')
-    await user.click(screen.getByRole('button', { name: 'Criar' }))
-    // "Criar" abre o assistente com o nome; pular cria o projeto Simples.
+    const titleBar = () => screen.getByRole('heading', { level: 1 }).closest('header')!
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: 'Novo projeto' }))
+    await user.type(screen.getByRole('textbox', { name: 'Nome do projeto' }), 'Projeto Novo')
     await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
     expect(create).toHaveBeenCalledWith({ name: 'Projeto Novo', startedFromPreset: 'simples' })
-    expect(
-      await screen.findByRole('button', { name: 'Projeto atual: Projeto Novo. Trocar de projeto' }),
-    ).toBeTruthy()
+    await waitFor(() => expect(within(titleBar()).getByText('Projeto Novo')).toBeTruthy())
   })
 
   it('cria tarefa no projeto selecionado e abre seu detalhe', async () => {
@@ -526,7 +504,7 @@ describe('Painel', () => {
   it('seleciona projeto com nome repetido sem criar outro', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
-    const create = vi.spyOn(api.projects, 'create')
+    const create = vi.spyOn(api.projects, 'createWithSetup')
     const user = userEvent.setup()
     render(
       <ApiProvider api={api}>
@@ -536,29 +514,16 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-      }),
-    )
-    // "Novo projeto" também existe na barra lateral; aqui vale o botão do seletor aberto.
-    await user.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Novo projeto' }),
-    )
-    await user.type(
-      screen.getByRole('textbox', { name: 'Nome do novo projeto' }),
-      '  projeto aurora  ',
-    )
-    await user.click(screen.getByRole('button', { name: 'Criar' }))
+    const titleBar = () => screen.getByRole('heading', { level: 1 }).closest('header')!
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: 'Novo projeto' }))
+    await user.type(screen.getByRole('textbox', { name: 'Nome do projeto' }), '  projeto aurora  ')
+    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
     expect(create).not.toHaveBeenCalled()
-    expect(
-      await screen.findByRole('button', {
-        name: 'Projeto atual: Projeto Aurora. Trocar de projeto',
-      }),
-    ).toBeTruthy()
+    expect(within(titleBar()).getByText('Projeto Aurora')).toBeTruthy()
   })
 
-  it('fecha com Escape e devolve o foco ao título do projeto', async () => {
+  it('fecha o assistente de novo projeto com Escape e devolve o foco ao botão Novo projeto', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     const user = userEvent.setup()
@@ -570,12 +535,45 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    const title = await screen.findByRole('button', {
-      name: 'Projeto atual: Todos os projetos. Trocar de projeto',
-    })
-    await user.click(title)
+    const newProjectBtn = await screen.findByRole('button', { name: 'Novo projeto' })
+    await user.click(newProjectBtn)
+    expect(screen.getByRole('dialog')).toBeTruthy()
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog', { name: 'Projetos' })).toBeNull()
-    expect(document.activeElement).toBe(title)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(newProjectBtn)
+  })
+
+  it('botão Voltar navega pelo histórico real entre projeto e telas', async () => {
+    const api = createFakeApi()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse([]))
+    const user = userEvent.setup()
+    render(
+      <ApiProvider api={api}>
+        <QueryProvider>
+          <App />
+        </QueryProvider>
+      </ApiProvider>,
+    )
+
+    const titleBar = () => screen.getByRole('heading', { level: 1 }).closest('header')!
+    const back = within(titleBar()).getByRole<HTMLButtonElement>('button', {
+      name: 'Voltar',
+    })
+    expect(back.disabled).toBe(true)
+
+    const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: /Projeto Aurora/ }))
+    await user.click(screen.getByRole('button', { name: 'Agenda' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Agenda' })).toBeTruthy()
+    expect(back.disabled).toBe(false)
+
+    await user.click(back)
+    expect(screen.getByRole('heading', { level: 1, name: 'Quadro' })).toBeTruthy()
+    expect(within(titleBar()).getByText('Projeto Aurora')).toBeTruthy()
+
+    await user.click(back)
+    expect(within(titleBar()).getByText('Todos os projetos')).toBeTruthy()
+    expect(back.disabled).toBe(true)
   })
 })

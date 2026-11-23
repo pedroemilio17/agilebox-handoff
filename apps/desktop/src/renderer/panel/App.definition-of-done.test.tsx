@@ -453,15 +453,17 @@ describe('Conferência ao concluir pelo detalhe e pela criação', () => {
   })
 })
 
-describe('Edição da definição de pronto no diálogo do projeto', () => {
+describe('Edição da definição de pronto nas configurações do projeto', () => {
+  async function openProjectConfig(user: ReturnType<typeof userEvent.setup>, projectName: string) {
+    const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
+    await user.click(await nav.findByRole('button', { name: new RegExp(projectName) }))
+    await user.click(await nav.findByRole('button', { name: 'Configurações' }))
+    await screen.findByRole('region', { name: 'Módulos' })
+  }
+
   async function openProject(user: ReturnType<typeof userEvent.setup>, projectName: string) {
-    await user.click(
-      await screen.findByRole('button', { name: /Projeto atual: Todos os projetos/ }),
-    )
-    await user.click(screen.getByRole('option', { name: projectName }))
-    await user.click(
-      await screen.findByRole('button', { name: new RegExp(`Projeto atual: ${projectName}`) }),
-    )
+    await openProjectConfig(user, projectName)
+    await user.click(await screen.findByRole('button', { name: 'Definição de pronto' }))
   }
 
   it('gestor adiciona com Enter, renomeia, move, remove e vê o limite de 20', async () => {
@@ -528,9 +530,9 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
       }),
     )
     expect(rename).toHaveBeenCalledTimes(1)
-  })
+  }, 15_000)
 
-  it('Esc cancela a renomeação sem fechar o diálogo do projeto', async () => {
+  it('Esc cancela a renomeação mantendo o editor aberto', async () => {
     const { api, user } = setup(MANAGER, {
       definition: { [BOREAL]: [item(ITEM_TESTS, 'Testes', 0, BOREAL)] },
     })
@@ -539,7 +541,7 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     await user.click(await screen.findByRole('button', { name: 'Renomear Testes' }))
     await user.type(screen.getByRole('textbox', { name: 'Título do item' }), ' extra{Escape}')
 
-    expect(screen.getByRole('dialog', { name: 'Projetos' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 3, name: 'Definição de pronto' })).toBeTruthy()
     expect(screen.getByText('Testes')).toBeTruthy()
     expect(rename).not.toHaveBeenCalled()
   })
@@ -609,21 +611,22 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     ).toBeTruthy()
   })
 
-  it('módulo desligado: o editor da definição de pronto some do diálogo do projeto', async () => {
+  it('módulo desligado: o editor da definição de pronto some das configurações do projeto', async () => {
     const { api, user } = setup(MANAGER, {
       definition: { [AURORA]: TWO_ITEMS },
       moduleOff: [AURORA],
       teamModules: ['core'],
     })
-    await openProject(user, 'Projeto Aurora')
+    await openProjectConfig(user, 'Projeto Aurora')
     await waitFor(() => expect(api.projectModules.get).toHaveBeenCalledWith({ projectId: AURORA }))
     // Enquanto a lista de módulos carrega, a interface é permissiva: deixa as consultas de módulo e
-    // da equipe resolverem antes de afirmar que o editor não aparece.
+    // da equipe resolverem antes de afirmar que a aba/editor não aparece.
     await act(async () => {
       for (let tick = 0; tick < 20; tick += 1)
         await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
+    expect(screen.queryByRole('button', { name: 'Definição de pronto' })).toBeNull()
     expect(screen.queryByRole('textbox', { name: 'Novo item da definição de pronto' })).toBeNull()
     expect(screen.queryByText('Testes passando')).toBeNull()
     expect(api.projects.definitionOfDone.list).not.toHaveBeenCalled()
@@ -650,7 +653,6 @@ describe('Edição da definição de pronto no diálogo do projeto', () => {
     const { user } = setup(ANA, { definition: { [AURORA]: TWO_ITEMS } })
     await openProject(user, 'Projeto Aurora')
     expect(await screen.findByRole('button', { name: 'Renomear Testes passando' })).toBeTruthy()
-    await user.keyboard('{Escape}')
 
     cleanup()
     const reader = setup(BRUNO, { definition: { [AURORA]: TWO_ITEMS } })

@@ -120,7 +120,7 @@ function setup({
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen="home" />
       </QueryProvider>
     </ApiProvider>,
   )
@@ -265,7 +265,7 @@ describe('Bandeja: textos novos da sugestão', () => {
   it('não usam termos proibidos nos perfis sem check-in', () => {
     const copy = Object.entries(trayCopy)
       .filter(([key]) => key.startsWith('dailySuggestion'))
-      .map(([, value]) => value)
+      .flatMap(([, value]) => (typeof value === 'string' ? [value] : []))
     for (const text of copy) expect(forbiddenTermsIn(text)).toEqual([])
   })
 

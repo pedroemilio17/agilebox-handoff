@@ -206,6 +206,40 @@ export function stubDesktopBridge() {
       info: () => Promise.resolve({ version: '0.0.0', mode: 'source' }),
       onProgress: () => () => undefined,
     },
+    ai: {
+      getConfig: () =>
+        Promise.resolve({
+          configured: false,
+          model: 'gemini-2.5-flash' as const,
+          encrypted: false,
+        }),
+      saveConfig: (input: {
+        apiKey?: string
+        model: 'gemini-2.5-flash' | 'gemini-2.0-flash' | 'gemini-2.5-flash-lite'
+      }) =>
+        Promise.resolve({
+          configured: Boolean(input.apiKey),
+          model: input.model,
+          encrypted: false,
+        }),
+      clearKey: () =>
+        Promise.resolve({
+          configured: false,
+          model: 'gemini-2.5-flash' as const,
+          encrypted: false,
+        }),
+      testConnection: () =>
+        Promise.resolve({
+          ok: false as const,
+          message: 'Salve uma chave da API antes de testar.',
+        }),
+      complete: () =>
+        Promise.resolve({
+          ok: false as const,
+          reason: 'not_configured' as const,
+          message: 'Nenhuma chave da API configurada em Ajustes.',
+        }),
+    },
   }
 }
 

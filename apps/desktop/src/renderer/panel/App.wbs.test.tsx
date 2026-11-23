@@ -91,10 +91,10 @@ describe('item Entregas na barra lateral', () => {
   it('aparece com o módulo ligado no projeto selecionado e leva à tela', async () => {
     const { user, api } = renderApp()
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(within(railNav()).queryByRole('button', { name: 'Entregas (EAP)' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Entregas' })).toBeNull()
 
     await user.click(projectButton(FLOW_PROJECT.name))
-    await user.click(await within(railNav()).findByRole('button', { name: 'Entregas (EAP)' }))
+    await user.click(await within(railNav()).findByRole('button', { name: 'Entregas' }))
 
     expect(
       await screen.findByRole('table', { name: 'Estrutura de entregas e tarefas do projeto' }),
@@ -109,7 +109,7 @@ describe('item Entregas na barra lateral', () => {
     await user.click(projectButton(FLOW_PROJECT.name))
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
 
-    expect(within(railNav()).queryByRole('button', { name: 'Entregas (EAP)' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Entregas' })).toBeNull()
   })
 
   it('sem projeto selecionado não mostra o item, mesmo com a organização ligando o módulo', async () => {
@@ -121,6 +121,6 @@ describe('item Entregas na barra lateral', () => {
     })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
 
-    expect(within(railNav()).queryByRole('button', { name: 'Entregas (EAP)' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Entregas' })).toBeNull()
   })
 })

@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react'
-import type { ProjectDto, SprintDto } from '@agilebox/contract'
+import type { TaskStatus } from '@agilebox/core'
+import type { ProjectDto, SprintDto, TaskDto } from '@agilebox/contract'
 import { EmptyState, SegmentedControl, Toast, Button } from '@agilebox/ui'
 import type { SegmentedOption } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
@@ -38,6 +39,8 @@ export interface SprintsViewProps {
   readonly onOpenTask: (taskId: string) => void
   /** Abre o diálogo de nova tarefa (o do topo da janela). */
   readonly onNewTask?: () => void
+  /** Move tarefa no quadro da sprint ativa (repassado do App para compartilhar conferência de DoD). */
+  readonly onMoveTask?: (task: TaskDto, status: TaskStatus) => void
 }
 
 /**
@@ -51,6 +54,7 @@ export function SprintsView({
   onOpenTask,
   onNavigate,
   onNewTask,
+  onMoveTask,
 }: SprintsViewProps) {
   const capabilities = useCapabilities()
   const actor = useActor()
@@ -169,6 +173,7 @@ export function SprintsView({
           burndown={burndown}
           {...(onNavigate ? { onNavigate } : {})}
           {...(onNewTask ? { onNewTask } : {})}
+          {...(onMoveTask ? { onMoveTask } : {})}
         />
       ) : (
         <ClosedTab

@@ -195,3 +195,9 @@
   background: var(--color-signal-warning-bg);
   color: var(--color-signal-warning-text);
 }
+
+.error {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-signal-danger-text);
+}

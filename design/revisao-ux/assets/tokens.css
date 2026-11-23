@@ -318,6 +318,21 @@ select {
   font: inherit;
 }
 
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: var(--surface-card);
+  color: var(--color-text-primary);
+}
+
+select option:checked {
+  background-color: var(--surface-raised);
+  color: var(--color-text-primary);
+}
+
 button {
   color: inherit;
 }

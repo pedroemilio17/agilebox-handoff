@@ -31,38 +31,49 @@
   box-shadow: none;
 }
 
-/* Barra lateral (design: Modulos.dc.html). 232 px aberta, 52 px recolhida. */
+/* Barra lateral estilo Claude: 232 px aberta, 56 px recolhida. */
 .rail {
   z-index: 1;
   display: flex;
-  flex: 0 0 52px;
+  flex: 0 0 56px;
   flex-direction: column;
   gap: 2px;
   box-sizing: border-box;
-  width: 52px;
-  padding: 12px 4px;
+  width: 56px;
+  padding: 10px 6px 8px;
   border-right: 1px solid var(--color-rail-border);
   background: var(--color-rail-bg);
   transition:
-    width 420ms var(--ease-ios),
-    flex-basis 420ms var(--ease-ios);
+    width 360ms var(--ease-ios),
+    flex-basis 360ms var(--ease-ios),
+    padding 360ms var(--ease-ios);
 }
 
 .expanded {
   flex-basis: 232px;
   width: 232px;
-  padding: 16px 12px;
+  padding: 12px 10px 8px;
+}
+
+.railHeader {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  padding: 0 4px 6px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 0;
-  padding: 4px 8px 14px;
+  gap: 9px;
+  min-width: 0;
   font-family: var(--font-family-display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .mark {
@@ -78,29 +89,33 @@
 
 .brandName {
   overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  white-space: nowrap;
-  transition:
-    max-width 420ms var(--ease-ios),
-    opacity 300ms ease;
-}
-
-.expanded .brandName {
   max-width: 140px;
   opacity: 1;
+  white-space: nowrap;
+  transition:
+    max-width 360ms var(--ease-ios),
+    opacity 240ms ease;
 }
 
-/* Recolher/expandir: linha discreta logo abaixo da marca. */
+.rail:not(.expanded) .railHeader {
+  justify-content: center;
+  padding: 0 0 6px;
+}
+
+.rail:not(.expanded) .brand {
+  display: none;
+}
+
+/* Recolher/expandir na mesma linha da marca. */
 .expand {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  display: inline-grid;
+  place-items: center;
   flex: none;
+  width: 28px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0;
   border: 0;
-  border-radius: var(--radius-chip);
+  border-radius: 7px;
   background: transparent;
   color: var(--color-text-placeholder);
   font-size: 14px;
@@ -112,12 +127,7 @@
   color: var(--color-text-primary);
 }
 
-.rail:not(.expanded) .expand {
-  justify-content: center;
-  padding: 0;
-}
-
-/* Buscar ou criar: campo com a dica Ctrl K, como no design. */
+/* Buscar ou criar: campo com a dica Ctrl K. */
 .search {
   display: flex;
   flex: none;
@@ -125,9 +135,9 @@
   gap: 8px;
   box-sizing: border-box;
   width: 100%;
-  height: 36px;
-  margin-bottom: 10px;
-  padding: 0 10px;
+  height: 34px;
+  margin-bottom: 6px;
+  padding: 0 9px;
   border: 1px solid var(--color-hairline);
   border-radius: 9px;
   background: var(--surface-panel);
@@ -158,26 +168,25 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 36px;
-  padding: 0 10px;
+  height: 30px;
+  padding: 0 8px;
   overflow: hidden;
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 13.5px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition:
-    color 200ms ease,
-    background 200ms ease;
+    color 180ms ease,
+    background 180ms ease;
 }
 
 .railItem > span:first-child {
   display: grid;
-  flex: 0 0 20px;
+  flex: 0 0 18px;
   place-items: center;
-  font-size: var(--font-size-title-small);
 }
 
 .railItem:disabled {
@@ -185,41 +194,28 @@
   opacity: 0.55;
 }
 
-.railItem:hover {
+.railItem:hover:not(:disabled) {
   background: var(--color-rail-hover);
   color: var(--color-text-primary);
 }
 
 .railItem:focus-visible,
 .expand:focus-visible,
-.search:focus-visible {
+.search:focus-visible,
+.sectionAddBtn:focus-visible,
+.backButton:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
 .navItem {
-  gap: 10px;
-}
-
-/* Subitem do projeto: 34 px, recuo de 30 px, texto só (sem ícone) quando aberta. */
-.subItem {
-  height: 34px;
-  padding: 0 10px 0 30px;
-  border-radius: 9px;
-  font-size: 13px;
-}
-
-.subIcon {
-  display: block;
-}
-
-.expanded .subIcon {
-  display: none;
+  gap: 9px;
 }
 
 .selected {
   background: var(--color-rail-selected);
   color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--color-hairline);
 }
 
 .railLabel {
@@ -232,9 +228,9 @@
   white-space: nowrap;
   opacity: 0;
   transition:
-    max-width 420ms var(--ease-ios),
-    opacity 300ms ease,
-    margin 420ms var(--ease-ios);
+    max-width 360ms var(--ease-ios),
+    opacity 240ms ease,
+    margin 360ms var(--ease-ios);
 }
 
 .expanded .railLabel {
@@ -248,10 +244,153 @@
   margin-left: 0;
 }
 
+.topGroup {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Área rolável da árvore de projetos. */
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Rótulos de seção: mono, caixa alta, cor sutil. */
+.sectionLabel {
+  display: block;
+  padding: 10px 8px 3px;
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 10px 4px 3px 8px;
+}
+
+.sectionHead .sectionLabel {
+  padding: 0;
+}
+
+.sectionAddBtn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.sectionAddBtn:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-text-primary);
+}
+
+.projectsTree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.projectGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.projectToggle {
+  padding-right: 6px;
+}
+
+.projectGroupCurrent > .projectToggle,
+.projectPressed {
+  color: var(--color-text-primary);
+}
+
+.expanded .projectToggle .projectName {
+  flex: 1 1 auto;
+  max-width: none;
+  margin-left: 0;
+}
+
+.projectName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectChevron {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  margin-left: 4px;
+  color: var(--color-text-subtle);
+  transition: transform 180ms var(--ease-ios);
+}
+
+.projectGroupOpen > .projectToggle .projectChevron {
+  transform: rotate(90deg);
+}
+
+/* Sub-itens indentados com linha vertical à esquerda estilo Claude. */
+.projectChildren {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 6px 14px;
+  padding-left: 10px;
+  border-left: 1px solid var(--color-hairline-strong);
+}
+
+.subItem {
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 450;
+}
+
+.subIcon {
+  display: none;
+}
+
+.rail:not(.expanded) .projectChildren {
+  margin: 2px 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+.rail:not(.expanded) .subIcon {
+  display: block;
+}
+
 /* Recolhida: só ícones e quadradinhos, centralizados; o texto some. */
 .rail:not(.expanded) .railItem {
   justify-content: center;
-  height: 36px;
+  height: 34px;
   padding: 0;
   gap: 0;
 }
@@ -261,12 +400,65 @@
   padding: 0;
 }
 
+.rail:not(.expanded) .sectionHead {
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+
 .rail:not(.expanded) .sectionLabel,
 .rail:not(.expanded) .count,
 .rail:not(.expanded) .methodology,
 .rail:not(.expanded) .archivedLabel,
-.rail:not(.expanded) .kbd {
+.rail:not(.expanded) .projectChevron,
+.rail:not(.expanded) .kbd,
+.rail:not(.expanded) .archivedToggle {
   display: none;
+}
+
+.methodology {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+.archivedLabel {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.archivedToggle {
+  height: 26px;
+  margin-top: 4px;
+  padding: 0 8px;
+  font-size: 11.5px;
+  color: var(--color-text-subtle);
+}
+
+.archivedToggle[aria-pressed='true'] {
+  color: var(--color-text-primary);
+  background: var(--color-rail-hover);
+}
+
+/* Contagem à direita do subitem (S4, 6). Fica fora do nome acessível. */
+.count {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  color: var(--color-text-subtle);
+}
+
+.allProjectsMark {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin: 0 4px;
+  border: 1px solid var(--color-text-subtle);
+  border-radius: 2px;
 }
 
 .soon {
@@ -276,12 +468,20 @@
 .expanded .soon {
   display: inline;
   margin-left: auto;
+  padding: 1px 6px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: var(--color-tint-chip);
   color: var(--color-text-placeholder);
-  font-size: var(--font-size-label);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .rail:not(.expanded) .railItem:hover::after,
-.rail:not(.expanded) .railItem:focus-visible::after {
+.rail:not(.expanded) .railItem:focus-visible::after,
+.rail:not(.expanded) .sectionAddBtn:hover::after,
+.rail:not(.expanded) .sectionAddBtn:focus-visible::after {
   position: absolute;
   top: 50%;
   left: calc(100% + var(--space-2));
@@ -298,119 +498,23 @@
   transform: translateY(-50%);
 }
 
-/* Área de navegação do projeto e da organização: rola se a janela for baixa. */
-.scroll {
+.footer {
   display: flex;
-  flex: 1;
+  flex: none;
   flex-direction: column;
-  gap: 2px;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.topGroup,
-.subGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Rótulos de seção: mono, caixa alta, cor de metadado (design: .lbl). */
-.sectionLabel {
-  display: block;
-  padding: 18px 10px 6px;
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-subtle);
-}
-
-.projectRow {
-  padding-right: 10px;
-}
-
-.projectPressed {
-  color: var(--color-text-primary);
-}
-
-.expanded .projectRow .projectName {
-  flex: 1 1 auto;
-  max-width: none;
-  margin-left: 0;
-}
-
-.projectName {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Metodologia à direita do nome: mono pequeno, como no design. */
-.methodology {
-  flex: none;
-  margin-left: auto;
-  font-family: var(--font-family-mono);
-  font-size: 10.5px;
-  color: var(--color-text-subtle);
-}
-
-.archivedLabel {
-  flex: none;
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-/* Contagem à direita do subitem (S4, 6). Fica fora do nome acessível. */
-.count {
-  flex: none;
-  margin-left: auto;
-  font-family: var(--font-family-mono);
-  font-size: 10.5px;
-  color: var(--color-text-subtle);
-}
-
-.allProjects {
-  gap: 10px;
-}
-
-.allProjects[aria-pressed='true'] {
-  color: var(--color-text-primary);
-}
-
-.allProjectsMark {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border: 1px solid var(--color-text-subtle);
-  border-radius: 2px;
-}
-
-.newProject {
-  color: var(--color-text-placeholder);
-}
-
-.spacer {
-  flex: 1;
-}
-
-.divider {
-  flex: none;
-  height: 1px;
-  margin: 6px 0 0;
-  background: var(--color-rail-border);
+  gap: 1px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-rail-border);
 }
 
 .account {
   height: auto;
-  padding: 10px 8px;
+  margin-top: 6px;
+  padding: 8px 6px;
   gap: 10px;
   border-top: 1px solid var(--color-rail-border);
-  border-radius: 0;
-  margin-top: 6px;
+  border-radius: 8px;
 }
 
 .rail:not(.expanded) .account {
@@ -421,37 +525,37 @@
 
 .avatar {
   display: grid;
-  flex: 0 0 30px;
+  flex: 0 0 28px;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--color-account-avatar);
   color: var(--color-text-primary);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
 }
 
 .main {
   position: relative;
-  background: var(--surface-canvas);
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  background: var(--surface-canvas);
 }
 
+/* TitleBar compacta (52px) com botão Voltar e breadcrumb. */
 .titleBar {
   display: flex;
-  flex: 0 0 64px;
+  flex: 0 0 52px;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   box-sizing: border-box;
-  height: 64px;
-  padding: 0 var(--space-3) 0 var(--space-6);
-}
-
-.titleBar {
+  height: 52px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--color-hairline);
   -webkit-app-region: drag;
 }
 
@@ -468,17 +572,68 @@
 }
 
 .titleGroup {
-  gap: var(--space-3);
   min-width: 0;
 }
 
-.titleBar h1 {
+.backButton {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.backButton:hover:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--color-hairline-strong);
+  color: var(--color-text-primary);
+}
+
+.backButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.breadcrumbProject {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--color-text-subtle);
+  text-overflow: ellipsis;
+}
+
+.breadcrumbSep {
+  font-size: 13px;
+  color: var(--color-text-subtle);
+  opacity: 0.5;
+}
+
+.title {
   margin: 0;
   overflow: hidden;
   font-family: var(--font-family-display);
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: var(--letter-spacing-display);
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -493,19 +648,24 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  height: var(--size-touch-target);
-  padding: 0 18px;
+  height: 36px;
+  padding: 0 14px;
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-button);
   background: var(--color-primary-bg);
   color: var(--color-on-primary);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-small);
   font-weight: 600;
   cursor: pointer;
 }
 
-.newTask:hover {
+.newTask:hover:not(:disabled) {
   background: var(--color-primary-bg-hover);
+}
+
+.newTask:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .content {
@@ -514,7 +674,7 @@
   flex-direction: column;
   gap: var(--space-4);
   min-height: 0;
-  padding: var(--space-1) var(--space-6) var(--space-6);
+  padding: var(--space-3) var(--space-6) var(--space-6);
   animation: viewEnter var(--motion-duration-view) var(--ease-ios) backwards;
 }
 
@@ -545,14 +705,24 @@
 @media (max-width: 1100px) {
   .rail,
   .expanded {
-    flex-basis: 52px;
-    width: 52px;
-    padding: 12px 4px;
+    flex-basis: 56px;
+    width: 56px;
+    padding: 10px 6px 8px;
+  }
+
+  .rail .railHeader {
+    justify-content: center;
+    padding: 0 0 6px;
+  }
+
+  .rail .sectionHead {
+    justify-content: center;
+    padding: 6px 0 2px;
   }
 
   .rail .railItem {
     justify-content: center;
-    height: 36px;
+    height: 34px;
     padding: 0;
     gap: 0;
   }
@@ -562,6 +732,7 @@
     padding: 0;
   }
 
+  .rail .brand,
   .railLabel,
   .soon,
   .brandName,
@@ -569,8 +740,16 @@
   .count,
   .methodology,
   .archivedLabel,
-  .kbd {
+  .projectChevron,
+  .kbd,
+  .archivedToggle {
     display: none;
+  }
+
+  .projectChildren {
+    margin: 2px 0;
+    padding-left: 0;
+    border-left: 0;
   }
 
   .subIcon {
@@ -588,25 +767,11 @@
   .rail,
   .railItem,
   .railLabel,
-  .brandName {
+  .brandName,
+  .projectChevron,
+  .sectionAddBtn,
+  .backButton {
     animation: none;
     transition-duration: 0.01ms;
   }
-}
-
-.titleGroup > h2 {
-  min-width: 0;
-}
-.titleGroup > h2 button {
-  max-width: 220px;
-}
-.titleGroup > h2 button > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.newTask:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }

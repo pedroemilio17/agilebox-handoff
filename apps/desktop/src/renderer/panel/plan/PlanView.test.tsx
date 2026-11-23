@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -209,5 +209,34 @@ describe('PlanSprintView (tela 18)', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Nova tarefa' }))
     expect(onNewTask).toHaveBeenCalled()
+  })
+
+  it('permite mover cartão da sprint dentro da entrega via api.tasks.move', async () => {
+    const { api, example } = planApi()
+    let items = [...example.itemsById[SPRINT_2]!]
+    const sprint2 = example.sprints.find((entry) => entry.id === SPRINT_2)!
+    vi.spyOn(api.sprints, 'get').mockImplementation(({ sprintId }) =>
+      Promise.resolve({
+        sprint: example.sprints.find((entry) => entry.id === sprintId) ?? sprint2,
+        items: sprintId === SPRINT_2 ? items : [...(example.itemsById[sprintId] ?? [])],
+        history: [],
+      }),
+    )
+    const move = vi.spyOn(api.tasks, 'move').mockImplementation(({ taskId, status }) => {
+      items = items.map((item) => (item.id === taskId ? { ...item, status } : item))
+      return Promise.resolve(items.find((item) => item.id === taskId)!)
+    })
+    const { user } = sprintScreen(api)
+
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Mover Trocar a senha para outro estado' }),
+      'in_progress',
+    )
+
+    await waitFor(() =>
+      expect(move).toHaveBeenCalledWith({ taskId: wbsId('402'), status: 'in_progress' }),
+    )
+    const inProgress = screen.getByRole('region', { name: 'Desenvolvendo' })
+    expect(within(inProgress).getByText('Trocar a senha')).toBeTruthy()
   })
 })

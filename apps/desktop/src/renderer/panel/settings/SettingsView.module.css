@@ -77,3 +77,51 @@
 .hint code {
   overflow-wrap: anywhere;
 }
+
+.fieldGrid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.textField,
+.selectField {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-field);
+  background: var(--color-field-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-body-small);
+}
+
+.textField:focus-visible,
+.selectField:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-control);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+}
+
+.statusBadgeConnected {
+  color: var(--color-text-primary);
+}

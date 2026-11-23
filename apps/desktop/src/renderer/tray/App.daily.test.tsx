@@ -136,7 +136,7 @@ function setup({
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen="home" />
       </QueryProvider>
     </ApiProvider>,
   )
@@ -181,11 +181,13 @@ describe('Bandeja: cartão de convite da daily', () => {
     expect(document.activeElement).toBe(document.body)
   })
 
-  it('a altura da tela inicial cresce para caber o cartão', async () => {
+  it('a altura da tela inicial cresce para caber a barra da daily', async () => {
     const { shell } = setup()
     await screen.findByText(INVITE)
-    // Duas linhas (374) mais o cartão (156).
-    await waitFor(() => expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 530 }))
+    // Duas linhas (468) mais a barra da daily (136).
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 604, width: 430 }),
+    )
   })
 })
 
@@ -447,7 +449,7 @@ describe('Bandeja: daily em três passos', () => {
     const heights = (shell.setTrayHeight.mock.calls as Array<[{ height: number }]>)
       .slice(before)
       .map(([arg]) => arg.height)
-    expect(heights).toEqual([560])
+    expect(heights).toEqual([600])
   })
 })
 

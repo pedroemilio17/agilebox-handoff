@@ -80,7 +80,7 @@ function renderTray(teamTools: TeamToolsViewDto) {
   render(
     <ApiProvider api={api}>
       <QueryProvider>
-        <App />
+        <App initialScreen="home" />
       </QueryProvider>
     </ApiProvider>,
   )
