@@ -3,12 +3,7 @@
   min-height: 14px;
   overflow: hidden;
   border-radius: var(--radius-field);
-  background: linear-gradient(
-    90deg,
-    var(--glass-group),
-    rgba(255, 255, 255, 0.16),
-    var(--glass-group)
-  );
+  background: linear-gradient(90deg, var(--glass-group), var(--surface-raised), var(--glass-group));
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }

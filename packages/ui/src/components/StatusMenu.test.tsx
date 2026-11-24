@@ -49,4 +49,17 @@ describe('StatusMenu', () => {
     expect(onClose).toHaveBeenCalledOnce()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir status' }))
   })
+
+  it('navega entre os estados usando as setas do teclado', async () => {
+    const user = userEvent.setup()
+    render(<StatusMenu value="todo" onChange={vi.fn()} />)
+
+    expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: 'A fazer' }))
+    await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitemradio', { name: 'Desenvolvendo' }),
+    )
+    await user.keyboard('{ArrowUp}')
+    expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: 'A fazer' }))
+  })
 })

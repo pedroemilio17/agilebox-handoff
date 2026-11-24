@@ -32,4 +32,22 @@ describe('WindowControls', () => {
     expect(onClose).toHaveBeenCalledOnce()
     expect(onMinimize).toHaveBeenCalledOnce()
   })
+
+  it('suporta modo compacto para barra de título de 42 px', () => {
+    render(
+      <WindowControls
+        compact
+        expanded
+        onMinimize={vi.fn()}
+        onToggleExpand={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    const toggleButton = screen.getByRole('button', { name: 'Recolher' })
+    expect(toggleButton.getAttribute('style')).toBeNull()
+    expect(screen.getByRole('group', { name: 'Controles da janela' }).className).toContain(
+      'compact',
+    )
+  })
 })

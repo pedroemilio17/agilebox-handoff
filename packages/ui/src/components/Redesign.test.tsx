@@ -52,6 +52,18 @@ describe('componentes v2', () => {
     expect(document.activeElement).toBe(opener)
   })
 
+  it('aplica variante de largura narrow no Drawer sem torná-lo modal', () => {
+    render(
+      <Drawer open size="narrow" title="Kan" onClose={vi.fn()}>
+        <span>Conteúdo</span>
+      </Drawer>,
+    )
+
+    const dialog = screen.getByRole('dialog', { name: 'Kan' })
+    expect(dialog.className).toContain('narrow')
+    expect(dialog.hasAttribute('aria-modal')).toBe(false)
+  })
+
   it('exibe zero e falta de dados sem inventar valores, e permite abrir o filtro', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()

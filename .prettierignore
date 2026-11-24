@@ -3,3 +3,6 @@ node_modules/
 .loop/
 migrations/
 pnpm-lock.yaml
+test-results/
+playwright-report/
+blob-report/

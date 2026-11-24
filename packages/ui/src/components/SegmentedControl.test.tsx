@@ -50,4 +50,21 @@ describe('SegmentedControl', () => {
     await user.keyboard('{Enter}')
     expect(onChange).toHaveBeenCalledWith('two')
   })
+
+  it('aplica variante compacta sm preservando papéis acessíveis', () => {
+    render(
+      <SegmentedControl
+        aria-label="Escopo"
+        size="sm"
+        options={[
+          { value: 'mine', label: 'Minhas' },
+          { value: 'team', label: 'Equipe' },
+        ]}
+        value="mine"
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('group', { name: 'Escopo' }).className).toContain('sm')
+  })
 })

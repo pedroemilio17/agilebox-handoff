@@ -5,11 +5,18 @@ import styles from './StatusChip.module.css'
 export interface StatusChipProps {
   readonly status: TaskStatus
   readonly compact?: boolean
+  readonly pill?: boolean
   readonly className?: string
 }
 
-export function StatusChip({ status, compact = false, className }: StatusChipProps) {
-  const classes = [styles.chip, styles[status], compact && styles.compact, className]
+export function StatusChip({ status, compact = false, pill = false, className }: StatusChipProps) {
+  const classes = [
+    styles.chip,
+    styles[status],
+    compact && styles.compact,
+    pill && styles.pill,
+    className,
+  ]
     .filter(Boolean)
     .join(' ')
 

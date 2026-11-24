@@ -1,4 +1,9 @@
-import { useId, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import {
+  useId,
+  type InputHTMLAttributes,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 import styles from './Fields.module.css'
 
 interface LabeledFieldProps {
@@ -63,6 +68,45 @@ export function NumberField({ label, className, id, ...props }: NumberFieldProps
     <label className={styles.field} htmlFor={fieldId}>
       <span className={styles.label}>{label}</span>
       <input {...props} id={fieldId} className={classes} type="text" inputMode="decimal" />
+    </label>
+  )
+}
+
+export interface SelectFieldOption {
+  readonly value: string
+  readonly label: string
+  readonly disabled?: boolean
+}
+
+export type SelectFieldProps = LabeledFieldProps &
+  SelectHTMLAttributes<HTMLSelectElement> & {
+    readonly options?: readonly SelectFieldOption[]
+  }
+
+export function SelectField({
+  label,
+  className,
+  id,
+  options,
+  children,
+  ...props
+}: SelectFieldProps) {
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
+  const classes = [styles.select, className].filter(Boolean).join(' ')
+
+  return (
+    <label className={styles.field} htmlFor={fieldId}>
+      <span className={styles.label}>{label}</span>
+      <select {...props} id={fieldId} className={classes}>
+        {options
+          ? options.map((option) => (
+              <option key={option.value} value={option.value} disabled={option.disabled}>
+                {option.label}
+              </option>
+            ))
+          : children}
+      </select>
     </label>
   )
 }

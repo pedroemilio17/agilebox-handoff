@@ -2,7 +2,8 @@
   .glass-window,
   .glass-group,
   .glass-control,
-  .glass-popover {
+  .glass-popover,
+  .glass-dialog {
     background: var(--color-glass-fallback);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

@@ -78,10 +78,54 @@ describe('tokens visuais', () => {
       '--color-focus-ring',
       '--color-glass-fallback',
       '--color-scrollbar-thumb',
+      '--color-text-subtle',
+      '--color-text-body',
+      '--color-on-primary',
+      '--surface-canvas',
+      '--surface-panel',
+      '--surface-card',
+      '--surface-raised',
+      '--surface-sunken',
+      '--surface-aside',
+      '--surface-column',
+      '--color-hairline',
+      '--color-hairline-strong',
+      '--color-tint-faint',
+      '--color-tint-soft',
+      '--color-tint-chip',
+      '--color-tint-tag',
+      '--color-divider',
+      '--color-control-border',
+      '--shadow-popover',
+      '--glass-dialog',
+      '--glass-dialog-backdrop',
+      '--shadow-dialog',
+      '--color-field-border',
+      '--color-focus-overlay',
+      '--color-signal-danger',
+      '--color-signal-danger-text',
+      '--color-signal-danger-bg',
+      '--color-signal-warning',
+      '--color-signal-warning-text',
+      '--color-signal-warning-bg',
+      '--color-signal-ok',
+      '--color-signal-ok-text',
+      '--color-signal-ok-bg',
+      '--color-surface-raised',
+      '--font-size-caption',
+      '--radius-pill',
     ]
 
     for (const token of tokens) {
       expect(tokensCss).toContain(`${token}:`)
     }
+  })
+
+  it('define tokens de modo opaco para popover e dialog', () => {
+    expect(tokensCss).toContain(":root[data-glass='opaque']")
+    expect(tokensCss).toContain('--glass-popover: #1d1c23;')
+    expect(tokensCss).toContain('--glass-popover-backdrop: none;')
+    expect(tokensCss).toContain('--glass-dialog: #212028;')
+    expect(tokensCss).toContain('--glass-dialog-backdrop: none;')
   })
 })

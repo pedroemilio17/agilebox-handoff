@@ -14,12 +14,12 @@
 :root {
   color-scheme: dark;
 
-  /* ---------- Texto ---------- */
-  --color-text-primary: #f2f0f6;
-  --color-text-muted: #b3b0bd;
-  --color-text-placeholder: #8d8a97; /* 5,6:1 sobre a tinta; 5,0:1 sobre o cartão */
-  --color-text-subtle: #8d8a97; /* NOVO: metadados, IDs, horários */
-  --color-text-body: #d8d5df; /* NOVO: parágrafos longos (descrição, comentários) */
+  /* ---------- Texto (contraste reduzido e confortável) ---------- */
+  --color-text-primary: #e2e0e8;
+  --color-text-muted: #93909e;
+  --color-text-placeholder: #6e6b78; /* sobre a tinta e sobre o cartão */
+  --color-text-subtle: #716e7c; /* metadados, IDs, horários */
+  --color-text-body: #b8b5c2; /* parágrafos longos (descrição, comentários) */
 
   /* ---------- Ação (uma única cor) ---------- */
   --color-primary-bg: #c8f03c;
@@ -45,15 +45,15 @@
   --surface-column: #141318; /* colunas e blocos de apoio dentro de telas (quadro da sprint, EAP, plano) */
   --surface-sprint-closed: #22352b; /* faixa de sprint concluída no plano (tela 17) */
   --surface-sprint-active: #2d3f5c; /* faixa de sprint ativa no plano (tela 17) */
-  --color-hairline: rgba(255, 255, 255, 0.07); /* NOVO: bordas finas */
-  --color-hairline-strong: rgba(255, 255, 255, 0.12); /* NOVO */
-  /* NOVO (tela 19 e 20): tintas brancas que se repetiam como valores soltos nos módulos do dashboard */
-  --color-tint-faint: rgba(255, 255, 255, 0.03); /* faixa de sinal "Precisa de você" */
-  --color-tint-soft: rgba(255, 255, 255, 0.04); /* faixas de apoio (aviso, sublinhas) */
-  --color-tint-chip: rgba(255, 255, 255, 0.05); /* chip de projeto na equipe */
-  --color-tint-tag: rgba(255, 255, 255, 0.07); /* etiqueta de metodologia */
-  --color-divider: rgba(255, 255, 255, 0.06); /* separador fino dentro de cartões e linhas */
-  --color-control-border: rgba(255, 255, 255, 0.1); /* borda de botão secundário */
+  --color-hairline: rgba(255, 255, 255, 0.055); /* bordas finas */
+  --color-hairline-strong: rgba(255, 255, 255, 0.095);
+  /* tintas brancas nos módulos do dashboard e superfícies */
+  --color-tint-faint: rgba(255, 255, 255, 0.025); /* faixa de sinal "Precisa de você" */
+  --color-tint-soft: rgba(255, 255, 255, 0.038); /* faixas de apoio (aviso, sublinhas) */
+  --color-tint-chip: rgba(255, 255, 255, 0.045); /* chip de projeto na equipe */
+  --color-tint-tag: rgba(255, 255, 255, 0.06); /* etiqueta de metodologia */
+  --color-divider: rgba(255, 255, 255, 0.05); /* separador fino dentro de cartões e linhas */
+  --color-control-border: rgba(255, 255, 255, 0.085); /* borda de botão secundário */
 
   /* ---------- Vidro: só janela da bandeja, barra lateral e camadas flutuantes ---------- */
   --glass-window: rgba(20, 19, 26, var(--glass-window-alpha)); /* sem o gradiente branco antigo */
@@ -68,21 +68,21 @@
   --glass-control-backdrop: blur(8px);
   --glass-control-border: 1px solid rgba(255, 255, 255, 0.1);
   /* Painel de detalhe, paleta Ctrl+K, menus, modais: vidro CSS sobre o conteúdo do app */
-  --glass-popover: rgba(30, 29, 37, 0.84);
+  --glass-popover: rgba(30, 29, 37, 0.88);
   --glass-popover-backdrop: blur(26px) saturate(140%);
   --shadow-popover:
     inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
-    0 30px 80px rgba(0, 0, 0, 0.55); /* NOVO */
+    0 30px 80px rgba(0, 0, 0, 0.55);
 
   /* Janelas de diálogo do guia (painel "Como funciona" e boas-vindas): vidro mais opaco que o popover. */
-  --glass-dialog: rgba(38, 37, 46, 0.78); /* NOVO: design (Tutorial, BoasVindas) */
-  --glass-dialog-backdrop: blur(20px); /* NOVO */
+  --glass-dialog: rgba(38, 37, 46, 0.86);
+  --glass-dialog-backdrop: blur(20px);
   --shadow-dialog:
     inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.09),
-    0 24px 50px rgba(0, 0, 0, 0.55); /* NOVO */
+    0 24px 50px rgba(0, 0, 0, 0.55);
 
   --color-field-bg: rgba(0, 0, 0, 0.24);
-  --color-field-border: rgba(255, 255, 255, 0.09); /* NOVO */
+  --color-field-border: rgba(255, 255, 255, 0.09);
   --color-rail-bg: rgba(
     13,
     12,
@@ -97,7 +97,7 @@
   --color-primary-border: transparent;
   --color-focus-overlay: rgba(6, 6, 9, 0.62);
   --color-account-avatar: #3a3550;
-  --color-avatar-bg: #34323d; /* NOVO: avatares de pessoas */
+  --color-avatar-bg: #34323d;
 
   /* ---------- Estados: dessaturados, usados como PONTO (8 px), não como barra ---------- */
   --color-status-planejamento: #a99cf7;
@@ -105,30 +105,30 @@
   --color-status-desenvolvendo: #6cb4ff;
   --color-status-revisar: #4fd0c4;
   --color-status-concluido: #6fd39a;
-  --color-status-concluido-text: #8fe0b2; /* NOVO: check de etapa feita (design, 19 telas) */
-  --color-switch-on: #6fa832; /* NOVO: trilho de interruptor ligado (design, 3 telas) */
-  --color-switch-off: #34323d; /* NOVO: trilho de interruptor desligado (Módulos) */
-  --color-status-desligado: #5c5966; /* NOVO: ponto de módulo desligado (Módulos) */
-  --surface-module-on: #1a1920; /* NOVO: cartão de módulo ligado (Módulos) */
-  --color-signal-advanced-text: #c4baff; /* NOVO: selo "Avançado" (N3, Módulos) */
-  --color-signal-advanced-bg: rgba(169, 156, 247, 0.14); /* NOVO: selo "Avançado" (N3, Módulos) */
+  --color-status-concluido-text: #8fe0b2;
+  --color-switch-on: #6fa832;
+  --color-switch-off: #34323d;
+  --color-status-desligado: #5c5966;
+  --surface-module-on: #1a1920;
+  --color-signal-advanced-text: #c4baff;
+  --color-signal-advanced-bg: rgba(169, 156, 247, 0.14);
 
-  /* ---------- Sinais: a única cor forte da interface (NOVO) ---------- */
-  --color-signal-danger: #ff6b7d; /* bloqueada, vencida */
-  --color-signal-danger-text: #ff8a98;
-  --color-signal-danger-bg: rgba(255, 107, 125, 0.14);
-  --color-signal-warning: #f2b45a; /* parada, WIP no limite, prioridade alta */
-  --color-signal-warning-text: #f4c27a;
-  --color-signal-warning-bg: rgba(242, 180, 90, 0.14);
-  --color-signal-ok: #6fd39a; /* NOVO: Em dia (dashboard, design 19) */
-  --color-signal-ok-text: #8fe0b2; /* NOVO: Em dia, texto */
-  --color-signal-ok-bg: rgba(111, 211, 154, 0.14); /* NOVO: Em dia, fundo */
-  --color-danger: #ff6b7d;
-  --color-danger-hover: rgba(255, 107, 125, 0.9);
+  /* ---------- Sinais (contidos — sem caixas gritantes) ---------- */
+  --color-signal-danger: #e87280; /* bloqueada, vencida */
+  --color-signal-danger-text: #eba0a9;
+  --color-signal-danger-bg: rgba(232, 114, 128, 0.08);
+  --color-signal-warning: #d9a962; /* parada, WIP no limite, prioridade alta */
+  --color-signal-warning-text: #deb97e;
+  --color-signal-warning-bg: rgba(217, 169, 98, 0.08);
+  --color-signal-ok: #6bc493; /* Em dia */
+  --color-signal-ok-text: #95d4b1;
+  --color-signal-ok-bg: rgba(107, 196, 147, 0.08);
+  --color-danger: #e87280;
+  --color-danger-hover: rgba(232, 114, 128, 0.85);
 
   /* Gestor deixa de ser vermelho (vermelho = alarme). Neutro violeta. */
-  --color-manager-text: #c9c0ff;
-  --color-manager-bg: rgba(157, 140, 255, 0.16);
+  --color-manager-text: #bfb6f2;
+  --color-manager-bg: rgba(157, 140, 255, 0.1);
   --color-manager-dot: #9d8cff;
 
   /* Tipos de agendamento: fundo translúcido + texto claro, sempre com rótulo e ícone (NOVO) */
@@ -218,12 +218,21 @@
   --size-touch-target: 44px;
   --color-glass-fallback: rgba(20, 19, 26, 0.94);
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.22);
+
+  /* ---------- Aliases legados consumidos por apps/desktop ---------- */
+  --color-surface-raised: var(--surface-raised);
+  --font-size-caption: var(--font-size-label);
+  --radius-pill: 999px;
 }
 
 /* Janela sólida (Linux sem Liquid Glass): barra lateral e conteúdo opacos. */
 :root[data-glass='opaque'] {
   --glass-window: #111015;
   --glass-window-backdrop: none;
+  --glass-popover: #1d1c23;
+  --glass-popover-backdrop: none;
+  --glass-dialog: #212028;
+  --glass-dialog-backdrop: none;
   --color-rail-bg: var(--surface-sunken);
 }
 

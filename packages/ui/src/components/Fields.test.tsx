@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
-import { DateField, NumberField, TextArea, TextField } from './Fields'
+import { DateField, NumberField, SelectField, TextArea, TextField } from './Fields'
 
 afterEach(cleanup)
 
@@ -18,6 +18,25 @@ describe('Campos de formulário', () => {
     expect(screen.getByRole('textbox', { name: 'Título' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: 'Descrição' })).toBeTruthy()
     expect(screen.getByLabelText('Prazo').getAttribute('type')).toBe('date')
+  })
+
+  it('associa rótulo e permite selecionar opções em SelectField', async () => {
+    const user = userEvent.setup()
+    render(
+      <SelectField
+        label="Projeto"
+        defaultValue="p1"
+        options={[
+          { value: 'p1', label: 'AgileBox' },
+          { value: 'p2', label: 'Portal' },
+        ]}
+      />,
+    )
+
+    const select = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Projeto' })
+    expect(select.value).toBe('p1')
+    await user.selectOptions(select, 'p2')
+    expect(select.value).toBe('p2')
   })
 
   it('aceita vírgula como separador decimal no campo numérico', async () => {

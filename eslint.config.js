@@ -21,6 +21,9 @@ export default defineConfig([
       '**/out/**',
       '**/coverage/**',
       '**/migrations/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/blob-report/**',
     ],
   },
   {
@@ -41,6 +44,7 @@ export default defineConfig([
     files: [
       '*.{js,mjs,cjs,ts}',
       'tooling/**',
+      'apps/desktop/playwright.config.ts',
       'apps/desktop/src/main/**',
       'apps/desktop/src/preload/**',
       'apps/server/**',
@@ -51,6 +55,10 @@ export default defineConfig([
   {
     files: ['packages/ui/**', 'apps/desktop/src/renderer/**'],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['apps/desktop/tests/e2e/**'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   ...layers.map(({ directory, allowed, forbiddenRuntime, forbidNodeBuiltins }) => ({
     files: [`${directory}/**/*.{js,mjs,cjs,ts,tsx}`],

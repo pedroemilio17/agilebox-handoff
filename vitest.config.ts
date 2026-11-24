@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 const rawCssPlugin = {
   name: 'vitest-raw-css',
@@ -22,6 +22,12 @@ const rawCssPlugin = {
 export default defineConfig({
   test: {
     environment: 'node',
+    exclude: [
+      ...configDefaults.exclude,
+      'apps/desktop/tests/e2e/**',
+      '**/test-results/**',
+      '**/playwright-report/**',
+    ],
     projects: [
       ...['core', 'contract', 'application', 'infra-sqlite', 'ui'].map((name) => ({
         ...(name === 'ui' ? { plugins: [rawCssPlugin] } : {}),

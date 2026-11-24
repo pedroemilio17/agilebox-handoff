@@ -11,3 +11,7 @@ release/
 .agents/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

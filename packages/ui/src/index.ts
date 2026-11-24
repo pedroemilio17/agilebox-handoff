@@ -14,10 +14,12 @@ export { Button } from './components/Button'
 export type { ButtonProps } from './components/Button'
 export { EmptyState } from './components/EmptyState'
 export type { EmptyStateProps } from './components/EmptyState'
-export { DateField, NumberField, TextArea, TextField } from './components/Fields'
+export { DateField, NumberField, SelectField, TextArea, TextField } from './components/Fields'
 export type {
   DateFieldProps,
   NumberFieldProps,
+  SelectFieldOption,
+  SelectFieldProps,
   TextAreaProps,
   TextFieldProps,
 } from './components/Fields'
@@ -87,3 +89,7 @@ export { CommentCount } from './components/CommentCount'
 export type { CommentCountProps } from './components/CommentCount'
 export { MentionText } from './components/MentionText'
 export type { MentionTextProps } from './components/MentionText'
+export { Switch } from './components/Switch'
+export type { SwitchProps } from './components/Switch'
+export { JargonTip } from './components/JargonTip'
+export type { JargonTipProps } from './components/JargonTip'

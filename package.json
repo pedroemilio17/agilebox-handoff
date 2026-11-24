@@ -6,10 +6,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --end-of-line auto --write .",
+    "format:check": "prettier --end-of-line auto --check .",
     "test": "pnpm native:node && vitest run",
     "test:watch": "vitest",
+    "test:e2e": "pnpm --filter @agilebox/desktop test:e2e",
     "coverage": "vitest run --coverage",
     "native:node": "node scripts/ensure-native.mjs node",
     "native:electron": "node scripts/ensure-native.mjs electron",

@@ -26,6 +26,16 @@ export function StatusMenu({ value, onChange, onClose }: StatusMenuProps) {
     returnFocusRef.current?.focus()
   }
 
+  function moveFocus(step: 1 | -1): void {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [],
+    )
+    if (items.length === 0) return
+    const current = items.indexOf(document.activeElement as HTMLButtonElement)
+    const next = (current + step + items.length) % items.length
+    items[next]?.focus()
+  }
+
   return (
     <div
       ref={menuRef}
@@ -37,6 +47,9 @@ export function StatusMenu({ value, onChange, onClose }: StatusMenuProps) {
         if (event.key === 'Escape') {
           event.preventDefault()
           close()
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault()
+          moveFocus(event.key === 'ArrowDown' ? 1 : -1)
         }
       }}
     >

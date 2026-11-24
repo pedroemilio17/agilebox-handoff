@@ -2,6 +2,10 @@
   display: flex;
   align-items: center;
 }
+.compact {
+  gap: 2px;
+  margin-left: 2px;
+}
 .control {
   display: inline-grid;
   flex: 0 0 auto;
@@ -14,11 +18,17 @@
   font-size: 20px;
   cursor: pointer;
 }
+.compact .control {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 14px;
+}
 .control:hover {
   background: var(--glass-control);
   color: var(--color-text-primary);
 }
 .close:hover {
   background: var(--color-danger-hover);
-  color: var(--color-text-primary);
+  color: #fff;
 }

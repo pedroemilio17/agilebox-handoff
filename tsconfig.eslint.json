@@ -12,5 +12,13 @@
     "apps/**/*.ts",
     "apps/**/*.tsx"
   ],
-  "exclude": ["node_modules", "**/dist", "**/out", "**/coverage", "**/migrations"]
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/out",
+    "**/coverage",
+    "**/migrations",
+    "**/playwright-report",
+    "**/test-results"
+  ]
 }

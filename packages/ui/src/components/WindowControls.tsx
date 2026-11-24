@@ -5,6 +5,7 @@ export interface WindowControlsProps {
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly expanded: boolean
+  readonly compact?: boolean
 }
 
 export function WindowControls({
@@ -12,12 +13,16 @@ export function WindowControls({
   onToggleExpand,
   onClose,
   expanded,
+  compact = false,
 }: WindowControlsProps) {
+  const inlineSize = compact ? undefined : { width: '40px', height: '44px' }
+  const groupClasses = [styles.controls, compact ? styles.compact : null].filter(Boolean).join(' ')
+
   return (
-    <div className={styles.controls} role="group" aria-label="Controles da janela">
+    <div className={groupClasses} role="group" aria-label="Controles da janela">
       <button
         className={styles.control}
-        style={{ width: '40px', height: '44px' }}
+        style={inlineSize}
         type="button"
         aria-label="Minimizar"
         onClick={onMinimize}
@@ -26,7 +31,7 @@ export function WindowControls({
       </button>
       <button
         className={styles.control}
-        style={{ width: '40px', height: '44px' }}
+        style={inlineSize}
         type="button"
         aria-label={expanded ? 'Recolher' : 'Expandir'}
         onClick={onToggleExpand}
@@ -35,7 +40,7 @@ export function WindowControls({
       </button>
       <button
         className={`${styles.control} ${styles.close}`}
-        style={{ width: '40px', height: '44px' }}
+        style={inlineSize}
         type="button"
         aria-label="Fechar"
         onClick={onClose}

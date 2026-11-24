@@ -15,4 +15,25 @@ describe('Button', () => {
     render(<Button disabled>Salvar</Button>)
     expect(screen.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled')).toBe(true)
   })
+
+  it('suporta variantes ghost e danger além de tamanho compacto sm', () => {
+    render(
+      <>
+        <Button variant="ghost" size="sm">
+          Cancelar
+        </Button>
+        <Button variant="danger" shortcut="Del">
+          Excluir
+        </Button>
+      </>,
+    )
+
+    const ghost = screen.getByRole('button', { name: 'Cancelar' })
+    expect(ghost.className).toContain('ghost')
+    expect(ghost.className).toContain('sm')
+
+    const danger = screen.getByRole('button', { name: /Excluir/ })
+    expect(danger.className).toContain('danger')
+    expect(danger.textContent).toContain('Del')
+  })
 })

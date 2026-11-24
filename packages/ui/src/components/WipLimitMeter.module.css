@@ -5,7 +5,7 @@
   gap: var(--space-2);
   padding: 2px 6px;
   border-radius: var(--radius-badge);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-tint-tag);
   color: var(--color-text-muted);
   white-space: nowrap;
 }
