@@ -15,6 +15,7 @@ import { useNoticeOnError } from './use-notice-on-error'
 import { METHOD_NAMES } from './dashboard-format'
 import type { DashboardInsights } from './dashboard-format'
 import { NeedsList } from './NeedsList'
+import { StateDistribution } from './StateDistribution'
 import { ProjectCard } from './ProjectCard'
 import { TeamTable } from './TeamTable'
 import type { DashboardException } from './TeamTable'
@@ -189,6 +190,8 @@ export function DashboardView({
         />
       </header>
 
+      <StateDistribution distribution={dashboard.data.distribution} />
+
       <section aria-labelledby="needs-title" className={styles.needs}>
         <div className={styles.needsHead}>
           <h2 id="needs-title" className={styles.sectionTitle}>
@@ -223,7 +226,7 @@ export function DashboardView({
         ) : (
           <div className={styles.projects}>
             {projects.map((card) => (
-              <ProjectCard key={card.id} card={card} />
+              <ProjectCard key={card.id} card={card} onOpenProject={onOpenProject} />
             ))}
           </div>
         )}

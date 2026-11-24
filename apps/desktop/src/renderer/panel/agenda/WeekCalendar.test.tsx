@@ -48,6 +48,15 @@ const baseProps = {
 }
 
 describe('agenda semanal', () => {
+  it('o botão Hoje leva a agenda ao dia de hoje', async () => {
+    const onSelectDate = vi.fn()
+    render(<WeekCalendar {...baseProps} meetings={[]} onSelectDate={onSelectDate} />)
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Hoje' }))
+
+    expect(onSelectDate).toHaveBeenCalledWith('2026-11-02')
+  })
+
   it('mantém sete dias na virada de ano e um dia no modo diário', () => {
     expect(agendaDays('2027-01-01', 'week')).toEqual([
       '2026-12-28',

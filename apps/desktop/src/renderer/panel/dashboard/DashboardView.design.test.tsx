@@ -9,9 +9,12 @@ import { ANA, BRUNO, CHAMADOS, ERP, dashboardFixture, insightsFixture } from './
 
 afterEach(cleanup)
 
-function setup(insights = insightsFixture()) {
+function setup(
+  insights = insightsFixture(),
+  distribution?: Parameters<typeof dashboardFixture>[1],
+) {
   const api = createFakeApi()
-  vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardFixture(insights))
+  vi.spyOn(api.dashboard, 'get').mockResolvedValue(dashboardFixture(insights, distribution))
   vi.spyOn(api.daily, 'listForDate').mockResolvedValue([
     { userId: BRUNO, userName: 'Bruno Lima', done: true },
     { userId: ANA, userName: 'Ana Souza', done: false },
@@ -122,5 +125,37 @@ describe('Dashboard do gestor, layout do desenho (tela 19)', () => {
     await user.selectOptions(screen.getByLabelText('Filtrar por pessoa'), ANA)
     expect(within(team).queryByText('Bruno Lima')).toBeNull()
     expect(within(team).getByText('Ana Souza')).toBeTruthy()
+  })
+
+  it('Tarefas por estado: barra e legenda com a porcentagem de cada um dos 5 estados', async () => {
+    setup(insightsFixture(), { planning: 10, todo: 20, in_progress: 30, review: 15, done: 25 })
+    const section = await screen.findByRole('region', {
+      name: 'Distribuição das tarefas por estado',
+    })
+    const legend = within(section).getByRole('list', { name: 'Estados' })
+    const items = within(legend).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual([
+      'Planejamento10%',
+      'A fazer20%',
+      'Desenvolvendo30%',
+      'Revisar15%',
+      'Concluído25%',
+    ])
+  })
+
+  it('Tarefas por estado: sem tarefas mostra o aviso vazio, sem barra', async () => {
+    setup()
+    const section = await screen.findByRole('region', {
+      name: 'Distribuição das tarefas por estado',
+    })
+    expect(within(section).getByText('Ainda não há tarefas para mostrar.')).toBeTruthy()
+    expect(within(section).queryByRole('list', { name: 'Estados' })).toBeNull()
+  })
+
+  it('cartão do projeto tem o botão Abrir quadro, que leva ao quadro dele', async () => {
+    const { user, onOpenProject } = setup()
+    const agile = await screen.findByRole('article', { name: 'App de Chamados' })
+    await user.click(within(agile).getByRole('button', { name: 'Abrir quadro de App de Chamados' }))
+    expect(onOpenProject).toHaveBeenCalledWith(CHAMADOS, 'board')
   })
 })

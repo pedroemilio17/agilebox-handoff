@@ -122,9 +122,10 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     expect(row.textContent).not.toMatch(/Ágil|Trad\.|Kanban|Híbrido|Simples/)
   })
 
-  it('consolida em no máximo 6 sub-itens na árvore, com S4 e contagem fora do nome acessível', () => {
+  it('consolida em no máximo 7 sub-itens na árvore (Início incluso), com S4 e contagem fora do nome acessível', () => {
     const { nav } = renderShell()
     expect(subitemNames()).toEqual([
+      'Início',
       'Quadro',
       'Backlog',
       'Sprints',
@@ -138,7 +139,7 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
 
   it('sub-itens seguem o gate dos módulos sem mostrar o que está desligado', () => {
     const { nav } = renderShell({}, ['backlog'])
-    expect(subitemNames()).toEqual(['Quadro', 'Backlog', 'Configurações'])
+    expect(subitemNames()).toEqual(['Início', 'Quadro', 'Backlog', 'Configurações'])
     expect(nav.queryByRole('button', { name: 'Sprints' })).toBeNull()
     expect(nav.queryByRole('button', { name: 'Entregas' })).toBeNull()
     expect(nav.queryByRole('button', { name: 'Cronograma' })).toBeNull()
@@ -153,6 +154,22 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
 
     await userEvent.click(tabs.getByRole('button', { name: 'Impedimentos' }))
     expect(props.onViewChange).toHaveBeenCalledWith('impediments')
+  })
+
+  it('Entregas mostra o rail do Fluxo Preditivo com o subtítulo do tópico ativo', async () => {
+    const { props } = renderShell({ view: 'wbs', wbs: <p>EAP tela</p> })
+    const rail = within(screen.getByRole('navigation', { name: 'Seções de Entregas' }))
+    expect(rail.getByRole('button', { name: 'Entregas (EAP)' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+    expect(
+      screen.getByText('Divida o projeto em entregas claras antes de quebrar em tarefas.'),
+    ).toBeTruthy()
+    expect(screen.getByText('EAP tela')).toBeTruthy()
+
+    // O outro tópico de Entregas (Plano, com sprints ligadas) é o segundo botão do rail.
+    await userEvent.click(rail.getAllByRole('button')[1]!)
+    expect(props.onViewChange).toHaveBeenCalledWith('plan')
   })
 
   it('o item da tela atual leva aria-current; planSprint destaca Entregas sem exibir TopicTabs', () => {

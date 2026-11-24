@@ -27,6 +27,7 @@ import {
   type RiskFormErrors,
   type RiskFormValues,
 } from './risk-rules'
+import { RiskMatrix, type RiskCell } from './RiskMatrix'
 import styles from './RisksView.module.css'
 
 export interface RisksViewProps {
@@ -66,6 +67,8 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  // Quadrante da matriz 3×3 escolhido: filtra a lista. Nulo mostra todos.
+  const [cell, setCell] = useState<RiskCell | null>(null)
 
   if (projectId === null) {
     return (
@@ -101,6 +104,12 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
   const view = query.data
   const { canEdit } = view
   const empty = view.risks.length === 0
+  const shownRisks =
+    cell === null
+      ? view.risks
+      : view.risks.filter(
+          (risk) => risk.probability === cell.probability && risk.impact === cell.impact,
+        )
   const deliverables = (wbs.data?.deliverables ?? []).flatMap((row) =>
     row.kind === 'deliverable' ? [row] : [],
   )
@@ -199,9 +208,15 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
         </ModuleEmptyState>
       ) : null}
 
-      {!empty ? (
+      {!empty ? <RiskMatrix risks={view.risks} selected={cell} onSelect={setCell} /> : null}
+
+      {!empty && shownRisks.length === 0 ? (
+        <p className={styles.muted}>Nenhum risco neste quadrante.</p>
+      ) : null}
+
+      {!empty && shownRisks.length > 0 ? (
         <ol className={styles.list} aria-label={riskCopy.listLabel}>
-          {view.risks.map((risk) =>
+          {shownRisks.map((risk) =>
             canEdit && editingId === risk.id ? (
               <li key={risk.id} className={styles.item}>
                 <RiskForm

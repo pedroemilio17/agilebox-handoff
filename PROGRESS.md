@@ -609,3 +609,13 @@ Todos os passos usam `fake-api` nos testes de componente. Hooks de dados nascem 
 - Pedro pediu priorizar o importante, concluir o trabalho em andamento e documentar como continuar depois. Última entrega: ciclo médio semanal do quadro, sem dependência do dashboard e sem migração.
 - Handoff de retomada: `docs/CONTINUAR-REDESIGN-v2.md` (entregas, pendências, comandos, limitações visuais e cuidado com alterações preexistentes).
 - Verificação final: 921 testes em 116 arquivos passaram; formatação global, lint global, checagem global de tipos e build electron-vite passaram. Servidor de revisão encerrado. O redesign continua incompleto e não deve ser marcado como concluído. Trabalho pausado após encerrar a implementação em andamento, conforme pedido do Pedro.
+
+## Revisão UX · integração de `design/revisao-ux` (5 fases)
+
+Fonte: `design/revisao-ux/*.html` + `assets/app-shell.{css,js}`, `tokens.css`. Referência visual, não código a copiar (stack: React + CSS modules + tokens do `packages/ui`). Regras do CLAUDE.md valem (camadas, pt-BR, sem inventar requisito: o que não tem dado vira pendência em `docs/laco/pendencias-do-pedro.md`).
+
+- [x] Fase 1 · Shell e navegação do painel (PanelShell, project-nav, TopicTabs, histórico) — commit 04eb1a6
+- [x] Fase 2 · Configurações do projeto e Kan IA em Configurações (`bandeja`/`configuracoes.html`) — commit 04eb1a6
+- [x] Fase 3 · Bandeja com Kan (PromptScreen, KanChatScreen) e Sprint ativa (`agil.html`, `bandeja.html`) — commit 04eb1a6
+- [x] Fase 4 · Telas novas: [x] `projeto-home.html` (Início do Projeto, ProjectHomeView) · [x] `preditivo.html` (Fluxo Preditivo: casca `predictive/PredictiveLayout`, matriz 3×3 em Riscos)
+- [ ] Fase 5 · Auditoria de fidelidade: [x] 5a quadro/tarefa/agenda · [x] 5b dashboard/novo-projeto/configurações/index · [ ] 5c Kan 3D (`kan-3d.js`, depende de decisão: three.js + GLB)

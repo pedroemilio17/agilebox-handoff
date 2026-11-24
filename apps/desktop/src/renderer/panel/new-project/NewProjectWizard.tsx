@@ -36,7 +36,7 @@ export interface NewProjectWizardProps {
   readonly onFinishQuestions: (name: string, answers: WizardAnswers, draft: WizardDraft) => void
 }
 
-const NAME_REQUIRED = 'Dê um nome ao projeto para continuar.'
+const NAME_REQUIRED = 'Digite um nome para o projeto antes de continuar.'
 
 /**
  * Assistente de novo projeto (ADR-10), perguntas 1 a 5. A recomendação (pergunta 6) fica para

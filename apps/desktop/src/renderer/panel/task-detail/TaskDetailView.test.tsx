@@ -114,6 +114,24 @@ describe('Detalhe da tarefa', () => {
     expect(move).toHaveBeenCalledWith({ taskId: TASK_ID, status: 'review' })
   })
 
+  it('Concluir tarefa leva ao estado Concluído pelo mesmo caminho do menu', async () => {
+    const { move, user } = setup()
+    await user.click(await screen.findByRole('button', { name: 'Concluir tarefa' }))
+    expect(move).toHaveBeenCalledWith({ taskId: TASK_ID, status: 'done' })
+  })
+
+  it('esconde Concluir tarefa em tarefa já concluída e no modo somente leitura', async () => {
+    setup({ detail: makeDetail({ status: 'done' }) })
+    await screen.findByRole('button', { name: 'Status' })
+    expect(screen.queryByRole('button', { name: 'Concluir tarefa' })).toBeNull()
+  })
+
+  it('esconde Concluir tarefa para quem só lê', async () => {
+    setup({ detail: makeDetail({ canEdit: false, readOnly: true }) })
+    await screen.findByText('Somente leitura')
+    expect(screen.queryByRole('button', { name: 'Concluir tarefa' })).toBeNull()
+  })
+
   it('grava o chamado: número, link e limpeza', async () => {
     const { update, user } = setup()
     const id = await screen.findByLabelText('Número do chamado')

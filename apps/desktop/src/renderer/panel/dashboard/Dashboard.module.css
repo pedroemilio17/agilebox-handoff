@@ -472,3 +472,80 @@
     transition: none;
   }
 }
+
+/* Tarefas por estado (distribuição da organização) */
+.stateBar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-tint-chip);
+}
+.stateSegment {
+  display: block;
+  height: 100%;
+  opacity: 0.8;
+}
+.stateLegend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stateItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+.stateDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.stateValue {
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.stateTonePlanning {
+  background: var(--color-status-planejamento);
+}
+.stateToneTodo {
+  background: var(--color-status-afazer);
+}
+.stateToneInProgress {
+  background: var(--color-status-desenvolvendo);
+}
+.stateToneReview {
+  background: var(--color-status-revisar);
+}
+.stateToneDone {
+  background: var(--color-status-concluido);
+}
+
+/* Botão do cartão do projeto: alvo de 44 px */
+.projectOpen {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.projectOpen:hover,
+.projectOpen:focus-visible {
+  color: var(--color-text-primary);
+}

@@ -1,0 +1,117 @@
+/* Matriz 3×3 da tela Riscos (protótipo preditivo.html, .matrix-*). Só tokens. */
+
+.matrix {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--glass-group-border);
+  border-radius: var(--radius-group);
+  background: var(--glass-group);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-body);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.grid {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 56px repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 6px;
+}
+
+.yLabel {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
+}
+
+.xRow {
+  align-items: center;
+}
+
+.xLabel {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.cell {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-chip);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Cor é reforço: a contagem e o texto de quadrante dizem o mesmo. */
+.low {
+  background: var(--color-tint-soft);
+}
+
+.medium {
+  background: var(--color-signal-warning-bg);
+}
+
+.high {
+  background: var(--color-signal-danger-bg);
+}
+
+.selected {
+  border-color: var(--color-focus-ring);
+  box-shadow: inset 0 0 0 1px var(--color-focus-ring);
+}
+
+.count {
+  font-size: var(--font-size-title-small);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.countLabel {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    transition: none;
+  }
+}

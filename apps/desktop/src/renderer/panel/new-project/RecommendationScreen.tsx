@@ -43,7 +43,7 @@ const EXPERIENCE_OPTIONS: readonly { value: GuideExperience; label: string }[] =
   { value: 'always', label: 'Sempre' },
 ]
 
-const DISCLAIMER = 'Mudar depois é barato. Desligar um módulo só esconde, nada é apagado.'
+const DISCLAIMER = 'Você pode ligar ou desligar recursos depois em Configurações sem perder dados.'
 
 /**
  * Recomendação do novo projeto (ADR-10, pergunta 6 e etapa final). Mostra o preset recomendado,

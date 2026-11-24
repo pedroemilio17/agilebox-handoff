@@ -102,6 +102,7 @@ export function WeekCalendar({
           <Button aria-label="Período anterior" onClick={onPrevious}>
             ‹
           </Button>
+          <Button onClick={() => onSelectDate(today)}>Hoje</Button>
           <Button aria-label="Próximo período" onClick={onNext}>
             ›
           </Button>

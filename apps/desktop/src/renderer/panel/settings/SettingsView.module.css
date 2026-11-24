@@ -125,3 +125,26 @@
 .statusBadgeConnected {
   color: var(--color-text-primary);
 }
+
+.rateForm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.rateControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rateInput {
+  width: 108px;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-control-border);
+  border-radius: 8px;
+  background: var(--color-tint-faint);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}

@@ -11,6 +11,7 @@ import {
 import { panelCopy } from '../copy'
 import { TeamToolsSection } from '../team-tools/TeamToolsSection'
 import { KanAiSection } from './KanAiSection'
+import { MyRateSection } from './MyRateSection'
 import { UpdatesSection } from './UpdatesSection'
 import styles from './SettingsView.module.css'
 
@@ -89,6 +90,7 @@ export function SettingsView() {
           </Button>
         </div>
       </GlassSurface>
+      <MyRateSection />
       <KanAiSection />
       <UpdatesSection />
     </div>

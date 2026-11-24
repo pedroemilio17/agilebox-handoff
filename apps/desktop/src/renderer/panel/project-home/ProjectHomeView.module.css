@@ -1,0 +1,352 @@
+/* Início do projeto (protótipo projeto-home.html). Só tokens do packages/ui; medidas fora da escala
+   ficam literais, como no protótipo. */
+
+.view {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 620;
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
+}
+
+.kpiCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 var(--space-4);
+  border-right: 1px solid var(--color-divider);
+  min-width: 0;
+}
+
+.kpiCell:first-child {
+  padding-left: 0;
+}
+
+.kpiCell:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.kpiLabel {
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpiValue {
+  font-family: var(--font-family-display);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: var(--letter-spacing-display);
+  overflow-wrap: anywhere;
+}
+
+.kpiSub {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.secHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.secTitle {
+  margin: 0;
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.secMeta {
+  font-size: var(--font-size-small);
+  color: var(--color-text-subtle);
+}
+
+.stateBar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-tint-soft);
+}
+
+.stateSeg {
+  display: block;
+  height: 100%;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stateRow,
+.row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-chip);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.stateRow:hover,
+.row:hover {
+  background: var(--color-tint-soft);
+}
+
+.stateRow:focus-visible,
+.row:focus-visible,
+.kpiCell:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.rowName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-small);
+}
+
+.miniTrack {
+  width: 80px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-tint-soft);
+  overflow: hidden;
+  flex: none;
+}
+
+.miniFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent-text);
+  transition: width 200ms ease;
+}
+
+.rowNum {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.rowMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rowMeta {
+  font-size: var(--font-size-chip);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.rowAction {
+  font-size: var(--font-size-chip);
+  color: var(--color-accent-text);
+  white-space: nowrap;
+}
+
+.code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-chip);
+  color: var(--color-text-subtle);
+  flex: none;
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--color-status-afazer);
+}
+
+.dotDanger {
+  background: var(--color-signal-danger);
+}
+
+.dotWarning {
+  background: var(--color-signal-warning);
+}
+
+.stPlanning {
+  background: var(--color-status-planejamento);
+}
+
+.stTodo {
+  background: var(--color-status-afazer);
+}
+
+.stProgress {
+  background: var(--color-status-desenvolvendo);
+}
+
+.stReview {
+  background: var(--color-status-revisar);
+}
+
+.stDone {
+  background: var(--color-status-concluido);
+}
+
+.team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--color-tint-chip);
+  min-width: 0;
+}
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-avatar-bg);
+  font-size: var(--font-size-chip);
+  font-weight: 600;
+  flex: none;
+}
+
+.personText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.personName {
+  font-size: var(--font-size-small);
+  font-weight: 500;
+}
+
+.personRole {
+  font-size: var(--font-size-chip);
+  color: var(--color-text-muted);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-signal-danger-text);
+  font-size: var(--font-size-small);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miniFill {
+    transition: none;
+  }
+}

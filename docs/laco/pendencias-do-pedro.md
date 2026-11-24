@@ -335,3 +335,132 @@ Feito conforme `Recomendacao.dc.html`: resumo do trabalho sob o título (`recomm
   - Equipe: o botão "Ver" da diária continua (não está no desenho). DECIDIR: manter ou tirar (sem ele, a diária só se vê pela bandeja).
   - Tokens novos (`packages/ui/src/styles/tokens.css`): `--color-tint-faint`, `--color-tint-soft`, `--color-tint-chip`, `--color-tint-tag`, `--color-divider`, `--color-control-border`. Substituem `rgba(255,255,255,…)` repetidos nos módulos do dashboard.
   - Testes ajustados ao desenho (sem asserts enfraquecidos): `App.manager` (seletor de semana e cartões de exceção trocados pelos sinais da equipe e por "Precisa de você"); `App.basic-flow`, `App.scrum-basic` (mesmas checagens de ausência, nos seletores novos); `App.tools-audit` (sondas do painel nos elementos novos; a linha "fluxo de seis semanas" saiu do snapshot, porque a seção não existe mais; o fluxo chega pelos cartões, e a regra dele é coberta em `get-dashboard.test.ts`); `updates-feed.test`, `UpdatesView.test` (dia dos sinais e tipos padrão). Fixture `managerDashboard` ganhou um WIP em "Precisa de você" e uma parada na equipe, para o relatório de níveis medir essas linhas.
+
+## Revisão UX · Início do Projeto (Fase 4a, `projeto-home.html`)
+
+Tela em `apps/desktop/src/renderer/panel/project-home/`, com o item "Início" como primeiro item de cada projeto. Só usa dados que já existem no contrato. O que o protótipo mostra e o contrato não entrega ficou vazio ou sem a parte correspondente, e está listado aqui.
+
+- Subtítulo do projeto (a descrição em "Projeto A · …"): o `ProjectDto` não tem descrição. A tela mostra só o nome.
+- Pessoas externas (entidades): não há contrato de entidades (`packages/contract`). A seção mostra o texto "Pessoas externas ainda não aparecem nesta tela.".
+- Próximos compromissos por projeto: o contrato de reuniões lista por pessoa e por intervalo de datas, sem filtro por projeto. A seção mostra "Compromissos por projeto ainda não aparecem aqui.".
+- Cargo do membro ("Design & UX", "Suporte & Dev"): o contrato só tem o papel do sistema (Gestor ou Colaborador). A tela mostra o papel do sistema.
+- Sprint "6/10" (itens concluídos de quantos): não há contagem de itens por sprint na lista de sprints. A tela mostra "Sprint N" e "Restam N dias" (dias até o fim planejado).
+- "+3 dias vs. plano salvo" no próximo marco e "Sem linha de base": a comparação com a linha de base não aparece nesta tela. O acompanhamento só a traz com o módulo `baseline`. DECIDIR se o início mostra o desvio.
+- "Tempo médio" com "2,1d em execução" (ciclo): o fluxo tem `cycleDays`, mas a tela mostra só a média de criação até a conclusão. DECIDIR se entra o ciclo.
+- "Parada há N dias" (ex.: "AB-5 há 5 dias em Desenvolvendo", "Coluna Revisar com acúmulo"): não há limite de parada no contrato. A atenção usa só bloqueio, prazo vencido e coluna de WIP acima do limite. DECIDIR se "parada" entra e com que limite.
+- Navegação: "Início" é o 7º item de primeiro nível do projeto no Híbrido (o teto anterior era 6). Mudou em `layout/project-nav.ts` e no teste de `PanelShell`. CONFIRMAR o teto de 7.
+- "Em destaque neste projeto": a regra é a de 4 tarefas abertas mais recentemente atualizadas. O protótipo não diz a regra (usa as últimas 4). CONFIRMAR.
+- Link "Ativar ferramentas →" (projeto Simples, que o protótipo faz no lugar de "Ver Backlog →"): não implementado, porque o Backlog não existe no Simples. Dá para mostrar "Configurações" no lugar.
+- Custo acumulado: vem do acompanhamento (`realizedCost`), nulo para quem não é gestor e com `costEnabled` falso. O cartão some nesses casos. Colaborador não vê R$ nesta tela.
+- Andamento "5 de 11 concluídas": conta as tarefas que o quadro devolve para quem está logado. Colaborador vê só as que participa, como no quadro.
+- Botões do protótipo sem contrato: nenhum fora os itens acima. O atalho de Plugins e a Visão Equipe continuam fora do MVP, como combinado.
+
+## Revisão UX · Fluxo Preditivo (Fase 4b, `preditivo.html`)
+
+Entregas e Cronograma seguem como duas entradas da barra lateral. As duas abrem a mesma casca (`predictive/PredictiveLayout`): rail de tópicos à esquerda, subtítulo e, nos tópicos de cronograma, a faixa de indicadores. Cada tópico continua sendo a tela que já existia (EAP, Riscos, Cronograma, Acompanhamento, Marcos, Plano salvo). O que o protótipo mostra e o contrato não entrega ficou de fora ou com a parte correspondente, e está listado aqui.
+
+- Nomes do rail: o app mantém os rótulos atuais ("Entregas (EAP)", "Riscos", "Cronograma", "Marcos", "Plano salvo"). O protótipo diz "Estrutura (EAP)", "Riscos (3×3)" e "Linha do tempo". DECIDIR qual vale.
+- Dependências: no protótipo é um tópico próprio. No app, o Gantt, a lista de datas e as dependências estão na mesma tela (Cronograma). Separar exige mexer em `schedule/ScheduleView`. DECIDIR se separa.
+- Acompanhamento: não existe no protótipo; o app mantém como tópico do Cronograma. DECIDIR se fica.
+- Plano da sprint (híbrido): não existe no protótipo; o app mantém como tópico de Entregas quando há EAP e sprints ligadas. DECIDIR se fica.
+- Contagens ao lado de cada tópico ("Estrutura (EAP) 3", "Marcos 3"): o rail não recebe contagens. Pegar as contagens exige consultas no shell da janela. DECIDIR se entram.
+- "Previsão final 18 dez" e "+3 dias vs plano salvo": não há previsão final no contrato de acompanhamento. O desvio do plano salvo aparece na tela Plano salvo, não no topo. Não entrou na faixa de indicadores.
+- "Entregas no prazo 4 de 5": o contrato da EAP não tem situação (no prazo ou em atenção) por entrega. Não entrou.
+- "Realizado / Planejado": entra só com custo ligado e para o gestor (o servidor manda o custo nulo para quem não é gestor). Sem orçamento previsto, mostra só o realizado.
+- "+ Nova tarefa nesta entrega" (dentro de cada grupo da EAP): o contrato de criação de tarefa não recebe a entrega. Não implementado: a tarefa segue pelo Quadro ("Nova tarefa").
+- Riscos: "Virar tarefa" e "Marcar bloqueio" não existem no contrato de riscos. Não implementados. Ficam os botões de edição e remoção que a tela já tinha.
+- Riscos: a matriz 3×3 (contagem por quadrante e filtro da lista) entrou em `risks/RiskMatrix`, com regra de quadrante e texto de contagem. Confirmar o visual contra o protótipo.
+- Ações do cabeçalho do protótipo ("+ Nova entrega", "+ Novo risco", "+ Novo marco", "Atualizar plano salvo"): cada tela já tem a sua própria ação, no lugar do cabeçalho compartilhado. Não reproduzi o cabeçalho único.
+- "Marcar como cumprido" no marco e a tooltip/clique das barras do Gantt: não conferi se a tela de marcos e o Gantt do app têm o mesmo comportamento do protótipo.
+- Modo Simples: o protótipo mostra um estado vazio "desativado no modo Simples". No app, os grupos somem da barra quando os módulos estão desligados, então não há estado vazio dedicado.
+- Subtítulos: os textos da casca vêm do protótipo, mas o da tela de Riscos e o do Cronograma foram reescritos para só prometer o que a tela faz. Revisar o texto.
+
+## Revisão UX · Auditoria 5a (fidelidade de `quadro`, `tarefa` e `agenda`)
+
+Comparação com `design/revisao-ux/quadro.html`, `tarefa.html` e `agenda.html`, com `assets/app-shell.css` e `tokens.css`. O que já cabia nos dados e no contrato foi corrigido (ver a lista "Feito" abaixo). O resto fica aqui, separado em "DECIDIR" (escolha de produto) e "Não implementado" (exige dado ou regra que o app não tem).
+
+Feito nesta auditoria:
+- Quadro: busca por ID, título ou responsável (`board/board-search.ts`, campo no cabeçalho de filtros). Alvo de 44 px no ícone de arrastar do cartão e no seletor de teclado (antes 22 px e 28 px).
+- Faixa do gestor: volta a mostrar "Tarefas de {nome} · editando como Gestor" e troca o ícone de voltar por botão com texto "Voltar às minhas".
+- Tarefa: botão primário "Concluir tarefa" no cabeçalho, para tarefa que não está concluída e quando a pessoa pode editar. Usa o mesmo caminho do menu de estado, então passa pela conferência de definição de pronto.
+- Agenda: botão "Hoje" na navegação da semana e do dia.
+
+Quadro:
+- DECIDIR · Cartão mostra só o avatar do responsável. O protótipo mostra "Responsável · Apoio" em texto. O apoio já existe no detalhe da tarefa, mas a lista do quadro só consulta o responsável. Trocar para texto exige ampliar essa consulta.
+- DECIDIR · Limite de WIP: o protótipo mostra "n/limite simult." em todas as colunas, com limite padrão 3. O app mede só Desenvolvendo e Revisar (regra no código de `BoardView`). Planejamento, A fazer e Concluído ficariam sem limite. Confirmar a regra.
+- DECIDIR · Densidade: o protótipo usa cartão mais compacto (padding 8×9 px, título 12,5 px, colunas com mínimo de 320 px). O app usa os tokens do `packages/ui` (padding 11×12 px, título 13,5 px, sem mínimo de altura por coluna). Não ajustei: a diferença é visual e precisa de conferência em tela (não rodei o app aqui).
+- DECIDIR · Cabeçalho da coluna Concluído: o protótipo mostra "Ciclo: 2,4d" com dica. O app mostra "Ciclo médio desta semana" no rodapé da coluna. Mantive o do app.
+- DECIDIR · Filtros: o protótipo traz "Todas / Alta / Bloqueadas". O app traz "Paradas", "Vencidas", "Prioridade alta", "Bloqueadas" e "Sprint ativa", todos com contagem, e "Mostrar arquivadas". Mantive o do app, que cobre os módulos ligados.
+- Não implementado · Estado vazio "Projeto C · Primeiro acesso" com as sugestões "+ Configurar ambiente inicial", "+ Revisar acessos da equipe" e "+ Alinhar entregas da semana". As sugestões criariam tarefa com título pré-definido, e a tela de nova tarefa não recebe título inicial. DECIDIR se entram e como (título pré-preenchido ou criação direta).
+- Não implementado · Visões do gestor no seletor do quadro ("Meu quadro", "Tarefas de João", "Projeto C (Vazio)"). O app já troca a visão do gestor pelo banner (escolha de pessoa), e o seletor Minhas/Equipe fica na casca. Não toquei na casca.
+- Busca: a pessoa buscada é o responsável. Apoio não entra na busca, pelo mesmo motivo do cartão.
+
+Tarefa:
+- DECIDIR · Layout: o protótipo tem rail de tópicos (Visão geral, Checklist & Pronto, Pessoas & Prazo, Horas & Custo, Bloqueios & Histórico). O app usa coluna única, decisão A6 do PROGRESS ("Detalhe agora em coluna única"). Voltar aos tópicos é reescrita da tela e dos testes do detalhe.
+- DECIDIR · Aviso de tarefa parada: o protótipo traz "Ainda trabalhando" e "Registrar bloqueio". O app traz "Segue em andamento" (confirma andamento sem mudar o estado, regra do domínio) e não tem botão de bloqueio no aviso. Mantive o do app. Decidir se o aviso ganha "Registrar bloqueio".
+- DECIDIR · Alerta de parada automático: o protótipo tem o botão "Aviso parada" no cabeçalho para ligar e desligar o aviso. No app o aviso aparece sozinho quando a tarefa está parada (`agingDays`). Mantive o automático.
+- DECIDIR · Selo de privacidade do custo "Privado (só seu R$/h)". O app não mostra selo: o servidor já manda só o próprio valor/hora para cada pessoa. Decidir se o selo entra e com que texto por papel.
+- Não implementado · Menu "⋯" com "Duplicar tarefa" e "Copiar link". Duplicar não tem caso de uso nem contrato. Copiar link não tem link nem protocolo (já registrado no PROGRESS, M6.6). "Registrar bloqueio" e "Arquivar" já existem em cartões próprios.
+- Não implementado · Links de vínculo ("Sprint 4" e "Entrega: ...") como navegação. O app mostra a sprint como texto (marcador) e a entrega no cartão próprio, sem atalho.
+- Não implementado · Contagem "N eventos" na linha do tempo (protótipo). Cosmético; não entrou.
+- Mantido · Conferência de pronto: o protótipo abre um modal com "Cancelar", "Concluir mesmo assim" e "Marcar todos e concluir". O app usa o diálogo de conferência com um botão "Concluir" que só habilita com todos os itens marcados (regra existente, Esc cancela). Mantive o do app.
+
+Agenda:
+- DECIDIR · Legenda de categorias (Daily, Planejamento, Retrospectiva, Entrega). O app tem três tipos de agendamento: reunião, review e retro (`MEETING_KINDS`). Daily, Planejamento e Entrega não existem no contrato. Se forem tipos novos, é requisito novo, então não criei. Não há legenda no app; os eventos trazem o tipo no próprio selo.
+- DECIDIR · Criação e edição: o protótipo usa modal com "Categoria" e "Projeto". O app usa o formulário lateral (`MeetingForm`) com início e fim, e não tem projeto nem categoria no agendamento. Mantive o do app.
+- DECIDIR · Painel "Ações da Retrospectiva" sempre visível com "N pendentes". No app ele aparece quando uma retro está aberta. Decidir se a lista de combinados fica sempre na lateral.
+- DECIDIR · "Próximos 7 dias · N eventos". O app mostra "Próximos agendamentos" e o critério (quantos e de qual período) vem de `listUpcoming`. Não inventei a janela de 7 dias. Confirmar o critério no servidor.
+- Mantido · "+ Novo agendamento" some para colaborador no protótipo. No app o botão fica desabilitado com o texto "Só o gestor cria e edita agendamentos." Mantive, porque o motivo fica visível.
+- Mantido · Selo "Somente leitura" no cabeçalho (protótipo). O app usa o texto de ajuda sob o botão. Não há cabeçalho de página dentro da tela de agenda (o título vem da casca).
+
+Geral (as três telas):
+- Estados: carregando, erro e vazio existem nas três telas. Os textos são os do app, não os do protótipo.
+- Atalhos: o protótipo só usa Enter e Espaço nos cartões, que já funcionam pelos botões nativos. Esc fecha o formulário da agenda. Ctrl+K e F1 são da casca e não foram mexidos. Nada novo a acrescentar.
+- Cores e tokens: não auditei hex a hex (não rodei o app visualmente nesta sessão). Os tokens usados nos três módulos (`--surface-card`, `--color-hairline`, `--color-divider`, `--size-touch-target`) existem em `packages/ui/src/styles/tokens.css`. Vale uma conferência visual no Windows e no Fedora.
+- Acessibilidade: nenhuma regressão de reduced-motion nem de alvo de 44 px foi introduzida. Os ícones do quadro e a busca continuam com nome acessível.
+
+## Revisão UX · Auditoria 5b (fidelidade de `dashboard`, `novo-projeto`, `configuracoes` e `index`)
+
+Comparação com `design/revisao-ux/dashboard.html`, `novo-projeto.html`, `configuracoes.html` e `index.html`, com `assets/app-shell.css` e `tokens.css`. O que coube nos dados e no contrato foi feito (lista "Feito"). O resto fica em "DECIDIR" (escolha de produto) e "Não implementado" (exige dado ou regra que o app não tem).
+
+Feito nesta auditoria:
+- Dashboard: bloco "Distribuição das tarefas por estado" com barra e legenda (5 estados, %) a partir de `distribution` do DTO (`dashboard/StateDistribution.tsx`). Sem tarefas, mostra o aviso vazio.
+- Dashboard: cartão de projeto ganha "Abrir quadro →" (alvo de 44 px), que leva ao quadro do projeto (`onOpenProject`).
+- Novo projeto: nota de reversibilidade no passo de revisão com o texto do desenho ("Você pode ligar ou desligar recursos depois em Configurações sem perder dados."). A frase "Mudar depois é barato" saiu, como o próprio desenho registra.
+- Novo projeto: erro do nome com o texto do desenho ("Digite um nome para o projeto antes de continuar.").
+- Ajustes: nova seção "Meu valor/hora padrão (R$/h)", privada, gravada por `users.setDefaultRate` (o caso de uso já aceita o próprio usuário). Mostra o aviso de privacidade, confirmação e erro em pt-BR.
+
+Dashboard:
+- DECIDIR · Faixa de 5 indicadores (Tarefas ativas, Tempo médio, Concluídas (sem.), Horas lançadas, Custo do time). Não implementada: o DTO tem `leadDays` e `cycleDays` (com fluxo ligado), mas `throughput` não tem critério definido no contrato (semana atual ou série?). "Tarefas ativas" e "Horas lançadas" não têm total agregado (somar `team.inProgress` repete tarefas). "Custo do time" não existe: o DTO traz só `spentCost` por projeto. Decidir se o total é soma do custo realizado ou regra nova no core.
+- DECIDIR · Colunas "Valor/h", "Horas (sem.)" e "Custo (sem.)" da equipe. O gestor já vê o valor/hora de cada pessoa (`session.listUsers`), mas "horas da semana" lançadas não existe no DTO (`loadHours` é estimativa de tarefas abertas). Custo semanal por pessoa depende dessa regra.
+- DECIDIR · "Visão geral | Atualizações" como abas no cabeçalho. Hoje "Ver todas as atualizações" abre a tela de Atualizações. Manter ou trocar.
+- DECIDIR · Botão "Resumo do dia" no cabeçalho (equipe toda). Hoje a diária abre por pessoa (coluna "Diária de hoje"). O `DailyDialog` recebe um `userId`; um resumo da equipe pede tela nova.
+- DECIDIR · Colaborador: o desenho mostra um aviso educativo em `dashboard.html`. No app o item some da barra e a tela não abre. Decidir se mostra o aviso.
+- Mantido · Título "Dashboard" (app) em vez de "Dashboard do Gestor" (desenho); "Equipe em todos os projetos" (app) em vez de "Colaboradores"; sem o subtítulo do desenho. O texto do app já é o que os testes do cabeçalho conferem.
+- Mantido · Filtros do app (projeto, metodologia, pessoa) cobrem o cabeçalho do desenho; "Mini-equipe" segue estático.
+
+Novo projeto:
+- DECIDIR · Perguntas: o desenho tem 3 perguntas (ritmo, cliente externo, experiência). O app tem 5 perguntas e a recomendação (ADR-10, decisão já tomada). Mantido.
+- DECIDIR · Caminho rápido "Criar projeto simples agora", com a legenda "Mais rápido · 80% dos times". O app usa "Pular e criar no modo Simples" (mesmo caminho). A estatística "80% dos times" não tem fonte: não foi copiada.
+- DECIDIR · Tela de confirmação "Projeto criado · Quadro simples", com "Criar outro projeto". O app segue direto para o quadro depois de criar. Decidir se entra a confirmação.
+- DECIDIR · Módulos: o desenho tem 8 itens com "Quadro" travado; o app separa "Vai ligar" e "Desligados", com o motivo de cada um. Regras de sugestão do desenho (ex.: limite simultâneo só com fluxo contínuo) diferem de `recommendation-state`. Mantidas as regras do app.
+
+Configurações:
+- DECIDIR · Rail de tópicos da Ajustes ("Minhas preferências", "Padrões da empresa", "Atualizações"). O app separa Configurações do projeto (abas: Ferramentas, Membros, Checklist, Geral, já no padrão do desenho) e Ajustes (página única). Decidir se Ajustes ganha rail.
+- DECIDIR · "Nível de apoio do Kan" (Iniciante, Intermediário, Experiente) por pessoa. No app o `guideLevel` existe só por projeto (nunca, às vezes, sempre). Escolher: por pessoa (dado novo) ou por projeto (manter).
+- DECIDIR · Opacidade da janela: o desenho vai de 45% a 95%; o app vai de 30% a 95% (`window-opacity.ts`). Ajustar o mínimo é mudança de legibilidade, então fica para decisão.
+- Não implementado · "Mostrar dicas ocultadas novamente". Não há caso de uso para reabrir dicas: `guide.dismissCard` só fecha. Exige `guide.reset`.
+- Não implementado · "Padrões da empresa": modelo inicial de novos projetos (não há padrão da organização no contrato) e limite padrão por coluna (`boardSettings.setWipLimits` existe, mas não está claro se é o mesmo padrão). Confirmar a regra antes de criar a seção.
+- Não implementado · Atualizações: canal "Canal estável" e o texto "Tudo atualizado · Verificação automática em segundo plano ativa." O canal não existe no contrato (`updates.info` traz versão e modo). Não copiado.
+- Não implementado · Membros do projeto: o desenho traz "Pessoas externas (Clientes / Parceiros)" em Membros. `contributors.create` existe, mas `ProjectMembersSection` não tem a seção. Decidir se entra em Membros.
+- Mantido · Dados gerais (renomear), arquivar e Membros já existem em Configurações do projeto.
+
+Index (`index.html`):
+- É a página-índice do protótipo (navegação entre telas e troca de papel para teste), sem equivalente no app.
+- Itens que o índice cita e que já batem com a casca: "Dashboard" só para gestor; "Novo projeto" na barra; Plug-ins "Em breve"; Ajustes na base.
+- DECIDIR · O índice chama a tela de "Ajustes do App" (e de "Config. e Ferramentas"); o app mostra "Ajustes" pela casca. Decidir junto com o rail de Ajustes.
+
+Geral (as quatro telas):
+- Alvos de 44 px: o botão novo do cartão tem `min-height: 44px`; o campo de valor/hora também. Os botões do `@agilebox/ui` já usam a altura de toque.
+- Reduced-motion: os novos blocos não têm animação.
+- Cores: usam os tokens de estado existentes (`--color-status-*`). Não foi feita conferência visual no Windows nem no Fedora nesta rodada.

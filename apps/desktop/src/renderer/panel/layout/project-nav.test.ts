@@ -20,13 +20,34 @@ function capabilitiesWith(modules: readonly ModuleId[]): Capabilities {
 }
 
 describe('navegação consolidada do projeto', () => {
+  it('Início é o primeiro item do projeto e aponta para a tela home', () => {
+    const groups = buildProjectNavGroups(capabilitiesWith([]), {
+      hasProject: true,
+      activeSprintNumber: null,
+      projectModuleCount: 0,
+    })
+    expect(groups[0]).toEqual(
+      expect.objectContaining({ id: 'home', label: 'Início', defaultView: 'home', tabs: [] }),
+    )
+    expect(findActiveProjectNavGroup(groups, 'home')?.id).toBe('home')
+  })
+
+  it('sem projeto não mostra Início', () => {
+    const groups = buildProjectNavGroups(capabilitiesWith([]), {
+      hasProject: false,
+      activeSprintNumber: null,
+      projectModuleCount: null,
+    })
+    expect(groups.some((group) => group.id === 'home')).toBe(false)
+  })
+
   it('preset Simples mostra apenas Quadro e Configurações (2 itens)', () => {
     const groups = buildProjectNavGroups(capabilitiesWith([]), {
       hasProject: true,
       activeSprintNumber: null,
       projectModuleCount: 0,
     })
-    expect(groups.map((group) => group.label)).toEqual(['Quadro', 'Configurações'])
+    expect(groups.map((group) => group.label)).toEqual(['Início', 'Quadro', 'Configurações'])
     expect(groups.every((group) => group.tabs.length === 0)).toBe(true)
   })
 
@@ -37,6 +58,7 @@ describe('navegação consolidada do projeto', () => {
       projectModuleCount: 2,
     })
     expect(groups.map((group) => group.label)).toEqual([
+      'Início',
       'Quadro',
       'Métricas de fluxo',
       'Configurações',
@@ -57,6 +79,7 @@ describe('navegação consolidada do projeto', () => {
       { hasProject: true, activeSprintNumber: 4, projectModuleCount: 5 },
     )
     expect(groups.map((group) => group.label)).toEqual([
+      'Início',
       'Quadro',
       'Backlog',
       'Sprints',
@@ -72,19 +95,32 @@ describe('navegação consolidada do projeto', () => {
     ])
   })
 
+  it('Entregas e Cronograma saem no rail do Fluxo Preditivo; Quadro e Sprints continuam em abas', () => {
+    const groups = buildProjectNavGroups(
+      capabilitiesWith(['wbs', 'risks', 'schedule', 'milestones', 'baseline', 'sprints']),
+      { hasProject: true, activeSprintNumber: 4, projectModuleCount: 6 },
+    )
+    const byId = (id: string) => groups.find((group) => group.id === id)
+    expect(byId('deliverablesGroup')?.predictive).toBe(true)
+    expect(byId('scheduleGroup')?.predictive).toBe(true)
+    expect(byId('sprintsGroup')?.predictive).toBeUndefined()
+    expect(byId('board')?.predictive).toBeUndefined()
+  })
+
   it('Tradicional consolida Entregas (com Riscos) e Cronograma (com Acompanhamento, Marcos e Linha de base)', () => {
     const groups = buildProjectNavGroups(
       capabilitiesWith(['wbs', 'risks', 'schedule', 'milestones', 'baseline']),
       { hasProject: true, activeSprintNumber: null, projectModuleCount: 5 },
     )
     expect(groups.map((group) => group.label)).toEqual([
+      'Início',
       'Quadro',
       'Entregas',
       'Cronograma',
       'Configurações',
     ])
-    expect(groups[1]?.tabs.map((tab) => tab.label)).toEqual(['Entregas (EAP)', 'Riscos'])
-    expect(groups[2]?.tabs.map((tab) => tab.label)).toEqual([
+    expect(groups[2]?.tabs.map((tab) => tab.label)).toEqual(['Entregas (EAP)', 'Riscos'])
+    expect(groups[3]?.tabs.map((tab) => tab.label)).toEqual([
       'Cronograma',
       'Acompanhamento',
       'Marcos',
@@ -108,8 +144,9 @@ describe('navegação consolidada do projeto', () => {
       ]),
       { hasProject: true, activeSprintNumber: 2, projectModuleCount: 10 },
     )
-    expect(groups).toHaveLength(6)
+    expect(groups).toHaveLength(7)
     expect(groups.map((group) => group.label)).toEqual([
+      'Início',
       'Quadro',
       'Backlog',
       'Sprints',
@@ -128,19 +165,25 @@ describe('navegação consolidada do projeto', () => {
       projectModuleCount: 1,
     })
     expect(onlyMilestones.map((group) => group.label)).toEqual([
+      'Início',
       'Quadro',
       'Marcos',
       'Configurações',
     ])
-    expect(onlyMilestones[1]?.tabs).toEqual([])
+    expect(onlyMilestones[2]?.tabs).toEqual([])
 
     const onlyWbs = buildProjectNavGroups(capabilitiesWith(['wbs']), {
       hasProject: true,
       activeSprintNumber: null,
       projectModuleCount: 1,
     })
-    expect(onlyWbs.map((group) => group.label)).toEqual(['Quadro', 'Entregas', 'Configurações'])
-    expect(onlyWbs[1]?.tabs).toEqual([])
+    expect(onlyWbs.map((group) => group.label)).toEqual([
+      'Início',
+      'Quadro',
+      'Entregas',
+      'Configurações',
+    ])
+    expect(onlyWbs[2]?.tabs).toEqual([])
   })
 
   it('sem projeto selecionado omite telas por projeto e Configurações', () => {

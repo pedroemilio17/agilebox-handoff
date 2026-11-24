@@ -12,10 +12,12 @@ const HEALTH_CLASS: Record<ProjectCardDto['health'], string | undefined> = {
 
 export interface ProjectCardProps {
   readonly card: ProjectCardDto
+  /** Abre o quadro do projeto ("Abrir quadro →", como no desenho). */
+  readonly onOpenProject: (projectId: string, screen: 'board') => void
 }
 
 /** Cartão de um projeto, medido pela metodologia dele (indicador, gráfico, situação e motivo). */
-export function ProjectCard({ card }: ProjectCardProps) {
+export function ProjectCard({ card, onOpenProject }: ProjectCardProps) {
   const kpi = kpiText(card.kpi)
   const paths = card.trend ? trendPaths(card.trend) : null
   const swatch = swatchIndexOf(card.id)
@@ -57,6 +59,14 @@ export function ProjectCard({ card }: ProjectCardProps) {
         </svg>
       ) : null}
       <p className={styles.why}>{card.healthReason}</p>
+      <button
+        type="button"
+        className={styles.projectOpen}
+        aria-label={`Abrir quadro de ${card.name}`}
+        onClick={() => onOpenProject(card.id, 'board')}
+      >
+        Abrir quadro →
+      </button>
     </article>
   )
 }

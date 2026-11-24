@@ -110,6 +110,23 @@ export function TaskDetailView({
 
   const readOnly = task!.readOnly || readOnlyScope
 
+  // Mesmo caminho para o menu de estado e para "Concluir tarefa": concluir passa pela conferência de pronto.
+  function requestStatus(status: TaskStatus) {
+    if (status === 'done' && task!.status !== 'done') {
+      definitionGate.conclude({
+        projectId: task!.projectId,
+        taskLabel: `${task!.key} · ${task!.title}`,
+        returnTo: TASK_STATUS_LABELS[task!.status],
+        items: task!.projectDefinitionOfDone,
+        definitionOfDoneCount: task!.projectDefinitionOfDone.length,
+        complete: (confirmedDefinitionItemIds) =>
+          move.mutateAsync({ status, confirmedDefinitionItemIds }),
+      })
+      return
+    }
+    move.mutate({ status })
+  }
+
   // O ID é texto copiado para a área de transferência (não há link nem protocolo para ele).
   function copyTaskKey() {
     const key = task!.key
@@ -171,6 +188,11 @@ export function TaskDetailView({
           </IconButton>
         )}
         {backButton}
+        {!readOnly && task!.status !== 'done' ? (
+          <Button type="button" variant="primary" onClick={() => requestStatus('done')}>
+            Concluir tarefa
+          </Button>
+        ) : null}
         {readOnly ? <ReadOnlyBadge /> : null}
       </header>
       <input
@@ -208,26 +230,7 @@ export function TaskDetailView({
         </aside>
       )}
       <dl className={styles.properties}>
-        <StatusProperty
-          task={task!}
-          readOnly={readOnly}
-          onMove={(status: TaskStatus) => {
-            if (status === 'done' && task!.status !== 'done') {
-              // Concluir pelo detalhe passa pela conferência da definição de pronto do projeto.
-              definitionGate.conclude({
-                projectId: task!.projectId,
-                taskLabel: `${task!.key} · ${task!.title}`,
-                returnTo: TASK_STATUS_LABELS[task!.status],
-                items: task!.projectDefinitionOfDone,
-                definitionOfDoneCount: task!.projectDefinitionOfDone.length,
-                complete: (confirmedDefinitionItemIds) =>
-                  move.mutateAsync({ status, confirmedDefinitionItemIds }),
-              })
-              return
-            }
-            move.mutate({ status })
-          }}
-        />
+        <StatusProperty task={task!} readOnly={readOnly} onMove={requestStatus} />
         <PropertyRow label={panelCopy.responsible}>
           {task!.participations.find((person) => person.role === 'responsible')?.participantName ??
             panelCopy.noResponsible}

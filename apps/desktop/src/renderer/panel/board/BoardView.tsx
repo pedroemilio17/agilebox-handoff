@@ -55,6 +55,7 @@ import { panelCopy } from '../copy'
 import { isAgingTask, isArchivedTask, isBlockedTask } from '../../shared/lib/task-signals'
 import { blockedMarkerLabel } from '../impediments/impediment-copy'
 import { formatTaskCount, formatUpdatedAgo } from './board-status'
+import { matchesBoardSearch } from './board-search'
 import { sprintMarker } from '../sprints/sprint-rules'
 import { isWipStatus, type WipStatus } from './wip-limit'
 import { WipLimitEditor } from './WipLimitEditor'
@@ -125,6 +126,7 @@ export function BoardView({
   const api = useApi()
   const capabilities = useCapabilities()
   const [exception, setException] = useState<BoardException | null>(initialException)
+  const [query, setQuery] = useState('')
   // Filtro de um módulo desligado (ou sem a tela) não aparece; o valor guardado volta se ele reabrir.
   const activeException =
     exception !== null && exceptionVisible(exception, capabilities) ? exception : null
@@ -160,6 +162,11 @@ export function BoardView({
           ?.participantName,
     })),
   })
+
+  // Responsável de cada tarefa (vem do detalhe já consultado); a busca e os cartões usam o mesmo mapa.
+  const responsibleById = new Map(
+    (tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]),
+  )
 
   if (loading) {
     return (
@@ -226,21 +233,23 @@ export function BoardView({
   const highPriorityCount = activeTasks.filter((task) => task.priority === 'high').length
   const blockedCount = activeTasks.filter(isBlockedTask).length
   const activeSprintCount = activeTasks.filter((task) => task.sprint?.status === 'active').length
-  const visibleTasks = (tasks ?? []).filter((task) =>
-    activeException === null
-      ? true
-      : !isArchivedTask(task) &&
-        (activeException === 'aging'
-          ? isAgingTask(task)
-          : activeException === 'overdue'
-            ? task.overdue
-            : activeException === 'high'
-              ? task.priority === 'high'
-              : activeException === 'blocked'
-                ? isBlockedTask(task)
-                : activeException === 'activeSprint'
-                  ? task.sprint?.status === 'active'
-                  : true),
+  const visibleTasks = (tasks ?? []).filter(
+    (task) =>
+      matchesBoardSearch(task, responsibleById.get(task.id), query) &&
+      (activeException === null
+        ? true
+        : !isArchivedTask(task) &&
+          (activeException === 'aging'
+            ? isAgingTask(task)
+            : activeException === 'overdue'
+              ? task.overdue
+              : activeException === 'high'
+                ? task.priority === 'high'
+                : activeException === 'blocked'
+                  ? isBlockedTask(task)
+                  : activeException === 'activeSprint'
+                    ? task.sprint?.status === 'active'
+                    : true)),
   )
   const columns = () =>
     TASK_STATUSES.map((status) => (
@@ -257,9 +266,7 @@ export function BoardView({
         canEditWipLimits={canEditWipLimits && !readOnlyScope}
         onSetWipLimit={onSetWipLimit}
         readOnlyScope={readOnlyScope}
-        responsibleNames={
-          new Map((tasks ?? []).map((task, index) => [task.id, responsibleQueries[index]?.data]))
-        }
+        responsibleNames={responsibleById}
         status={status}
         tasks={visibleTasks.filter((task) => task.status === status)}
       />
@@ -269,6 +276,14 @@ export function BoardView({
   return (
     <>
       <div className={styles.filters} aria-label="Filtros do quadro">
+        <input
+          aria-label="Buscar tarefas no quadro"
+          className={styles.search}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder="Buscar por ID, título ou pessoa..."
+          type="search"
+          value={query}
+        />
         {flowVisible ? (
           <button
             type="button"

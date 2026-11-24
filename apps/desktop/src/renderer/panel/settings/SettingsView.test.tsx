@@ -12,6 +12,12 @@ import { SettingsView } from './SettingsView'
 function renderSettings() {
   const api = createFakeApi()
   vi.spyOn(api.teamTools, 'get').mockResolvedValue(teamToolsView({ modules: [], level: 'basic' }))
+  vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
+    userId: '01HZANA000000000000000000B',
+    organizationId: '01HZTEAM00000000000000000C',
+    role: 'collaborator',
+  })
+  vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <ApiProvider api={api}>

@@ -135,6 +135,13 @@ export const panelCopy = {
   windowBackgroundHint:
     'Translúcido usa o vidro do sistema (Acrylic no Windows 11, Liquid Glass no GNOME). As janelas são recriadas ao trocar.',
   opacityOnlyTranslucent: 'A opacidade só vale no modo translúcido.',
+  myRateTitle: 'Meu valor/hora padrão (R$/h)',
+  myRateLabel: 'Meu valor por hora em reais',
+  myRateHint: 'Privado: apenas você e o Gestor visualizam este valor.',
+  myRateSave: 'Salvar',
+  myRateSaved: 'Valor salvo.',
+  myRateInvalid: 'Informe um valor maior que zero.',
+  myRateError: 'Não foi possível salvar o valor.',
   updates: 'Atualizações',
   checkUpdates: 'Procurar atualizações',
   checkingUpdates: 'Procurando…',

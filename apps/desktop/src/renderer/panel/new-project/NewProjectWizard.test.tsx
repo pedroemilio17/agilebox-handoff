@@ -165,7 +165,9 @@ describe('NewProjectWizard: nome, pular e teclado', () => {
   it('nome vazio bloqueia Pular e Continuar com mensagem curta', async () => {
     const { user, onSkip, onFinishQuestions } = setup()
     await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
-    expect(screen.getByRole('alert').textContent).toBe('Dê um nome ao projeto para continuar.')
+    expect(screen.getByRole('alert').textContent).toBe(
+      'Digite um nome para o projeto antes de continuar.',
+    )
     expect(nameInput().getAttribute('aria-invalid')).toBe('true')
 
     await user.click(continueButton())

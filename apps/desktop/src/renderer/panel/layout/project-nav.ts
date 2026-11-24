@@ -16,7 +16,7 @@ export interface TopicTabItem<T extends string = PanelView> {
 }
 
 export type ProjectNavGroupId =
-  'board' | 'backlog' | 'sprintsGroup' | 'deliverablesGroup' | 'scheduleGroup' | 'config'
+  'home' | 'board' | 'backlog' | 'sprintsGroup' | 'deliverablesGroup' | 'scheduleGroup' | 'config'
 
 export interface ProjectNavGroup {
   readonly id: ProjectNavGroupId
@@ -26,6 +26,8 @@ export interface ProjectNavGroup {
   readonly views: readonly PanelView[]
   readonly tabs: readonly TopicTabItem<PanelView>[]
   readonly count?: string | null | undefined
+  /** Entregas e Cronograma: os tópicos saem num rail do Fluxo Preditivo, não em abas no topo. */
+  readonly predictive?: boolean
 }
 
 export interface ProjectNavOptions {
@@ -48,23 +50,33 @@ export function isProjectScopedView(view: PanelView): boolean {
 }
 
 /**
- * Consolida os módulos ativos em até 6 sub-itens na árvore da barra lateral (Quadro, Backlog,
- * Sprints/Fluxo, Entregas, Cronograma e Configurações), movendo telas irmãs para abas internas.
+ * Consolida os módulos ativos na árvore da barra lateral: Início (só com projeto, como no protótipo),
+ * Quadro, Backlog, Sprints/Fluxo, Entregas, Cronograma e Configurações. Telas irmãs ficam em abas
+ * internas, então o projeto mostra no máximo 7 itens de primeiro nível.
  */
 export function buildProjectNavGroups(
   capabilities: Capabilities,
   { hasProject, activeSprintNumber, projectModuleCount }: ProjectNavOptions,
 ): readonly ProjectNavGroup[] {
-  const groups: ProjectNavGroup[] = [
-    {
-      id: 'board',
-      label: 'Quadro',
-      icon: 'projects',
-      defaultView: 'projects',
-      views: ['projects'],
+  const groups: ProjectNavGroup[] = []
+  if (hasProject) {
+    groups.push({
+      id: 'home',
+      label: 'Início',
+      icon: 'home',
+      defaultView: 'home',
+      views: ['home'],
       tabs: [],
-    },
-  ]
+    })
+  }
+  groups.push({
+    id: 'board',
+    label: 'Quadro',
+    icon: 'projects',
+    defaultView: 'projects',
+    views: ['projects'],
+    tabs: [],
+  })
 
   if (capabilities.showScreen('backlog')) {
     groups.push({
@@ -134,6 +146,7 @@ export function buildProjectNavGroups(
         defaultView: first.id,
         views: hasPlan ? [...views, 'planSprint'] : views,
         tabs: single ? [] : deliverablesTabs,
+        predictive: true,
       })
     }
 
@@ -160,6 +173,7 @@ export function buildProjectNavGroups(
         defaultView: first.id,
         views: scheduleTabs.map((tab) => tab.id),
         tabs: single ? [] : scheduleTabs,
+        predictive: true,
       })
     }
 

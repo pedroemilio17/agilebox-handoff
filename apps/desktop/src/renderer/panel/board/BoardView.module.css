@@ -145,6 +145,12 @@
 .dragHandle:focus-visible {
   opacity: 0.8;
 }
+/* Alvo de toque de 44 px sem aumentar o ícone visível (22 px). */
+.dragHandle::before {
+  content: '';
+  position: absolute;
+  inset: -11px;
+}
 
 /* Alternativa por teclado ao arraste: o seletor só aparece quando recebe o foco. */
 .statusSelect {
@@ -161,7 +167,7 @@
   bottom: 8px;
   z-index: 2;
   width: auto;
-  height: 28px;
+  height: var(--size-touch-target);
   padding: 0 var(--space-2);
   border: var(--glass-control-border);
   border-radius: var(--radius-chip);
@@ -368,6 +374,23 @@
 .emptyBoard {
   flex: none;
   padding: var(--space-3) 0 var(--space-1);
+}
+.search {
+  width: min(220px, 100%);
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: var(--radius-chip);
+  background: var(--surface-panel);
+  color: var(--color-text-primary);
+  font-size: 12px;
+}
+.search::placeholder {
+  color: var(--color-text-subtle);
+}
+.search:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 .filters > span {
   margin-left: auto;

@@ -29,6 +29,7 @@ import { PlanSprintView } from './plan/PlanSprintView'
 import { ImpedimentsView } from './impediments/ImpedimentsView'
 import { summarizeModules } from './modules/modules-screen'
 import { ProjectConfigView } from './project-config/ProjectConfigView'
+import { ProjectHomeView } from './project-home/ProjectHomeView'
 import { projectNameKey } from './project-config/project-name-key'
 import { useProjectModules } from './hooks/use-project-modules'
 import { useCreateProjectWithSetup } from './hooks/use-create-project-with-setup'
@@ -135,6 +136,7 @@ function PanelContent({
     (view === 'plan' && !planVisible) ||
     (view === 'planSprint' && (!planVisible || planSprint === null)) ||
     (view === 'impediments' && !impedimentsVisible) ||
+    (view === 'home' && selectedProjectId === null) ||
     (view === 'modules' && selectedProjectId === null)
       ? 'projects'
       : view
@@ -613,6 +615,25 @@ function PanelContent({
             projectName={selectedProject?.name ?? null}
             onNavigate={(next) => navigate(next)}
           />
+        }
+        home={
+          selectedProjectId !== null ? (
+            <ProjectHomeView
+              key={selectedProjectId}
+              projectId={selectedProjectId}
+              projectName={selectedProject?.name ?? null}
+              newTaskBlockedReason={newTaskBlockedReason}
+              onNavigate={(next) => navigate(next)}
+              onNewTask={() => {
+                setNewTaskStatus(undefined)
+                setNewTaskDialogOpen(true)
+              }}
+              onOpenTask={(id) => {
+                openTask(id)
+                navigate('projects')
+              }}
+            />
+          ) : null
         }
         milestones={
           <MilestonesView

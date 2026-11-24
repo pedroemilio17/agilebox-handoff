@@ -173,10 +173,19 @@ export function insightsFixture(overrides: Partial<Insights> = {}): Insights {
   }
 }
 
-export function dashboardFixture(insights: Insights = insightsFixture()): DashboardDto {
+export function dashboardFixture(
+  insights: Insights = insightsFixture(),
+  distribution: DashboardDto['distribution'] = {
+    planning: 0,
+    todo: 0,
+    in_progress: 0,
+    review: 0,
+    done: 0,
+  },
+): DashboardDto {
   return {
     insights,
-    distribution: { planning: 0, todo: 0, in_progress: 0, review: 0, done: 0 },
+    distribution,
     collaborators: [],
   }
 }

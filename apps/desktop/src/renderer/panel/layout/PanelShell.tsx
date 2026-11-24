@@ -23,9 +23,11 @@ import {
   type ProjectNavGroup,
 } from './project-nav'
 import { TopicTabs } from './TopicTabs'
+import { PredictiveLayout } from '../predictive/PredictiveLayout'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
+  | 'home'
   | 'dashboard'
   | 'updates'
   | 'projects'
@@ -106,6 +108,8 @@ export interface PanelShellProps {
   readonly planSprint?: ReactNode
   /** Marcos do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly milestones?: ReactNode
+  /** Início do projeto (protótipo projeto-home). O item da barra só aparece com projeto selecionado. */
+  readonly home?: ReactNode
   /** Cronograma do projeto. O item da barra só aparece com projeto selecionado e o módulo ligado. */
   readonly schedule?: ReactNode
   /** Acompanhamento do projeto. O item da barra só aparece com projeto selecionado e o módulo do cronograma ligado. */
@@ -127,6 +131,7 @@ export interface PanelShellProps {
 }
 
 const viewTitles: Record<PanelView, string> = {
+  home: 'Início',
   dashboard: panelCopy.dashboard,
   updates: 'Atualizações',
   projects: 'Quadro',
@@ -188,6 +193,7 @@ export function PanelShell({
   plan,
   planSprint,
   milestones,
+  home,
   schedule,
   tracking,
   baseline,
@@ -225,6 +231,57 @@ export function PanelShell({
   const effectiveSelected = visibleView === 'updates' ? 'dashboard' : visibleView
 
   const projectContextLabel = selectedProject?.name ?? panelCopy.allProjects
+  // Entregas e Cronograma compartilham a casca do Fluxo Preditivo (rail + subtítulo + indicadores).
+  const predictiveGroup =
+    activeProjectGroup?.predictive === true && visibleView !== 'planSprint'
+      ? activeProjectGroup
+      : null
+  const viewBody =
+    visibleView === 'projects' ? (
+      children
+    ) : visibleView === 'dashboard' && dashboard ? (
+      dashboard
+    ) : visibleView === 'updates' && updates ? (
+      updates
+    ) : visibleView === 'backlog' && backlog ? (
+      backlog
+    ) : visibleView === 'wbs' && wbs ? (
+      wbs
+    ) : visibleView === 'plan' && plan ? (
+      plan
+    ) : visibleView === 'planSprint' && planSprint ? (
+      planSprint
+    ) : visibleView === 'home' && home ? (
+      home
+    ) : visibleView === 'milestones' && milestones ? (
+      milestones
+    ) : visibleView === 'schedule' && schedule ? (
+      schedule
+    ) : visibleView === 'tracking' && tracking ? (
+      tracking
+    ) : visibleView === 'baseline' && baseline ? (
+      baseline
+    ) : visibleView === 'burndown' && burndown ? (
+      burndown
+    ) : visibleView === 'flowMetrics' && flowMetrics ? (
+      flowMetrics
+    ) : visibleView === 'risks' && risks ? (
+      risks
+    ) : visibleView === 'sprints' && sprints ? (
+      sprints
+    ) : visibleView === 'impediments' && impediments ? (
+      impediments
+    ) : visibleView === 'agenda' && agenda ? (
+      agenda
+    ) : visibleView === 'modules' && modules ? (
+      modules
+    ) : visibleView === 'settings' ? (
+      <SettingsView />
+    ) : visibleView === 'plugins' ? (
+      <EmptyState title={panelCopy.comingSoon} />
+    ) : (
+      <EmptyState title={panelCopy.comingSoon} />
+    )
 
   return (
     <main className={styles.window} aria-label={panelCopy.title}>
@@ -264,58 +321,30 @@ export function PanelShell({
         />
         <div className={styles.content} key={visibleView}>
           {guide}
-          {activeProjectGroup &&
-          activeProjectGroup.tabs.length > 1 &&
-          visibleView !== 'planSprint' ? (
-            <TopicTabs
-              ariaLabel={`Seções de ${activeProjectGroup.label}`}
-              items={activeProjectGroup.tabs}
+          {predictiveGroup ? (
+            <PredictiveLayout
+              ariaLabel={`Seções de ${predictiveGroup.label}`}
+              items={predictiveGroup.tabs}
               activeId={visibleView}
               onSelect={onViewChange}
-            />
-          ) : null}
-          {visibleView === 'projects' ? (
-            children
-          ) : visibleView === 'dashboard' && dashboard ? (
-            dashboard
-          ) : visibleView === 'updates' && updates ? (
-            updates
-          ) : visibleView === 'backlog' && backlog ? (
-            backlog
-          ) : visibleView === 'wbs' && wbs ? (
-            wbs
-          ) : visibleView === 'plan' && plan ? (
-            plan
-          ) : visibleView === 'planSprint' && planSprint ? (
-            planSprint
-          ) : visibleView === 'milestones' && milestones ? (
-            milestones
-          ) : visibleView === 'schedule' && schedule ? (
-            schedule
-          ) : visibleView === 'tracking' && tracking ? (
-            tracking
-          ) : visibleView === 'baseline' && baseline ? (
-            baseline
-          ) : visibleView === 'burndown' && burndown ? (
-            burndown
-          ) : visibleView === 'flowMetrics' && flowMetrics ? (
-            flowMetrics
-          ) : visibleView === 'risks' && risks ? (
-            risks
-          ) : visibleView === 'sprints' && sprints ? (
-            sprints
-          ) : visibleView === 'impediments' && impediments ? (
-            impediments
-          ) : visibleView === 'agenda' && agenda ? (
-            agenda
-          ) : visibleView === 'modules' && modules ? (
-            modules
-          ) : visibleView === 'settings' ? (
-            <SettingsView />
-          ) : visibleView === 'plugins' ? (
-            <EmptyState title={panelCopy.comingSoon} />
+              projectId={selectedProjectId}
+            >
+              {viewBody}
+            </PredictiveLayout>
           ) : (
-            <EmptyState title={panelCopy.comingSoon} />
+            <>
+              {activeProjectGroup &&
+              activeProjectGroup.tabs.length > 1 &&
+              visibleView !== 'planSprint' ? (
+                <TopicTabs
+                  ariaLabel={`Seções de ${activeProjectGroup.label}`}
+                  items={activeProjectGroup.tabs}
+                  activeId={visibleView}
+                  onSelect={onViewChange}
+                />
+              ) : null}
+              {viewBody}
+            </>
           )}
         </div>
       </section>
