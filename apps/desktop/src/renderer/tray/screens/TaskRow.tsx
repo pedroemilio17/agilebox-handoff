@@ -1,69 +1,51 @@
 import type { TaskDto } from '@agilebox/contract'
-import { ChecklistProgress, CommentCount, StatusChip, SignalBadge, TaskKey } from '@agilebox/ui'
+import { TASK_STATUS_LABELS } from '@agilebox/core'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
-import { formatRelativeDate } from '../../shared/lib/format-date'
-import { isAgingTask, isBlockedTask } from '../../shared/lib/task-signals'
-import { sprintMarker } from '../../panel/sprints/sprint-rules'
+import { isBlockedTask } from '../../shared/lib/task-signals'
 import { blockedMarkerLabel } from '../../panel/impediments/impediment-copy'
+import { sprintMarker } from '../../panel/sprints/sprint-rules'
+import { trayCopy } from '../copy'
+import { StatusDot } from '../StatusDot'
 import styles from '../Tray.module.css'
 
 export interface TaskRowProps {
   readonly task: TaskDto
-  readonly now: Date
-  readonly highlighted: boolean
   readonly onOpen: (taskId: string) => void
+  /** Sem uso: o cartão do protótipo não mostra data relativa nem destaque. Mantido por compatibilidade. */
+  readonly now?: Date
+  readonly highlighted?: boolean
 }
 
-export function TaskRow({ task, now, highlighted, onOpen }: TaskRowProps) {
+/** Cartão da lista "Em foco" (.tray-task-card): o cartão inteiro é o botão. */
+export function TaskRow({ task, onOpen }: TaskRowProps) {
   const capabilities = useCapabilities()
-  const showChecklist = capabilities.can('subtasks:passive')
   const blocked = isBlockedTask(task) && capabilities.can('impediments:passive')
-  // Sprint atual (M4.2): marcador passivo na linha, em qualquer nível com o módulo ligado.
+  // Sprint atual (M4.2): marcador passivo na meta, só com o módulo ligado.
   const sprintText = capabilities.can('sprints:passive') ? sprintMarker(task) : null
   return (
     <li>
-      <button
-        type="button"
-        className={`${styles.row} ${highlighted ? styles.rowHighlight : ''}`}
-        data-highlighted={highlighted}
-        onClick={() => onOpen(task.id)}
-      >
-        <span className={styles.rowTop}>
-          <span className={styles.rowTitle}>{task.title}</span>
-          <span className={styles.rowSignals}>
-            {task.priority === 'high' ? <SignalBadge variant="priority">Alta</SignalBadge> : null}
-            {showChecklist ? (
-              <ChecklistProgress
-                done={task.checklistProgress.done}
-                total={task.checklistProgress.total}
-              />
-            ) : null}
-            <CommentCount count={task.commentCount} />
-            {blocked ? (
-              <span
-                title={blockedMarkerLabel(task.blockedReason, task.impediment?.ownerName ?? null)}
-              >
-                <SignalBadge variant="blocked">Bloqueada</SignalBadge>
-              </span>
-            ) : null}
-            {isAgingTask(task) ? (
-              <SignalBadge variant="aging">parada {task.agingDays}d</SignalBadge>
-            ) : (
-              <StatusChip status={task.status} />
-            )}
+      <button type="button" className={styles.taskCard} onClick={() => onOpen(task.id)}>
+        <span className={styles.taskTop}>
+          <span className={styles.taskMeta}>
+            <StatusDot status={task.status} />
+            <span>
+              <strong>{task.key}</strong> · {task.projectName}
+              {sprintText ? <> · {sprintText}</> : null}
+            </span>
           </span>
-        </span>
-        <span className={styles.rowMeta}>
-          <TaskKey value={task.key} /> · {task.projectName}
-          {sprintText ? <> · {sprintText}</> : null} ·{' '}
-          {task.deadline ? (
-            <time dateTime={task.deadline}>
-              prazo {task.deadline.slice(8, 10)}/{task.deadline.slice(5, 7)}
-            </time>
+          {blocked ? (
+            <span
+              className={styles.blockedInline}
+              title={blockedMarkerLabel(task.blockedReason, task.impediment?.ownerName ?? null)}
+            >
+              <span className={`${styles.dotInline} ${styles.dotDanger}`} aria-hidden="true" />
+              {trayCopy.blocked}
+            </span>
           ) : (
-            formatRelativeDate(new Date(task.updatedAt), now)
+            <span className={styles.taskStatus}>{TASK_STATUS_LABELS[task.status]}</span>
           )}
         </span>
+        <span className={styles.taskTitle}>{task.title}</span>
       </button>
     </li>
   )

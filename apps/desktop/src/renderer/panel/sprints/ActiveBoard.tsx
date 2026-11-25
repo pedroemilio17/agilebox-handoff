@@ -144,7 +144,7 @@ export function ActiveBoard({
     <div
       className={styles.board}
       aria-label={sprintCopy.items}
-      style={{ gridTemplateColumns: `repeat(${statuses.length}, minmax(220px, 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${statuses.length}, minmax(138px, 1fr))` }}
     >
       {statuses.map((status) => (
         <SprintBoardColumn

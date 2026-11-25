@@ -65,8 +65,9 @@ export function WipLimitEditor({ columnName, limit, onSave }: WipLimitEditorProp
         aria-label={panelCopy.wipLimitDefine(columnName)}
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openPanel())}
+        title="Definir limite"
       >
-        Definir limite
+        <span aria-hidden="true">⚙</span>
       </button>
       {open ? (
         <div

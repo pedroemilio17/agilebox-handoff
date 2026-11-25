@@ -1,7 +1,8 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DailyEntryDto, TaskDto } from '@agilebox/contract'
+import type { AgileBoxApi, DailyEntryDto, TaskDto } from '@agilebox/contract'
+import { makeDetail, makeParticipation } from '../panel/task-detail/fixtures'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
 import { createFakeApi, boardResponse } from '../shared/testing/fake-api'
@@ -38,7 +39,11 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
 })
 
 const A = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC1', 'Revisão do relatório')
-const B = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC2', 'Publicar versão', 'Boreal')
+const B = {
+  ...task('01J8Y4G2XK8Z1S6M3Q9W0A5BC2', 'Publicar versão', 'Boreal'),
+  number: 7,
+  key: 'AB-7',
+}
 
 function entry(overrides: Partial<DailyEntryDto> = {}): DailyEntryDto {
   return {
@@ -54,8 +59,6 @@ function entry(overrides: Partial<DailyEntryDto> = {}): DailyEntryDto {
     ...overrides,
   }
 }
-
-const INVITE = 'Vamos registrar o que foi feito hoje?'
 
 beforeEach(() => {
   // Movimento normal por padrão: a bandeja anima a altura, como no app.
@@ -119,12 +122,17 @@ function setup({
     .mockImplementation(({ date }) =>
       Promise.resolve({ date, due: stored === null, entry: stored }),
     )
-  // Sugestão do check-in (M5.1): sem movimento no dia, para não interferir nos passos.
-  vi.spyOn(api.daily, 'suggestSummary').mockResolvedValue({
-    advanced: [],
-    nextCandidates: [],
-    blockers: [],
-  })
+  vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
+  const getTask = vi
+    .spyOn(api.tasks, 'get')
+    .mockImplementation(({ taskId }) =>
+      Promise.resolve(
+        makeDetail({ id: taskId, participations: [makeParticipation({ hours: 1 })] }),
+      ),
+    )
+  const setHours = vi
+    .spyOn(api.participations, 'setHours')
+    .mockResolvedValue({} as Awaited<ReturnType<AgileBoxApi['participations']['setHours']>>)
   const save = vi.spyOn(api.daily, 'save').mockImplementation((input) => {
     stored = entry({
       answers: input.answers,
@@ -140,102 +148,114 @@ function setup({
       </QueryProvider>
     </ApiProvider>,
   )
-  return { api, shell, board, getToday, save, user: userEvent.setup() }
+  return { api, shell, board, getToday, save, getTask, setHours, user: userEvent.setup() }
 }
 
 async function openDaily(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Atualizar agora' }))
-  await screen.findByRole('heading', { name: 'O que você avançou hoje?' })
+  await user.click(await screen.findByRole('button', { name: 'Agora' }))
+  await screen.findByRole('heading', { name: '1 de 3 · Marque as tarefas trabalhadas hoje' })
 }
 
-describe('Bandeja: cartão de convite da daily', () => {
-  it('aparece só quando a daily de hoje é devida', async () => {
+describe('Bandeja: barra "Registrar o dia?"', () => {
+  it('aparece em uma linha só quando a daily de hoje é devida', async () => {
     setup()
-    expect(await screen.findByText(INVITE)).toBeTruthy()
+    expect(await screen.findByText('Registrar o dia?')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Agora' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Depois' })).toBeTruthy()
   })
 
-  it('some quando já há daily de hoje, e o atalho passa a editar', async () => {
-    setup({ current: entry({ answers: { ...EMPTY, progress: 'Já escrevi' } }) })
-    expect(await screen.findByRole('button', { name: 'Editar a daily de hoje' })).toBeTruthy()
-    expect(screen.queryByText(INVITE)).toBeNull()
+  it('some quando já há daily de hoje', async () => {
+    const { getToday } = setup({ current: entry() })
+    await waitFor(() => expect(getToday).toHaveBeenCalled())
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
   })
 
-  it('Agora não dispensa nesta sessão e o atalho volta a registrar', async () => {
+  it('Depois recolhe a barra nesta sessão', async () => {
     const { user } = setup()
-    await user.click(await screen.findByRole('button', { name: 'Agora não' }))
-    expect(screen.queryByText(INVITE)).toBeNull()
-    expect(screen.getByRole('button', { name: 'Registrar a daily de hoje' })).toBeTruthy()
+    await user.click(await screen.findByRole('button', { name: 'Depois' }))
+    const bar = screen.getByRole('region', { name: 'Atualização do dia' })
+    expect(bar.className).toContain('dailyBarHidden')
   })
 
-  it('reaparece na próxima abertura do app enquanto não houver daily', async () => {
-    const first = setup()
-    await first.user.click(await screen.findByRole('button', { name: 'Agora não' }))
-    cleanup()
-    setup()
-    expect(await screen.findByText(INVITE)).toBeTruthy()
+  it('some durante a busca e volta ao limpar', async () => {
+    const { user } = setup()
+    await screen.findByText('Registrar o dia?')
+    const search = screen.getByLabelText('Buscar tarefas na bandeja')
+    await user.type(search, 'rev')
+    expect(screen.getByRole('region', { name: 'Atualização do dia' }).className).toContain(
+      'dailyBarSearchHidden',
+    )
+    await user.clear(search)
+    expect(screen.getByRole('region', { name: 'Atualização do dia' }).className).not.toContain(
+      'dailyBarSearchHidden',
+    )
   })
 
-  it('não toma o foco ao aparecer', async () => {
-    setup()
-    await screen.findByText(INVITE)
-    expect(document.activeElement).toBe(document.body)
-  })
-
-  it('a altura da tela inicial cresce para caber a barra da daily', async () => {
+  it('a altura da tela inicial é fixa em 630, com ou sem a barra', async () => {
     const { shell } = setup()
-    await screen.findByText(INVITE)
-    // Duas linhas (468) mais a barra da daily (136).
+    await screen.findByText('Registrar o dia?')
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 604, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
   })
 })
 
 describe('Bandeja: daily em três passos', () => {
-  it('preenche os três passos, revisa e conclui com a data local e os campos certos', async () => {
-    const { save, user } = setup()
+  it('marca tarefas, ajusta horas, informa bloqueio e foco e conclui com a data local', async () => {
+    const { save, setHours, shell, user } = setup()
     await openDaily(user)
-    const first = screen.getByRole('heading', { name: 'O que você avançou hoje?' })
-    await waitFor(() => expect(document.activeElement).toBe(first))
-    expect(screen.getByText('Passo 1 de 3')).toBeTruthy()
-
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Atendi o suporte',
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(screen.getByText('Passo 2 de 3')).toBeTruthy()
-    const second = screen.getByRole('heading', { name: 'Qual é o seu próximo passo?' })
-    await waitFor(() => expect(document.activeElement).toBe(second))
-    await user.type(screen.getByRole('textbox', { name: 'Próximo passo' }), 'Revisar a proposta')
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    expect(screen.getByText('1 de 3')).toBeTruthy()
+    expect(
+      screen.getByRole('progressbar', { name: 'Progresso da atualização do dia' })
+        .firstElementChild,
+    ).toHaveProperty('style.width', '33%')
 
-    expect(screen.getByText('Passo 3 de 3')).toBeTruthy()
-    await user.type(screen.getByRole('textbox', { name: 'Impedimento' }), 'Sem acesso ao servidor')
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(screen.getByRole('heading', { name: 'Confira antes de concluir' })).toBeTruthy()
+    await user.click(screen.getByRole('checkbox', { name: /Revisão do relatório/ }))
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
 
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
+    await screen.findByRole('heading', { name: '2 de 3 · Horas dedicadas hoje' })
+    expect(screen.getByText('2 de 3')).toBeTruthy()
+    expect(screen.getByText('0,0h')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Mais 0,5 hora em AB-118' }))
+    await user.click(screen.getByRole('button', { name: 'Mais 0,5 hora em AB-118' }))
+    expect(screen.getByText('1,0h')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+
+    await screen.findByRole('heading', { name: '3 de 3 · Bloqueios e foco de amanhã' })
+    await user.type(
+      screen.getByLabelText('Bloqueio ou pedido de ajuda (opcional)'),
+      'Preciso de acesso',
+    )
+    await user.type(screen.getByLabelText('Principal foco de amanhã (opcional)'), 'Fechar contrato')
+    await user.click(screen.getByRole('button', { name: 'Finalizar dia' }))
+
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
         date: TODAY,
         answers: {
-          progress: 'Atendi o suporte',
-          nextStep: 'Revisar a proposta',
-          blocker: 'Sem acesso ao servidor',
+          progress: 'Avancei em AB-118 · Revisão do relatório.',
+          nextStep: 'Fechar contrato',
+          blocker: 'Preciso de acesso',
         },
         noNews: false,
-        taskRefs: [],
+        taskRefs: [A.id],
       }),
     )
+    await waitFor(() =>
+      expect(setHours).toHaveBeenCalledWith(expect.objectContaining({ hours: '2' })),
+    )
     expect(await screen.findByText('Daily registrada.')).toBeTruthy()
-    expect(screen.queryByText(INVITE)).toBeNull()
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
   })
 
-  it('"Sem novidades hoje" marca noNews e conclui sem texto', async () => {
+  it('"Sem novidades" no passo 1 marca noNews e conclui sem texto', async () => {
     const { save, user } = setup()
     await openDaily(user)
-    await user.click(screen.getByRole('button', { name: 'Sem novidades hoje' }))
+    await user.click(screen.getByRole('button', { name: 'Sem novidades' }))
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
         date: TODAY,
@@ -247,244 +267,85 @@ describe('Bandeja: daily em três passos', () => {
     expect(await screen.findByText('Daily registrada.')).toBeTruthy()
   })
 
-  it('"Sem novidades" não salva por cima de texto digitado', async () => {
+  it('← Voltar nos passos 2 e 3 volta um passo sem salvar', async () => {
     const { save, user } = setup()
     await openDaily(user)
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Algo',
-    )
-    await user.click(screen.getByRole('button', { name: 'Sem novidades hoje' }))
-    expect(await screen.findByText('Apague o texto para marcar Sem novidades.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await screen.findByRole('heading', { name: '2 de 3 · Horas dedicadas hoje' })
+    expect(
+      screen.getByText(
+        'Nenhuma tarefa selecionada no passo 1. Você pode seguir direto ou voltar para marcar.',
+      ),
+    ).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await screen.findByRole('heading', { name: '3 de 3 · Bloqueios e foco de amanhã' })
+    expect(screen.getByRole('button', { name: 'Finalizar dia' })).toBeTruthy()
+    const footer = screen.getByRole('button', { name: 'Finalizar dia' }).parentElement!
+    await user.click(within(footer).getByRole('button', { name: '← Voltar' }))
+    await screen.findByRole('heading', { name: '2 de 3 · Horas dedicadas hoje' })
     expect(save).not.toHaveBeenCalled()
   })
 
-  it('não conclui vazia: pede texto ou Sem novidades', async () => {
+  it('finalizar sem nada marcado nem escrito registra "Sem novidades"', async () => {
     const { save, user } = setup()
     await openDaily(user)
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    const message = await screen.findByText(
-      'Escreva ao menos uma resposta ou marque Sem novidades.',
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await user.click(screen.getByRole('button', { name: 'Finalizar dia' }))
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({
+        date: TODAY,
+        answers: EMPTY,
+        noNews: true,
+        taskRefs: [],
+      }),
     )
-    expect(message.closest('[aria-live="polite"]')).not.toBeNull()
-    expect(save).not.toHaveBeenCalled()
   })
 
   it('bloqueia 501 caracteres com mensagem e sem perder o texto', async () => {
     const { save, user } = setup()
     await openDaily(user)
-    const field = screen.getByRole<HTMLTextAreaElement>('textbox', {
-      name: 'Algo mais que não passou pelo quadro?',
-    })
-    fireEvent.change(field, { target: { value: 'a'.repeat(501) } })
-    expect(screen.getByText('501/500')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(
-      await screen.findByText(
-        'Esta resposta passa de 500 caracteres. Reduza o texto para continuar.',
-      ),
-    ).toBeTruthy()
-    expect(screen.getByText('Passo 1 de 3')).toBeTruthy()
-    expect(field.value.length).toBe(501)
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    const long = 'a'.repeat(501)
+    const field = screen.getByLabelText('Bloqueio ou pedido de ajuda (opcional)')
+    await user.click(field)
+    await user.paste(long)
+    await user.click(screen.getByRole('button', { name: 'Finalizar dia' }))
+    expect(await screen.findByRole('alert')).toBeTruthy()
     expect(save).not.toHaveBeenCalled()
+    expect((field as HTMLTextAreaElement).value).toBe(long)
   })
 
-  it('Enter quebra linha e Ctrl+Enter avança', async () => {
-    const { user } = setup()
+  it('erro ao salvar mostra mensagem curta e mantém o que foi marcado', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.daily, 'save').mockRejectedValue(new Error('falhou'))
     await openDaily(user)
-    const field = screen.getByRole<HTMLTextAreaElement>('textbox', {
-      name: 'Algo mais que não passou pelo quadro?',
-    })
-    await user.type(field, 'Linha 1{Enter}Linha 2')
-    expect(field.value).toBe('Linha 1\nLinha 2')
-    expect(screen.getByText('Passo 1 de 3')).toBeTruthy()
-    await user.keyboard('{Control>}{Enter}{/Control}')
-    expect(screen.getByText('Passo 2 de 3')).toBeTruthy()
+    await user.click(screen.getByRole('checkbox', { name: /Revisão do relatório/ }))
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo →' }))
+    await user.click(screen.getByRole('button', { name: 'Finalizar dia' }))
+    expect(await screen.findByText(/Não foi possível registrar a daily/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Finalizar dia' })).toBeTruthy()
   })
 
-  it('erro ao salvar mostra mensagem curta e mantém o texto digitado', async () => {
-    const { save, user } = setup()
-    save.mockRejectedValueOnce(new Error('falha'))
-    await openDaily(user)
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Texto que não pode sumir',
-    )
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    expect(
-      await screen.findByText('Não foi possível registrar a daily. Seu texto continua aqui.'),
-    ).toBeTruthy()
-    // Volta até o primeiro passo: o texto continua lá.
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
-    expect(
-      screen.getByRole<HTMLTextAreaElement>('textbox', {
-        name: 'Algo mais que não passou pelo quadro?',
-      }).value,
-    ).toBe('Texto que não pode sumir')
-  })
-
-  it('edita a daily existente, preenchida, e troca o título', async () => {
-    const existing = entry({
-      answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
-      taskRefs: [A.id],
-    })
-    const { save, user } = setup({ current: existing })
-    await user.click(await screen.findByRole('button', { name: 'Editar a daily de hoje' }))
-    expect(
-      await screen.findByRole('heading', { name: 'Editar a daily de hoje', level: 2 }),
-    ).toBeTruthy()
-    expect(
-      screen.getByRole<HTMLTextAreaElement>('textbox', {
-        name: 'Algo mais que não passou pelo quadro?',
-      }).value,
-    ).toBe('Já escrevi')
-    expect(screen.getByRole('checkbox', { name: 'AB-118 · Revisão do relatório' })).toBeTruthy()
-    expect(
-      screen.getByRole<HTMLInputElement>('checkbox', { name: 'AB-118 · Revisão do relatório' })
-        .checked,
-    ).toBe(true)
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Próximo passo' }).value).toBe(
-      'Próximo da lista',
-    )
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    await waitFor(() =>
-      expect(save).toHaveBeenCalledWith({
-        date: TODAY,
-        answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
-        noNews: false,
-        taskRefs: [A.id],
-      }),
-    )
-  })
-
-  it('cita só tarefas da lista pessoal e leva as marcadas ao salvar', async () => {
-    const { save, board, user } = setup()
-    await openDaily(user)
-    expect(board).toHaveBeenCalledWith({})
-    await user.click(screen.getByRole('checkbox', { name: 'AB-118 · Revisão do relatório' }))
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Revisei',
-    )
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    expect(screen.getByText('AB-118 · Revisão do relatório')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    await waitFor(() =>
-      expect(save).toHaveBeenCalledWith(expect.objectContaining({ taskRefs: [A.id] })),
-    )
-  })
-
-  it('Esc sem texto volta ao início sem confirmação', async () => {
-    const { user } = setup()
-    await openDaily(user)
-    await user.keyboard('{Escape}')
-    expect(await screen.findByText(INVITE)).toBeTruthy()
-    expect(screen.queryByText('Descartar o que foi escrito?')).toBeNull()
-  })
-
-  it('Esc com texto pede confirmação; Esc fecha a confirmação; Descartar volta sem salvar', async () => {
+  it('← Voltar do cabeçalho sai sem salvar e sem confirmação', async () => {
     const { save, user } = setup()
     await openDaily(user)
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Rascunho',
-    )
-    await user.keyboard('{Escape}')
-    expect(await screen.findByText('Descartar o que foi escrito?')).toBeTruthy()
-    expect(screen.getByText('Passo 1 de 3')).toBeTruthy()
-    await user.keyboard('{Escape}')
-    expect(screen.queryByText('Descartar o que foi escrito?')).toBeNull()
-    await user.keyboard('{Escape}')
-    await user.click(screen.getByRole('button', { name: 'Descartar' }))
-    expect(await screen.findByText(INVITE)).toBeTruthy()
+    await user.click(screen.getByRole('checkbox', { name: /Revisão do relatório/ }))
+    const header = screen.getByRole('banner')
+    await user.click(within(header).getByRole('button', { name: '← Voltar' }))
+    expect(await screen.findByText('Em foco (2)')).toBeTruthy()
     expect(save).not.toHaveBeenCalled()
-  })
-
-  it('Voltar do cabeçalho com texto também pede confirmação', async () => {
-    const { user } = setup()
-    await openDaily(user)
-    await user.type(
-      screen.getByRole('textbox', { name: 'Algo mais que não passou pelo quadro?' }),
-      'Rascunho',
-    )
-    await user.click(screen.getByRole('button', { name: '← Voltar' }))
-    expect(await screen.findByText('Descartar o que foi escrito?')).toBeTruthy()
-    expect(screen.queryByText(INVITE)).toBeNull()
-  })
-
-  it('com movimento reduzido, a troca de tela não passa por alturas intermediárias', async () => {
-    const reduced = (query: string) => ({
-      matches: query.includes('reduce'),
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    })
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      writable: true,
-      value: reduced,
-    })
-    const { shell, user } = setup()
-    await screen.findByText(INVITE)
-    const before = shell.setTrayHeight.mock.calls.length
-    await user.click(screen.getByRole('button', { name: 'Atualizar agora' }))
-    await screen.findByRole('heading', { name: 'O que você avançou hoje?' })
-    const heights = (shell.setTrayHeight.mock.calls as Array<[{ height: number }]>)
-      .slice(before)
-      .map(([arg]) => arg.height)
-    expect(heights).toEqual([600])
   })
 })
 
 describe('Bandeja: check-ins encerrando', () => {
-  it('sem daily de hoje, não convida e não oferece registrar', async () => {
+  it('sem daily de hoje, não mostra a barra de registrar', async () => {
     const { getToday } = setup({ winding: true })
-    // Espera a consulta da daily de hoje terminar, para que a ausência do convite não seja só atraso.
     await waitFor(() => expect(getToday).toHaveBeenCalled())
     await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
-    expect(screen.queryByText(INVITE)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Registrar a daily de hoje' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Editar a daily de hoje' })).toBeNull()
-  })
-
-  it('com daily de hoje já gravada, mantém o atalho para editar e deixa salvar a edição', async () => {
-    const existing = entry({
-      answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
-      taskRefs: [A.id],
-    })
-    const { save, user } = setup({ current: existing, winding: true })
-    await user.click(await screen.findByRole('button', { name: 'Editar a daily de hoje' }))
-    expect(
-      await screen.findByRole('heading', { name: 'Editar a daily de hoje', level: 2 }),
-    ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo' }))
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    await waitFor(() =>
-      expect(save).toHaveBeenCalledWith({
-        date: TODAY,
-        answers: { progress: 'Já escrevi', nextStep: 'Próximo da lista', blocker: '' },
-        noNews: false,
-        taskRefs: [A.id],
-      }),
-    )
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agora' })).toBeNull()
   })
 })

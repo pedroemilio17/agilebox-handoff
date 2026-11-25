@@ -212,7 +212,7 @@ describe('Dashboard do gestor', () => {
     const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
       .parentElement as HTMLElement
     await user.click(within(row).getByRole('button', { name: '1 bloqueada' }))
-    const filter = await screen.findByRole('button', { name: 'Bloqueadas · 1' })
+    const filter = await screen.findByRole('button', { name: 'Bloqueadas' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
     expect(
       screen.getByRole('button', { name: `${task.key} · ${task.title}, bloqueada` }),
@@ -233,7 +233,7 @@ describe('Dashboard do gestor', () => {
     const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
       .parentElement as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Parada 5d' }))
-    const filter = await screen.findByRole('button', { name: 'Paradas · 1' })
+    const filter = await screen.findByRole('button', { name: 'Paradas' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByRole('button', { name: `${task.key} · ${task.title}` })).toBeTruthy()
   })

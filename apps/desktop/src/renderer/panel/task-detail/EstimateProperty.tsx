@@ -41,12 +41,12 @@ export function EstimateProperty({ task, readOnly }: EstimatePropertyProps) {
   const actual = Math.round((task.actualHours ?? 0) * 100)
   return (
     <PropertyRow label={panelCopy.estimateLabel}>
-      <div className={styles.propertyContent}>
+      <div className={styles.kvStack}>
         <input
           aria-label={panelCopy.estimateLabel}
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : hintId}
-          className={styles.numberInput}
+          className={styles.kvInput}
           inputMode="decimal"
           disabled={readOnly}
           value={shown}
@@ -62,15 +62,15 @@ export function EstimateProperty({ task, readOnly }: EstimatePropertyProps) {
             }
           }}
         />
-        <p id={hintId} className={styles.helper}>
+        <p id={hintId} className={styles.kvHint}>
           {panelCopy.estimateHint}
         </p>
         {error ? (
-          <p id={errorId} role="alert" className={styles.blockError}>
+          <p id={errorId} role="alert" className={styles.errorNote}>
             {error}
           </p>
         ) : null}
-        <output className={styles.subtotal}>
+        <output className={styles.kvEstimate}>
           {estimated === null
             ? `${panelCopy.estimateNone} · ${formatHours(actual)} realizado`
             : panelCopy.estimateVsActual(
@@ -79,7 +79,7 @@ export function EstimateProperty({ task, readOnly }: EstimatePropertyProps) {
               )}
         </output>
         {task.estimatedCost === undefined || task.estimatedCost === null ? null : (
-          <p className={styles.total}>
+          <p className={styles.kvEstimate}>
             <span>{panelCopy.estimateCost}</span>
             <output aria-label={panelCopy.estimateCost}>
               {formatBRL(Math.round(task.estimatedCost * 100))}

@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import type { GetTaskDto, TaskUpdateInput } from '@agilebox/contract'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@agilebox/core'
-import type { TaskPriority, TaskStatus } from '@agilebox/core'
-import { StatusChip, StatusMenu, TextArea } from '@agilebox/ui'
+import type { TaskPriority } from '@agilebox/core'
 import { panelCopy } from '../copy'
 import { PropertyRow } from './PropertyRow'
+import { taskCopy } from './task-detail-copy'
 import { useBlurSave } from './use-blur-save'
 import styles from './TaskDetailView.module.css'
 
@@ -21,64 +20,23 @@ function isUrl(text: string): boolean {
   }
 }
 
-export function StatusProperty({
-  task,
-  readOnly,
-  onMove,
-}: {
-  readonly task: GetTaskDto
-  readonly readOnly: boolean
-  readonly onMove: (status: TaskStatus) => void
-}) {
-  const [statusOpen, setStatusOpen] = useState(false)
-  return (
-    <PropertyRow label={panelCopy.status}>
-      {' '}
-      <div className={styles.menuAnchor}>
-        <button
-          type="button"
-          className={styles.statusButton}
-          aria-haspopup="menu"
-          aria-expanded={statusOpen}
-          aria-label={panelCopy.status}
-          disabled={readOnly}
-          onClick={() => setStatusOpen((open) => !open)}
-        >
-          <StatusChip status={task.status} />
-        </button>
-        {statusOpen ? (
-          <div className={styles.menuPopover}>
-            <StatusMenu
-              value={task.status}
-              onChange={onMove}
-              onClose={() => setStatusOpen(false)}
-            />
-          </div>
-        ) : null}
-      </div>
-    </PropertyRow>
-  )
-}
-
 export function PriorityProperty({ task, readOnly, onUpdate }: PropertyProps) {
   return (
     <PropertyRow label={panelCopy.priority}>
-      <div className={styles.propertyContent}>
-        <select
-          aria-label={panelCopy.priorityLevel}
-          className={styles.propertyInput}
-          disabled={readOnly}
-          value={task.priority}
-          // Escolha de lista salva na hora (não ao sair do campo, como o texto).
-          onChange={(event) => onUpdate({ priority: event.currentTarget.value as TaskPriority })}
-        >
-          {TASK_PRIORITIES.map((priority) => (
-            <option key={priority} value={priority}>
-              {TASK_PRIORITY_LABELS[priority]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select
+        aria-label={panelCopy.priorityLevel}
+        className={styles.kvSelect}
+        disabled={readOnly}
+        value={task.priority}
+        // Escolha de lista salva na hora (não ao sair do campo, como o texto).
+        onChange={(event) => onUpdate({ priority: event.currentTarget.value as TaskPriority })}
+      >
+        {TASK_PRIORITIES.map((priority) => (
+          <option key={priority} value={priority}>
+            {TASK_PRIORITY_LABELS[priority]}
+          </option>
+        ))}
+      </select>
     </PropertyRow>
   )
 }
@@ -94,11 +52,10 @@ export function TicketProperty({ task, readOnly, onUpdate }: PropertyProps) {
   const urlInvalid = ticketUrl.value !== '' && !isUrl(ticketUrl.value)
   return (
     <PropertyRow label={panelCopy.ticket}>
-      <div className={styles.ticketFields}>
-        {' '}
+      <div className={styles.kvStack}>
         <input
           aria-label={panelCopy.ticketId}
-          className={styles.inlineInput}
+          className={styles.kvInput}
           inputMode="numeric"
           disabled={readOnly}
           value={ticketId.value}
@@ -109,7 +66,7 @@ export function TicketProperty({ task, readOnly, onUpdate }: PropertyProps) {
         <input
           aria-label={panelCopy.ticketUrl}
           aria-invalid={urlInvalid}
-          className={styles.inlineInput}
+          className={styles.kvInput}
           placeholder="https://"
           disabled={readOnly || ticketId.value === ''}
           value={ticketUrl.value}
@@ -122,13 +79,32 @@ export function TicketProperty({ task, readOnly, onUpdate }: PropertyProps) {
   )
 }
 
+/** Descrição: grava ao sair do campo e também pelo botão "Salvar texto". */
 export function TaskDescription({ task, readOnly, onUpdate }: PropertyProps) {
   const description = useBlurSave(task.description, (next) => onUpdate({ description: next }))
   return (
-    <section className={styles.descriptionSection}>
-      {' '}
-      <TextArea
-        label={panelCopy.description}
+    <section className={styles.topicSection} aria-labelledby="task-section-desc">
+      <div className={styles.topicSectionHead}>
+        <h2 className={styles.topicSectionTitle} id="task-section-desc">
+          {taskCopy.description}
+        </h2>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnSm} ${styles.btnGhost}`}
+          disabled={readOnly}
+          // Ao clicar o campo perde o foco e já grava; o clique cobre o caso sem foco.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (description.value !== task.description) onUpdate({ description: description.value })
+          }}
+        >
+          {taskCopy.saveDescription}
+        </button>
+      </div>
+      <textarea
+        className={styles.cleanTextarea}
+        rows={3}
+        aria-label={taskCopy.descriptionAria}
         placeholder={panelCopy.descriptionPlaceholder}
         disabled={readOnly}
         value={description.value}

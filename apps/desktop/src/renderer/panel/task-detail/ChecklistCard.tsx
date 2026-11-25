@@ -1,8 +1,10 @@
 import { useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { ChecklistItemDto, GetTaskDto } from '@agilebox/contract'
-import { AddButton, IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
+import { Toast } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { ProgressTrack } from './ProgressTrack'
+import { taskCopy } from './task-detail-copy'
 import {
   useAddChecklistItem,
   useMoveChecklistItem,
@@ -71,27 +73,20 @@ export function ChecklistCard({ task, readOnly }: ChecklistCardProps) {
   }
 
   return (
-    <section aria-labelledby={headingId} className={styles.card}>
-      <header className={styles.checklistHeader}>
-        <h3 id={headingId} className={styles.cardTitle}>
+    <section aria-labelledby={headingId} className={styles.topicSection}>
+      <div className={styles.topicSectionHead}>
+        <h2 id={headingId} className={styles.topicSectionTitle}>
           {panelCopy.checklistCard}
-        </h3>
-        <span className={styles.checklistCount}>
-          {done}/{total}
-        </span>
-      </header>
+        </h2>
+        <span className={styles.topicSectionMeta}>{taskCopy.subtasksCounter(done, total)}</span>
+      </div>
       {total > 0 ? (
-        <ProgressBar
-          className={styles.checklistBar}
-          done={done}
-          total={total}
-          label={panelCopy.checklistProgressLabel}
-        />
+        <ProgressTrack done={done} total={total} label={panelCopy.checklistProgressLabel} />
       ) : null}
 
-      {items.length === 0 ? <p className={styles.helper}>{panelCopy.checklistEmpty}</p> : null}
+      {items.length === 0 ? <p className={styles.emptyNote}>{panelCopy.checklistEmpty}</p> : null}
       {items.length > 0 ? (
-        <ul aria-label={panelCopy.checklistList} className={styles.checklistList}>
+        <ul aria-label={panelCopy.checklistList} className={styles.checklistStack}>
           {items.map((item, index) => (
             <ChecklistItemRow
               key={item.id}
@@ -116,20 +111,23 @@ export function ChecklistCard({ task, readOnly }: ChecklistCardProps) {
       ) : null}
 
       {busy ? (
-        <p role="status" className={styles.helper}>
+        <p role="status" className={styles.kvHint}>
           {panelCopy.checklistSaving}
         </p>
       ) : null}
 
-      {readOnly ? <p className={styles.helper}>{panelCopy.checklistReadOnly}</p> : null}
-      {closed ? <p className={styles.helper}>{panelCopy.checklistClosed}</p> : null}
-      {!closed && limitReached ? <p className={styles.helper}>{panelCopy.checklistLimit}</p> : null}
+      {readOnly ? <p className={styles.kvHint}>{panelCopy.checklistReadOnly}</p> : null}
+      {closed ? <p className={styles.kvHint}>{panelCopy.checklistClosed}</p> : null}
+      {!closed && limitReached ? <p className={styles.kvHint}>{panelCopy.checklistLimit}</p> : null}
       {!closed && !limitReached ? (
-        <form noValidate onSubmit={submitAdd}>
-          <div className={styles.addRow}>
-            <TextField
+        <form noValidate className={styles.addColumn} onSubmit={submitAdd}>
+          <div className={styles.inlineAddRow}>
+            <input
               id={addFieldId}
-              label={panelCopy.checklistAddLabel}
+              type="text"
+              className={styles.input}
+              placeholder={taskCopy.subtaskPlaceholder}
+              aria-label={taskCopy.subtaskNewAria}
               disabled={readOnly}
               value={draft}
               aria-invalid={addError !== null}
@@ -139,12 +137,16 @@ export function ChecklistCard({ task, readOnly }: ChecklistCardProps) {
                 if (addError) setAddError(validateChecklistTitle(event.currentTarget.value))
               }}
             />
-            <AddButton type="submit" disabled={readOnly}>
-              {panelCopy.checklistAddLabel}
-            </AddButton>
+            <button
+              type="submit"
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              disabled={readOnly}
+            >
+              {taskCopy.subtaskAdd}
+            </button>
           </div>
           {addError ? (
-            <p id={`${addFieldId}-error`} role="alert" className={styles.blockError}>
+            <p id={`${addFieldId}-error`} role="alert" className={styles.errorNote}>
               {addError}
             </p>
           ) : null}
@@ -226,8 +228,8 @@ function ChecklistItemRow({
   }
 
   return (
-    <li className={styles.checklistItem}>
-      <label className={styles.checklistCheck}>
+    <li className={styles.checkboxRow}>
+      <label className={styles.checkboxLabel}>
         <input
           type="checkbox"
           checked={item.done}
@@ -259,7 +261,7 @@ function ChecklistItemRow({
             }}
           />
           {error ? (
-            <span id={errorId} role="alert" className={styles.blockError}>
+            <span id={errorId} role="alert" className={styles.errorNote}>
               {error}
             </span>
           ) : null}
@@ -277,43 +279,36 @@ function ChecklistItemRow({
       )}
 
       {readOnly ? null : (
-        <span className={styles.checklistActions}>
-          <IconButton
+        <span className={styles.rowActions}>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.checklistMoveUp(item.title)}
             title="Mover para cima"
             disabled={isFirst}
             onClick={() => onMove(index - 1)}
           >
             <Chevron direction="up" />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.checklistMoveDown(item.title)}
             title="Mover para baixo"
             disabled={isLast}
             onClick={() => onMove(index + 1)}
           >
             <Chevron direction="down" />
-          </IconButton>
-          <IconButton
+          </button>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.checklistRemove(item.title)}
             title="Remover"
             onClick={onRemove}
           >
-            <svg
-              aria-hidden="true"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </IconButton>
+            ×
+          </button>
         </span>
       )}
     </li>

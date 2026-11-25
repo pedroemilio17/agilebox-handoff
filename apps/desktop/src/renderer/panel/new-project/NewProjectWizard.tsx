@@ -1,302 +1,220 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
-import type { WizardAnswers } from '@agilebox/core'
-import { Button, TextField, useFocusTrap, useRestoreFocus } from '@agilebox/ui'
-import styles from './NewProjectWizard.module.css'
-import {
-  nextStep,
-  previousStep,
-  progressPercent,
-  questionById,
-  questionPosition,
-  railSteps,
-  remainingLabel,
-  remainingSteps,
-  toWizardAnswers,
-  totalSteps,
-  withAnswer,
-  type QuestionId,
-  type StepId,
-  type WizardDraft,
-} from './wizard-steps'
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
+import styles from './NewProject.module.css'
+import { newProjectCopy, STATES } from './new-project-copy'
+import { visibleSteps, withAnswer, type WizardDraft } from './wizard-steps'
+
+export type WizardPhase = 'name' | 'questions'
 
 export interface NewProjectWizardProps {
-  readonly initialName?: string
-  /** Rascunho anterior, para voltar da recomendação sem perder as respostas. */
-  readonly initialDraft?: WizardDraft
-  /** Pergunta em que o assistente abre (a última, ao voltar da recomendação). */
-  readonly resumeAt?: QuestionId
-  /** Criação do projeto Simples em andamento (pelo Pular): bloqueia novo envio. */
+  readonly phase: WizardPhase
+  readonly name: string
+  readonly description: string
+  readonly draft: WizardDraft
+  /** Mostra o erro do nome ("Digite um nome…"). */
+  readonly nameError: boolean
+  /** Sobe a cada tentativa sem nome, para devolver o foco ao campo. */
+  readonly nameFocusTick?: number
+  /** Criação do projeto Simples em andamento: bloqueia novo envio. */
   readonly submitting?: boolean
-  /** Erro ao criar pelo Pular, mostrado no próprio assistente. */
-  readonly error?: string | null
-  readonly onCancel: () => void
-  /** Cria o projeto no modo Simples, sem respostas. */
-  readonly onSkip: (name: string) => void
-  /** Segue para a recomendação com as respostas dadas e o rascunho completo. */
-  readonly onFinishQuestions: (name: string, answers: WizardAnswers, draft: WizardDraft) => void
+  readonly onNameChange: (name: string) => void
+  readonly onDescriptionChange: (description: string) => void
+  readonly onDraftChange: (draft: WizardDraft) => void
+  /** "Criar projeto simples agora": cria no modo Simples, sem respostas. */
+  readonly onExpress: () => void
+  /** "Me ajude a escolher…": segue para as perguntas. */
+  readonly onGuided: () => void
+  readonly onBackToName: () => void
+  /** "Ver sugestão de recursos →": segue para a revisão. */
+  readonly onToReview: () => void
 }
 
-const NAME_REQUIRED = 'Digite um nome para o projeto antes de continuar.'
-
 /**
- * Assistente de novo projeto (ADR-10), perguntas 1 a 5. A recomendação (pergunta 6) fica para
- * a etapa seguinte: `onFinishQuestions` leva as respostas até ela.
+ * Passos 1 e 2 do novo projeto, como no desenho: nome e descrição com os dois caminhos, depois as
+ * perguntas (ADR-10) em cartões de opção. Perguntas que não se aplicam ao trabalho contínuo não
+ * aparecem. Todas são opcionais: sem resposta vale "Não sei".
  */
 export function NewProjectWizard({
-  initialName = '',
-  initialDraft,
-  resumeAt,
+  phase,
+  name,
+  description,
+  draft,
+  nameError,
+  nameFocusTick = 0,
   submitting = false,
-  error = null,
-  onCancel,
-  onSkip,
-  onFinishQuestions,
+  onNameChange,
+  onDescriptionChange,
+  onDraftChange,
+  onExpress,
+  onGuided,
+  onBackToName,
+  onToReview,
 }: NewProjectWizardProps) {
-  const [name, setName] = useState(initialName)
-  const [nameError, setNameError] = useState(false)
-  const [draft, setDraft] = useState<WizardDraft>(initialDraft ?? {})
-  const [step, setStep] = useState<StepId>(resumeAt ?? 'name')
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const titleId = useId()
-  const groupName = useId()
+  const rootRef = useRef<HTMLDivElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const nameId = useId()
+  const descId = useId()
   const nameErrorId = useId()
+  const groupId = useId()
 
-  useFocusTrap(dialogRef)
-  useRestoreFocus()
-
-  // Foco inicial e a cada etapa: no nome, ou na opção escolhida (ou na primeira).
+  // Foco no nome ao abrir; nas perguntas, na primeira opção.
   useEffect(() => {
-    const root = dialogRef.current
-    if (!root) return
     const target =
-      step === 'name'
-        ? root.querySelector<HTMLInputElement>('input[type="text"]')
-        : (root.querySelector<HTMLInputElement>('input[type="radio"]:checked') ??
-          root.querySelector<HTMLInputElement>('input[type="radio"]'))
+      phase === 'name'
+        ? nameRef.current
+        : rootRef.current?.querySelector<HTMLInputElement>('input[type="radio"]')
     target?.focus()
-  }, [step])
+  }, [phase])
 
-  const trimmedName = name.trim()
-  const isNameStep = step === 'name'
-  const question = isNameStep || step === 'recommendation' ? null : questionById(step)
-  const rows = railSteps(draft, step, name)
-  const progress = progressPercent(draft, step)
+  // Erro do nome devolve o foco ao campo.
+  useEffect(() => {
+    if (nameFocusTick > 0) nameRef.current?.focus()
+  }, [nameFocusTick])
 
-  function showNameError() {
-    setNameError(true)
-    const input = dialogRef.current?.querySelector<HTMLInputElement>('input[type="text"]')
-    input?.focus()
-  }
-
-  function goForward() {
-    if (isNameStep && !trimmedName) {
-      showNameError()
-      return
-    }
-    const next = nextStep(draft, step)
-    if (next === 'recommendation') {
-      onFinishQuestions(trimmedName, toWizardAnswers(draft), draft)
-      return
-    }
-    setStep(next)
-  }
-
-  function goBack() {
-    setStep(previousStep(draft, step))
-  }
-
-  function skip() {
-    if (submitting) return
-    if (!trimmedName) {
-      showNameError()
-      return
-    }
-    onSkip(trimmedName)
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      onCancel()
-      return
-    }
+  function onNameKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return
-    const tag = (event.target as HTMLElement).tagName
-    // Botões e links já têm o Enter próprio; campos e opções avançam.
-    if (tag === 'BUTTON' || tag === 'A' || tag === 'TEXTAREA') return
     event.preventDefault()
-    goForward()
+    onGuided()
   }
 
-  const counter = question
-    ? `Pergunta ${questionPosition(question.id)} de ${totalSteps()}`
-    : 'Nome do projeto'
-
-  return (
-    <div className={styles.backdrop}>
-      <div
-        ref={dialogRef}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onKeyDown={onKeyDown}
-      >
-        <aside className={styles.rail} aria-label="Etapas do assistente">
-          <div className={styles.railHeader}>
-            <span className={styles.eyebrow}>Novo projeto</span>
-            <span className={styles.railName}>{trimmedName || 'Sem nome ainda'}</span>
-          </div>
-          <ol className={styles.steps}>
-            {rows.map((row) => (
-              <li
-                key={row.id}
-                className={styles[row.state]}
-                aria-current={row.state === 'current' ? 'step' : undefined}
-              >
-                <span className={styles.mark} aria-hidden="true">
-                  {row.mark}
-                </span>
-                <span className={styles.stepText}>
-                  <span className={styles.stepLabel}>{row.label}</span>
-                  <span className={styles.stepAnswer}>{row.answer}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <span className={styles.spacer} />
-          <p className={styles.railNote}>
-            Menos de um minuto. Todas as perguntas são opcionais e nada aqui é definitivo.
-          </p>
-        </aside>
-
-        <div className={styles.main}>
-          <div className={styles.topBar}>
-            <span className={styles.counter}>{counter}</span>
-            <div
-              className={styles.progressTrack}
-              role="progressbar"
-              aria-label="Progresso do assistente"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-            >
-              <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-            </div>
-            <span className={styles.spacer} />
-            <button type="button" className={styles.skip} onClick={skip} disabled={submitting}>
-              Pular e criar no modo Simples
-            </button>
-          </div>
-          {error && (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          )}
-
-          <div className={styles.body}>
-            {isNameStep ? (
-              <>
-                <div className={styles.head}>
-                  <h1 id={titleId} className={styles.question}>
-                    Qual é o nome do projeto?
-                  </h1>
-                  <p className={styles.hint}>
-                    É o único campo obrigatório. Você pode mudar depois.
-                  </p>
-                </div>
-                <TextField
-                  label="Nome do projeto"
-                  value={name}
-                  maxLength={120}
-                  aria-invalid={nameError || undefined}
-                  aria-describedby={nameError ? nameErrorId : undefined}
-                  onChange={(event) => {
-                    setName(event.target.value)
-                    if (nameError) setNameError(false)
-                  }}
-                />
-                {nameError && (
-                  <p id={nameErrorId} className={styles.error} role="alert">
-                    {NAME_REQUIRED}
-                  </p>
-                )}
-              </>
-            ) : question ? (
-              <>
-                <div className={styles.head}>
-                  <h1 id={titleId} className={styles.question}>
-                    {question.question}
-                  </h1>
-                  <p className={styles.hint}>{question.hint}</p>
-                </div>
-                <fieldset className={styles.options}>
-                  <legend className={styles.legend}>Escolha uma</legend>
-                  {question.options.map((option, index) => {
-                    const checked = draft[question.id] === option.value
-                    const labelId = `${groupName}-${index}-label`
-                    const hintId = `${groupName}-${index}-hint`
-                    return (
-                      <label
-                        key={option.value}
-                        className={checked ? styles.optionChecked : styles.option}
-                      >
-                        <input
-                          type="radio"
-                          className={styles.radio}
-                          name={groupName}
-                          value={option.value}
-                          checked={checked}
-                          aria-labelledby={labelId}
-                          aria-describedby={option.hint ? hintId : undefined}
-                          onChange={() => {
-                            setDraft((current) => withAnswer(current, question.id, option.value))
-                          }}
-                        />
-                        <span className={styles.optionText}>
-                          <span id={labelId} className={styles.optionLabel}>
-                            {option.label}
-                          </span>
-                          {option.hint && (
-                            <span id={hintId} className={styles.optionHint}>
-                              {option.hint}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </fieldset>
-              </>
+  if (phase === 'name') {
+    return (
+      <div ref={rootRef} className={styles.section}>
+        <div className={styles.formFields}>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel} htmlFor={nameId}>
+              {newProjectCopy.nameLabel}
+            </label>
+            <input
+              id={nameId}
+              ref={nameRef}
+              type="text"
+              className={styles.input}
+              value={name}
+              maxLength={120}
+              placeholder={newProjectCopy.namePlaceholder}
+              autoComplete="off"
+              aria-invalid={nameError || undefined}
+              aria-describedby={nameError ? nameErrorId : undefined}
+              onChange={(event) => onNameChange(event.target.value)}
+              onKeyDown={onNameKeyDown}
+            />
+            {nameError ? (
+              <p id={nameErrorId} className={styles.error} role="alert">
+                {newProjectCopy.nameRequired}
+              </p>
             ) : null}
           </div>
-
-          <div className={styles.footer}>
-            {isNameStep ? (
-              <Button className={styles.secondaryAction} onClick={onCancel}>
-                Cancelar
-              </Button>
-            ) : (
-              <Button className={styles.secondaryAction} onClick={goBack}>
-                Voltar
-              </Button>
-            )}
-            <span className={styles.spacer} />
-            {question && (
-              <span className={styles.remaining}>
-                {remainingLabel(remainingSteps(draft, question.id))}
-              </span>
-            )}
-            <Button
-              variant="primary"
-              className={styles.primaryAction}
-              shortcut="Enter"
-              onClick={goForward}
-            >
-              Continuar
-            </Button>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel} htmlFor={descId}>
+              {newProjectCopy.descLabel}
+            </label>
+            <input
+              id={descId}
+              type="text"
+              className={styles.input}
+              value={description}
+              maxLength={240}
+              placeholder={newProjectCopy.descPlaceholder}
+              autoComplete="off"
+              onChange={(event) => onDescriptionChange(event.target.value)}
+            />
           </div>
         </div>
+
+        <div className={styles.pathsGrid}>
+          <div className={styles.pathCol}>
+            <div>
+              <span className={styles.pathEyebrow}>{newProjectCopy.expressEyebrow}</span>
+              <h2>{newProjectCopy.expressTitle}</h2>
+              <p>{newProjectCopy.expressText}</p>
+              <ul className={styles.statesPreview} aria-label={newProjectCopy.statesLabel}>
+                {STATES.map((state) => (
+                  <li className={styles.stateItem} key={state.key}>
+                    <i className={`${styles.stateDot} ${styles[state.key]}`} aria-hidden="true" />
+                    {state.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnPrimary} ${styles.btnWide}`}
+              disabled={submitting}
+              aria-busy={submitting || undefined}
+              onClick={onExpress}
+            >
+              {newProjectCopy.express}
+            </button>
+          </div>
+
+          <div className={styles.pathCol}>
+            <div>
+              <span className={styles.pathEyebrow}>{newProjectCopy.guidedEyebrow}</span>
+              <h2>{newProjectCopy.guidedTitle}</h2>
+              <p>{newProjectCopy.guidedText}</p>
+            </div>
+            <button type="button" className={`${styles.btn} ${styles.btnWide}`} onClick={onGuided}>
+              {newProjectCopy.guided}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const questions = visibleSteps(draft)
+  return (
+    <div ref={rootRef} className={styles.section}>
+      <div className={styles.step2Head}>
+        <div>
+          <span className={styles.eyebrow}>{newProjectCopy.questionsProject}</span>
+          <div className={styles.projectName}>{name.trim()}</div>
+        </div>
+        <span className={styles.sectionMeta}>{newProjectCopy.questionsMeta(questions.length)}</span>
+      </div>
+
+      {questions.map((question, index) => {
+        const current = question
+        const two = current.options.length === 2 || current.options.length === 4
+        return (
+          <fieldset className={styles.questionBlock} key={current.id}>
+            <legend className={styles.questionTitle}>
+              {index + 1}. {current.question}
+            </legend>
+            <p className={styles.questionHint}>{current.hint}</p>
+            <div className={`${styles.optionsGrid} ${two ? styles.optionsGridTwo : ''}`}>
+              {current.options.map((option) => {
+                const checked = draft[current.id] === option.value
+                return (
+                  <label
+                    key={option.value}
+                    className={`${styles.optionCard} ${checked ? styles.optionSelected : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      className={styles.radio}
+                      name={`${groupId}-${current.id}`}
+                      value={option.value}
+                      checked={checked}
+                      onChange={() => onDraftChange(withAnswer(draft, current.id, option.value))}
+                    />
+                    <strong>{option.label}</strong>
+                    {option.hint ? <span>{option.hint}</span> : null}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
+        )
+      })}
+
+      <div className={styles.footerBar}>
+        <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={onBackToName}>
+          {newProjectCopy.backToName}
+        </button>
+        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={onToReview}>
+          {newProjectCopy.toReview}
+        </button>
       </div>
     </div>
   )

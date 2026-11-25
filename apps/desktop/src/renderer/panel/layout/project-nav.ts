@@ -119,6 +119,7 @@ export function buildProjectNavGroups(
       views: sprintsTabs.map((tab) => tab.id),
       tabs: single ? [] : sprintsTabs,
       count,
+      ...(single ? {} : { predictive: true }),
     })
   }
 

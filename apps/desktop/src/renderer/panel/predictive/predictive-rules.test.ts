@@ -9,7 +9,7 @@ import {
 describe('subtítulo de cada tópico do Fluxo Preditivo', () => {
   it('usa o texto do protótipo nos tópicos que a tela tem', () => {
     expect(predictiveSubtitle('wbs')).toBe(
-      'Divida o projeto em entregas claras antes de quebrar em tarefas.',
+      'Divida o projeto em entregas claras e crie tarefas diretamente dentro de cada grupo.',
     )
     expect(predictiveSubtitle('milestones')).toBe(
       'Acompanhe datas-chave de entrega ou aprovação ao longo do projeto.',

@@ -91,7 +91,7 @@ function setup(configure?: (api: AgileBoxApi) => void, aiOverride?: Partial<Desk
     <ApiProvider api={api}>
       <QueryProvider>
         <CapabilitiesProvider>
-          <KanChatScreen />
+          <KanChatScreen onBack={() => undefined} onCollapse={() => undefined} />
         </CapabilitiesProvider>
       </QueryProvider>
     </ApiProvider>,
@@ -101,7 +101,7 @@ function setup(configure?: (api: AgileBoxApi) => void, aiOverride?: Partial<Desk
 }
 
 describe('Chat com o Kan', () => {
-  it('mantém interface limpa sem badges de API nem termos proibidos no modo básico', async () => {
+  it('mostra o botão "Chave AI" do protótipo, sem badge de conexão e sem termos proibidos no modo básico', async () => {
     setup((api) => {
       vi.spyOn(api.teamTools, 'get').mockResolvedValue(
         teamToolsView({ modules: presetModules('kanban'), level: 'basic' }),
@@ -110,7 +110,9 @@ describe('Chat com o Kan', () => {
 
     await screen.findByRole('button', { name: 'AB-5 → Revisar' })
     expect(screen.queryByText(/GEMINI ON/i)).toBeNull()
-    expect(screen.queryByRole('button', { name: /Chave AI/i })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Chave AI' })).toBeTruthy()
+    expect(screen.getByText('Modo local')).toBeTruthy()
+    expect(screen.getByPlaceholderText('Peça ao Kan ou tire uma dúvida...')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Daily' })).toBeNull()
     expect(forbiddenTermsIn(visibleTextOf(document.body))).toEqual([])
   })
@@ -253,5 +255,25 @@ describe('Chat com o Kan', () => {
     )
     expect(await screen.findByText('Criei a tarefa no projeto Aurora.')).toBeTruthy()
     expect(await screen.findByText('AB-9 criada')).toBeTruthy()
+  })
+
+  it('"Chave AI" abre o painel de chave, salva pela ponte e passa a mostrar Gemini ON', async () => {
+    const saveConfig = vi.fn<DesktopAiApi['saveConfig']>().mockResolvedValue({
+      configured: true,
+      model: 'gemini-2.0-flash',
+      encrypted: true,
+    })
+    const { user } = setup(undefined, { saveConfig })
+
+    await user.click(await screen.findByRole('button', { name: 'Chave AI' }))
+    await user.type(screen.getByLabelText('Chave da API Google AI Studio'), 'AIza-teste')
+    await user.selectOptions(screen.getByLabelText('Modelo Gemini'), 'gemini-2.0-flash')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    await waitFor(() =>
+      expect(saveConfig).toHaveBeenCalledWith({ model: 'gemini-2.0-flash', apiKey: 'AIza-teste' }),
+    )
+    expect(await screen.findByRole('button', { name: 'Gemini ON' })).toBeTruthy()
+    expect(screen.getByText('Gemini · gemini-2.0-flash')).toBeTruthy()
   })
 })

@@ -240,6 +240,7 @@ describe('Início do projeto', () => {
       tasks: [taskDto({ id: '01J8Y4G2XK8Z1S6M3Q9W0A5T9', key: 'AB-9', status: 'todo' })],
     })
     const attention = await screen.findByRole('region', { name: 'Precisa de atenção' })
+    expect(within(attention).getByText('Nenhum bloqueio ativo no momento')).toBeTruthy()
     expect(within(attention).getByText('Nada pede atenção agora.')).toBeTruthy()
   })
 
@@ -251,13 +252,13 @@ describe('Início do projeto', () => {
     expect(onOpenTask).toHaveBeenCalledWith('01J8Y4G2XK8Z1S6M3Q9W0A5T4')
   })
 
-  it('mostra o time do projeto e deixa pessoas externas e compromissos como pendência honesta', async () => {
+  it('mostra o time do projeto e deixa pessoas externas como pendência honesta e compromissos vazios', async () => {
     renderHome()
     const team = await screen.findByRole('region', { name: 'Time do projeto' })
     expect(within(team).getByText('Ana Silva')).toBeTruthy()
     expect(within(team).getByText('Colaborador')).toBeTruthy()
     expect(screen.getByText('Pessoas externas ainda não aparecem nesta tela.')).toBeTruthy()
-    expect(screen.getByText('Compromissos por projeto ainda não aparecem aqui.')).toBeTruthy()
+    expect(screen.getByText('Nenhum compromisso marcado pela frente.')).toBeTruthy()
   })
 
   it('desabilita Nova tarefa quando o projeto está arquivado', async () => {

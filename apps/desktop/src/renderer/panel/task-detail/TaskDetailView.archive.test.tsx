@@ -55,20 +55,25 @@ function setup({
 describe('Arquivar e desarquivar no detalhe da tarefa', () => {
   it('mostra Arquivar só quando o servidor informa que pode', async () => {
     setup({ initial: makeDetail({ canArchive: false }) })
+    const user = userEvent.setup()
     await screen.findByDisplayValue('Revisar integração')
-    expect(screen.queryByRole('button', { name: 'Arquivar' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(screen.queryByRole('menuitem', { name: 'Arquivar tarefa' })).toBeNull()
   })
 
   it('não oferece arquivar na visão Equipe, mesmo para quem pode', async () => {
     setup({ initial: makeDetail({ canArchive: true }), readOnlyScope: true })
+    const user = userEvent.setup()
     await screen.findByDisplayValue('Revisar integração')
-    expect(screen.queryByRole('button', { name: 'Arquivar' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(screen.queryByRole('menuitem', { name: 'Arquivar tarefa' })).toBeNull()
   })
 
   it('pede confirmação curta, arquiva pela API e mostra Desarquivar', async () => {
     const initial = makeDetail({ canArchive: true })
     const { archive, user } = setup({ initial, afterChange: archivedOf(initial) })
-    await user.click(await screen.findByRole('button', { name: 'Arquivar' }))
+    await user.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Arquivar tarefa' }))
     expect(screen.getByText(/Ela sai do quadro e fica somente leitura/)).toBeTruthy()
     expect(archive).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
@@ -79,10 +84,12 @@ describe('Arquivar e desarquivar no detalhe da tarefa', () => {
 
   it('cancela a confirmação sem arquivar', async () => {
     const { archive, user } = setup({ initial: makeDetail({ canArchive: true }) })
-    await user.click(await screen.findByRole('button', { name: 'Arquivar' }))
+    await user.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Arquivar tarefa' }))
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(archive).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Arquivar' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(screen.getByRole('menuitem', { name: 'Arquivar tarefa' })).toBeTruthy()
   })
 
   it('tarefa arquivada abre em leitura: campos desabilitados e Desarquivar no lugar', async () => {
@@ -91,7 +98,8 @@ describe('Arquivar e desarquivar no detalhe da tarefa', () => {
     const title = await screen.findByDisplayValue('Revisar integração')
     expect((title as HTMLInputElement).disabled).toBe(true)
     expect(screen.getByRole('region', { name: 'Tarefa arquivada' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Arquivar' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(screen.queryByRole('menuitem', { name: 'Arquivar tarefa' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Desarquivar' }))
     expect(unarchive).toHaveBeenCalledWith({ taskId: TASK_ID })
   })

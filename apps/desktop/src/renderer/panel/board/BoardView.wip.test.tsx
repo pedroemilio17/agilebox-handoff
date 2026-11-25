@@ -73,7 +73,7 @@ describe('Medidor de WIP no quadro', () => {
       name: 'Desenvolvendo: 2 de 3, dentro do limite',
     })
     expect(meter.textContent).toContain('2/3')
-    expect(within(column('Desenvolvendo')).getByText('Dentro do limite')).toBeTruthy()
+    expect(meter.textContent).toBe('2/3 simult.')
   })
 
   it('mostra o estado no limite em âmbar com texto', () => {
@@ -84,10 +84,9 @@ describe('Medidor de WIP no quadro', () => {
         name: 'Desenvolvendo: 3 de 3, no limite',
       }),
     ).toBeTruthy()
-    expect(within(column('Desenvolvendo')).getByText('No limite')).toBeTruthy()
   })
 
-  it('mostra o estado acima do limite com texto e ícone', () => {
+  it('mostra o estado acima do limite no nome acessível e no texto N/limite simult.', () => {
     renderBoard({
       wipColumns: [{ status: 'review', count: 4, limit: 3, state: 'over' }],
     })
@@ -95,13 +94,7 @@ describe('Medidor de WIP no quadro', () => {
     expect(
       within(column('Revisar')).getByRole('img', { name: 'Revisar: 4 de 3, acima do limite' }),
     ).toBeTruthy()
-    expect(within(column('Revisar')).getByText('Acima do limite')).toBeTruthy()
-    expect(within(column('Revisar')).getByText('4/3')).toBeTruthy()
-    expect(
-      within(column('Revisar'))
-        .getByRole('img', { name: 'Revisar: 4 de 3, acima do limite' })
-        .querySelector('svg'),
-    ).not.toBeNull()
+    expect(within(column('Revisar')).getByText('4/3 simult.')).toBeTruthy()
   })
 
   it('sem limite definido, mostra só a contagem atual', () => {

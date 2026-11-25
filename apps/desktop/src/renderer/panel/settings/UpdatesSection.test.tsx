@@ -32,9 +32,9 @@ describe('Ajustes: atualizações', () => {
     const updates = stub({ state: 'available', behind: 2, commits: ['feat: a', 'fix: b'] })
     const user = userEvent.setup()
     render(<UpdatesSection />)
-    await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
-    expect(await screen.findByText('Há 2 atualizações disponíveis:')).toBeTruthy()
-    expect(screen.getByText('fix: b')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Verificar atualizações' }))
+    expect(await screen.findByText('Há uma atualização disponível.')).toBeTruthy()
+    expect(screen.queryByText('fix: b')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Reiniciar agora' })).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Baixar e instalar' }))
@@ -53,10 +53,10 @@ describe('Ajustes: atualizações', () => {
     updates.apply.mockImplementation(() => new Promise((resolve) => (finish = resolve)))
     const user = userEvent.setup()
     render(<UpdatesSection />)
-    await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
+    await user.click(screen.getByRole('button', { name: 'Verificar atualizações' }))
     await user.click(await screen.findByRole('button', { name: 'Baixar e instalar' }))
     act(() => updates.emit('install'))
-    expect(await screen.findByText(/Instalando dependências/)).toBeTruthy()
+    expect(await screen.findByText(/Preparando a atualização/)).toBeTruthy()
     act(() => finish({ state: 'ready' }))
     expect(await screen.findByRole('button', { name: 'Reiniciar agora' })).toBeTruthy()
   })
@@ -65,16 +65,16 @@ describe('Ajustes: atualizações', () => {
     stub({ state: 'up-to-date', commit: 'abc1234' })
     const user = userEvent.setup()
     render(<UpdatesSection />)
-    await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
-    expect(await screen.findByText(/versão mais nova \(abc1234\)/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Verificar atualizações' }))
+    expect(await screen.findByText('Tudo atualizado.')).toBeTruthy()
     cleanup()
     stub({ state: 'dirty', files: 3 })
     render(<UpdatesSection />)
-    await user.click(screen.getByRole('button', { name: 'Procurar atualizações' }))
-    expect(await screen.findByText(/Há 3 arquivo/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Verificar atualizações' }))
+    expect(await screen.findByText(/alterações locais/)).toBeTruthy()
   })
 
-  it('mostra a última atualização que falhou, com o registro', async () => {
+  it('mostra a última atualização que falhou, sem detalhe técnico', async () => {
     const updates = stub({ state: 'up-to-date', commit: 'x' })
     updates.lastRun.mockResolvedValue({
       ok: false,
@@ -84,12 +84,12 @@ describe('Ajustes: atualizações', () => {
     })
     render(<UpdatesSection />)
     expect(await screen.findByText(/falhou/)).toBeTruthy()
-    expect(screen.getByText('C:\\agilebox\\update.log')).toBeTruthy()
+    expect(screen.queryByText('C:\\agilebox\\update.log')).toBeNull()
   })
 
-  it('mostra a versão instalada e de onde vem a atualização', async () => {
+  it('mostra a versão instalada e o canal estável', async () => {
     stub({ state: 'up-to-date', commit: '0.2.0' })
     render(<UpdatesSection />)
-    expect(await screen.findByText(/Versão 0\.2\.0 · instalada/)).toBeTruthy()
+    expect(await screen.findByText('AgileBox Desktop 0.2.0')).toBeTruthy()
   })
 })

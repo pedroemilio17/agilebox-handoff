@@ -31,7 +31,7 @@ describe('Devolver ao backlog', () => {
   it('aparece em A fazer com a ferramenta ligada; ao clicar, devolve e fecha o detalhe', async () => {
     const user = userEvent.setup()
     const { sendBack, onSent } = setup(makeDetail({ status: 'todo', inBacklog: false } as never))
-    await user.click(await screen.findByRole('button', { name: 'Devolver ao backlog' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Devolver ao backlog' }))
     await waitFor(() => expect(sendBack).toHaveBeenCalledWith({ taskId: TASK_ID }))
     await waitFor(() => expect(onSent).toHaveBeenCalled())
   })
@@ -39,26 +39,26 @@ describe('Devolver ao backlog', () => {
   it('não aparece depois que o trabalho começou', async () => {
     const { api } = setup(makeDetail({ status: 'in_progress', inBacklog: false } as never))
     await settleCapabilities(api)
-    expect(screen.queryByRole('button', { name: 'Devolver ao backlog' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Devolver ao backlog' })).toBeNull()
   })
 
   it('não aparece com a ferramenta desligada (Kanban simples)', async () => {
     const { api } = setup(makeDetail({ status: 'todo', inBacklog: false } as never), KANBAN)
     await settleCapabilities(api)
-    expect(screen.queryByRole('button', { name: 'Devolver ao backlog' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Devolver ao backlog' })).toBeNull()
   })
 
   it('não aparece para item que já está no backlog', async () => {
     const { api } = setup(makeDetail({ status: 'planning', inBacklog: true } as never))
     await settleCapabilities(api)
-    expect(screen.queryByRole('button', { name: 'Devolver ao backlog' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Devolver ao backlog' })).toBeNull()
   })
 
   it('recusa do servidor aparece em pt-BR', async () => {
     const user = userEvent.setup()
     const { sendBack } = setup(makeDetail({ status: 'todo', inBacklog: false } as never))
     sendBack.mockRejectedValue(new ApiError('CONFLICT', 'Tarefa em Desenvolvendo já começou'))
-    await user.click(await screen.findByRole('button', { name: 'Devolver ao backlog' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Devolver ao backlog' }))
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByRole('alert').textContent).toBe('Tarefa em Desenvolvendo já começou')
   })

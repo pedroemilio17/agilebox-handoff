@@ -48,6 +48,14 @@ function openImpediment(overrides: Partial<ImpedimentDto> = {}): ImpedimentDto {
   }
 }
 
+const BLOCKS_REGION = 'Bloqueios (Impedimentos)'
+
+/** Cada tópico mostra só o seu painel: os bloqueios ficam em "Bloqueios & Histórico". */
+async function openBlocks(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^Bloqueios & Histórico/ }))
+  return screen.findByRole('region', { name: BLOCKS_REGION })
+}
+
 function blockedDetail(overrides: Partial<GetTaskDto> = {}): GetTaskDto {
   return makeDetail({
     blockedReason: REASON,
@@ -97,52 +105,41 @@ function setup({
   return { api, block, unblock, assign, user: userEvent.setup() }
 }
 
-describe('Bloquear com "Quem resolve"', () => {
-  it('lista participantes e gestor, e grava o responsável escolhido', async () => {
+describe('Registrar bloqueio', () => {
+  it('registra o bloqueio com o motivo, sem responsável', async () => {
     const { api, block, user } = setup({})
     await settleCapabilities(api)
-    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
-    const select = screen.getByLabelText(impedimentCopy.whoResolves)
-    await waitFor(() =>
-      expect(within(select).getByRole('option', { name: 'Ana Souza' })).toBeTruthy(),
-    )
-    expect(
-      within(select)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Sem responsável', 'Ana Souza', 'Lia Gestora'])
+    await openBlocks(user)
     await user.type(screen.getByLabelText('Motivo do bloqueio'), REASON)
-    await user.selectOptions(select, MANAGER)
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
-    expect(block).toHaveBeenCalledWith({ taskId: TASK_ID, reason: REASON, ownerId: MANAGER })
-  })
-
-  it('sem escolher, a chamada segue como antes (sem responsável)', async () => {
-    const { api, block, user } = setup({})
-    await settleCapabilities(api)
-    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
-    await user.type(screen.getByLabelText('Motivo do bloqueio'), REASON)
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar bloqueio' }))
     expect(block).toHaveBeenCalledWith({ taskId: TASK_ID, reason: REASON })
   })
 })
 
 describe('Impedimento aberto no detalhe', () => {
   it('mostra estado, motivo, responsável e tempo aberto', async () => {
-    const { api } = setup({ detail: blockedDetail() })
+    const { api, user } = setup({ detail: blockedDetail() })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
-    expect(within(strip).getByText('Aberto')).toBeTruthy()
+    const strip = await openBlocks(user)
     expect(within(strip).getByText(REASON)).toBeTruthy()
-    expect(within(strip).getByText('Responsável: Ana Souza')).toBeTruthy()
-    expect(within(strip).getByText('Aberto há 3 dias')).toBeTruthy()
+    expect(within(strip).getByText(/Ana Souza · .*Em aberto/)).toBeTruthy()
   })
 
   it('"Atribuir" troca o responsável, inclusive para "Sem responsável"', async () => {
     const { api, assign, user } = setup({ detail: blockedDetail() })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
+    const strip = await openBlocks(user)
     await user.click(within(strip).getByRole('button', { name: 'Atribuir' }))
+    await waitFor(() =>
+      expect(
+        within(screen.getByLabelText(impedimentCopy.assignSelect)).getAllByRole('option').length,
+      ).toBeGreaterThan(1),
+    )
+    expect(
+      within(screen.getByLabelText(impedimentCopy.assignSelect))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Sem responsável', 'Ana Souza', 'Lia Gestora'])
     const select = within(strip).getByLabelText(impedimentCopy.assignSelect)
     await user.selectOptions(select, '')
     await user.click(within(strip).getByRole('button', { name: 'Salvar' }))
@@ -155,30 +152,30 @@ describe('Impedimento aberto no detalhe', () => {
   it('"Resolver impedimento" pede a nota opcional e desbloqueia com ela', async () => {
     const { api, unblock, user } = setup({ detail: blockedDetail() })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
-    await user.click(within(strip).getByRole('button', { name: 'Resolver impedimento' }))
-    await user.type(within(strip).getByLabelText(impedimentCopy.resolutionLabel), 'Acesso liberado')
+    const strip = await openBlocks(user)
     await user.click(within(strip).getByRole('button', { name: 'Resolver' }))
+    await user.type(within(strip).getByLabelText(impedimentCopy.resolutionLabel), 'Acesso liberado')
+    await user.click(within(strip).getAllByRole('button', { name: 'Resolver' })[1]!)
     expect(unblock).toHaveBeenCalledWith({ taskId: TASK_ID, resolution: 'Acesso liberado' })
   })
 
   it('"Resolver impedimento" sem nota desbloqueia sem campo de resolução', async () => {
     const { api, unblock, user } = setup({ detail: blockedDetail() })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
-    await user.click(within(strip).getByRole('button', { name: 'Resolver impedimento' }))
+    const strip = await openBlocks(user)
     await user.click(within(strip).getByRole('button', { name: 'Resolver' }))
+    await user.click(within(strip).getAllByRole('button', { name: 'Resolver' })[1]!)
     expect(unblock).toHaveBeenCalledWith({ taskId: TASK_ID })
   })
 
   it('a nota acima de 280 caracteres não grava', async () => {
     const { api, unblock, user } = setup({ detail: blockedDetail() })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
-    await user.click(within(strip).getByRole('button', { name: 'Resolver impedimento' }))
+    const strip = await openBlocks(user)
+    await user.click(within(strip).getByRole('button', { name: 'Resolver' }))
     await user.click(within(strip).getByLabelText(impedimentCopy.resolutionLabel))
     await user.paste('a'.repeat(281))
-    await user.click(within(strip).getByRole('button', { name: 'Resolver' }))
+    await user.click(within(strip).getAllByRole('button', { name: 'Resolver' })[1]!)
     expect(within(strip).getByRole('alert').textContent).toBe(impedimentCopy.resolutionTooLong)
     expect(unblock).not.toHaveBeenCalled()
   })
@@ -214,67 +211,67 @@ describe('Impedimento aberto no detalhe', () => {
         },
       ],
     })
-    const { api } = setup({ detail })
+    const { api, user } = setup({ detail })
     await settleCapabilities(api)
-    const history = await screen.findByRole('region', { name: impedimentCopy.historyTitle })
-    expect(within(history).getByText(/Falta de acesso · Resolvido/)).toBeTruthy()
+    const history = await openBlocks(user)
+    expect(within(history).getByText('Falta de acesso')).toBeTruthy()
     expect(within(history).getByText(/Resolvido em/)).toBeTruthy()
     expect(within(history).getByText('Nota: Acesso liberado')).toBeTruthy()
-    expect(within(history).getByText(new RegExp(`${REASON} · Aberto`))).toBeTruthy()
+    expect(within(history).getByText(REASON)).toBeTruthy()
+    expect(within(history).getByText(/Em aberto/)).toBeTruthy()
+    expect(within(history).getByText(/2 resolvido|1 ativo · 1 resolvido/)).toBeTruthy()
   })
 })
 
 describe('Níveis e módulos', () => {
   it('Básico: o histórico aparece (é tela), mas a faixa só mostra o motivo, sem resolver ou atribuir', async () => {
-    const { api } = setup({ detail: blockedDetail(), modules: SCRUM, level: 'basic' })
+    const { api, user } = setup({ detail: blockedDetail(), modules: SCRUM, level: 'basic' })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
+    const strip = await openBlocks(user)
     expect(within(strip).getByText(REASON)).toBeTruthy()
     expect(within(strip).queryByRole('button')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
-    expect(screen.getByRole('region', { name: impedimentCopy.historyTitle })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Resolver' })).toBeNull()
   })
 
   it('módulo desligado: nem o motivo aparece', async () => {
     const { api } = setup({ detail: blockedDetail(), modules: KANBAN })
     await settleCapabilities(api)
     expect(await screen.findByDisplayValue('Revisar integração')).toBeTruthy()
-    expect(screen.queryByRole('region', { name: 'Bloqueio' })).toBeNull()
+    expect(screen.queryByRole('region', { name: BLOCKS_REGION })).toBeNull()
     expect(screen.queryByText(REASON)).toBeNull()
-    expect(screen.queryByRole('region', { name: impedimentCopy.historyTitle })).toBeNull()
   })
 
-  it('encerrando: some o abrir (Bloquear), mas resolver e atribuir seguem', async () => {
+  it('encerrando: some o campo de registrar bloqueio', async () => {
     // Em encerramento o módulo sai da lista de ativos e entra na de encerrando.
     const { api } = setup({ detail: makeDetail(), modules: ENDING, winding: ['impediments'] })
     await settleCapabilities(api)
     expect(await screen.findByDisplayValue('Revisar integração')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+    expect(screen.queryByLabelText('Motivo do bloqueio')).toBeNull()
   })
 
   it('encerrando com impedimento aberto: atribuir e resolver seguem', async () => {
-    const { api } = setup({
+    const { api, user } = setup({
       detail: blockedDetail(),
       modules: ENDING,
       winding: ['impediments'],
     })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
+    const strip = await openBlocks(user)
     expect(within(strip).getByRole('button', { name: 'Atribuir' })).toBeTruthy()
-    expect(within(strip).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
+    expect(within(strip).getByRole('button', { name: 'Resolver' })).toBeTruthy()
   })
 
   it('somente leitura: atribuir e resolver ficam desabilitados', async () => {
-    const { api } = setup({
+    const { api, user } = setup({
       detail: blockedDetail({ canEdit: false, readOnly: true }),
     })
     await settleCapabilities(api)
-    const strip = await screen.findByRole('region', { name: 'Bloqueio' })
+    const strip = await openBlocks(user)
     expect(within(strip).getByRole('button', { name: 'Atribuir' }).hasAttribute('disabled')).toBe(
       true,
     )
-    expect(
-      within(strip).getByRole('button', { name: 'Resolver impedimento' }).hasAttribute('disabled'),
-    ).toBe(true)
+    expect(within(strip).getByRole('button', { name: 'Resolver' }).hasAttribute('disabled')).toBe(
+      true,
+    )
   })
 })

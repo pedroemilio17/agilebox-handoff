@@ -1,10 +1,21 @@
 import { useMemo } from 'react'
 import { Button, EmptyState } from '@agilebox/ui'
-import { diffInDays, parseDateOnly, TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
+import { useQuery } from '@tanstack/react-query'
+import {
+  diffInDays,
+  parseDateOnly,
+  TASK_STATUS_LABELS,
+  type DateOnly,
+  type TaskStatus,
+} from '@agilebox/core'
 import { todayDateOnly } from '../../shared/lib/today'
+import { useApi } from '../../shared/api/ApiProvider'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { queryKeys } from '../../shared/query/keys'
+import { useActor } from '../../shared/session/useActor'
 import { panelCopy } from '../copy'
 import type { PanelView } from '../layout/PanelShell'
+import { PageHead } from '../settings/clean-ui'
 import { useFlowMetrics } from '../hooks/use-flow-metrics'
 import { useSprintList } from '../sprints/use-sprints'
 import { useTracking } from '../hooks/use-tracking'
@@ -50,14 +61,22 @@ const copy = {
   highlightsTitle: 'Em destaque neste projeto',
   highlightsEmpty: 'Nenhuma tarefa aberta neste projeto.',
   openTask: 'Abrir',
-  backlogLink: 'Ver backlog →',
+  backlogLink: 'Ver Backlog →',
+  manageLink: 'Gerenciar em Config. e Ferramentas →',
+  openBoard: 'Abrir Quadro →',
+  attentionNone: 'Nenhum bloqueio ativo no momento',
+  attentionMeta: 'Nada pede atenção agora.',
+  attentionMore: 'Acesso rápido',
+  noExternalEmpty: 'Nenhuma pessoa externa vinculada neste projeto.',
+  noDeadline: 'Sem prazo',
   agendaTitle: 'Próximos compromissos',
-  agendaEmpty: 'Compromissos por projeto ainda não aparecem aqui.',
-  agendaLink: 'Abrir agenda →',
+  agendaEmpty: 'Nenhum compromisso marcado pela frente.',
+  agendaLink: 'Abrir Agenda →',
   teamTitle: 'Time do projeto',
   teamEmpty: 'Nenhuma pessoa no projeto.',
   externalTitle: 'Pessoas externas',
   externalEmpty: 'Pessoas externas ainda não aparecem nesta tela.',
+  agendaOpen: 'Agenda →',
   leadDaysUnit: (value: number) =>
     `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`,
 } as const
@@ -106,6 +125,15 @@ export function ProjectHomeView({
   const sprints = useSprintList(sprintsOn ? projectId : null)
   const flow = useFlowMetrics(flowOn ? projectId : null)
   const members = useProjectHomeMembers(projectId)
+  const api = useApi()
+  const { actor } = useActor()
+  const isManager = actor?.role === 'manager'
+  const agendaOn = capabilities.showScreen('agenda')
+  const upcoming = useQuery({
+    queryKey: [...queryKeys.meetings.all, 'upcoming'],
+    enabled: agendaOn && projectId !== null,
+    queryFn: () => api.meetings.listUpcoming(),
+  })
 
   const today = useMemo(() => todayDateOnly(), [])
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
@@ -151,29 +179,30 @@ export function ProjectHomeView({
   const realizedCost = trackingData?.summary.realizedCost ?? null
   const attention = attentionItems(tasks, board.data.wipColumns, today, timeZone)
   const highlights = highlightTasks(tasks, 4)
+  const upcomingMeetings = (agendaOn ? (upcoming.data ?? []) : []).slice(0, 3)
   const goTo = (view: PanelView) => onNavigate?.(view)
 
   return (
     <section aria-label={projectName ?? copy.kpiLabel} className={styles.view}>
-      <header className={styles.header}>
-        <div className={styles.titleBlock}>
-          <h1 className={styles.title}>{projectName ?? copy.kpiLabel}</h1>
-        </div>
-        <div className={styles.actions}>
-          <Button type="button" onClick={() => goTo('projects')}>
-            {copy.goBoard}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            disabled={newTaskBlockedReason !== undefined}
-            title={newTaskBlockedReason}
-            onClick={() => onNewTask?.()}
-          >
-            {copy.newTask}
-          </Button>
-        </div>
-      </header>
+      <PageHead
+        title={projectName ?? copy.kpiLabel}
+        actions={
+          <>
+            <Button type="button" onClick={() => goTo('projects')}>
+              {copy.goBoard}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={newTaskBlockedReason !== undefined}
+              title={newTaskBlockedReason}
+              onClick={() => onNewTask?.()}
+            >
+              {copy.newTask}
+            </Button>
+          </>
+        }
+      />
 
       <section aria-label={copy.kpiLabel} className={styles.kpiStrip}>
         <KpiCell
@@ -252,8 +281,13 @@ export function ProjectHomeView({
                     aria-label={`${label}, ${copy.tasksCount(count)}`}
                     onClick={() => goTo('projects')}
                   >
-                    <span className={`${styles.dot} ${STATUS_CLASS[status]}`} aria-hidden="true" />
-                    <span className={styles.rowName}>{label}</span>
+                    <span className={styles.stateName}>
+                      <span
+                        className={`${styles.dot} ${STATUS_CLASS[status]}`}
+                        aria-hidden="true"
+                      />
+                      {label}
+                    </span>
                     <span className={styles.miniTrack} aria-hidden="true">
                       <span className={styles.miniFill} style={{ width: `${pct}%` }} />
                     </span>
@@ -272,12 +306,26 @@ export function ProjectHomeView({
             <h2 id="home-attention" className={styles.secTitle}>
               {copy.attentionTitle}
             </h2>
+            <span className={styles.secMeta}>{copy.attentionMore}</span>
           </div>
-          {attention.length === 0 ? (
-            <p className={styles.muted}>{copy.attentionEmpty}</p>
-          ) : (
-            <ul className={styles.list}>
-              {attention.map((item) => (
+          <ul className={styles.list}>
+            {attention.length === 0 ? (
+              <li>
+                <button type="button" className={styles.row} onClick={() => goTo('projects')}>
+                  <span className={styles.rowMain}>
+                    <span className={styles.rowTitle}>
+                      <span className={`${styles.dot} ${styles.dotOk}`} aria-hidden="true" />
+                      {copy.attentionNone}
+                    </span>
+                    <span className={styles.rowMeta}>{copy.attentionMeta}</span>
+                  </span>
+                  <span className={styles.rowAction} aria-hidden="true">
+                    {copy.openBoard}
+                  </span>
+                </button>
+              </li>
+            ) : (
+              attention.map((item) => (
                 <li key={item.key}>
                   <button
                     type="button"
@@ -299,9 +347,9 @@ export function ProjectHomeView({
                     </span>
                   </button>
                 </li>
-              ))}
-            </ul>
-          )}
+              ))
+            )}
+          </ul>
         </section>
       </div>
 
@@ -312,9 +360,9 @@ export function ProjectHomeView({
               {copy.highlightsTitle}
             </h2>
             {capabilities.showScreen('backlog') ? (
-              <Button type="button" onClick={() => goTo('backlog')}>
+              <button type="button" className={styles.secLink} onClick={() => goTo('backlog')}>
                 {copy.backlogLink}
-              </Button>
+              </button>
             ) : null}
           </div>
           {highlights.length === 0 ? (
@@ -333,7 +381,7 @@ export function ProjectHomeView({
                         <span className={styles.code}>{task.key}</span>
                         {task.title}
                       </span>
-                      <span className={styles.rowMeta}>{TASK_STATUS_LABELS[task.status]}</span>
+                      <span className={styles.rowMeta}>{highlightMeta(task)}</span>
                     </span>
                     <span className={styles.rowAction} aria-hidden="true">
                       {copy.openTask} →
@@ -351,12 +399,35 @@ export function ProjectHomeView({
               {copy.agendaTitle}
             </h2>
             {capabilities.showScreen('agenda') ? (
-              <Button type="button" onClick={() => goTo('agenda')}>
+              <button type="button" className={styles.secLink} onClick={() => goTo('agenda')}>
                 {copy.agendaLink}
-              </Button>
+              </button>
             ) : null}
           </div>
-          <p className={styles.muted}>{copy.agendaEmpty}</p>
+          {upcomingMeetings.length === 0 ? (
+            <p className={styles.muted}>{copy.agendaEmpty}</p>
+          ) : (
+            <ul className={styles.list}>
+              {upcomingMeetings.map((meeting) => (
+                <li key={`${meeting.seriesId}-${meeting.occurrenceDate}`}>
+                  <button type="button" className={styles.row} onClick={() => goTo('agenda')}>
+                    <span className={styles.rowMain}>
+                      <span className={styles.rowTitle}>
+                        <span className={`${styles.dot} ${styles.dotMuted}`} aria-hidden="true" />
+                        {meetingWhen(meeting.occurrenceDate, meeting.time, today)} · {meeting.title}
+                      </span>
+                      <span className={styles.rowMeta}>
+                        {meeting.time} – {meeting.occurrenceEndTime}
+                      </span>
+                    </span>
+                    <span className={styles.rowAction} aria-hidden="true">
+                      {copy.agendaOpen}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 
@@ -364,6 +435,11 @@ export function ProjectHomeView({
         <section aria-label={copy.teamTitle} className={styles.block}>
           <div className={styles.secHead}>
             <h2 className={styles.secTitle}>{copy.teamTitle}</h2>
+            {isManager ? (
+              <button type="button" className={styles.secLink} onClick={() => goTo('modules')}>
+                {copy.manageLink}
+              </button>
+            ) : null}
           </div>
           {members.data && members.data.length > 0 ? (
             <ul className={styles.team}>
@@ -398,6 +474,22 @@ export function ProjectHomeView({
       </div>
     </section>
   )
+}
+
+function highlightMeta(task: {
+  readonly status: TaskStatus
+  readonly blockedAt: string | null
+  readonly deadline: string | null
+}): string {
+  const state = task.blockedAt !== null ? 'Bloqueada' : TASK_STATUS_LABELS[task.status]
+  return task.deadline ? `${state} · ${shortDateLabel(task.deadline)}` : state
+}
+
+/** "Hoje · 09:30", "Amanhã · 09:30" ou "24 nov · 09:30". */
+function meetingWhen(date: string, time: string, today: DateOnly): string {
+  const diff = diffInDays(today, parseDateOnly(date))
+  const day = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : shortDateLabel(date)
+  return `${day} · ${time}`
 }
 
 function KpiCell({

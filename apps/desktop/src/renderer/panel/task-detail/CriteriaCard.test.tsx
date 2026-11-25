@@ -55,7 +55,7 @@ describe('Critérios de aceitação no detalhe', () => {
       detail([criterion(ID1, 'Login funciona', 0, true), criterion(ID2, 'Erro mostra aviso', 1)]),
     )
     const region = screen.getByRole('region', { name: 'Critérios de aceitação' })
-    expect(within(region).getByText('1/2')).toBeTruthy()
+    expect(within(region).getByText('1 de 2')).toBeTruthy()
     expect(
       within(region).getByRole('checkbox', { name: /Marcar critério Login funciona/ }),
     ).toBeTruthy()
@@ -68,7 +68,7 @@ describe('Critérios de aceitação no detalhe', () => {
       screen.getByRole('textbox', { name: 'Adicionar critério' }),
       'Pagamento confirma',
     )
-    await user.click(screen.getByRole('button', { name: 'Adicionar critério' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
     await waitFor(() =>
       expect(spies.add).toHaveBeenCalledWith({ taskId: TASK_ID, text: 'Pagamento confirma' }),
     )

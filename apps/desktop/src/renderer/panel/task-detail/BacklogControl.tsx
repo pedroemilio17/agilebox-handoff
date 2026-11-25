@@ -1,4 +1,3 @@
-import { Button } from '@agilebox/ui'
 import type { GetTaskDto } from '@agilebox/contract'
 import { panelCopy } from '../copy'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
@@ -13,7 +12,10 @@ export interface BacklogControlProps {
   readonly onSent: () => void
 }
 
-/** Devolver ao backlog: só com a ferramenta ligada, em Planejamento ou A fazer, fora do backlog. */
+/**
+ * Devolver ao backlog: item do menu "⋯", só com a ferramenta ligada, em Planejamento ou A fazer,
+ * fora do backlog.
+ */
 export function BacklogControl({ task, readOnly, onSent }: BacklogControlProps) {
   const capabilities = useCapabilities()
   const send = useSendToBacklog(task.id)
@@ -24,19 +26,21 @@ export function BacklogControl({ task, readOnly, onSent }: BacklogControlProps) 
     (task.status === 'planning' || task.status === 'todo')
   if (!available) return null
   return (
-    <div className={styles.blockRow}>
-      <Button
+    <>
+      <button
         type="button"
+        role="menuitem"
+        className={styles.moreMenuItem}
         disabled={send.isPending}
         onClick={() => send.mutate(undefined, { onSuccess: () => onSent() })}
       >
         {panelCopy.backlogSendBack}
-      </Button>
+      </button>
       {send.isError ? (
-        <p role="alert" className={styles.blockError}>
+        <p role="alert" className={styles.errorNote} style={{ padding: '0 10px 6px' }}>
           {refusalMessage(send.error, panelCopy.backlogSendBackError)}
         </p>
       ) : null}
-    </div>
+    </>
   )
 }

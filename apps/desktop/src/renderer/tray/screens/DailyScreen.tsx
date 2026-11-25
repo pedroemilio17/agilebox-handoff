@@ -1,102 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DailyAnswersDto } from '@agilebox/contract'
-import { Button, ChecklistConfirm, StepIndicator, TextArea } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { useActor } from '../../shared/session/useActor'
+import { isArchivedTask } from '../../shared/lib/task-signals'
 import { queryKeys } from '../../shared/query/keys'
-import { useDailyToday } from '../use-daily-today'
-import { useDailySuggestion } from '../use-daily-suggestion'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
-import { DailySuggestionPanel } from './DailySuggestionPanel'
-import { DailyImpedimentsPanel } from './DailyImpedimentsPanel'
-import {
-  DAILY_ANSWER_LIMIT,
-  EMPTY_DAILY_ANSWERS,
-  answerLength,
-  hasDailyText,
-  validateDailyDraft,
-} from '../daily/daily-rules'
+import { useDailyToday } from '../use-daily-today'
+import { DAILY_ANSWER_LIMIT, answerLength } from '../daily/daily-rules'
 import { trayCopy } from '../copy'
-import trayStyles from '../Tray.module.css'
-import styles from './Daily.module.css'
+import { logActorHours } from '../log-hours'
+import { BackButton, OpenPanelButton, TrayHeader } from '../TrayHeader'
+import styles from '../Tray.module.css'
 
-type AnswerKey = keyof DailyAnswersDto
-type DailyStep = 1 | 2 | 3 | 'review'
-
-/** Cada passo de resposta grava um campo da daily. */
-const ANSWER_BY_STEP: Record<1 | 2 | 3, AnswerKey> = { 1: 'progress', 2: 'nextStep', 3: 'blocker' }
+type DailyStep = 1 | 2 | 3
 
 export interface DailyScreenProps {
   readonly onSaved: () => void
-  /** Sai da tela sem salvar. */
-  readonly onExit: () => void
-  /** A tela registra aqui a ação de sair (Voltar e Esc), que pede confirmação se houver texto. */
-  readonly exitRef: { current: (() => void) | null }
+  /** Sai sem salvar (← Voltar). */
+  readonly onBack: () => void
 }
 
-interface AnswerFieldProps {
-  readonly id: string
-  readonly label: string
-  readonly placeholder: string
-  readonly value: string
-  readonly disabled: boolean
-  readonly onChange: (value: string) => void
-  readonly onAdvance: () => void
+function formatStep(hours: number): string {
+  return `${hours.toFixed(1).replace('.', ',')}h`
 }
 
-/** Campo de resposta com contador. Sem limite no campo: o limite bloqueia ao avançar, sem perder o texto. */
-function AnswerField({
-  id,
-  label,
-  placeholder,
-  value,
-  disabled,
-  onChange,
-  onAdvance,
-}: AnswerFieldProps) {
-  const length = answerLength(value)
-  const over = length > DAILY_ANSWER_LIMIT
-  const hintId = `${id}-hint`
-  const countId = `${id}-count`
-  return (
-    <div className={styles.field}>
-      <TextArea
-        id={id}
-        label={label}
-        placeholder={placeholder}
-        rows={4}
-        value={value}
-        disabled={disabled}
-        aria-describedby={`${hintId} ${countId}`}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          // Enter quebra linha; Ctrl+Enter (ou Cmd+Enter) avança.
-          if (
-            event.key !== 'Enter' ||
-            !(event.ctrlKey || event.metaKey) ||
-            event.nativeEvent.isComposing
-          )
-            return
-          event.preventDefault()
-          onAdvance()
-        }}
-      />
-      <div className={styles.counterRow}>
-        <span id={hintId}>{trayCopy.dailyShortcut}</span>
-        <span id={countId} className={over ? styles.counterOver : undefined}>
-          {`${length}/${DAILY_ANSWER_LIMIT}`}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-/** Daily de hoje em 3 passos (progresso, próximo passo, bloqueio) e resumo antes de concluir. */
-export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
+/**
+ * Atualização do dia em 3 passos (screen-daily): 1) tarefas trabalhadas, 2) horas por tarefa,
+ * 3) bloqueio e foco de amanhã. Grava a mesma daily de sempre (progresso, próximo passo, bloqueio);
+ * as horas entram nas tarefas pelo mesmo caminho do "Lançar horas".
+ */
+export function DailyScreen({ onSaved, onBack }: DailyScreenProps) {
   const api = useApi()
   const actor = useActor()
   const queryClient = useQueryClient()
+  const capabilities = useCapabilities()
   const daily = useDailyToday()
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(undefined, actor.actor?.userId),
@@ -106,23 +44,15 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
   })
   const [loaded, setLoaded] = useState(false)
   const [step, setStep] = useState<DailyStep>(1)
-  const [answers, setAnswers] = useState<DailyAnswersDto>(EMPTY_DAILY_ANSWERS)
-  const [taskRefs, setTaskRefs] = useState<string[]>([])
-  const [noNews, setNoNews] = useState(false)
+  const [checkedIds, setCheckedIds] = useState<string[]>([])
+  const [hoursMap, setHoursMap] = useState<Record<string, number>>({})
+  const [blockerText, setBlockerText] = useState('')
+  const [tomorrowFocus, setTomorrowFocus] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [discardOpen, setDiscardOpen] = useState(false)
-  const [suggestionHidden, setSuggestionHidden] = useState(false)
-  const [suggestionUsed, setSuggestionUsed] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const discardRef = useRef<HTMLDivElement>(null)
+  const hoursLogged = useRef(new Set<string>())
 
-  // Sugestão do check-in: só com a ferramenta de check-ins ativa, e só depois de saber a data.
-  const capabilities = useCapabilities()
-  const suggestionAllowed = capabilities.canFetch('checkins:screen')
   const creatingBlocked = capabilities.isWindingDown('checkins') && daily.data?.entry === null
-  const suggestion = useDailySuggestion(daily.data?.date ?? '', suggestionAllowed && loaded)
-  // Impedimentos abertos da pessoa (passo 3): só com o módulo ativo; sem ele, nada é pedido.
-  const impedimentsAllowed = capabilities.canFetch('impediments:passive')
 
   // Uma vez: preenche com a daily de hoje, se já existir, para editar.
   useEffect(() => {
@@ -130,380 +60,292 @@ export function DailyScreen({ onSaved, onExit, exitRef }: DailyScreenProps) {
     setLoaded(true)
     const entry = daily.data.entry
     if (entry) {
-      setAnswers(entry.answers)
-      setTaskRefs(entry.taskRefs)
-      setNoNews(entry.noNews)
+      setCheckedIds(entry.taskRefs)
+      setBlockerText(entry.answers.blocker)
+      setTomorrowFocus(entry.answers.nextStep)
     }
   }, [daily.data, loaded])
 
-  const save = useMutation({
-    mutationFn: (draft: {
-      date: string
-      answers: DailyAnswersDto
-      noNews: boolean
-      taskRefs: string[]
-    }) =>
-      api.daily.save({
-        date: draft.date,
-        answers: draft.answers,
-        noNews: draft.noNews,
-        taskRefs: draft.taskRefs,
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.daily.all })
-      onSaved()
-    },
-  })
-
-  // Foco no título do passo ao abrir e a cada troca de passo.
   useEffect(() => {
     if (loaded) headingRef.current?.focus()
   }, [loaded, step])
 
-  useEffect(() => {
-    if (discardOpen) discardRef.current?.focus()
-  }, [discardOpen])
+  const availableTasks = (tasks.data?.tasks ?? []).filter((task) => !isArchivedTask(task))
 
-  const dirty = hasDailyText(answers)
-  const requestExit = () => {
-    if (dirty) setDiscardOpen(true)
-    else onExit()
-  }
-
-  useEffect(() => {
-    exitRef.current = requestExit
-  })
-  useEffect(
-    () => () => {
-      exitRef.current = null
-    },
-    [exitRef],
-  )
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.isComposing) return
-      event.preventDefault()
-      if (discardOpen) {
-        setDiscardOpen(false)
-        return
+  const save = useMutation({
+    mutationFn: async (draft: {
+      date: string
+      answers: DailyAnswersDto
+      noNews: boolean
+      taskRefs: string[]
+    }) => {
+      await api.daily.save(draft)
+      const userId = actor.actor?.userId
+      if (!userId) return
+      for (const taskId of draft.taskRefs) {
+        const hours = hoursMap[taskId] ?? 0
+        if (hours <= 0 || hoursLogged.current.has(taskId)) continue
+        await logActorHours(api, { taskId, userId, hours })
+        hoursLogged.current.add(taskId)
       }
-      requestExit()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.daily.all })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      onSaved()
+    },
+    onError: () => setFeedback(trayCopy.dailySaveError),
   })
+
+  const header = (
+    <TrayHeader
+      left={
+        <>
+          <BackButton onClick={onBack} />
+          <h1 className={styles.headerTitle}>{trayCopy.dailyTitle}</h1>
+        </>
+      }
+      actions={
+        <>
+          <span className={styles.dailyStepBadge}>{trayCopy.dailyStepOfThree(step)}</span>
+          <OpenPanelButton />
+        </>
+      }
+    />
+  )
 
   if (daily.isError || (!daily.isPending && !daily.data)) {
     return (
-      <div className={trayStyles.screenBody}>
-        <p role="alert">{trayCopy.dailyLoadError}</p>
-      </div>
+      <>
+        {header}
+        <p role="alert" className={styles.errorText}>
+          {trayCopy.dailyLoadError}
+        </p>
+      </>
     )
   }
   if (!loaded || !daily.data) {
     return (
-      <div className={trayStyles.screenBody}>
-        <p role="status">{trayCopy.dailyLoading}</p>
-      </div>
+      <>
+        {header}
+        <p role="status" className={styles.mutedLine}>
+          {trayCopy.dailyLoading}
+        </p>
+      </>
     )
   }
 
   const date = daily.data.date
-  const editing = daily.data.entry !== null
-  const taskItems = (tasks.data?.tasks ?? []).map((task) => ({
-    id: task.id,
-    title: `${task.key} · ${task.title}`,
-  }))
-  const checkedTasks = new Set(taskRefs)
+  const selected = availableTasks.filter((task) => checkedIds.includes(task.id))
 
-  const updateAnswer = (key: AnswerKey, value: string) => {
-    setAnswers((current) => ({ ...current, [key]: value }))
-    // Escrever texto tira a marca de "Sem novidades"; a daily vale pelo texto.
-    setNoNews(false)
-    setFeedback(null)
-  }
-
-  const toggleTask = (id: string, checked: boolean) => {
-    setTaskRefs((current) => {
-      if (checked) return current.includes(id) ? current : [...current, id]
-      return current.filter((item) => item !== id)
-    })
-  }
-
-  const finish = () => {
+  const finish = (noNews: boolean) => {
     if (save.isPending) return
-    const problem = validateDailyDraft(answers, noNews)
-    if (problem) {
-      setFeedback(problem)
+    if (creatingBlocked) {
+      setFeedback(trayCopy.dailyWindingDown)
       return
     }
-    setFeedback(null)
-    save.mutate({ date, answers, noNews, taskRefs })
-  }
-
-  const goNext = () => {
-    if (step === 'review') {
-      finish()
-      return
-    }
-    if (answerLength(answers[ANSWER_BY_STEP[step]]) > DAILY_ANSWER_LIMIT) {
+    const blocker = blockerText.trim()
+    const nextStep = tomorrowFocus.trim()
+    if (answerLength(blocker) > DAILY_ANSWER_LIMIT || answerLength(nextStep) > DAILY_ANSWER_LIMIT) {
       setFeedback(trayCopy.dailyTooLong)
       return
     }
+    const progress = noNews
+      ? ''
+      : Array.from(
+          selected.length > 0
+            ? trayCopy.dailyProgressSummary(
+                selected.map((task) => `${task.key} · ${task.title}`).join('; '),
+              )
+            : '',
+        )
+          .slice(0, DAILY_ANSWER_LIMIT)
+          .join('')
+    const empty = progress === '' && blocker === '' && nextStep === ''
     setFeedback(null)
-    setStep(step === 1 ? 2 : step === 2 ? 3 : 'review')
-  }
-
-  const markNoNews = () => {
-    if (save.isPending) return
-    if (hasDailyText(answers)) {
-      setFeedback(trayCopy.dailyNoNewsBlocked)
-      return
-    }
-    setFeedback(null)
-    save.mutate({ date, answers, noNews: true, taskRefs })
-  }
-
-  // Usar a sugestão só escreve no campo de avanço, que a pessoa edita. Não grava a daily.
-  // Usar um impedimento só escreve no campo de bloqueio, que a pessoa edita. Não grava a daily.
-  const useImpediment = (text: string) => {
-    setAnswers((current) => {
-      if (current.blocker.includes(text)) return current
-      const blocker = current.blocker.trim() === '' ? text : `${current.blocker.trimEnd()}\n${text}`
-      return { ...current, blocker }
+    save.mutate({
+      date,
+      answers: noNews
+        ? { progress: '', nextStep: '', blocker: '' }
+        : { progress, nextStep, blocker },
+      noNews: noNews || empty,
+      taskRefs: noNews ? [] : checkedIds.filter((id) => selected.some((task) => task.id === id)),
     })
-    setNoNews(false)
+  }
+
+  const goBackStep = () => {
     setFeedback(null)
-    document.getElementById('daily-blocker')?.focus()
+    setStep((current) => (current === 3 ? 2 : 1))
   }
 
-  const useSuggestion = () => {
-    const lines = suggestion.data?.advanced ?? []
-    if (lines.length === 0) return
-    const text = lines.join('\n')
-    setAnswers((current) => {
-      if (current.progress.includes(text)) return current
-      const progress =
-        current.progress.trim() === '' ? text : `${current.progress.trimEnd()}\n${text}`
-      return { ...current, progress }
-    })
-    setNoNews(false)
-    setFeedback(null)
-    setSuggestionUsed(true)
-    document.getElementById('daily-progress')?.focus()
-  }
-
-  const ignoreSuggestion = () => {
-    setSuggestionHidden(true)
-    setSuggestionUsed(false)
-    document.getElementById('daily-progress')?.focus()
-  }
-
-  // Encerrando, criar a daily do dia é recusado; a que já existe segue editável (PLANO-2.0, regra 4).
-  let fallbackMessage: string | null = null
-  if (creatingBlocked) fallbackMessage = trayCopy.dailyWindingDown
-  else if (save.isError) fallbackMessage = trayCopy.dailySaveError
-  const message = feedback ?? fallbackMessage
-  const stepNumber = step === 'review' ? 3 : step
-  const busy = save.isPending || creatingBlocked
-  const citedTitles = taskRefs
-    .map((id) => taskItems.find((item) => item.id === id)?.title)
-    .filter((title): title is string => title !== undefined)
+  const bumpHours = (taskId: string, delta: number) =>
+    setHoursMap((current) => ({
+      ...current,
+      [taskId]: Math.max(0, (current[taskId] ?? 0) + delta),
+    }))
 
   return (
-    <form
-      className={trayStyles.screenBody}
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        goNext()
-      }}
-    >
-      <h2 className={styles.dailyTitle}>
-        {editing ? trayCopy.dailyEditTitle : trayCopy.dailyTitle}
-      </h2>
-      <StepIndicator current={stepNumber} total={3} />
-
-      {step === 1 ? (
-        <>
-          <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
-            {trayCopy.dailyStep1Title}
-          </h3>
-          <p className={styles.stepHint}>{trayCopy.dailyStep1Hint}</p>
-          {noNews ? <p className={styles.notice}>{trayCopy.dailyNoNewsMarked}</p> : null}
-          {tasks.isPending ? (
-            <p role="status" className={styles.stepHint}>
-              {trayCopy.dailyTasksLoading}
-            </p>
-          ) : tasks.isError ? (
-            <p role="alert" className={styles.stepHint}>
-              {trayCopy.dailyTasksError}
-            </p>
-          ) : taskItems.length === 0 ? (
-            <p className={styles.stepHint}>{trayCopy.dailyNoTasks}</p>
-          ) : (
-            <ChecklistConfirm
-              label={trayCopy.dailyTasksLabel}
-              items={taskItems}
-              checkedIds={checkedTasks}
-              onToggle={toggleTask}
-              disabled={busy}
-            />
-          )}
-          {suggestionAllowed && !suggestionHidden ? (
-            <DailySuggestionPanel
-              status={suggestion.isError ? 'error' : suggestion.isPending ? 'loading' : 'ready'}
-              suggestion={suggestion.data}
-              usedNotice={suggestionUsed}
-              onUse={useSuggestion}
-              onIgnore={ignoreSuggestion}
-            />
-          ) : null}
-          <AnswerField
-            id="daily-progress"
-            label={trayCopy.dailyProgressLabel}
-            placeholder={trayCopy.dailyProgressPlaceholder}
-            value={answers.progress}
-            disabled={busy}
-            onChange={(value) => updateAnswer('progress', value)}
-            onAdvance={goNext}
-          />
-        </>
-      ) : null}
-
-      {step === 2 ? (
-        <>
-          <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
-            {trayCopy.dailyStep2Title}
-          </h3>
-          <AnswerField
-            id="daily-next"
-            label={trayCopy.dailyNextLabel}
-            placeholder={trayCopy.dailyNextPlaceholder}
-            value={answers.nextStep}
-            disabled={busy}
-            onChange={(value) => updateAnswer('nextStep', value)}
-            onAdvance={goNext}
-          />
-        </>
-      ) : null}
-
-      {step === 3 ? (
-        <>
-          <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
-            {trayCopy.dailyStep3Title}
-          </h3>
-          {impedimentsAllowed ? (
-            <DailyImpedimentsPanel
-              userId={actor.actor?.userId}
-              disabled={busy}
-              onUse={useImpediment}
-            />
-          ) : null}
-          <AnswerField
-            id="daily-blocker"
-            label={trayCopy.dailyBlockerLabel}
-            placeholder={trayCopy.dailyBlockerPlaceholder}
-            value={answers.blocker}
-            disabled={busy}
-            onChange={(value) => updateAnswer('blocker', value)}
-            onAdvance={goNext}
-          />
-        </>
-      ) : null}
-
-      {step === 'review' ? (
-        <>
-          <h3 ref={headingRef} tabIndex={-1} className={styles.stepTitle}>
-            {trayCopy.dailyReviewTitle}
-          </h3>
-          {noNews ? (
-            <p className={styles.notice}>{trayCopy.dailySummaryNoNews}</p>
-          ) : (
-            <dl className={styles.summary}>
-              <div>
-                <dt>{trayCopy.dailySummaryProgress}</dt>
-                <dd>{answers.progress.trim() || trayCopy.dailySummaryNone}</dd>
-              </div>
-              <div>
-                <dt>{trayCopy.dailySummaryNext}</dt>
-                <dd>{answers.nextStep.trim() || trayCopy.dailySummaryNone}</dd>
-              </div>
-              <div>
-                <dt>{trayCopy.dailySummaryBlocker}</dt>
-                <dd>{answers.blocker.trim() || trayCopy.dailySummaryNone}</dd>
-              </div>
-              <div>
-                <dt>{trayCopy.dailySummaryTasks}</dt>
-                <dd>
-                  {citedTitles.length > 0 ? citedTitles.join('\n') : trayCopy.dailySummaryNoTasks}
-                </dd>
-              </div>
-            </dl>
-          )}
-        </>
-      ) : null}
-
-      <div aria-live="polite" className={styles.feedback}>
-        {message}
+    <>
+      {header}
+      <div
+        className={styles.dailyProgress}
+        role="progressbar"
+        aria-label={trayCopy.dailyProgressAria}
+        aria-valuemin={0}
+        aria-valuemax={3}
+        aria-valuenow={step}
+      >
+        <div
+          className={styles.dailyProgressFill}
+          style={{ width: `${step === 1 ? 33 : step === 2 ? 66 : 100}%` }}
+        />
       </div>
 
-      {discardOpen ? (
-        <div
-          ref={discardRef}
-          tabIndex={-1}
-          role="group"
-          aria-label={trayCopy.dailyDiscardQuestion}
-          className={styles.discard}
+      <div className={`${styles.body} ${styles.dailyBody}`}>
+        {step === 1 ? (
+          <>
+            <div className={styles.dailyStepHead}>
+              <h2 ref={headingRef} tabIndex={-1} className={styles.dailyStepTitle}>
+                {trayCopy.dailyHeadStep1}
+              </h2>
+              <p className={styles.dailyStepSub}>{trayCopy.dailyHeadStep1Sub}</p>
+            </div>
+            {availableTasks.length === 0 ? (
+              <div className={styles.dailyEmpty}>{trayCopy.dailyNoTasks}</div>
+            ) : (
+              availableTasks.map((task) => (
+                <label key={task.id} className={styles.dailyCheckRow}>
+                  <input
+                    type="checkbox"
+                    checked={checkedIds.includes(task.id)}
+                    onChange={(event) => {
+                      const checked = event.currentTarget.checked
+                      setCheckedIds((current) =>
+                        checked
+                          ? current.includes(task.id)
+                            ? current
+                            : [...current, task.id]
+                          : current.filter((id) => id !== task.id),
+                      )
+                    }}
+                  />
+                  <span className={styles.dailyCheckText}>
+                    <strong>{task.key}</strong> · {task.title}
+                  </span>
+                </label>
+              ))
+            )}
+          </>
+        ) : step === 2 ? (
+          <>
+            <div className={styles.dailyStepHead}>
+              <h2 ref={headingRef} tabIndex={-1} className={styles.dailyStepTitle}>
+                {trayCopy.dailyHeadStep2}
+              </h2>
+              <p className={styles.dailyStepSub}>{trayCopy.dailyHeadStep2Sub}</p>
+            </div>
+            {selected.length === 0 ? (
+              <div className={styles.dailyEmpty}>{trayCopy.dailyStep2Empty}</div>
+            ) : (
+              selected.map((task) => {
+                const hours = hoursMap[task.id] ?? 0
+                return (
+                  <div key={task.id} className={styles.dailyHourRow}>
+                    <div className={styles.dailyHourInfo}>
+                      <div className={styles.dailyHourKey}>{task.key}</div>
+                      <div className={styles.dailyHourTitle}>{task.title}</div>
+                    </div>
+                    <div className={styles.stepper}>
+                      <button
+                        type="button"
+                        className={styles.stepBtn}
+                        aria-label={`Menos 0,5 hora em ${task.key}`}
+                        onClick={() => bumpHours(task.id, -0.5)}
+                      >
+                        −0,5
+                      </button>
+                      <span className={styles.stepValue}>{formatStep(hours)}</span>
+                      <button
+                        type="button"
+                        className={styles.stepBtn}
+                        aria-label={`Mais 0,5 hora em ${task.key}`}
+                        onClick={() => bumpHours(task.id, 0.5)}
+                      >
+                        +0,5
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </>
+        ) : (
+          <>
+            <div className={styles.dailyStepHead}>
+              <h2 ref={headingRef} tabIndex={-1} className={styles.dailyStepTitle}>
+                {trayCopy.dailyHeadStep3}
+              </h2>
+              <p className={styles.dailyStepSub}>{trayCopy.dailyHeadStep3Sub}</p>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="daily-blocker-inp">
+                {trayCopy.dailyBlockerFieldLabel}
+              </label>
+              <textarea
+                id="daily-blocker-inp"
+                className={`${styles.textarea} ${styles.dailyTextarea}`}
+                rows={2}
+                placeholder={trayCopy.dailyBlockerFieldPlaceholder}
+                value={blockerText}
+                onChange={(event) => setBlockerText(event.currentTarget.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="daily-tomorrow-inp">
+                {trayCopy.dailyTomorrowLabel}
+              </label>
+              <input
+                id="daily-tomorrow-inp"
+                type="text"
+                className={styles.input}
+                placeholder={trayCopy.dailyTomorrowPlaceholder}
+                value={tomorrowFocus}
+                onChange={(event) => setTomorrowFocus(event.currentTarget.value)}
+              />
+            </div>
+          </>
+        )}
+        {feedback ? (
+          <p role="alert" className={styles.errorText}>
+            {feedback}
+          </p>
+        ) : null}
+      </div>
+
+      <footer className={styles.fixedFooter}>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnSecondary}`}
+          disabled={save.isPending}
+          onClick={step === 1 ? () => finish(true) : goBackStep}
         >
-          <p>{trayCopy.dailyDiscardQuestion}</p>
-          <div className={styles.discardActions}>
-            <Button type="button" onClick={() => setDiscardOpen(false)}>
-              {trayCopy.dailyKeepWriting}
-            </Button>
-            <Button type="button" onClick={onExit}>
-              {trayCopy.dailyDiscard}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {step === 1 ? (
-        <div className={styles.footerRow}>
-          <Button type="button" onClick={markNoNews} disabled={busy}>
-            {trayCopy.dailyNoNews}
-          </Button>
-          <span className={styles.spacer} />
-          <Button type="submit" variant="primary" disabled={busy}>
-            {trayCopy.dailyNext}
-          </Button>
-        </div>
-      ) : null}
-
-      {step === 2 || step === 3 ? (
-        <div className={styles.footerRow}>
-          <Button type="button" onClick={() => setStep(step === 2 ? 1 : 2)} disabled={busy}>
-            {trayCopy.dailyBack}
-          </Button>
-          <span className={styles.spacer} />
-          <Button type="submit" variant="primary" disabled={busy}>
-            {trayCopy.dailyNext}
-          </Button>
-        </div>
-      ) : null}
-
-      {step === 'review' ? (
-        <div className={styles.footerRow}>
-          <Button type="button" onClick={() => setStep(3)} disabled={busy}>
-            {trayCopy.dailyBack}
-          </Button>
-          <span className={styles.spacer} />
-          <Button type="submit" variant="primary" disabled={busy}>
-            {busy ? trayCopy.dailySaving : trayCopy.dailyFinish}
-          </Button>
-        </div>
-      ) : null}
-    </form>
+          {step === 1 ? trayCopy.dailyNoNewsButton : trayCopy.dailyBackButton}
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnPrimary}`}
+          disabled={save.isPending}
+          onClick={() => {
+            if (step === 3) finish(false)
+            else {
+              setFeedback(null)
+              setStep(step === 1 ? 2 : 3)
+            }
+          }}
+        >
+          {step === 3 ? trayCopy.dailyFinishButton : trayCopy.dailyNextButton}
+        </button>
+      </footer>
+    </>
   )
 }

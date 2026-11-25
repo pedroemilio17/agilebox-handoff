@@ -148,7 +148,8 @@ describe('Prioridade no quadro', () => {
       ],
     })
 
-    expect(screen.getByText('Alta')).toBeTruthy()
+    // O sinal Alta existe uma vez no card (a pílula "Alta" da faixa de controles é botão).
+    expect(screen.getAllByText('Alta').filter((el) => el.tagName === 'SPAN')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'AB-118 · Urgente · Prioridade alta' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'AB-119 · Normal' })).toBeTruthy()
   })
@@ -162,7 +163,7 @@ describe('Prioridade no quadro', () => {
       ],
     })
 
-    const chip = screen.getByRole('button', { name: 'Prioridade alta · 1' })
+    const chip = screen.getByRole('button', { name: 'Alta' })
     expect(chip.getAttribute('aria-pressed')).toBe('false')
     await user.click(chip)
     expect(chip.getAttribute('aria-pressed')).toBe('true')
@@ -217,11 +218,10 @@ describe('Bloqueio no quadro', () => {
       ],
     })
 
-    expect(screen.getByRole('button', { name: 'Paradas · 1' })).toBeTruthy()
     expect(screen.queryByText('parada 6d')).toBeNull()
     expect(screen.getByText('parada 5d')).toBeTruthy()
 
-    const blocked = screen.getByRole('button', { name: 'Bloqueadas · 1' })
+    const blocked = screen.getByRole('button', { name: 'Bloqueadas' })
     await user.click(blocked)
     expect(blocked.getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByText(/^1 tarefa ·/)).toBeTruthy()
@@ -246,7 +246,7 @@ describe('Progresso das subtarefas no card', () => {
         }),
       ],
     })
-    expect(screen.getByText('2/5')).toBeTruthy()
+    expect(screen.getByText('☑ 2/5')).toBeTruthy()
     expect(
       screen.getByRole('button', {
         name: /Revisar integração, 2 de 5 subtarefas concluídas/,
@@ -266,7 +266,8 @@ describe('Contador de comentários no card', () => {
     renderBoard({
       tasks: [makeTask({ title: 'Revisar integração', commentCount: 3 })],
     })
-    expect(screen.getByRole('img', { name: '3 comentários' }).textContent).toBe('3')
+    // O design não mostra o balão no card: a contagem fica só no nome acessível.
+    expect(screen.queryByRole('img', { name: '3 comentários' })).toBeNull()
     expect(
       screen.getByRole('button', { name: 'AB-118 · Revisar integração, 3 comentários' }),
     ).toBeTruthy()

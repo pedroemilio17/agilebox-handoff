@@ -356,6 +356,8 @@ function PanelContent({
       setActiveTaskId(null)
       setTaskFullScreen(false)
     }
+    // Novo projeto é uma página: qualquer navegação pela casca a fecha.
+    setNewProjectOpen(false)
     setView(nextView)
   }
 
@@ -516,7 +518,7 @@ function PanelContent({
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
           ) : null
         }
-        view={currentView}
+        view={newProjectOpen ? 'projects' : currentView}
         onViewChange={(next) => navigate(next)}
         canGoBack={navHistory.length > 0 || (activeTaskId !== null && taskFullScreen)}
         onBack={goBack}
@@ -773,7 +775,21 @@ function PanelContent({
           setNewTaskDialogOpen(true)
         }}
       >
-        {currentView === 'projects' ? (
+        {newProjectOpen ? (
+          <NewProjectFlow
+            submitting={createProject.isPending}
+            error={
+              createProject.isError
+                ? refusalMessage(createProject.error, panelCopy.createProjectError)
+                : null
+            }
+            onCancel={() => {
+              createProject.reset()
+              setNewProjectOpen(false)
+            }}
+            onCreate={createProjectFromWizard}
+          />
+        ) : currentView === 'projects' ? (
           <>
             {projects.isError ? <p role="alert">{panelCopy.projectsError}</p> : null}
             {activeTaskId && taskFullScreen ? (
@@ -861,21 +877,6 @@ function PanelContent({
           if (currentView !== 'projects') navigate('projects')
         }}
       />
-      {newProjectOpen ? (
-        <NewProjectFlow
-          submitting={createProject.isPending}
-          error={
-            createProject.isError
-              ? refusalMessage(createProject.error, panelCopy.createProjectError)
-              : null
-          }
-          onCancel={() => {
-            createProject.reset()
-            setNewProjectOpen(false)
-          }}
-          onCreate={createProjectFromWizard}
-        />
-      ) : null}
       {notice ? <Toast key={notice.id} message={notice.message} tone={notice.tone} /> : null}
       {definitionGate.dialog}
       {commandsOpen && (

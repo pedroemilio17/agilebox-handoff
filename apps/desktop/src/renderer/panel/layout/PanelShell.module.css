@@ -52,7 +52,7 @@
 .expanded {
   flex-basis: 232px;
   width: 232px;
-  padding: 12px 10px 8px;
+  padding: 10px 10px 8px;
 }
 
 .railHeader {
@@ -127,39 +127,6 @@
   color: var(--color-text-primary);
 }
 
-/* Buscar ou criar: campo com a dica Ctrl K. */
-.search {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-  box-sizing: border-box;
-  width: 100%;
-  height: 34px;
-  margin-bottom: 6px;
-  padding: 0 9px;
-  border: 1px solid var(--color-hairline);
-  border-radius: 9px;
-  background: var(--surface-panel);
-  color: var(--color-text-placeholder);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.search .railLabel {
-  flex: 1;
-}
-
-.expanded .search .railLabel {
-  margin-left: 0;
-}
-
-.kbd {
-  font-family: var(--font-family-mono);
-  font-size: 10.5px;
-}
-
 .railItem {
   position: relative;
   display: flex;
@@ -201,7 +168,8 @@
 
 .railItem:focus-visible,
 .expand:focus-visible,
-.search:focus-visible,
+.searchTrigger:focus-visible,
+.newTask:focus-visible,
 .sectionAddBtn:focus-visible,
 .backButton:focus-visible {
   outline: 2px solid var(--color-focus-ring);
@@ -210,6 +178,7 @@
 
 .navItem {
   gap: 9px;
+  height: 28px;
 }
 
 .selected {
@@ -239,16 +208,8 @@
 }
 
 .expanded .navItem .railLabel,
-.expanded .subItem .railLabel,
-.expanded .search .railLabel {
+.expanded .subItem .railLabel {
   margin-left: 0;
-}
-
-.topGroup {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 1px;
 }
 
 /* Área rolável da árvore de projetos. */
@@ -256,7 +217,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -265,7 +226,7 @@
 /* Rótulos de seção: mono, caixa alta, cor sutil. */
 .sectionLabel {
   display: block;
-  padding: 10px 8px 3px;
+  padding: 8px 8px 2px;
   font-family: var(--font-family-mono);
   font-size: 10px;
   font-weight: 500;
@@ -275,12 +236,16 @@
   white-space: nowrap;
 }
 
+.sectionLabelFirst {
+  padding-top: 2px;
+}
+
 .sectionHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 10px 4px 3px 8px;
+  padding: 10px 4px 4px 8px;
 }
 
 .sectionHead .sectionLabel {
@@ -322,7 +287,8 @@
 }
 
 .projectToggle {
-  padding-right: 6px;
+  height: 30px;
+  padding-right: 8px;
 }
 
 .projectGroupCurrent > .projectToggle,
@@ -360,7 +326,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin: 2px 0 6px 14px;
+  margin: 2px 0 6px 16px;
   padding-left: 10px;
   border-left: 1px solid var(--color-hairline-strong);
 }
@@ -390,14 +356,8 @@
 /* Recolhida: só ícones e quadradinhos, centralizados; o texto some. */
 .rail:not(.expanded) .railItem {
   justify-content: center;
-  height: 34px;
   padding: 0;
   gap: 0;
-}
-
-.rail:not(.expanded) .search {
-  justify-content: center;
-  padding: 0;
 }
 
 .rail:not(.expanded) .sectionHead {
@@ -410,7 +370,6 @@
 .rail:not(.expanded) .methodology,
 .rail:not(.expanded) .archivedLabel,
 .rail:not(.expanded) .projectChevron,
-.rail:not(.expanded) .kbd,
 .rail:not(.expanded) .archivedToggle {
   display: none;
 }
@@ -510,17 +469,68 @@
 
 .account {
   height: auto;
-  margin-top: 6px;
-  padding: 8px 6px;
-  gap: 10px;
-  border-top: 1px solid var(--color-rail-border);
-  border-radius: 8px;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 5px 6px;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--color-tint-faint);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.account:hover:not(:disabled) {
+  border-color: var(--color-hairline);
+}
+
+/* Nome e perfil em duas linhas, com a seta à direita (account pill do design). */
+.account .railLabel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 0;
+  color: var(--color-text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.expanded .account .railLabel {
+  max-width: none;
+}
+
+.account .railLabel > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account .railLabel small {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.account::after {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color-text-subtle);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
 .rail:not(.expanded) .account {
   justify-content: center;
   height: auto;
-  padding: 10px 0;
+  padding: 5px 0;
+}
+
+.rail:not(.expanded) .account::after {
+  display: none;
 }
 
 .avatar {
@@ -545,17 +555,18 @@
   background: var(--surface-canvas);
 }
 
-/* TitleBar compacta (52px) com botão Voltar e breadcrumb. */
+/* TitleBar compacta (42px, igual a .ab-titlebar do design) com botão Voltar e breadcrumb. */
 .titleBar {
   display: flex;
-  flex: 0 0 52px;
+  flex: 0 0 42px;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: 10px;
   box-sizing: border-box;
-  height: 52px;
-  padding: 0 var(--space-3) 0 var(--space-4);
+  height: 42px;
+  padding: 0 10px 0 14px;
   border-bottom: 1px solid var(--color-hairline);
+  background: rgba(17, 16, 21, 0.78);
   -webkit-app-region: drag;
 }
 
@@ -564,11 +575,17 @@
   -webkit-app-region: no-drag;
 }
 
-.titleGroup,
-.titleActions {
+.titleGroup {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
+}
+
+.titleActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
 }
 
 .titleGroup {
@@ -610,57 +627,108 @@
   gap: 6px;
   min-width: 0;
   overflow: hidden;
+  color: var(--color-text-subtle);
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
 .breadcrumbProject {
   overflow: hidden;
-  font-size: 13px;
-  color: var(--color-text-subtle);
   text-overflow: ellipsis;
 }
 
 .breadcrumbSep {
-  font-size: 13px;
-  color: var(--color-text-subtle);
   opacity: 0.5;
 }
 
+/* O h1 da barra segue o "breadcrumb-page" do design: texto pequeno, não um título de página. */
 .title {
   margin: 0;
   overflow: hidden;
-  font-family: var(--font-family-display);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font: inherit;
+  font-weight: 500;
   color: var(--color-text-primary);
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.segmented {
-  min-width: 144px;
+/* Gatilho de busca / comandos / ajuda (Ctrl+K). */
+.searchTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  background: var(--surface-panel);
+  color: var(--color-text-placeholder);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.searchTrigger:hover {
+  background: var(--surface-raised);
+  color: var(--color-text-primary);
+  border-color: var(--color-hairline-strong);
+}
+
+.searchLabelShort {
+  display: none;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 5px;
+  background: var(--color-tint-chip);
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 10.5px;
+}
+
+/* "? Ajuda F1": só visual até a ajuda existir no painel. */
+.helpPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .newTask {
   display: inline-flex;
   flex: none;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--color-primary-border);
-  border-radius: var(--radius-button);
-  background: var(--color-primary-bg);
-  color: var(--color-on-primary);
-  font-size: var(--font-size-small);
-  font-weight: 600;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 8px;
+  background: var(--surface-panel);
+  color: var(--color-text-primary);
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
 }
 
 .newTask:hover:not(:disabled) {
-  background: var(--color-primary-bg-hover);
+  background: var(--surface-raised);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .newTask:disabled {
@@ -672,9 +740,11 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-4);
+  min-width: 0;
   min-height: 0;
-  padding: var(--space-3) var(--space-6) var(--space-6);
+  padding: 18px 24px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
   animation: viewEnter var(--motion-duration-view) var(--ease-ios) backwards;
 }
 
@@ -722,14 +792,8 @@
 
   .rail .railItem {
     justify-content: center;
-    height: 34px;
     padding: 0;
     gap: 0;
-  }
-
-  .rail .search {
-    justify-content: center;
-    padding: 0;
   }
 
   .rail .brand,
@@ -741,8 +805,8 @@
   .methodology,
   .archivedLabel,
   .projectChevron,
-  .kbd,
-  .archivedToggle {
+  .archivedToggle,
+  .account::after {
     display: none;
   }
 
@@ -755,9 +819,17 @@
   .subIcon {
     display: block;
   }
+}
 
-  .segmented {
-    min-width: 144px;
+@media (max-width: 1080px) {
+  .searchLabelFull,
+  .breadcrumbProject,
+  .breadcrumbSep {
+    display: none;
+  }
+
+  .searchLabelShort {
+    display: inline;
   }
 }
 

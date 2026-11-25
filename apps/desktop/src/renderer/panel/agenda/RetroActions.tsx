@@ -1,16 +1,8 @@
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { MeetingOccurrenceDto, RetroActionDto, SessionUserDto } from '@agilebox/contract'
-import {
-  AddButton,
-  Avatar,
-  Button,
-  DateField,
-  DueDate,
-  ProgressBar,
-  TextField,
-  Toast,
-} from '@agilebox/ui'
+import { AddButton, Avatar, Button, DateField, DueDate, TextField, Toast } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { agendaCopy } from './agenda-copy'
 import styles from './RetroActions.module.css'
 import {
   RETRO_ACTIONS_MAX,
@@ -60,14 +52,14 @@ export function RetroActions({ meeting, today, users, canManage }: RetroActionsP
 
   return (
     <section aria-labelledby={headingId} className={styles.section}>
-      <header className={styles.header}>
-        <h3 id={headingId} className={styles.title}>
-          {panelCopy.retroActionsTitle}
-        </h3>
-        {total > 0 ? (
-          <span className={styles.progressText}>{panelCopy.retroActionsProgress(done, total)}</span>
+      <div className={styles.header}>
+        <h2 id={headingId} className={styles.title}>
+          {agendaCopy.retroTitle}
+        </h2>
+        {list.isSuccess ? (
+          <span className={styles.progressText}>{agendaCopy.retroPending(total - done)}</span>
         ) : null}
-      </header>
+      </div>
 
       {list.isPending ? (
         <p role="status" className={styles.helper}>
@@ -79,19 +71,10 @@ export function RetroActions({ meeting, today, users, canManage }: RetroActionsP
         </p>
       ) : (
         <>
-          {total > 0 ? (
-            <ProgressBar
-              done={done}
-              total={total}
-              label={panelCopy.retroActionsProgressLabel}
-              className={styles.bar}
-            />
-          ) : null}
-
           {total === 0 ? (
             <p className={styles.helper}>{panelCopy.retroActionsEmpty}</p>
           ) : (
-            <ul aria-label={panelCopy.retroActionsTitle} className={styles.list}>
+            <ul aria-label={agendaCopy.retroTitle} className={styles.list}>
               {actions.map((action) => (
                 <ActionRow
                   key={action.id}
@@ -184,7 +167,7 @@ function ActionRow({
   const overdue = isRetroActionOverdue(action, today)
 
   return (
-    <li className={styles.item}>
+    <li className={`${styles.item} ${action.done ? styles.itemDone : ''}`}>
       <input
         type="checkbox"
         className={styles.check}
@@ -213,6 +196,7 @@ function ActionRow({
             ) : (
               <span>{panelCopy.retroActionsNoResponsible}</span>
             )}
+            {action.done ? <span>{agendaCopy.retroDone}</span> : null}
             {action.dueDate ? (
               <DueDate date={action.dueDate} overdue={overdue} />
             ) : (

@@ -1,20 +1,32 @@
 import type { MeetingKind } from '@agilebox/ui'
+import type { AgendaCategory } from './agenda-copy'
 
 /** Intervalo "09:00 – 10:00". Sem fim informado, a agenda passa o fim efetivo (1 h). */
 export const timeRange = (start: string, end: string): string => `${start} – ${end}`
 
-/** Classe de cor do tipo (fundo translúcido e texto claro, com rótulo e ícone ao lado). */
-export const eventClass = (kind: MeetingKind): 'evMeeting' | 'evReview' | 'evRetro' =>
-  kind === 'review' ? 'evReview' : kind === 'retro' ? 'evRetro' : 'evMeeting'
-
-const WEEKDAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' })
-const DAY_NUMBER = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', timeZone: 'UTC' })
-
-/** Sigla do dia da semana em maiúsculas ("SEG") e dia com dois dígitos ("02"), para os Próximos. */
-export function dayParts(date: string): { weekday: string; day: string } {
-  const at = new Date(`${date}T00:00:00Z`)
-  return {
-    weekday: WEEKDAY.format(at).replace('.', '').toUpperCase(),
-    day: DAY_NUMBER.format(at),
-  }
+/**
+ * Categoria do design (Daily, Planejamento, Retrospectiva, Entrega) a partir do tipo do modelo.
+ * O modelo guarda 3 tipos: reunião vira Daily quando o título diz "daily", senão Planejamento;
+ * revisão vira Entrega; retro vira Retrospectiva.
+ */
+export function categoryOf(meeting: { kind: MeetingKind; title: string }): AgendaCategory {
+  if (meeting.kind === 'retro') return 'Retrospectiva'
+  if (meeting.kind === 'review') return 'Entrega'
+  return /daily/i.test(meeting.title) ? 'Daily' : 'Planejamento'
 }
+
+/** Tipo do modelo gravado para cada categoria do design. */
+export const kindOfCategory = (category: AgendaCategory): MeetingKind =>
+  category === 'Retrospectiva' ? 'retro' : category === 'Entrega' ? 'review' : 'meeting'
+
+/** Classe do pontinho de 6 px de cada categoria. */
+export const dotClass = (
+  category: AgendaCategory,
+): 'catDaily' | 'catPlan' | 'catRetro' | 'catDelivery' =>
+  category === 'Daily'
+    ? 'catDaily'
+    : category === 'Planejamento'
+      ? 'catPlan'
+      : category === 'Retrospectiva'
+        ? 'catRetro'
+        : 'catDelivery'

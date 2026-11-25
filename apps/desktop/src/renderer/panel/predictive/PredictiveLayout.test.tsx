@@ -51,7 +51,7 @@ describe('Fluxo Preditivo: rail de tópicos', () => {
   it('lista os tópicos do grupo, marca o atual com aria-current e leva os outros para a tela', async () => {
     const { onSelect } = setup()
     const rail = within(screen.getByRole('navigation', { name: 'Seções de Cronograma' }))
-    expect(rail.getByRole('button', { name: 'Cronograma' }).getAttribute('aria-current')).toBe(
+    expect(rail.getByRole('button', { name: 'Linha do tempo' }).getAttribute('aria-current')).toBe(
       'page',
     )
     expect(

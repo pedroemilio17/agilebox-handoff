@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react'
+import { useSprintTopic, type SprintTab } from '../predictive/sprint-topic'
 import type { TaskStatus } from '@agilebox/core'
 import type { ProjectDto, SprintDto, TaskDto } from '@agilebox/contract'
 import { EmptyState, SegmentedControl, Toast, Button } from '@agilebox/ui'
@@ -15,8 +16,6 @@ import type { PanelView } from '../layout/PanelShell'
 import { sprintCopy } from './sprint-copy'
 import { useSprintList } from './use-sprints'
 import styles from './SprintsView.module.css'
-
-type SprintTab = 'draft' | 'active' | 'closed'
 
 const TAB_OPTIONS: readonly [
   SegmentedOption<SprintTab>,
@@ -66,7 +65,11 @@ export function SprintsView({
     visible.projects[0]?.id ??
     null
   const selectId = useId()
-  const [tab, setTab] = useState<SprintTab>('draft')
+  const [localTab, setLocalTab] = useState<SprintTab>('draft')
+  // Dentro do rail (PredictiveLayout) o tópico vem da casca; sozinha, a tela usa as abas locais.
+  const topic = useSprintTopic()
+  const tab = topic?.tab ?? localTab
+  const setTab = topic?.setTab ?? setLocalTab
   const [preferredDraftId, setPreferredDraftId] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ id: number; message: string } | null>(null)
   const noticeSeq = useRef(0)
@@ -120,7 +123,7 @@ export function SprintsView({
           projectId={projectId}
           {...(onNavigate ? { onNavigate } : {})}
         />
-        {projectId === null ? null : (
+        {projectId === null || topic !== null ? null : (
           <SegmentedControl<SprintTab>
             aria-label={sprintCopy.tabsLabel}
             options={TAB_OPTIONS}

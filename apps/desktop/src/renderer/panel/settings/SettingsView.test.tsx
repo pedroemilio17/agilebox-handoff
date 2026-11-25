@@ -9,7 +9,7 @@ import { teamToolsView } from '../../shared/testing/team-tools-fixture'
 import { SettingsView } from './SettingsView'
 
 /** Ajustes usa a API (ferramentas da equipe), então o teste monta os provedores. */
-function renderSettings() {
+async function renderSettings() {
   const api = createFakeApi()
   vi.spyOn(api.teamTools, 'get').mockResolvedValue(teamToolsView({ modules: [], level: 'basic' }))
   vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
@@ -26,6 +26,7 @@ function renderSettings() {
       </QueryClientProvider>
     </ApiProvider>,
   )
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Minhas preferências' }))
 }
 
 const updates = {
@@ -50,8 +51,8 @@ afterEach(() => {
 
 describe('Ajustes: opacidade da janela', () => {
   it('mostra o padrão, salva o novo valor e restaura', async () => {
-    renderSettings()
-    const slider = screen.getByLabelText<HTMLInputElement>('Opacidade da janela')
+    await renderSettings()
+    const slider = screen.getByLabelText<HTMLInputElement>('Opacidade do vidro fosco')
     expect(slider.value).toBe('68')
     expect(screen.getByText('68%')).toBeTruthy()
 
@@ -64,10 +65,10 @@ describe('Ajustes: opacidade da janela', () => {
     expect(slider.value).toBe('68')
   })
 
-  it('abre com o valor salvo antes', () => {
+  it('abre com o valor salvo antes', async () => {
     window.localStorage.setItem(WINDOW_OPACITY_KEY, '0.5')
-    renderSettings()
-    expect(screen.getByLabelText<HTMLInputElement>('Opacidade da janela').value).toBe('50')
+    await renderSettings()
+    expect(screen.getByLabelText<HTMLInputElement>('Opacidade do vidro fosco').value).toBe('50')
   })
 })
 
@@ -76,19 +77,17 @@ describe('Ajustes: fundo da janela', () => {
     const setAppearance = vi.fn()
     vi.stubGlobal('agilebox', { shell: { setAppearance }, updates })
     document.documentElement.dataset.glass = 'native'
-    renderSettings()
-    expect(screen.getByRole('button', { name: 'Translúcido' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    )
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Opaco' }))
+    await renderSettings()
+    expect(screen.getByRole('button', { name: 'Vidro' }).getAttribute('aria-pressed')).toBe('true')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Sólido' }))
     expect(setAppearance).toHaveBeenCalledWith({ mode: 'opaque' })
     expect(window.localStorage.getItem('agilebox.reopenSettings')).toBe('1')
-    expect(screen.getByLabelText<HTMLInputElement>('Opacidade da janela').disabled).toBe(true)
+    expect(screen.getByLabelText<HTMLInputElement>('Opacidade do vidro fosco').disabled).toBe(true)
   })
 
-  it('no modo opaco mostra "Opaco" selecionado', () => {
+  it('no modo opaco mostra "Sólido" selecionado', async () => {
     document.documentElement.dataset.glass = 'opaque'
-    renderSettings()
-    expect(screen.getByRole('button', { name: 'Opaco' }).getAttribute('aria-pressed')).toBe('true')
+    await renderSettings()
+    expect(screen.getByRole('button', { name: 'Sólido' }).getAttribute('aria-pressed')).toBe('true')
   })
 })

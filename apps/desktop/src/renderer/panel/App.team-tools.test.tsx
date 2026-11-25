@@ -51,8 +51,8 @@ describe('Ajustes abre as ferramentas da equipe', () => {
     expect(settings.textContent).not.toContain('Em breve')
     await userEvent.setup().click(settings)
 
-    expect(await screen.findByRole('heading', { name: 'Ferramentas da equipe' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Aparência' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Config. e Ferramentas' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Minhas preferências' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Plug-ins, Em breve' })).toBeTruthy()
   })
 })

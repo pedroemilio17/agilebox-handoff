@@ -1,108 +1,168 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, SegmentedControl, TextField } from '@agilebox/ui'
-import { parseQuickAdd } from '@agilebox/core'
-import { todayDateOnly } from '../../shared/lib/today'
+import { TASK_STATUSES, TASK_STATUS_LABELS, type TaskStatus } from '@agilebox/core'
+import { useActor } from '../../shared/session/useActor'
 import { useSessionUsers } from '../../panel/hooks/use-session-users'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { useProjects } from '../../panel/hooks/use-projects'
 import { trayCopy } from '../copy'
+import { BackButton, OpenPanelButton, TrayHeader } from '../TrayHeader'
 import styles from '../Tray.module.css'
 
 export interface NewTaskScreenProps {
   readonly onCreated: (taskId: string) => void
+  readonly onBack: () => void
 }
 
-export function NewTaskScreen({ onCreated }: NewTaskScreenProps) {
+/** Tela "Nova tarefa" (screen-new): título, projeto, estado inicial e responsável. */
+export function NewTaskScreen({ onCreated, onBack }: NewTaskScreenProps) {
   const api = useApi()
+  const actor = useActor()
   const queryClient = useQueryClient()
   const projects = useProjects()
   const people = useSessionUsers()
+  const titleRef = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState('')
   const [chosenProject, setChosenProject] = useState('')
-  const list = projects.data ?? []
-  const parsed = parseQuickAdd(title, {
-    today: todayDateOnly(),
-    people: people.data ?? [],
-    projects: list,
-  })
-  const projectId = parsed.projectId || chosenProject || list[0]?.id || ''
+  const [status, setStatus] = useState<TaskStatus>('todo')
+  const [chosenResponsible, setChosenResponsible] = useState('')
+  const projectList = projects.data ?? []
+  const peopleList = people.data ?? []
+  const projectId = chosenProject || projectList[0]?.id || ''
+  const responsibleId =
+    chosenResponsible ||
+    peopleList.find((person) => person.id === actor.actor?.userId)?.id ||
+    peopleList[0]?.id ||
+    ''
   const create = useMutation({
     mutationFn: () =>
       api.tasks.create({
         projectId,
-        title: parsed.title,
-        ...(parsed.tokens.length ? { status: 'todo' as const } : {}),
-        ...(parsed.responsibleId ? { responsibleId: parsed.responsibleId } : {}),
-        ...(parsed.deadline ? { deadline: parsed.deadline } : {}),
+        title: title.trim(),
+        status,
+        ...(responsibleId ? { responsibleId } : {}),
       }),
     onSuccess: async (task) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       onCreated(task.id)
     },
   })
-  const canCreate = parsed.title !== '' && projectId !== '' && !create.isPending
+
+  const submit = () => {
+    if (create.isPending) return
+    if (title.trim() === '' || projectId === '') {
+      titleRef.current?.focus()
+      return
+    }
+    create.mutate()
+  }
 
   return (
-    <form
-      className={styles.screenBody}
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (canCreate) create.mutate()
-      }}
-    >
-      <TextField
-        label={trayCopy.taskTitle}
-        placeholder={trayCopy.taskTitlePlaceholder}
-        value={title}
-        autoFocus
-        autoComplete="off"
-        onChange={(event) => setTitle(event.currentTarget.value)}
+    <>
+      <TrayHeader
+        left={
+          <>
+            <BackButton onClick={onBack} />
+            <h1 className={styles.headerTitle}>{trayCopy.newTask}</h1>
+          </>
+        }
+        actions={<OpenPanelButton />}
       />
-      {parsed.tokens.length > 0 && (
-        <div className={styles.quickTokens}>
-          {parsed.tokens.map((token) => (
-            <span key={token.start}>{token.label}</span>
-          ))}
-          <span>A fazer</span>
+      <form
+        className={`${styles.body} ${styles.formBody}`}
+        onSubmit={(event) => {
+          event.preventDefault()
+          submit()
+        }}
+      >
+        <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor="tray-new-title">
+            {trayCopy.newTaskPrompt}
+          </label>
+          <input
+            ref={titleRef}
+            id="tray-new-title"
+            type="text"
+            className={styles.input}
+            placeholder={trayCopy.taskTitlePlaceholder}
+            value={title}
+            autoFocus
+            autoComplete="off"
+            required
+            onChange={(event) => setTitle(event.currentTarget.value)}
+          />
         </div>
-      )}
-      {list.length >= 2 && list.length <= 3 ? (
-        <SegmentedControl
-          aria-label={trayCopy.project}
-          value={projectId}
-          onChange={setChosenProject}
-          options={
-            list.map((project) => ({ value: project.id, label: project.name })) as [
-              { value: string; label: string },
-              { value: string; label: string },
-              ...{ value: string; label: string }[],
-            ]
-          }
-        />
-      ) : (
-        <label className={styles.selectField}>
-          <span>{trayCopy.project}</span>
+        <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor="tray-new-project">
+            {trayCopy.project}
+          </label>
           <select
-            aria-label={trayCopy.project}
+            id="tray-new-project"
+            className={styles.select}
             value={projectId}
             onChange={(event) => setChosenProject(event.currentTarget.value)}
           >
-            {list.map((project) => (
+            {projectList.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
               </option>
             ))}
           </select>
-        </label>
-      )}
-      {create.isError ? <p role="alert">{trayCopy.createError}</p> : null}
-      <div className={styles.footer}>
-        <Button type="submit" variant="primary" disabled={!canCreate}>
+        </div>
+        <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor="tray-new-status">
+            {trayCopy.initialStatus}
+          </label>
+          <select
+            id="tray-new-status"
+            className={styles.select}
+            value={status}
+            onChange={(event) => setStatus(event.currentTarget.value as TaskStatus)}
+          >
+            {TASK_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {TASK_STATUS_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <label className={styles.fieldLabel} htmlFor="tray-new-assignee">
+            {trayCopy.responsible}
+          </label>
+          <select
+            id="tray-new-assignee"
+            className={styles.select}
+            value={responsibleId}
+            onChange={(event) => setChosenResponsible(event.currentTarget.value)}
+          >
+            {peopleList.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {create.isError ? (
+          <p role="alert" className={styles.errorText}>
+            {trayCopy.createError}
+          </p>
+        ) : null}
+      </form>
+      <footer className={styles.fixedFooter}>
+        <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={onBack}>
+          {trayCopy.cancel}
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnPrimary}`}
+          disabled={create.isPending}
+          onClick={submit}
+        >
           {trayCopy.createTask}
-        </Button>
-      </div>
-    </form>
+        </button>
+      </footer>
+    </>
   )
 }

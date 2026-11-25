@@ -40,7 +40,7 @@ function LinkedDeliverable({ task, readOnly }: DeliverablePropertyProps) {
   if (wbs.isPending) {
     return (
       <PropertyRow label={copy.label}>
-        <p role="status" className={styles.helper}>
+        <p role="status" className={styles.kvHint}>
           {copy.loading}
         </p>
       </PropertyRow>
@@ -58,10 +58,10 @@ function LinkedDeliverable({ task, readOnly }: DeliverablePropertyProps) {
 
   return (
     <PropertyRow label={copy.label}>
-      <div className={styles.propertyContent}>
+      <div className={styles.kvStack}>
         <select
           aria-label={copy.label}
-          className={styles.propertyInput}
+          className={styles.kvSelect}
           value={current ?? ''}
           // Escolha de lista salva na hora, como a prioridade. Sem mudança, nada é gravado.
           onChange={(event) => {

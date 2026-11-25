@@ -75,12 +75,12 @@ describe('Scrum no Básico · telas aparecem, ações e medidores do nível fica
     renderScrumBasic()
 
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
     expect(screen.getByRole('button', { name: CARD }).getAttribute('aria-label')).toContain(
       'bloqueada',
     )
     expect(screen.queryByRole('img', { name: /: \d+ de \d+/ })).toBeNull()
-    expect(screen.queryByText(/Ciclo médio desta semana/)).toBeNull()
+    expect(screen.queryByText(/Ciclo:/)).toBeNull()
     expectOnlyPassiveTerms()
   })
 

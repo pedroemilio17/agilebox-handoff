@@ -1,7 +1,5 @@
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { addDays, format, getISOWeek, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { ApiError } from '@agilebox/contract'
 import type { DashboardSummaryFormat } from '@agilebox/contract'
 import { ExportMenu, Skeleton } from '@agilebox/ui'
@@ -11,27 +9,35 @@ import { todayDateOnly } from '../../shared/lib/today'
 import { panelCopy } from '../copy'
 import { DailyDialog } from './DailyDialog'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { useSessionUsers } from '../hooks/use-session-users'
 import { useNoticeOnError } from './use-notice-on-error'
-import { METHOD_NAMES } from './dashboard-format'
+import { dashboardCopy } from './dashboard-copy'
 import type { DashboardInsights } from './dashboard-format'
+import { KpiStrip, kpisOf } from './KpiStrip'
 import { NeedsList } from './NeedsList'
+import { RoleGate } from './RoleGate'
 import { StateDistribution } from './StateDistribution'
 import { ProjectCard } from './ProjectCard'
+import { TeamDailyDialog } from './TeamDailyDialog'
 import { TeamTable } from './TeamTable'
 import type { DashboardException } from './TeamTable'
+import { UpdatesTab } from './UpdatesTab'
 import { feedEntries } from './updates-feed'
 import type { FeedActionHandlers } from './updates-feed'
-import { swatchIndexOf } from '../../shared/lib/project-swatch'
 import styles from './Dashboard.module.css'
 
 export interface DashboardViewProps extends FeedActionHandlers {
   readonly onOpenProjects: (user: DashboardInsights['team'][number]['user']) => void
   /** Selo de parada, vencida ou bloqueada da equipe: abre o quadro com o filtro. */
   readonly onOpenException?: (exception: DashboardException) => void
-  /** Botão "Ver todas as atualizações" da seção "Precisa de você". */
+  /** Tela completa de Atualizações (filtros por tipo, projeto e visão), a partir da aba. */
   readonly onOpenUpdates: () => void
   /** Avisos do painel (toast): resumo salvo ou falha na exportação. */
   readonly onNotice?: (message: string, tone?: 'default' | 'warning') => void
+  /** Falso mostra a guarda educativa do colaborador no lugar do painel. Padrão: gestor. */
+  readonly isManager?: boolean
+  /** "Ir para o meu Quadro", na guarda do colaborador. */
+  readonly onOpenBoard?: () => void
 }
 
 const SUMMARY_FORMATS: readonly { value: DashboardSummaryFormat; label: string }[] = [
@@ -39,15 +45,11 @@ const SUMMARY_FORMATS: readonly { value: DashboardSummaryFormat; label: string }
   { value: 'csv', label: panelCopy.exportSummaryCsv },
 ]
 
-const ALL = 'all'
-
-/** "Semana 47 · 17–21 nov": de segunda a sexta, como no desenho. */
-function weekLabel(weekStart: string): string {
-  const start = parseISO(weekStart)
-  const end = addDays(start, 4)
-  const month = format(end, 'MMM', { locale: ptBR }).replace('.', '')
-  return `Semana ${getISOWeek(start)} · ${format(start, 'dd')}–${format(end, 'dd')} ${month}`
-}
+type DashView = 'overview' | 'updates'
+const TABS: readonly { id: DashView; label: string }[] = [
+  { id: 'overview', label: dashboardCopy.overviewTab },
+  { id: 'updates', label: dashboardCopy.updatesTab },
+]
 
 export function DashboardView({
   onOpenProjects,
@@ -56,11 +58,12 @@ export function DashboardView({
   onOpenTask,
   onOpenUpdates,
   onNotice,
+  isManager = true,
+  onOpenBoard,
 }: DashboardViewProps) {
-  const [projectFilter, setProjectFilter] = useState<string>(ALL)
-  const [methodFilter, setMethodFilter] = useState<string>(ALL)
-  const [personFilter, setPersonFilter] = useState<string>(ALL)
+  const [tab, setTab] = useState<DashView>('overview')
   const [dailyOf, setDailyOf] = useState<{ userId: string; name: string } | null>(null)
+  const [teamDailyOpen, setTeamDailyOpen] = useState(false)
   const api = useApi()
   const capabilities = useCapabilities()
   const dailyVisible = capabilities.can('checkins:screen')
@@ -71,14 +74,17 @@ export function DashboardView({
   const dashboard = useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: () => api.dashboard.get(),
+    enabled: isManager,
   })
+  // Valor/hora por pessoa: o servidor só entrega o de todos ao gestor (os demais veem o próprio).
+  const sessionUsers = useSessionUsers()
   // Daily de hoje por pessoa. Data local, enviada pelo renderer; recarrega ao abrir o dashboard.
   const today = todayDateOnly()
   const dailyStatus = useQuery({
     queryKey: queryKeys.daily.forDate(today),
     queryFn: () => api.daily.listForDate({ date: today }),
     // Sem a ferramenta de check-ins o backend recusa a consulta: não faz a chamada.
-    enabled: dailyFetch,
+    enabled: dailyFetch && isManager,
   })
   useNoticeOnError(dailyStatus.isError, panelCopy.dailyListError, onNotice)
   const saveSummary = useMutation({
@@ -96,6 +102,72 @@ export function DashboardView({
         'warning',
       ),
   })
+
+  const head = (actions: boolean, data?: DashboardInsights) => (
+    <header className={styles.pageHead}>
+      <div className={styles.pageHeadMain}>
+        <h1 className={styles.pageTitle}>{dashboardCopy.title}</h1>
+        <p className={styles.pageSub}>{dashboardCopy.subtitle}</p>
+      </div>
+      {actions ? (
+        <div className={styles.pageHeadActions}>
+          <div className={styles.viewSwitch} role="tablist" aria-label={dashboardCopy.switchLabel}>
+            {TABS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                id={`dash-tab-${item.id}`}
+                aria-selected={tab === item.id}
+                aria-controls={`dash-panel-${item.id}`}
+                tabIndex={tab === item.id ? 0 : -1}
+                className={`${styles.viewButton} ${tab === item.id ? styles.viewButtonActive : ''}`}
+                onClick={() => setTab(item.id)}
+                onKeyDown={onTabKeyDown}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          {data ? (
+            <ExportMenu
+              label={panelCopy.exportSummary}
+              ariaLabel={panelCopy.exportSummaryAria}
+              options={SUMMARY_FORMATS}
+              busy={saveSummary.isPending}
+              busyLabel={panelCopy.exportSummaryBusy}
+              onSelect={(format) => saveSummary.mutate({ format, period: data.weekStart })}
+            />
+          ) : null}
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            disabled={!dailyVisible}
+            title={dailyVisible ? undefined : dashboardCopy.dailySummaryOff}
+            onClick={() => setTeamDailyOpen(true)}
+          >
+            {dashboardCopy.dailySummary}
+          </button>
+        </div>
+      ) : null}
+    </header>
+  )
+
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    event.preventDefault()
+    const next: DashView = tab === 'overview' ? 'updates' : 'overview'
+    setTab(next)
+    document.getElementById(`dash-tab-${next}`)?.focus()
+  }
+
+  if (!isManager)
+    return (
+      <div className={styles.view}>
+        {head(false)}
+        <RoleGate onOpenBoard={onOpenBoard} />
+      </div>
+    )
   if (dashboard.isPending)
     return (
       <div className={styles.view} role="status" aria-label={panelCopy.dashboardLoading}>
@@ -106,153 +178,94 @@ export function DashboardView({
   if (dashboard.isError || !dashboard.data.insights)
     return <p role="alert">{panelCopy.dashboardError}</p>
   const data = dashboard.data.insights
-  const methods = [
-    ...new Set(data.projects.map((project) => project.method).filter((m) => m !== null)),
-  ]
-  const projects = data.projects.filter(
-    (project) =>
-      (projectFilter === ALL || project.id === projectFilter) &&
-      (methodFilter === ALL || project.method === methodFilter),
-  )
-  const needs = feedEntries(data).needs.filter(
-    (entry) =>
-      (projectFilter === ALL || entry.projectId === projectFilter) &&
-      (wipVisible || entry.filter !== 'wip'),
-  )
-  const team = data.team.filter((member) => personFilter === ALL || member.user.id === personFilter)
+  const needs = feedEntries(data).needs.filter((entry) => wipVisible || entry.filter !== 'wip')
   const dailyDone = new Map((dailyStatus.data ?? []).map((item) => [item.userId, item.done]))
+  const rates = sessionUsers.data
+    ? new Map(sessionUsers.data.map((user) => [user.id, user.defaultRate]))
+    : undefined
   return (
     <div className={styles.view}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Dashboard</h1>
-        <span className={styles.week}>{weekLabel(data.weekStart)}</span>
-        <span className={styles.spacer} />
-        <label className={styles.chip}>
-          Projetos:
-          <select
-            aria-label="Filtrar por projeto"
-            className={styles.chipSelect}
-            value={projectFilter}
-            onChange={(event) => setProjectFilter(event.currentTarget.value)}
-          >
-            <option value={ALL}>todos</option>
-            {data.projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-          <span className={styles.chipCount}>{data.projects.length}</span>
-        </label>
-        <label className={styles.chip}>
-          Metodologia:
-          <select
-            aria-label="Filtrar por metodologia"
-            className={styles.chipSelect}
-            value={methodFilter}
-            onChange={(event) => setMethodFilter(event.currentTarget.value)}
-          >
-            <option value={ALL}>todas</option>
-            {methods.map((method) => (
-              <option key={method} value={method}>
-                {METHOD_NAMES[method]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.chip}>
-          Pessoa:
-          <select
-            aria-label="Filtrar por pessoa"
-            className={styles.chipSelect}
-            value={personFilter}
-            onChange={(event) => setPersonFilter(event.currentTarget.value)}
-          >
-            <option value={ALL}>todas</option>
-            {data.team.map((member) => (
-              <option key={member.user.id} value={member.user.id}>
-                {member.user.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {/* Visão de equipe ainda não tem dado: o chip fica estático, como no desenho. */}
-        <button type="button" className={styles.chip} disabled>
-          Mini-equipe: todas
-        </button>
-        <ExportMenu
-          label={panelCopy.exportSummary}
-          ariaLabel={panelCopy.exportSummaryAria}
-          options={SUMMARY_FORMATS}
-          busy={saveSummary.isPending}
-          busyLabel={panelCopy.exportSummaryBusy}
-          onSelect={(format) => saveSummary.mutate({ format, period: data.weekStart })}
-        />
-      </header>
+      {head(true, data)}
 
-      <StateDistribution distribution={dashboard.data.distribution} />
+      {tab === 'overview' ? (
+        <div
+          className={styles.body}
+          role="tabpanel"
+          id="dash-panel-overview"
+          aria-labelledby="dash-tab-overview"
+        >
+          <KpiStrip kpis={kpisOf(data)} />
 
-      <section aria-labelledby="needs-title" className={styles.needs}>
-        <div className={styles.needsHead}>
-          <h2 id="needs-title" className={styles.sectionTitle}>
-            Precisa de você
-          </h2>
-          <span className={styles.count}>{needs.length}</span>
-          <span className={styles.spacer} />
-          <button type="button" className={styles.linkButton} onClick={onOpenUpdates}>
-            Ver todas as atualizações
-          </button>
-        </div>
-        <NeedsList
-          entries={needs}
-          projectSwatch={swatchIndexOf}
-          onOpenProject={onOpenProject}
-          onOpenTask={onOpenTask}
-        />
-      </section>
-
-      <section aria-labelledby="projects-title" className={styles.section}>
-        <div className={styles.sectionHead}>
-          <h2 id="projects-title" className={styles.sectionTitle}>
-            Projetos
-          </h2>
-          <span className={styles.caption}>
-            Cada um medido pela sua metodologia e resumido em Em dia, Atenção ou Risco, sempre com o
-            motivo.
-          </span>
-        </div>
-        {projects.length === 0 ? (
-          <p className={styles.emptyLine}>{panelCopy.dashboardEmpty}</p>
-        ) : (
-          <div className={styles.projects}>
-            {projects.map((card) => (
-              <ProjectCard key={card.id} card={card} onOpenProject={onOpenProject} />
-            ))}
+          <div className={styles.split}>
+            <StateDistribution
+              distribution={dashboard.data.distribution}
+              cycleDays={data.cycleDays}
+            />
+            <section aria-labelledby="needs-title">
+              <div className={styles.secHead}>
+                <h2 id="needs-title" className={styles.secTitle}>
+                  {dashboardCopy.needsTitle}
+                </h2>
+                <span className={styles.secMeta}>{dashboardCopy.needsMeta(needs.length)}</span>
+              </div>
+              <NeedsList entries={needs} onOpenProject={onOpenProject} onOpenTask={onOpenTask} />
+            </section>
           </div>
-        )}
-      </section>
 
-      <TeamTable
-        team={team}
-        daily={{ visible: dailyVisible, loading: dailyStatus.isPending, done: dailyDone }}
-        blockedVisible={blockedVisible}
-        loadVisible={loadVisible}
-        onOpenProjects={onOpenProjects}
-        onOpenException={onOpenException}
-        onOpenDaily={(userId, name) => setDailyOf({ userId, name })}
-      />
-      {dailyStatus.isError ? (
-        <p className={styles.caption}>
-          {panelCopy.dailyListError}{' '}
-          <button
-            type="button"
-            className={styles.inlineButton}
-            onClick={() => void dailyStatus.refetch()}
-          >
-            {panelCopy.dailyRetry}
-          </button>
-        </p>
-      ) : null}
+          <section aria-labelledby="projects-title" className={styles.projectsSection}>
+            <div className={styles.secHead}>
+              <h2 id="projects-title" className={styles.secTitle}>
+                {dashboardCopy.projectsTitle}
+              </h2>
+              <span className={styles.secMeta}>
+                {dashboardCopy.projectsMeta(data.projects.length)}
+              </span>
+            </div>
+            {data.projects.length === 0 ? (
+              <p className={styles.emptyLine}>{panelCopy.dashboardEmpty}</p>
+            ) : (
+              <div className={styles.projectsGrid}>
+                {data.projects.map((card) => (
+                  <ProjectCard key={card.id} card={card} onOpenProject={onOpenProject} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <TeamTable
+            team={data.team}
+            daily={{ visible: dailyVisible, loading: dailyStatus.isPending, done: dailyDone }}
+            blockedVisible={blockedVisible}
+            loadVisible={loadVisible}
+            rates={rates}
+            onOpenProjects={onOpenProjects}
+            onOpenException={onOpenException}
+            onOpenDaily={(userId, name) => setDailyOf({ userId, name })}
+          />
+          {dailyStatus.isError ? (
+            <p className={styles.caption}>
+              {panelCopy.dailyListError}{' '}
+              <button
+                type="button"
+                className={styles.inlineButton}
+                onClick={() => void dailyStatus.refetch()}
+              >
+                {panelCopy.dailyRetry}
+              </button>
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div role="tabpanel" id="dash-panel-updates" aria-labelledby="dash-tab-updates">
+          <UpdatesTab
+            updates={data.updates}
+            people={data.team.map((member) => member.user)}
+            onOpenTask={onOpenTask}
+            onOpenAdvanced={onOpenUpdates}
+          />
+        </div>
+      )}
+
       {dailyOf && dailyVisible ? (
         <DailyDialog
           userId={dailyOf.userId}
@@ -260,6 +273,19 @@ export function DashboardView({
           date={today}
           onClose={() => setDailyOf(null)}
           onNotice={onNotice}
+        />
+      ) : null}
+      {teamDailyOpen && dailyVisible ? (
+        <TeamDailyDialog
+          date={today}
+          people={(dailyStatus.data ?? []).map((item) => ({
+            userId: item.userId,
+            name: item.userName,
+            done: item.done,
+          }))}
+          loading={dailyStatus.isPending}
+          onOpenTask={onOpenTask}
+          onClose={() => setTeamDailyOpen(false)}
         />
       ) : null}
     </div>

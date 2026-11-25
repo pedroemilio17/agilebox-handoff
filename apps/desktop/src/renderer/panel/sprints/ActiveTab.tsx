@@ -203,15 +203,39 @@ export function ActiveTab({
             >
               {sprintCopy.edit}
             </Button>
-            <Button type="button" onClick={() => setClosing(true)}>
-              {sprintCopy.close}
-            </Button>
             {windingDown || !onNewTask ? null : (
-              <Button type="button" variant="primary" onClick={onNewTask}>
+              <Button type="button" onClick={onNewTask}>
                 {sprintCopy.newTask}
               </Button>
             )}
+            <Button type="button" variant="primary" onClick={() => setClosing(true)}>
+              {sprintCopy.close}
+            </Button>
           </header>
+          <div className={styles.progressRow}>
+            <div
+              className={styles.progressTrack}
+              role="progressbar"
+              aria-label={sprintCopy.progressLabel}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={
+                progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100)
+              }
+            >
+              <span
+                className={styles.progressFill}
+                style={{
+                  width: `${progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100)}%`,
+                }}
+              />
+            </div>
+            {onNavigate ? (
+              <Button type="button" variant="ghost" onClick={() => onNavigate('projects')}>
+                {sprintCopy.openBoard}
+              </Button>
+            ) : null}
+          </div>
           <div className={styles.metaRow}>
             <span className={styles.meta}>
               {sprintCopy.progress(progress.done, progress.total)}

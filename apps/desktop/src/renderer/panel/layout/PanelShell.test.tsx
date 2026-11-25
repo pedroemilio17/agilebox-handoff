@@ -5,6 +5,9 @@ import {
   CapabilitiesContext,
   type Capabilities,
 } from '../../shared/capabilities/capabilities-context'
+import { ApiProvider } from '../../shared/api/ApiProvider'
+import { QueryProvider } from '../../shared/query/QueryProvider'
+import { createFakeApi } from '../../shared/testing/fake-api'
 import { PanelShell, type PanelShellProps, type RailProject } from './PanelShell'
 
 const agil: RailProject = {
@@ -70,11 +73,15 @@ function renderShell(
     ...overrides,
   }
   render(
-    <CapabilitiesContext.Provider value={capabilitiesWith(modules)}>
-      <PanelShell {...props}>
-        <p>Conteúdo</p>
-      </PanelShell>
-    </CapabilitiesContext.Provider>,
+    <ApiProvider api={createFakeApi()}>
+      <QueryProvider>
+        <CapabilitiesContext.Provider value={capabilitiesWith(modules)}>
+          <PanelShell {...props}>
+            <p>Conteúdo</p>
+          </PanelShell>
+        </CapabilitiesContext.Provider>
+      </QueryProvider>
+    </ApiProvider>,
   )
   return { props, nav: within(screen.getByRole('navigation', { name: 'Navegação principal' })) }
 }
@@ -239,24 +246,64 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     )
   })
 
-  it('Global exibe Dashboard e Agenda nessa ordem; colaborador não vê Dashboard', () => {
+  it('Global exibe Minhas tarefas, Dashboard e Agenda nessa ordem; colaborador não vê Dashboard', () => {
     const { nav } = renderShell()
-    const top = nav.getByRole('button', { name: 'Dashboard' }).parentElement!
-    const labels = Array.from(top.querySelectorAll('button')).map(
-      (button) => button.getAttribute('aria-label') ?? button.textContent ?? '',
-    )
-    expect(labels).toEqual(['Dashboard', 'Agenda'])
+    const top = nav.getByRole('button', { name: 'Minhas tarefas' }).parentElement!
+    const labels = Array.from(top.querySelectorAll('button'))
+      .slice(0, 3)
+      .map((button) => button.getAttribute('aria-label') ?? button.textContent ?? '')
+    expect(labels).toEqual(['Minhas tarefas', 'Dashboard', 'Agenda'])
+    expect(nav.getByRole('button', { name: 'Dashboard' }).textContent).toBe('Dashboard Gestor')
     cleanup()
 
     const collab = renderShell({ isManager: false })
     expect(collab.nav.queryByRole('button', { name: 'Dashboard' })).toBeNull()
   })
 
+  it('Minhas tarefas abre o quadro de todos os projetos no escopo Minhas', async () => {
+    const onTaskScopeChange = vi.fn()
+    const { nav, props } = renderShell({ onTaskScopeChange, taskScope: 'team' })
+    await userEvent.click(nav.getByRole('button', { name: 'Minhas tarefas' }))
+    expect(onTaskScopeChange).toHaveBeenCalledWith('mine')
+    expect(props.onProjectSelect).toHaveBeenCalledWith(null)
+  })
+
+  it('Minhas tarefas fica ativo só no quadro sem projeto e com o escopo Minhas', () => {
+    const { nav } = renderShell({ selectedProjectId: null })
+    expect(nav.getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+    cleanup()
+    const withProject = renderShell()
+    expect(
+      withProject.nav.getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-current'),
+    ).toBeNull()
+  })
+
+  it('a barra de título tem busca Ctrl+K, Nova tarefa sem atalho e a pílula Ajuda só visual', async () => {
+    const onSearch = vi.fn()
+    const { props } = renderShell({ onSearch })
+    const banner = within(screen.getByRole('banner'))
+    const search = banner.getByRole('button', { name: 'Buscar ou criar' })
+    expect(search.textContent).toContain('Buscar, comandos ou ? ajuda')
+    expect(search.textContent).toContain('Ctrl+K')
+    await userEvent.click(search)
+    expect(onSearch).toHaveBeenCalledTimes(1)
+
+    const newTask = banner.getByRole('button', { name: 'Nova tarefa' })
+    expect(newTask.textContent).not.toMatch(/\bN\b/)
+    await userEvent.click(newTask)
+    expect(props.onNewTask).toHaveBeenCalledTimes(1)
+
+    expect(banner.getByText('? Ajuda')).toBeTruthy()
+    expect(banner.getByText('F1')).toBeTruthy()
+  })
+
   it('Plug-ins, Ajustes e Abrir Bandeja ficam no rodapé', async () => {
     const { nav, props } = renderShell()
     const plugins = nav.getByRole('button', { name: 'Plug-ins, Em breve' })
     expect(plugins.hasAttribute('disabled')).toBe(true)
-    expect(nav.getByRole('button', { name: 'Ajustes' })).toBeTruthy()
+    expect(nav.getByRole('button', { name: 'Ajustes' }).textContent).toBe('Ajustes do App')
     await userEvent.click(nav.getByRole('button', { name: 'Abrir Bandeja' }))
     expect(props.onOpenTray).toHaveBeenCalledTimes(1)
   })

@@ -141,11 +141,17 @@ describe('Ferramentas da equipe: permissões', () => {
   it('colaborador vê o selo, o nível e nenhum controle de mudança', async () => {
     setup({ view: viewOf({ active: ['core', 'agenda'], role: 'collaborator' }) })
     expect(await screen.findByText('Somente leitura')).toBeTruthy()
-    expect(screen.queryByRole('switch')).toBeNull()
+    expect(screen.getByRole('switch', { name: 'Ligar Sprints' }).hasAttribute('disabled')).toBe(
+      true,
+    )
     expect(screen.queryByRole('button', { name: 'Aplicar preset Scrum' })).toBeNull()
     expect(screen.queryByRole('group', { name: 'Nível da equipe' })).toBeNull()
     expect(screen.getByText('Nível atual: Avançado')).toBeTruthy()
-    expect(within(await rowOf('Sprints')).getByText('Desativada')).toBeTruthy()
+    expect(
+      within(await rowOf('Sprints'))
+        .getByRole('switch')
+        .hasAttribute('disabled'),
+    ).toBe(true)
   })
 })
 
@@ -268,7 +274,7 @@ describe('Ferramentas da equipe: ligar e desligar com prévia', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Prévia de impacto' })
     await user.click(await within(dialog).findByRole('button', { name: 'Confirmar' }))
     expect(await within(dialog).findByText('Não foi possível salvar a mudança.')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Ferramentas da equipe' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /ferramentas ativas/ })).toBeTruthy()
   })
 })
 

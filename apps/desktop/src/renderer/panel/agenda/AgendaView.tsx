@@ -1,23 +1,25 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import type { MeetingOccurrenceDto } from '@agilebox/contract'
-import { AddButton, SegmentedControl, Skeleton } from '@agilebox/ui'
+import { Skeleton } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
-import { monthKey, shiftMonth, addDays } from '../../shared/lib/calendar-grid'
+import { addDays, shiftMonth } from '../../shared/lib/calendar-grid'
 import { todayDateOnly } from '../../shared/lib/today'
 import { queryKeys } from '../../shared/query/keys'
 import { useActor } from '../../shared/session/useActor'
-import { panelCopy } from '../copy'
-import { useSessionUsers } from '../hooks/use-session-users'
-import { WeekCalendar, agendaDays } from './WeekCalendar'
-import { Calendar } from './Calendar'
-import { MeetingForm, type MeetingDraft } from './MeetingForm'
-import { UpcomingList } from './UpcomingList'
-import { RetroActions } from './RetroActions'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
+import { panelCopy } from '../copy'
 import { ModuleHelpButton } from '../guide/ModuleHelpButton'
+import { useSessionUsers } from '../hooks/use-session-users'
 import type { PanelView } from '../layout/PanelShell'
+import { AGENDA_CATEGORIES, agendaCopy } from './agenda-copy'
+import { monthGridDays, periodTitle, weekDays, type AgendaMode } from './agenda-dates'
 import { loadAgendaTasks } from './agenda-tasks'
+import { UpcomingSection } from './AgendaAside'
+import { AgendaCalendar } from './AgendaCalendar'
+import { dotClass } from './meeting-format'
+import { MeetingModal, type MeetingDraft } from './MeetingModal'
+import { RetroActions } from './RetroActions'
 import { occurrenceKey } from './meeting-layout'
 import styles from './Agenda.module.css'
 
@@ -32,6 +34,12 @@ function monthRange(month: string): { rangeStart: string; rangeEnd: string } {
   const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()
   return { rangeStart: `${month}-01`, rangeEnd: `${month}-${String(lastDay).padStart(2, '0')}` }
 }
+
+const MODES: readonly { readonly value: AgendaMode; readonly label: string }[] = [
+  { value: 'day', label: agendaCopy.day },
+  { value: 'week', label: agendaCopy.week },
+  { value: 'month', label: agendaCopy.month },
+]
 
 export interface AgendaViewProps {
   readonly onOpenTask?: (id: string) => void
@@ -50,27 +58,20 @@ export function AgendaView({
 }: AgendaViewProps) {
   // Combinados da retro só com a ferramenta de review e retro; o restante da agenda segue.
   const retroVisible = useCapabilities().can('reviewRetro:screen')
-  const [mode, setMode] = useState<'day' | 'week' | 'month'>('week')
-  const [showDeadlines, setShowDeadlines] = useState(true)
+  const [mode, setMode] = useState<AgendaMode>('week')
   const api = useApi()
   const queryClient = useQueryClient()
   const actor = useActor()
   const users = useSessionUsers()
-  const [{ year, monthIndex }, setMonth] = useState(() => ({
-    year: Number(today.slice(0, 4)),
-    monthIndex: Number(today.slice(5, 7)) - 1,
-  }))
-  const [selectedDate, setSelectedDate] = useState(today)
+  const [focusDate, setFocusDate] = useState(today)
   const [form, setForm] = useState<FormState>({ mode: 'closed' })
-  /** Ocorrência de Retro aberta no painel de combinados (qualquer pessoa que vê a agenda). */
+  /** Ocorrência de Retro aberta na lateral (qualquer pessoa que vê a agenda). */
   const [retroDetail, setRetroDetail] = useState<MeetingOccurrenceDto | null>(null)
   const canManage = actor.capabilities?.canManageMeetings ?? false
 
-  const days = agendaDays(selectedDate, mode === 'day' ? 'day' : 'week')
-  const months =
-    mode === 'month'
-      ? [monthKey(year, monthIndex)]
-      : [...new Set(days.map((date) => date.slice(0, 7)))]
+  const visibleDays =
+    mode === 'day' ? [focusDate] : mode === 'week' ? weekDays(focusDate) : monthGridDays(focusDate)
+  const months = [...new Set(visibleDays.map((date) => date.slice(0, 7)))]
   const meetingQueries = useQueries({
     queries: months.map((month) => ({
       queryKey: [...queryKeys.meetings.all, 'month', month],
@@ -90,30 +91,46 @@ export function AgendaView({
     enabled: actor.actor !== undefined,
     queryFn: () => loadAgendaTasks(api.tasks, isManager),
   })
-  const selectDate = (date: string) => {
-    setSelectedDate(date)
-    setMonth({ year: Number(date.slice(0, 4)), monthIndex: Number(date.slice(5, 7)) - 1 })
-  }
+  const upcoming = useQuery({
+    queryKey: [...queryKeys.meetings.all, 'upcoming'],
+    queryFn: () => api.meetings.listUpcoming(),
+  })
+
+  const step = (direction: 1 | -1) =>
+    setFocusDate(
+      mode === 'month'
+        ? (() => {
+            const next = shiftMonth(
+              Number(focusDate.slice(0, 4)),
+              Number(focusDate.slice(5, 7)) - 1,
+              direction,
+            )
+            return `${next.year}-${String(next.monthIndex + 1).padStart(2, '0')}-01`
+          })()
+        : addDays(focusDate, direction * (mode === 'day' ? 1 : 7)),
+    )
+
   /** Retros de um dia, na ordem da grade. */
   const retrosOn = (date: string) =>
     meetings
       .filter((meeting) => meeting.kind === 'retro' && meeting.occurrenceDate === date)
       .sort((a, b) => a.time.localeCompare(b.time))
-  /** Abre a retro no painel de combinados; quem gerencia também abre o formulário. */
+  /** Abre o agendamento (modal) e, se for retro, os combinados dela na lateral. */
   const openMeeting = (meeting: MeetingOccurrenceDto) => {
     if (meeting.kind === 'retro') setRetroDetail(meeting)
-    if (canManage) setForm({ mode: 'edit', meeting })
+    setForm({ mode: 'edit', meeting })
   }
+  const nextRetro = (upcoming.data ?? [])
+    .filter((meeting) => meeting.kind === 'retro' && meeting.occurrenceDate >= today)
+    .sort((a, b) => `${a.occurrenceDate}${a.time}`.localeCompare(`${b.occurrenceDate}${b.time}`))[0]
+  const shownRetro = retroDetail ?? nextRetro ?? null
   // Os dados atualizados da ocorrência (contagens) vêm da lista carregada, se estiver nela.
-  const retroCurrent = retroDetail
-    ? (meetings.find((meeting) => occurrenceKey(meeting) === occurrenceKey(retroDetail)) ??
-      retroDetail)
+  const retroCurrent = shownRetro
+    ? ([...meetings, ...(upcoming.data ?? [])].find(
+        (meeting) => occurrenceKey(meeting) === occurrenceKey(shownRetro),
+      ) ?? shownRetro)
     : null
   const retroSiblings = retroCurrent ? retrosOn(retroCurrent.occurrenceDate) : []
-  const upcoming = useQuery({
-    queryKey: [...queryKeys.meetings.all, 'upcoming'],
-    queryFn: () => api.meetings.listUpcoming(),
-  })
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.meetings.all })
   const close = () => setForm({ mode: 'closed' })
@@ -138,165 +155,184 @@ export function AgendaView({
       close()
     },
   })
-
-  const open = form.mode !== 'closed'
   const editing = form.mode === 'edit' ? form.meeting : null
+  const loading = meetingQueries.some((query) => query.isPending)
+  const failed = meetingQueries.some((query) => query.isError)
 
   return (
-    <div
-      className={styles.view}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape' && open) {
-          event.stopPropagation()
-          close()
-        }
-      }}
-    >
-      <div className={styles.calendarArea}>
-        <div className={styles.viewControls}>
+    <section className={styles.page} aria-label={agendaCopy.title}>
+      <header className={styles.pageHead}>
+        <div className={styles.pageHeadMain}>
+          <h1 className={styles.pageTitle}>{agendaCopy.title}</h1>
+          <p className={styles.pageSub}>{agendaCopy.subtitle}</p>
+        </div>
+        <div className={styles.pageHeadActions}>
           <ModuleHelpButton
             moduleId="agenda"
             projectId={selectedProjectId}
             {...(onNavigate ? { onNavigate } : {})}
           />
-          <SegmentedControl
-            aria-label="Visualização da agenda"
-            options={[
-              { value: 'day', label: 'Dia' },
-              { value: 'week', label: 'Semana' },
-              { value: 'month', label: 'Mês' },
-            ]}
-            value={mode}
-            onChange={setMode}
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={showDeadlines}
-              onChange={(event) => setShowDeadlines(event.currentTarget.checked)}
-            />
-            Mostrar prazos de tarefas
-          </label>
+          {canManage ? (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              style={{ minHeight: 40 }}
+              onClick={() => setForm({ mode: 'create' })}
+            >
+              {agendaCopy.newEvent}
+            </button>
+          ) : actor.actor === undefined ? null : (
+            <span className={styles.badge} title={agendaCopy.readOnlyHint}>
+              {agendaCopy.readOnlyBadge}
+            </span>
+          )}
         </div>
-        {showDeadlines && tasks.isError && (
-          <p role="alert">Não foi possível carregar os prazos das tarefas.</p>
-        )}
-        {showDeadlines && tasks.isPending && <Skeleton aria-label="Carregando prazos" />}
-        {meetingQueries.some((query) => query.isPending) ? (
-          <div role="status" aria-label="Carregando agenda">
-            <Skeleton />
-            <Skeleton />
-          </div>
-        ) : meetingQueries.some((query) => query.isError) ? (
-          <p role="alert">Não foi possível carregar os agendamentos.</p>
-        ) : mode === 'month' ? (
-          <Calendar
-            year={year}
-            monthIndex={monthIndex}
-            today={today}
-            selectedDate={selectedDate}
-            meetings={meetings}
-            onSelectDate={(date) => {
-              setSelectedDate(date)
-              const month = {
-                year: Number(date.slice(0, 4)),
-                monthIndex: Number(date.slice(5, 7)) - 1,
-              }
-              if (month.year !== year || month.monthIndex !== monthIndex) setMonth(month)
-              // No mês, o dia escolhido abre a primeira retro dele (as outras aparecem como troca).
-              const [firstRetro] = retrosOn(date)
-              if (firstRetro) setRetroDetail(firstRetro)
-            }}
-            onPreviousMonth={() => setMonth(shiftMonth(year, monthIndex, -1))}
-            onNextMonth={() => setMonth(shiftMonth(year, monthIndex, 1))}
-          />
-        ) : (
-          <WeekCalendar
-            days={days}
-            today={today}
-            selectedDate={selectedDate}
-            meetings={meetings}
-            tasks={tasks.data ?? []}
-            showDeadlines={showDeadlines}
-            canEdit={canManage}
-            onSelectDate={selectDate}
-            onPrevious={() => selectDate(addDays(selectedDate, mode === 'day' ? -1 : -7))}
-            onNext={() => selectDate(addDays(selectedDate, mode === 'day' ? 1 : 7))}
-            onEdit={openMeeting}
-            onOpenTask={(id) => onOpenTask?.(id)}
-          />
-        )}
-      </div>
-      <aside className={styles.side}>
-        {upcoming.isPending ? (
-          <Skeleton aria-label="Carregando próximos agendamentos" />
-        ) : upcoming.isError ? (
-          <p role="alert">Não foi possível carregar os próximos agendamentos.</p>
-        ) : (
-          <UpcomingList
-            meetings={upcoming.data ?? []}
-            compact={open}
-            users={users.data ?? []}
-            canEdit={canManage}
-            onEdit={openMeeting}
-          />
-        )}
-        {retroCurrent && retroVisible ? (
-          <div className={styles.retroPanel}>
-            {retroSiblings.length > 1 ? (
-              <div
-                role="group"
-                aria-label={panelCopy.retroActionsOtherRetros}
-                className={styles.retroSwitch}
+      </header>
+
+      <div className={styles.agendaLayout}>
+        <div className={styles.agendaMain}>
+          <div className={styles.agendaToolbar}>
+            <div className={styles.agendaNav}>
+              <button
+                type="button"
+                className={styles.navBtn}
+                aria-label={agendaCopy.previousPeriod}
+                onClick={() => step(-1)}
               >
-                {retroSiblings.map((sibling) => (
-                  <button
-                    key={occurrenceKey(sibling)}
-                    type="button"
-                    aria-pressed={occurrenceKey(sibling) === occurrenceKey(retroCurrent)}
-                    onClick={() => setRetroDetail(sibling)}
-                  >
-                    {sibling.time} {sibling.title}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <RetroActions
-              key={occurrenceKey(retroCurrent)}
-              meeting={retroCurrent}
-              today={today}
-              users={users.data ?? []}
-              canManage={canManage}
-            />
+                ‹
+              </button>
+              <button type="button" className={styles.navBtn} onClick={() => setFocusDate(today)}>
+                {agendaCopy.today}
+              </button>
+              <button
+                type="button"
+                className={styles.navBtn}
+                aria-label={agendaCopy.nextPeriod}
+                onClick={() => step(1)}
+              >
+                ›
+              </button>
+              <h2 className={styles.periodTitle}>{periodTitle(mode, focusDate)}</h2>
+            </div>
+            <div className={styles.quietToggle} role="group" aria-label={agendaCopy.viewGroup}>
+              {MODES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.quietToggleBtn} ${mode === option.value ? styles.isActive : ''}`}
+                  aria-pressed={mode === option.value}
+                  onClick={() => setMode(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : null}
-        <AddButton
-          type="button"
-          variant="primary"
-          disabled={!canManage}
-          onClick={() => setForm({ mode: 'create' })}
-        >
-          {panelCopy.newMeeting}
-        </AddButton>
-        {canManage ? null : <p className={styles.helper}>{panelCopy.managerOnly}</p>}
-        <div className={`${styles.formWrap} ${open ? styles.formOpen : ''}`} aria-hidden={!open}>
-          <div className={styles.formInner}>
-            {open ? (
-              <MeetingForm
-                resetKey={editing ? occurrenceKey(editing) : 'new'}
-                meeting={editing}
-                date={selectedDate}
-                users={users.data ?? []}
-                saving={save.isPending || remove.isPending}
-                error={save.isError || remove.isError}
-                onSave={(draft) => save.mutate(draft)}
-                onDelete={() => editing && remove.mutate(editing.seriesId)}
-                onCancel={close}
-              />
+
+          <div className={styles.catLegend} aria-label={agendaCopy.legendLabel}>
+            {AGENDA_CATEGORIES.map((category) => (
+              <span key={category} className={styles.catLegendItem}>
+                <i className={`${styles.catDot} ${styles[dotClass(category)]}`} />
+                {category}
+              </span>
+            ))}
+          </div>
+
+          <div className={styles.stage}>
+            {tasks.isError ? (
+              <p role="alert" className={styles.alert}>
+                Não foi possível carregar os prazos das tarefas.
+              </p>
             ) : null}
+            {loading ? (
+              <div role="status" aria-label="Carregando agenda">
+                <Skeleton />
+                <Skeleton />
+              </div>
+            ) : failed ? (
+              <p role="alert" className={styles.alert}>
+                Não foi possível carregar os agendamentos.
+              </p>
+            ) : (
+              <AgendaCalendar
+                mode={mode}
+                focusDate={focusDate}
+                today={today}
+                meetings={meetings}
+                tasks={tasks.data ?? []}
+                onOpenMeeting={openMeeting}
+                onOpenTask={(id) => onOpenTask?.(id)}
+              />
+            )}
           </div>
         </div>
-      </aside>
-    </div>
+
+        <aside className={styles.agendaAside} aria-label={agendaCopy.asideLabel}>
+          {upcoming.isPending ? (
+            <Skeleton aria-label="Carregando próximos agendamentos" />
+          ) : upcoming.isError ? (
+            <p role="alert" className={styles.alert}>
+              Não foi possível carregar os próximos agendamentos.
+            </p>
+          ) : (
+            <UpcomingSection meetings={upcoming.data ?? []} today={today} onOpen={openMeeting} />
+          )}
+          {retroVisible ? (
+            retroCurrent ? (
+              <div className={styles.asideSection}>
+                {retroSiblings.length > 1 ? (
+                  <div
+                    role="group"
+                    aria-label={panelCopy.retroActionsOtherRetros}
+                    className={styles.retroSwitch}
+                  >
+                    {retroSiblings.map((sibling) => (
+                      <button
+                        key={occurrenceKey(sibling)}
+                        type="button"
+                        aria-pressed={occurrenceKey(sibling) === occurrenceKey(retroCurrent)}
+                        onClick={() => setRetroDetail(sibling)}
+                      >
+                        {sibling.time} {sibling.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <RetroActions
+                  key={occurrenceKey(retroCurrent)}
+                  meeting={retroCurrent}
+                  today={today}
+                  users={users.data ?? []}
+                  canManage={canManage}
+                />
+              </div>
+            ) : upcoming.isPending ? null : (
+              <section className={styles.asideSection} aria-label={agendaCopy.retroTitle}>
+                <div className={styles.asideSectionHead}>
+                  <h2>{agendaCopy.retroTitle}</h2>
+                  <span className={styles.asideSectionMeta}>{agendaCopy.retroPending(0)}</span>
+                </div>
+                <p className={styles.helper}>{agendaCopy.retroNone}</p>
+              </section>
+            )
+          ) : null}
+        </aside>
+      </div>
+
+      {form.mode !== 'closed' ? (
+        <MeetingModal
+          key={editing ? occurrenceKey(editing) : 'new'}
+          meeting={editing}
+          date={focusDate}
+          users={users.data ?? []}
+          canManage={canManage}
+          saving={save.isPending || remove.isPending}
+          error={save.isError || remove.isError}
+          onSave={(draft) => save.mutate(draft)}
+          onDelete={() => editing && remove.mutate(editing.seriesId)}
+          onClose={close}
+        />
+      ) : null}
+    </section>
   )
 }

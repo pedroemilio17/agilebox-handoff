@@ -121,11 +121,10 @@ async function openTask(user: ReturnType<typeof userEvent.setup>, task: TaskDto)
 }
 
 /** Telas e efeitos do padrão completo, que devem continuar iguais ao de hoje. */
-async function expectEverythingVisible(cycle = 'Ciclo médio desta semana: 2,5d') {
+async function expectEverythingVisible(cycle = 'Ciclo: 2,5d') {
   const board = await screen.findByRole('region', { name: 'Concluído, tarefas' })
   expect(screen.getByRole('button', { name: 'Agenda' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Paradas · 0' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
   expect(
     within(screen.getByRole('region', { name: 'Desenvolvendo, tarefas' })).getByRole('img', {
       name: /^Desenvolvendo: 1 de 3/,
@@ -160,7 +159,7 @@ describe('Painel adaptativo (M2.1)', () => {
     expect(screen.queryByRole('button', { name: /^Bloqueadas/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Paradas/ })).toBeNull()
     expect(screen.queryByRole('img', { name: /^Desenvolvendo:/ })).toBeNull()
-    expect(screen.queryByText(/Ciclo médio desta semana/)).toBeNull()
+    expect(screen.queryByText(/Ciclo:/)).toBeNull()
     const card = cardButton(BLOCKED)
     expect(card.getAttribute('aria-label')).not.toContain('bloqueada')
     expect(card.getAttribute('aria-label')).not.toContain('subtarefas')
@@ -192,7 +191,7 @@ describe('Painel adaptativo (M2.1)', () => {
 
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     // Bloqueio é passivo: o marcador e o filtro aparecem; o card não mostra o botão Bloquear.
-    expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
     expect(cardButton(BLOCKED).getAttribute('aria-label')).toContain('bloqueada')
 
     const blockedDialog = await openTask(user, BLOCKED)
@@ -218,7 +217,7 @@ describe('Painel adaptativo (M2.1)', () => {
     expect(screen.queryByRole('button', { name: /^Bloqueadas/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Paradas/ })).toBeNull()
     expect(screen.queryByRole('img', { name: /^Desenvolvendo:/ })).toBeNull()
-    expect(screen.queryByText(/Ciclo médio desta semana/)).toBeNull()
+    expect(screen.queryByText(/Ciclo:/)).toBeNull()
     expect(screen.queryByRole('button', { name: 'Agenda' })).toBeNull()
   })
 
@@ -244,7 +243,7 @@ describe('Painel adaptativo (M2.1)', () => {
   it('(f) carregando ou com erro em teamTools.get não esconde nada', async () => {
     // Carregando: tudo continua na tela; o valor do ciclo só é pedido quando a lista chega.
     const pending = renderPanel('pending')
-    await expectEverythingVisible('Ciclo médio desta semana: —')
+    await expectEverythingVisible('Ciclo: —')
     expect(pending.teamToolsGet).toHaveBeenCalled()
     expect(pending.getBoardFlow).not.toHaveBeenCalled()
     cleanup()
@@ -267,11 +266,11 @@ describe('Painel adaptativo (M2.1)', () => {
     const card = cardButton(BLOCKED)
     expect(card.getAttribute('aria-label')).toContain('bloqueada')
     expect(card.getAttribute('aria-label')).toContain('1 de 3 subtarefas concluídas')
-    expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
     // Telas de WIP, subtarefas e fluxo ficam fora do Básico.
     expect(screen.queryByRole('img', { name: /^Desenvolvendo:/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Paradas/ })).toBeNull()
-    expect(screen.queryByText(/Ciclo médio desta semana/)).toBeNull()
+    expect(screen.queryByText(/Ciclo:/)).toBeNull()
     const basicDialog = await openTask(user, BLOCKED)
     expect(within(basicDialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
     expect(within(basicDialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
@@ -287,9 +286,8 @@ describe('Painel adaptativo (M2.1)', () => {
     await waitFor(() =>
       expect(screen.getByRole('img', { name: /^Desenvolvendo: 1 de 3/ })).toBeTruthy(),
     )
-    expect(screen.getByRole('button', { name: 'Paradas · 0' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Bloqueadas · 1' })).toBeTruthy()
-    expect(await screen.findByText('Ciclo médio desta semana: 2,5d')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
+    expect(await screen.findByText('Ciclo: 2,5d')).toBeTruthy()
     // Nada do nível anterior saiu: o marcador de bloqueio e o progresso seguem no card.
     expect(cardButton(BLOCKED).getAttribute('aria-label')).toContain('bloqueada')
     expect(cardButton(BLOCKED).getAttribute('aria-label')).toContain('1 de 3 subtarefas concluídas')

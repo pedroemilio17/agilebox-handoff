@@ -27,7 +27,7 @@ describe('máquina de telas da bandeja', () => {
 
   it('início → atualizar → início avança e depois volta', () => {
     const opened = trayReducer(HOME, { type: 'openTask', taskId: 'T1' })
-    expect(opened.screen).toEqual({ kind: 'update', taskId: 'T1', created: false })
+    expect(opened.screen).toEqual({ kind: 'update', taskId: 'T1' })
     expect(opened.direction).toBe('forward')
 
     const saved = trayReducer(opened, { type: 'saved', taskId: 'T1' })
@@ -45,18 +45,13 @@ describe('máquina de telas da bandeja', () => {
     expect(back.highlightTaskId).toBeNull()
   })
 
-  it('início → nova → atualizar: salvar ou voltar avisa "Tarefa criada" e destaca a linha', () => {
+  it('início → nova: criar volta ao início com "Tarefa criada" e destaca a linha, sem abrir o detalhe', () => {
     const nova = trayReducer(HOME, { type: 'newTask' })
     expect(nova.screen.kind).toBe('new')
     const created = trayReducer(nova, { type: 'taskCreated', taskId: 'T2' })
-    expect(created.screen).toEqual({ kind: 'update', taskId: 'T2', created: true })
-
-    for (const event of [{ type: 'saved', taskId: 'T2' } as const, { type: 'back' } as const]) {
-      const result = trayReducer(created, event)
-      expect(result.screen.kind).toBe('home')
-      expect(result.notice).toBe(TRAY_NOTICES.created)
-      expect(result.highlightTaskId).toBe('T2')
-    }
+    expect(created.screen).toEqual({ kind: 'home' })
+    expect(created.notice).toBe(TRAY_NOTICES.created)
+    expect(created.highlightTaskId).toBe('T2')
   })
 
   it('voltar da tela nova volta ao início sem aviso', () => {

@@ -95,7 +95,7 @@ describe('navegação consolidada do projeto', () => {
     ])
   })
 
-  it('Entregas e Cronograma saem no rail do Fluxo Preditivo; Quadro e Sprints continuam em abas', () => {
+  it('Entregas e Cronograma saem no rail do Fluxo Preditivo; Quadro e Sprints (uma só tela) não', () => {
     const groups = buildProjectNavGroups(
       capabilitiesWith(['wbs', 'risks', 'schedule', 'milestones', 'baseline', 'sprints']),
       { hasProject: true, activeSprintNumber: 4, projectModuleCount: 6 },

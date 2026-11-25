@@ -119,12 +119,12 @@ function expectNoScrumTerms() {
 }
 
 describe('Bandeja · Kanban simples · Básico', () => {
-  it('tela inicial sem cartão de daily, sem pedido de daily, sem bloqueio e sem termos de Scrum', async () => {
+  it('tela inicial sem barra de daily, sem pedido de daily, sem bloqueio e sem termos de Scrum', async () => {
     const { getToday } = renderTray()
 
     expect(await screen.findByText(BLOCKED.title)).toBeTruthy()
-    expect(screen.queryByText('Vamos registrar o que foi feito hoje?')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Atualizar agora' })).toBeNull()
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agora' })).toBeNull()
     expect(screen.queryByText('Bloqueada')).toBeNull()
     expect(getToday).not.toHaveBeenCalled()
     expectNoScrumTerms()
@@ -172,16 +172,16 @@ describe('Bandeja · Kanban simples · Básico', () => {
 
     await user.click(await screen.findByRole('button', { name: /Integração com API/ }))
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 600, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
-    expect(await screen.findByLabelText('O que será feito')).toBeTruthy()
+    expect(await screen.findByLabelText('Estado da tarefa')).toBeTruthy()
     expect(screen.queryByText('Aguardando API')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: /Marcar como bloqueada/ })).toBeNull()
+    expect(screen.queryByText('Subtarefas')).toBeNull()
     expectNoScrumTerms()
 
-    await user.click(screen.getByRole('button', { name: 'Status' }))
-    await user.click(screen.getByRole('menuitemradio', { name: 'Revisar' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.selectOptions(screen.getByLabelText('Estado da tarefa'), 'review')
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
 
     await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: BLOCKED.id, status: 'review' }))
     expect(await screen.findByText('Atualização salva')).toBeTruthy()
@@ -195,7 +195,7 @@ describe('Bandeja · Kanban simples · Básico', () => {
 
     expect(await screen.findByText('Vamos atualizar as atividades de hoje?')).toBeTruthy()
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 62, width: 340 }),
     )
     expectNoScrumTerms()
 

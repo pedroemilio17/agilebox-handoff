@@ -4,7 +4,7 @@ export type TrayScreen =
   | { readonly kind: 'prompt' }
   | { readonly kind: 'home' }
   | { readonly kind: 'kan' }
-  | { readonly kind: 'update'; readonly taskId: string; readonly created: boolean }
+  | { readonly kind: 'update'; readonly taskId: string }
   | { readonly kind: 'new' }
   | { readonly kind: 'daily' }
 
@@ -77,7 +77,7 @@ export function trayReducer(state: TrayState, event: TrayEvent): TrayState {
     case 'openTask':
       return {
         ...state,
-        screen: { kind: 'update', taskId: event.taskId, created: false },
+        screen: { kind: 'update', taskId: event.taskId },
         direction: 'forward',
         notice: null,
       }
@@ -87,24 +87,13 @@ export function trayReducer(state: TrayState, event: TrayEvent): TrayState {
       return { ...state, screen: { kind: 'daily' }, direction: 'forward', notice: null }
     case 'dailySaved':
       return home('back', { notice: TRAY_NOTICES.daily })
+    // Como no protótipo, criar a tarefa volta ao início com o aviso (sem abrir o detalhe).
     case 'taskCreated':
-      return {
-        ...state,
-        screen: { kind: 'update', taskId: event.taskId, created: true },
-        direction: 'forward',
-      }
-    case 'saved': {
-      const created = state.screen.kind === 'update' && state.screen.created
-      return home('back', {
-        highlightTaskId: event.taskId,
-        notice: created ? TRAY_NOTICES.created : TRAY_NOTICES.saved,
-      })
-    }
+      return home('forward', { highlightTaskId: event.taskId, notice: TRAY_NOTICES.created })
+    case 'saved':
+      return home('back', { highlightTaskId: event.taskId, notice: TRAY_NOTICES.saved })
     case 'back': {
       if (state.screen.kind === 'prompt') return state
-      if (state.screen.kind === 'update' && state.screen.created) {
-        return home('back', { highlightTaskId: state.screen.taskId, notice: TRAY_NOTICES.created })
-      }
       return home('back')
     }
   }

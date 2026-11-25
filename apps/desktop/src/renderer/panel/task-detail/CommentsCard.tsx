@@ -3,9 +3,10 @@ import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
 import { format } from 'date-fns'
 import { ApiError } from '@agilebox/contract'
 import type { GetTaskDto, TaskCommentDto } from '@agilebox/contract'
-import { Avatar, Button, Kbd, MentionText, TextArea, Toast } from '@agilebox/ui'
+import { MentionText, Toast } from '@agilebox/ui'
 import { formatRelativeDate } from '../../shared/lib/format-date'
 import { panelCopy } from '../copy'
+import { taskCopy } from './task-detail-copy'
 import { filterMentionOptions, findMentionQuery, insertMention } from './mention-suggest'
 import type { MentionOption } from './mention-suggest'
 import { useAddComment, useEditComment, useRemoveComment } from './use-task-detail'
@@ -70,7 +71,7 @@ export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps)
   // Depois de inserir uma menção, o cursor vai para o fim do nome inserido.
   useEffect(() => {
     if (pendingCaret.current === null) return
-    const field = document.getElementById(fieldId) as HTMLTextAreaElement | null
+    const field = document.getElementById(fieldId) as HTMLInputElement | null
     field?.setSelectionRange(pendingCaret.current, pendingCaret.current)
     pendingCaret.current = null
   }, [draft, fieldId])
@@ -103,7 +104,7 @@ export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps)
     })
   }
 
-  const onDraftKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onDraftKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (open && mention) {
       if (event.key === 'ArrowDown') {
         event.preventDefault()
@@ -137,16 +138,16 @@ export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps)
   const submitDisabled = validateCommentBody(draft) !== null || add.isPending
 
   return (
-    <section aria-labelledby={headingId} className={styles.card}>
-      <header className={styles.checklistHeader}>
-        <h3 id={headingId} className={styles.cardTitle}>
+    <section aria-labelledby={headingId} className={styles.topicSection}>
+      <div className={styles.topicSectionHead}>
+        <h2 id={headingId} className={styles.topicSectionTitle}>
           {panelCopy.commentsCard}
-        </h3>
-        <span className={styles.checklistCount}>{task.comments.length}</span>
-      </header>
+        </h2>
+        <span className={styles.topicSectionMeta}>{task.comments.length}</span>
+      </div>
 
       {task.comments.length === 0 ? (
-        <p className={styles.helper}>{panelCopy.commentsEmpty}</p>
+        <p className={styles.emptyNote}>{panelCopy.commentsEmpty}</p>
       ) : (
         <ol aria-label={panelCopy.commentsList} className={styles.commentList}>
           {task.comments.map((comment) => (
@@ -162,41 +163,52 @@ export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps)
       )}
 
       {add.isPending ? (
-        <p role="status" className={styles.helper}>
+        <p role="status" className={styles.kvHint}>
           {panelCopy.commentSending}
         </p>
       ) : null}
 
-      {readOnly ? <p className={styles.helper}>{panelCopy.commentReadOnly}</p> : null}
+      {readOnly ? <p className={styles.kvHint}>{panelCopy.commentReadOnly}</p> : null}
 
       {readOnly ? null : (
         <form
           noValidate
-          className={styles.commentForm}
+          className={styles.commentFormWrap}
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault()
             submit()
           }}
         >
-          <TextArea
-            id={fieldId}
-            label={panelCopy.commentWrite}
-            rows={3}
-            value={draft}
-            aria-autocomplete="list"
-            aria-controls={open ? listboxId : undefined}
-            aria-activedescendant={open ? `${listboxId}-${current}` : undefined}
-            aria-invalid={overLimit}
-            aria-describedby={`${fieldId}-count${overLimit ? ` ${fieldId}-error` : ''}`}
-            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-              setDraft(event.currentTarget.value)
-              setCaret(event.currentTarget.selectionStart)
-              setDismissedAt(null)
-              setActiveIndex(0)
-            }}
-            onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
-            onKeyDown={onDraftKeyDown}
-          />
+          <div className={styles.inlineAddRow}>
+            <input
+              id={fieldId}
+              type="text"
+              className={styles.input}
+              placeholder={taskCopy.commentPlaceholder}
+              aria-label={panelCopy.commentWrite}
+              value={draft}
+              aria-autocomplete="list"
+              aria-controls={open ? listboxId : undefined}
+              aria-activedescendant={open ? `${listboxId}-${current}` : undefined}
+              aria-invalid={overLimit}
+              aria-describedby={overLimit ? `${fieldId}-error` : undefined}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setDraft(event.currentTarget.value)
+                setCaret(event.currentTarget.selectionStart ?? 0)
+                setDismissedAt(null)
+                setActiveIndex(0)
+              }}
+              onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+              onKeyDown={onDraftKeyDown}
+            />
+            <button
+              type="submit"
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              disabled={submitDisabled}
+            >
+              {panelCopy.commentSubmit}
+            </button>
+          </div>
           {open ? (
             <ul
               id={listboxId}
@@ -219,28 +231,11 @@ export function CommentsCard({ task, readOnlyScope = false }: CommentsCardProps)
               ))}
             </ul>
           ) : null}
-          <div className={styles.blockFooter}>
-            <span
-              id={`${fieldId}-count`}
-              className={overLimit ? styles.blockCountOver : styles.blockCount}
-            >
-              {panelCopy.commentLength(count, COMMENT_MAX_LENGTH)}
-            </span>
-            <span className={styles.helper} aria-hidden="true">
-              {panelCopy.commentMentionHint}
-            </span>
-          </div>
           {overLimit ? (
-            <p id={`${fieldId}-error`} role="alert" className={styles.blockError}>
+            <p id={`${fieldId}-error`} role="alert" className={styles.errorNote}>
               {panelCopy.commentBodyTooLong}
             </p>
           ) : null}
-          <div className={styles.blockButtons}>
-            <Button type="submit" variant="primary" disabled={submitDisabled}>
-              {panelCopy.commentSubmit}
-            </Button>
-            <Kbd aria-hidden="true">Ctrl Enter</Kbd>
-          </div>
         </form>
       )}
 
@@ -302,136 +297,141 @@ function CommentItem({ taskId, comment, canChange, onNotice }: CommentItemProps)
   const overLimit = count > COMMENT_MAX_LENGTH
 
   return (
-    <li className={styles.comment}>
-      <Avatar name={comment.authorName} />
-      <div className={styles.commentMain}>
-        <header className={styles.commentHeader}>
-          <span className={styles.commentAuthor}>{comment.authorName}</span>
+    <li className={styles.commentRow}>
+      <div className={styles.commentMeta}>
+        <span className={styles.commentAuthor}>
+          <strong>{comment.authorName}</strong>
           {comment.asManager ? (
-            <span className={styles.managerMark}>{panelCopy.commentManagerMark}</span>
+            <span className={`${styles.badge} ${styles.badgeGestor}`}>
+              {panelCopy.commentManagerMark}
+            </span>
           ) : null}
-          <time
-            className={styles.helper}
-            dateTime={comment.createdAt}
-            title={format(created, 'dd/MM/yyyy HH:mm')}
-          >
-            {formatRelativeDate(created, new Date())}
-          </time>
+        </span>
+        <span className={styles.commentRight}>
           {comment.editedAt ? (
-            <span
-              className={styles.helper}
-              title={format(new Date(comment.editedAt), 'dd/MM/yyyy HH:mm')}
-            >
+            <span title={format(new Date(comment.editedAt), 'dd/MM/yyyy HH:mm')}>
               {panelCopy.commentEdited}
             </span>
           ) : null}
-        </header>
-
-        {mode === 'edit' ? (
-          <form
-            noValidate
-            className={styles.commentEditForm}
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault()
-              saveEdit()
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.preventDefault()
-                cancelEdit()
-              }
-            }}
-          >
-            <TextArea
-              id={fieldId}
-              label={panelCopy.commentEditField}
-              rows={3}
-              value={draft}
-              aria-invalid={error !== null || overLimit}
-              aria-describedby={error ? errorId : undefined}
-              onChange={(event) => {
-                setDraft(event.currentTarget.value)
-                if (error) setError(validateCommentBody(event.currentTarget.value))
-              }}
-            />
-            <div className={styles.blockFooter}>
-              <span className={overLimit ? styles.blockCountOver : styles.blockCount}>
-                {panelCopy.commentLength(count, COMMENT_MAX_LENGTH)}
-              </span>
-              {error ? (
-                <p id={errorId} role="alert" className={styles.blockError}>
-                  {error}
-                </p>
-              ) : null}
-            </div>
-            <div className={styles.blockButtons}>
-              <Button type="submit" variant="primary" disabled={edit.isPending}>
-                {panelCopy.commentSave}
-              </Button>
-              <Button type="button" onClick={cancelEdit}>
-                {panelCopy.commentCancel}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <p className={styles.commentBody}>
-            <MentionText text={comment.body} mentions={comment.mentions} />
-          </p>
-        )}
-
-        {mode === 'confirm' ? (
-          <div
-            role="group"
-            aria-label={panelCopy.commentRemoveConfirm}
-            className={styles.commentConfirm}
-          >
-            <span>{panelCopy.commentRemoveConfirm}</span>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={remove.isPending}
-              onClick={() =>
-                remove.mutate(comment.id, {
-                  onError: (failure) => {
-                    setMode('view')
-                    onNotice(errorMessage(failure, panelCopy.commentRemoveError))
-                  },
-                })
-              }
-            >
-              {panelCopy.commentRemoveYes}
-            </Button>
-            <Button type="button" onClick={() => setMode('view')}>
-              {panelCopy.commentCancel}
-            </Button>
-          </div>
-        ) : null}
-
-        {mode === 'view' && (canEdit || canRemove) ? (
-          <div className={styles.commentActions}>
-            {canEdit ? (
-              <button
-                type="button"
-                className={styles.commentAction}
-                aria-label={panelCopy.commentEdit(comment.authorName)}
-                onClick={startEdit}
-              >
-                Editar
-              </button>
-            ) : null}
-            {canRemove ? (
-              <button
-                type="button"
-                className={styles.commentAction}
-                aria-label={panelCopy.commentRemove(comment.authorName)}
-                onClick={() => setMode('confirm')}
-              >
-                Remover
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+          <time dateTime={comment.createdAt} title={format(created, 'dd/MM/yyyy HH:mm')}>
+            {formatRelativeDate(created, new Date())}
+          </time>
+        </span>
       </div>
+
+      {mode === 'edit' ? (
+        <form
+          noValidate
+          className={styles.commentEditForm}
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault()
+            saveEdit()
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault()
+              cancelEdit()
+            }
+          }}
+        >
+          <textarea
+            id={fieldId}
+            className={styles.cleanTextarea}
+            aria-label={panelCopy.commentEditField}
+            rows={3}
+            value={draft}
+            aria-invalid={error !== null || overLimit}
+            aria-describedby={error ? errorId : undefined}
+            onChange={(event) => {
+              setDraft(event.currentTarget.value)
+              if (error) setError(validateCommentBody(event.currentTarget.value))
+            }}
+          />
+          <div className={styles.formFooter}>
+            <span className={styles.topicSectionMeta}>
+              {panelCopy.commentLength(count, COMMENT_MAX_LENGTH)}
+            </span>
+            {error ? (
+              <p id={errorId} role="alert" className={styles.errorNote}>
+                {error}
+              </p>
+            ) : null}
+          </div>
+          <div className={styles.buttonRow}>
+            <button
+              type="submit"
+              className={`${styles.btn} ${styles.btnSm} ${styles.btnSecondary}`}
+              disabled={edit.isPending}
+            >
+              {panelCopy.commentSave}
+            </button>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnSm} ${styles.btnGhost}`}
+              onClick={cancelEdit}
+            >
+              {panelCopy.commentCancel}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className={styles.commentText}>
+          <MentionText text={comment.body} mentions={comment.mentions} />
+        </p>
+      )}
+
+      {mode === 'confirm' ? (
+        <div role="group" aria-label={panelCopy.commentRemoveConfirm} className={styles.buttonRow}>
+          <span className={styles.kvHint}>{panelCopy.commentRemoveConfirm}</span>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
+            disabled={remove.isPending}
+            onClick={() =>
+              remove.mutate(comment.id, {
+                onError: (failure) => {
+                  setMode('view')
+                  onNotice(errorMessage(failure, panelCopy.commentRemoveError))
+                },
+              })
+            }
+          >
+            {panelCopy.commentRemoveYes}
+          </button>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSm} ${styles.btnGhost}`}
+            onClick={() => setMode('view')}
+          >
+            {panelCopy.commentCancel}
+          </button>
+        </div>
+      ) : null}
+
+      {mode === 'view' && (canEdit || canRemove) ? (
+        <div className={styles.rowActions}>
+          {canEdit ? (
+            <button
+              type="button"
+              className={styles.rowAction}
+              aria-label={panelCopy.commentEdit(comment.authorName)}
+              onClick={startEdit}
+            >
+              Editar
+            </button>
+          ) : null}
+          {canRemove ? (
+            <button
+              type="button"
+              className={styles.rowAction}
+              aria-label={panelCopy.commentRemove(comment.authorName)}
+              onClick={() => setMode('confirm')}
+            >
+              Remover
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </li>
   )
 }

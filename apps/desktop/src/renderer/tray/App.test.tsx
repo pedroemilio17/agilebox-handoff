@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ProjectDto, TaskDto, AgileBoxApi } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { QueryProvider } from '../shared/query/QueryProvider'
-import { createFakeApi } from '../shared/testing/fake-api'
+import { boardResponse, createFakeApi } from '../shared/testing/fake-api'
 import { makeDetail } from '../panel/task-detail/fixtures'
 import { App } from './App'
 
@@ -54,9 +54,10 @@ const task = (id: string, title: string, projectName = 'Aurora'): TaskDto => ({
 
 const A = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC1', 'Revisão do relatório')
 const B = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC2', 'Publicar versão', 'Boreal')
+const ME = '01J8Y4G2XK8Z1S6M3Q9W0A5V01'
 
 function setup(
-  recent: TaskDto[] = [A, B],
+  tasks: TaskDto[] = [A, B],
   configure?: (api: AgileBoxApi) => void,
   initialScreen: 'prompt' | 'home' = 'home',
 ) {
@@ -69,8 +70,14 @@ function setup(
   }
   vi.stubGlobal('agilebox', { shell })
   const api = createFakeApi()
-  const listRecent = vi.spyOn(api.tasks, 'listRecent').mockResolvedValue(recent)
-  const listFrequent = vi.spyOn(api.tasks, 'listFrequent').mockResolvedValue([B])
+  vi.spyOn(api.session, 'getCurrent').mockResolvedValue({
+    userId: ME,
+    organizationId: '01J8Y4G2XK8Z1S6M3Q9W0ABCDE',
+    role: 'collaborator',
+  })
+  vi.spyOn(api.session, 'listUsers').mockResolvedValue([])
+  const listBoard = vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(boardResponse(tasks))
+  vi.spyOn(api.tasks, 'listRecent').mockResolvedValue(tasks)
   vi.spyOn(api.tasks, 'recordOpen').mockResolvedValue(undefined)
   vi.spyOn(api.timeline, 'list').mockResolvedValue([])
   configure?.(api)
@@ -81,30 +88,29 @@ function setup(
       </QueryProvider>
     </ApiProvider>,
   )
-  return { api, shell, listRecent, listFrequent, user: userEvent.setup() }
+  return { api, shell, listBoard, user: userEvent.setup() }
+}
+
+const PROJECT = {
+  id: A.projectId,
+  name: 'Aurora',
+  createdBy: ME,
+  createdAt: A.createdAt,
+  definitionOfDoneCount: 0,
 }
 
 describe('Bandeja: tela inicial', () => {
-  it('cria pelo rodapé com projeto e prazo interpretados e abre o detalhe', async () => {
+  it('cria pelo rodapé com projeto e prazo interpretados e volta à lista com aviso', async () => {
     const { api, user } = setup([A], (api) => {
-      vi.spyOn(api.projects, 'list').mockResolvedValue([
-        {
-          id: A.projectId,
-          name: 'Aurora',
-          createdBy: '01J8Y4G2XK8Z1S6M3Q9W0A5V01',
-          createdAt: A.createdAt,
-          definitionOfDoneCount: 0,
-        },
-      ])
+      vi.spyOn(api.projects, 'list').mockResolvedValue([PROJECT])
       vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
-      vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id }))
     })
     const create = vi.mocked(api.tasks.create)
     await user.type(
       screen.getByRole('textbox', { name: 'Criação rápida' }),
       'Preparar entrega #Aurora hoje',
     )
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Criar tarefa rápida' }))
     await waitFor(() =>
       expect(create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -114,53 +120,76 @@ describe('Bandeja: tela inicial', () => {
         }),
       ),
     )
-    expect(create?.mock.calls[0]?.[0]?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    await waitFor(() => expect(api.tasks.recordOpen).toHaveBeenCalledWith({ taskId: A.id }))
+    expect(create.mock.calls[0]?.[0]?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(await screen.findByText('Tarefa criada')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
   })
 
-  it('lista as tarefas recentes e ajusta a altura pelo número de linhas', async () => {
-    const { shell } = setup()
+  it('mostra o destino do rodapé ("Projeto · A fazer") e a dica de menções', async () => {
+    setup([A], (api) => {
+      vi.spyOn(api.projects, 'list').mockResolvedValue([PROJECT])
+    })
+    expect(await screen.findByText('Aurora · A fazer')).toBeTruthy()
+    expect(screen.getByText('Use @pessoa #projeto')).toBeTruthy()
+    expect(screen.getByPlaceholderText('Nova tarefa rápida... (@pessoa #projeto)')).toBeTruthy()
+  })
+
+  it('sugere projetos ao digitar # e aplica a escolha no texto', async () => {
+    const { user } = setup([A], (api) => {
+      vi.spyOn(api.projects, 'list').mockResolvedValue([PROJECT])
+    })
+    const quick = screen.getByRole('textbox', { name: 'Criação rápida' })
+    await screen.findByText('Aurora · A fazer')
+    await user.type(quick, 'Algo #Au')
+    await user.click(await screen.findByRole('option', { name: /#Aurora/ }))
+    expect((quick as HTMLInputElement).value).toBe('Algo #Aurora ')
+  })
+
+  it('lista "Em foco (N)" com ID, projeto, estado e título; sem saudação nem Recentes/Frequentes', async () => {
+    setup()
     expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
-    )
+    expect(screen.getByText('Em foco (2)')).toBeTruthy()
+    expect(screen.getAllByText('A fazer').length).toBeGreaterThan(0)
+    expect(screen.getByText('+ Detalhada')).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Recentes' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Frequentes' })).toBeNull()
+    expect(screen.queryByText(/Ver quadro/)).toBeNull()
   })
 
-  it('com uma tarefa a altura é de uma linha', async () => {
-    const { shell } = setup([A])
+  it('a janela expandida tem altura fixa de 630 e não tem botão de fechar nem alça', async () => {
+    const { shell } = setup()
     await screen.findByRole('button', { name: /Revisão do relatório/ })
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 404, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
+    expect(screen.queryByRole('button', { name: 'Fechar' })).toBeNull()
+    expect(screen.queryByRole('separator')).toBeNull()
   })
 
   it('busca por título e projeto sem acentos e mostra o vazio', async () => {
     const { user } = setup()
     await screen.findByRole('button', { name: /Revisão do relatório/ })
-    await user.type(screen.getByLabelText('Buscar tarefa'), 'revisao')
+    const search = screen.getByLabelText('Buscar tarefas na bandeja')
+    await user.type(search, 'revisao')
     expect(screen.queryByRole('button', { name: /Publicar versão/ })).toBeNull()
-    await user.clear(screen.getByLabelText('Buscar tarefa'))
-    await user.type(screen.getByLabelText('Buscar tarefa'), 'boreal')
+    expect(screen.getByText('Resultados (1)')).toBeTruthy()
+    await user.clear(search)
+    await user.type(search, 'boreal')
     expect(screen.getByRole('button', { name: /Publicar versão/ })).toBeTruthy()
-    await user.clear(screen.getByLabelText('Buscar tarefa'))
-    await user.type(screen.getByLabelText('Buscar tarefa'), 'zzz')
-    expect(await screen.findByText('Nenhuma tarefa encontrada.')).toBeTruthy()
+    await user.clear(search)
+    await user.type(search, 'zzz')
+    expect(await screen.findByText('Nenhuma tarefa encontrada')).toBeTruthy()
+    expect(screen.getByText('Use o campo abaixo para criar rapidamente.')).toBeTruthy()
   })
 
   it('mostra o ID de cada tarefa e busca pelo número', async () => {
     const { user } = setup([A, { ...B, number: 7, key: 'AB-7' }])
     expect(await screen.findByText('AB-118')).toBeTruthy()
     expect(screen.getByText('AB-7')).toBeTruthy()
-    await user.type(screen.getByLabelText('Buscar tarefa'), '7')
+    await user.type(screen.getByLabelText('Buscar tarefas na bandeja'), '7')
     expect(screen.queryByRole('button', { name: /Revisão do relatório/ })).toBeNull()
     expect(screen.getByRole('button', { name: /Publicar versão/ })).toBeTruthy()
-  })
-
-  it('mostra o sinal Alta só nas tarefas de prioridade alta', async () => {
-    setup([{ ...A, priority: 'high' }, B])
-    expect(await screen.findByText('Alta')).toBeTruthy()
-    expect(screen.getAllByText('Alta')).toHaveLength(1)
-    expect(screen.getByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
   })
 
   it('mostra o sinal Bloqueada só nas tarefas bloqueadas', async () => {
@@ -169,12 +198,10 @@ describe('Bandeja: tela inicial', () => {
     expect(screen.getAllByText('Bloqueada')).toHaveLength(1)
   })
 
-  it('alterna para Frequentes e mostra o vazio quando não há tarefa aberta', async () => {
-    const { user, listFrequent } = setup([])
-    expect(await screen.findByText('Nenhuma tarefa aberta ainda.')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Frequentes' }))
-    await waitFor(() => expect(listFrequent).toHaveBeenCalled())
-    expect(await screen.findByRole('button', { name: /Publicar versão/ })).toBeTruthy()
+  it('não lista tarefas concluídas em foco', async () => {
+    setup([A, { ...B, status: 'done' }])
+    expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Publicar versão/ })).toBeNull()
   })
 })
 
@@ -185,57 +212,135 @@ describe('Bandeja: atalhos e atualização entre janelas', () => {
     const quick = screen.getByRole('textbox', { name: 'Criação rápida' })
     await user.keyboard('n')
     expect(quick).toBe(document.activeElement)
-    await user.click(screen.getByLabelText('Buscar tarefa'))
+    await user.click(screen.getByLabelText('Buscar tarefas na bandeja'))
     await user.keyboard('n')
-    expect(screen.getByLabelText<HTMLInputElement>('Buscar tarefa').value).toBe('n')
+    expect(screen.getByLabelText<HTMLInputElement>('Buscar tarefas na bandeja').value).toBe('n')
     expect(quick).not.toBe(document.activeElement)
   })
 
   it('recarrega as tarefas quando outra janela avisa uma mudança', async () => {
     let notify: Parameters<AgileBoxApi['onChanges']>[0] = () => undefined
-    const { listRecent } = setup([A], (api) => {
+    const { listBoard } = setup([A], (api) => {
       vi.spyOn(api, 'onChanges').mockImplementation((callback) => {
         notify = callback
         return () => undefined
       })
     })
     await screen.findByRole('button', { name: /Revisão do relatório/ })
-    expect(listRecent).toHaveBeenCalledTimes(1)
+    expect(listBoard).toHaveBeenCalledTimes(1)
     act(() => notify({ kind: 'task', ids: [A.id] }))
-    await waitFor(() => expect(listRecent).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(listBoard).toHaveBeenCalledTimes(2))
   })
 })
 
 describe('Bandeja: atualizar tarefa', () => {
-  it('abre a tarefa, salva as mudanças e volta à lista com aviso e destaque', async () => {
-    const { api, shell, user } = setup()
-    vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id, title: A.title }))
-    const update = vi.spyOn(api.tasks, 'update').mockResolvedValue(A)
-    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
+  const ITEM_1 = '01J8Y4G2XK8Z1S6M3Q9W0A5CK1'
+  const ITEM_2 = '01J8Y4G2XK8Z1S6M3Q9W0A5CK2'
+  const checklist = [
+    {
+      id: ITEM_1,
+      taskId: A.id,
+      title: 'Conferir cláusulas',
+      done: true,
+      position: 0,
+      createdAt: A.createdAt,
+      doneAt: A.createdAt,
+    },
+    {
+      id: ITEM_2,
+      taskId: A.id,
+      title: 'Validar anexo',
+      done: false,
+      position: 1,
+      createdAt: A.createdAt,
+      doneAt: null,
+    },
+  ]
 
+  it('abre a tarefa com ID, projeto, título, estado e subtarefas como no protótipo', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(
+      makeDetail({ id: A.id, title: A.title, checklist }),
+    )
     await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
     expect(api.tasks.recordOpen).toHaveBeenCalledWith({ taskId: A.id })
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 600, width: 430 }),
-    )
+    expect(await screen.findByRole('heading', { name: 'Revisão do relatório' })).toBeTruthy()
+    expect(screen.getByText('Estado')).toBeTruthy()
+    expect(screen.getByText('Subtarefas')).toBeTruthy()
+    expect(screen.getByText('1/2')).toBeTruthy()
+    expect(screen.getByText('Horas registradas')).toBeTruthy()
+    expect(screen.getByRole('button', { name: '+0,5h' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '+1h' })).toBeTruthy()
+    expect(screen.getByText('Nota e impedimento')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeTruthy()
+  })
 
-    const doing = await screen.findByLabelText('O que será feito')
-    await user.clear(doing)
-    await user.type(doing, 'Feito hoje')
-    await user.click(screen.getByRole('button', { name: 'Status' }))
-    await user.click(screen.getByRole('menuitemradio', { name: 'Revisar' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
-
-    await waitFor(() =>
-      expect(update).toHaveBeenCalledWith({ taskId: A.id, changes: { description: 'Feito hoje' } }),
+  it('salva estado, subtarefa, horas e nota pela application e volta com aviso', async () => {
+    const { api, shell, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(
+      makeDetail({ id: A.id, title: A.title, checklist }),
     )
-    expect(move).toHaveBeenCalledWith({ taskId: A.id, status: 'review' })
+    const toggle = vi.spyOn(api.tasks.checklist, 'toggle').mockResolvedValue(A)
+    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
+    const comment = vi
+      .spyOn(api.tasks.comments, 'add')
+      .mockResolvedValue({} as Awaited<ReturnType<AgileBoxApi['tasks']['comments']['add']>>)
+    const setHours = vi
+      .spyOn(api.participations, 'setHours')
+      .mockResolvedValue({} as Awaited<ReturnType<AgileBoxApi['participations']['setHours']>>)
+
+    await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
+    await waitFor(() =>
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
+    )
+    await user.selectOptions(await screen.findByLabelText('Estado da tarefa'), 'review')
+    await user.click(screen.getByRole('checkbox', { name: 'Validar anexo' }))
+    await user.click(screen.getByRole('button', { name: '+1h' }))
+    await user.click(screen.getByRole('button', { name: '+0,5h' }))
+    await user.type(screen.getByLabelText('Nota e impedimento'), 'Alinhado com o cliente')
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    await waitFor(() => expect(move).toHaveBeenCalledWith({ taskId: A.id, status: 'review' }))
+    expect(toggle).toHaveBeenCalledWith({ taskId: A.id, itemId: ITEM_2, done: true })
+    expect(setHours).toHaveBeenCalledWith(expect.objectContaining({ hours: '4' }))
+    expect(comment).toHaveBeenCalledWith({ taskId: A.id, body: 'Alinhado com o cliente' })
     expect(await screen.findByText('Atualização salva')).toBeTruthy()
-    expect(
-      (await screen.findByRole('button', { name: /Revisão do relatório/ })).getAttribute(
-        'data-highlighted',
+    expect(screen.getByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
+  })
+
+  it('pede confirmação ao voltar com alterações não salvas (Continuar / Descartar)', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(
+      makeDetail({ id: A.id, title: A.title, checklist }),
+    )
+    const move = vi.spyOn(api.tasks, 'move').mockResolvedValue(A)
+    await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
+    await user.selectOptions(await screen.findByLabelText('Estado da tarefa'), 'review')
+    await user.click(screen.getByRole('button', { name: 'Voltar para início' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Alterações não salvas' })
+    await user.click(within(dialog).getByRole('button', { name: 'Continuar' }))
+    expect(screen.queryByRole('dialog', { name: 'Alterações não salvas' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Voltar para início' }))
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Alterações não salvas' })).getByRole(
+        'button',
+        { name: 'Descartar' },
       ),
-    ).toBe('true')
+    )
+    expect(await screen.findByText('Em foco (2)')).toBeTruthy()
+    expect(move).not.toHaveBeenCalled()
+  })
+
+  it('volta direto, sem confirmação, quando nada mudou', async () => {
+    const { api, user } = setup()
+    vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id, title: A.title }))
+    await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
+    await screen.findByRole('heading', { name: 'Revisão do relatório' })
+    await user.click(screen.getByRole('button', { name: 'Voltar para início' }))
+    expect(await screen.findByText('Em foco (2)')).toBeTruthy()
   })
 
   it('não salva nada quando a tarefa é somente leitura', async () => {
@@ -245,89 +350,73 @@ describe('Bandeja: atualizar tarefa', () => {
     )
     await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
     expect(await screen.findByText('Somente leitura')).toBeTruthy()
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Salvar' }).disabled).toBe(true)
-    expect(screen.getByLabelText<HTMLTextAreaElement>('O que será feito').disabled).toBe(true)
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: 'Salvar alterações' }).disabled,
+    ).toBe(true)
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Nota e impedimento').disabled).toBe(true)
   })
 })
 
 describe('Bandeja: nova tarefa', () => {
-  it('interpreta projeto e data também no formulário de criação', async () => {
-    const { api, user } = setup([], (api) => {
-      vi.spyOn(api.projects, 'list').mockResolvedValue([
-        {
-          id: A.projectId,
-          name: 'Aurora',
-          createdBy: A.id,
-          createdAt: A.createdAt,
-          definitionOfDoneCount: 0,
-        },
-      ])
-      vi.spyOn(api.tasks, 'create').mockResolvedValue(A)
-      vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: A.id }))
-    })
-    await user.click(screen.getByRole('button', { name: 'Nova tarefa' }))
-    await user.type(screen.getByLabelText('Título'), 'Revisar #Aurora hoje')
-    await user.click(screen.getByRole('button', { name: 'Criar tarefa' }))
+  const projects: ProjectDto[] = [
+    { ...PROJECT, id: '01J8Y4G2XK8Z1S6M3Q9W0A5P01', name: 'Aurora' },
+    { ...PROJECT, id: '01J8Y4G2XK8Z1S6M3Q9W0A5P02', name: 'Boreal' },
+  ]
+
+  it('mostra título, projeto, estado inicial e responsável com Cancelar e Criar tarefa', async () => {
+    const { api, shell, user } = setup()
+    vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    await user.click(await screen.findByRole('button', { name: '+ Detalhada' }))
     await waitFor(() =>
-      expect(api.tasks.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Revisar', projectId: A.projectId, status: 'todo' }),
-      ),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
-    expect(vi.mocked(api.tasks.create).mock.calls[0]?.[0]?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(screen.getByLabelText('O que precisa ser feito?')).toBeTruthy()
+    expect(screen.getByLabelText('Projeto')).toBeTruthy()
+    expect(screen.getByLabelText('Estado inicial')).toBeTruthy()
+    expect(screen.getByLabelText('Responsável')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(await screen.findByText('Em foco (2)')).toBeTruthy()
   })
 
-  it('cria, abre a tarefa e ao voltar mostra "Tarefa criada"', async () => {
-    const { api, shell, user } = setup()
-    const projects: ProjectDto[] = [
-      {
-        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P01',
-        name: 'Aurora',
-        createdBy: A.id,
-        createdAt: A.createdAt,
-        definitionOfDoneCount: 0,
-      },
-      {
-        id: '01J8Y4G2XK8Z1S6M3Q9W0A5P02',
-        name: 'Boreal',
-        createdBy: A.id,
-        createdAt: A.createdAt,
-        definitionOfDoneCount: 0,
-      },
-    ]
+  it('cria com o projeto e o estado escolhidos e volta ao início com "Tarefa criada"', async () => {
+    const { api, user } = setup()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
+    vi.spyOn(api.session, 'listUsers').mockResolvedValue([
+      { id: ME, name: 'Pedro', initials: 'PE', role: 'collaborator' } as Awaited<
+        ReturnType<AgileBoxApi['session']['listUsers']>
+      >[number],
+    ])
     const created = task('01J8Y4G2XK8Z1S6M3Q9W0A5BC3', 'Nova coisa')
     const create = vi.spyOn(api.tasks, 'create').mockResolvedValue(created)
-    vi.spyOn(api.tasks, 'get').mockResolvedValue(
-      makeDetail({ id: created.id, title: created.title }),
-    )
 
-    await user.click(await screen.findByRole('button', { name: 'Nova tarefa' }))
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 430, width: 430 }),
-    )
-    const submit = screen.getByRole<HTMLButtonElement>('button', { name: 'Criar tarefa' })
-    expect(submit.disabled).toBe(true)
-    await user.type(screen.getByLabelText('Título'), 'Nova coisa')
-    await user.click(screen.getByRole('button', { name: 'Boreal' }))
-    await user.click(submit)
+    await user.click(await screen.findByRole('button', { name: '+ Detalhada' }))
+    await user.type(await screen.findByLabelText('O que precisa ser feito?'), 'Nova coisa')
+    await user.selectOptions(screen.getByLabelText('Projeto'), projects[1]!.id)
+    await user.selectOptions(screen.getByLabelText('Estado inicial'), 'in_progress')
+    await user.click(screen.getByRole('button', { name: 'Criar tarefa' }))
 
     await waitFor(() =>
-      expect(create).toHaveBeenCalledWith({ projectId: projects[1]!.id, title: 'Nova coisa' }),
+      expect(create).toHaveBeenCalledWith({
+        projectId: projects[1]!.id,
+        title: 'Nova coisa',
+        status: 'in_progress',
+        responsibleId: ME,
+      }),
     )
-    expect(await screen.findByLabelText('O que será feito')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /Voltar/ }))
     expect(await screen.findByText('Tarefa criada')).toBeTruthy()
+    expect(screen.getByText('Em foco (2)')).toBeTruthy()
   })
 })
 
 describe('Bandeja: aviso inicial compacto e Chat com o Kan', () => {
-  it('abre compacta (340×88), mantém seta ↗ sem texto em todos os estados e entra no Kan limpo', async () => {
+  it('abre compacta (340×62), expande para 430×630 e entra no Kan com "Chave AI"', async () => {
     const { shell, user } = setup([A, B], undefined, 'prompt')
 
     expect(await screen.findByText('Vamos atualizar as atividades de hoje?')).toBeTruthy()
     expect(await screen.findByText('2 tarefas em foco · clique para abrir')).toBeTruthy()
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 62, width: 340 }),
     )
 
     const openPanelCompact = screen.getByRole('button', { name: 'Abrir sistema completo' })
@@ -340,101 +429,76 @@ describe('Bandeja: aviso inicial compacto e Chat com o Kan', () => {
     )
     expect(await screen.findByRole('button', { name: /Revisão do relatório/ })).toBeTruthy()
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
+    expect(screen.getByText('AgileBox Bandeja')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir sistema completo' }).textContent).toBe('')
 
     await user.click(screen.getByRole('button', { name: 'Abrir chat com o Kan' }))
     expect(await screen.findByRole('log', { name: 'Conversa com o Kan' })).toBeTruthy()
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
-    )
-    expect(screen.queryByText(/GEMINI ON/i)).toBeNull()
-    expect(screen.queryByRole('button', { name: /Chave AI/i })).toBeNull()
+    expect(screen.getByText('Modo local')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Chave AI' })).toBeTruthy()
+    expect(screen.getByPlaceholderText('Peça ao Kan ou tire uma dúvida...')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir sistema completo' }).textContent).toBe('')
 
     await user.click(screen.getByRole('button', { name: 'Recolher para aviso' }))
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 62, width: 340 }),
     )
     expect(await screen.findByText('Como estão as entregas de hoje?')).toBeTruthy()
   })
 })
 
 describe('Bandeja: janela', () => {
-  it('abrir sistema completo (↗) abre o painel e fechar esconde a bandeja', async () => {
+  it('abrir sistema completo (↗) abre o painel', async () => {
     const { shell, user } = setup()
     await user.click(await screen.findByRole('button', { name: 'Abrir sistema completo' }))
-    await user.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(shell.openPanel).toHaveBeenCalledTimes(1)
-    expect(shell.close).toHaveBeenCalledTimes(1)
   })
 
-  it('recolher volta para o aviso compacto de 340×88 e clicar expande de novo', async () => {
+  it('recolher volta para o aviso compacto de 340×62 e clicar expande de novo', async () => {
     const { shell, user } = setup()
     await screen.findByRole('button', { name: /Revisão do relatório/ })
     await user.click(screen.getByRole('button', { name: 'Recolher para aviso' }))
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 88, width: 340 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 62, width: 340 }),
     )
-    expect(screen.queryByRole('button', { name: 'Nova tarefa' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '+ Detalhada' })).toBeNull()
     await user.click(
       screen.getByRole('button', { name: 'Expandir bandeja para atualizar atividades' }),
     )
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
   })
 
-  it('a barrinha ajusta a altura pelo teclado e volta ao automático com Home', async () => {
-    const { shell, user } = setup()
+  it('com movimento reduzido, a troca de tamanho não passa por valores intermediários', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({
+        matches: true,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }),
+    })
+    const { shell, user } = setup([A, B], undefined, 'prompt')
+    await user.click(
+      await screen.findByRole('button', { name: 'Expandir bandeja para atualizar atividades' }),
+    )
     await screen.findByRole('button', { name: /Revisão do relatório/ })
-    const handle = screen.getByRole('separator')
-    handle.focus()
-    await user.keyboard('{ArrowUp}')
     await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 492, width: 430 }),
+      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 630, width: 430 }),
     )
-    await user.keyboard('{ArrowDown}{ArrowDown}')
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 444, width: 430 }),
+    const heights = shell.setTrayHeight.mock.calls.map(
+      (call) => (call[0] as { height: number }).height,
     )
-    await user.keyboard('{Home}')
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 468, width: 430 }),
-    )
-  })
-
-  it('respeita os limites de 280 e 660 px', async () => {
-    const { shell, user } = setup()
-    await screen.findByRole('button', { name: /Revisão do relatório/ })
-    screen.getByRole('separator').focus()
-    for (let i = 0; i < 20; i += 1) await user.keyboard('{ArrowUp}')
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 660, width: 430 }),
-    )
-    for (let i = 0; i < 30; i += 1) await user.keyboard('{ArrowDown}')
-    await waitFor(() =>
-      expect(shell.setTrayHeight).toHaveBeenLastCalledWith({ height: 280, width: 430 }),
-    )
-  })
-})
-
-describe('Bandeja: progresso das subtarefas', () => {
-  it('mostra 2/5 na linha da tarefa sem editar nada', async () => {
-    setup([{ ...A, checklistProgress: { done: 2, total: 5, percent: 40 } }, B])
-    expect(await screen.findByText('2/5')).toBeTruthy()
-    expect(screen.queryByText('0/0')).toBeNull()
-    expect(screen.queryByRole('checkbox')).toBeNull()
-  })
-})
-
-describe('Bandeja: contador de comentários', () => {
-  it('mostra o balão com a contagem na linha, sem editar nada', async () => {
-    setup([{ ...A, commentCount: 3 }, B])
-    expect(await screen.findByRole('img', { name: '3 comentários' })).toBeTruthy()
-    expect(screen.queryByRole('img', { name: '0 comentários' })).toBeNull()
-    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(new Set(heights)).toEqual(new Set([62, 630]))
   })
 })
 
@@ -448,9 +512,8 @@ describe('Bandeja: conferência da definição de pronto ao concluir', () => {
 
   async function openToDone(user: ReturnType<typeof userEvent.setup>) {
     await user.click(await screen.findByRole('button', { name: /Revisão do relatório/ }))
-    await user.click(await screen.findByRole('button', { name: 'Status' }))
-    await user.click(screen.getByRole('menuitemradio', { name: 'Concluído' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.selectOptions(await screen.findByLabelText('Estado da tarefa'), 'done')
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
   }
 
   it('concluir pela atualização rápida abre a conferência e só salva com todos marcados', async () => {
@@ -491,7 +554,7 @@ describe('Bandeja: conferência da definição de pronto ao concluir', () => {
 
     expect(screen.queryByRole('dialog', { name: /^AB-\d+ · / })).toBeNull()
     expect(move).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Status' }).textContent).toContain('A fazer')
+    expect(screen.getByLabelText<HTMLSelectElement>('Estado da tarefa').value).toBe('todo')
     expect(screen.queryByRole('alert')).toBeNull()
   })
 })

@@ -114,6 +114,28 @@ function setup(
   return { api, list, listBoard, listTeamBoard, user: userEvent.setup() }
 }
 
+const D1 = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M11', 'Daily da equipe', '2026-11-03', '09:30')
+const D2 = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M12', 'Alinhamento de entrega', '2026-11-03', '14:00')
+const D3 = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M13', 'Revisão geral', '2026-11-03', '16:00')
+
+describe('Agenda: cabeçalho', () => {
+  it('gestor vê título, subtítulo e "+ Novo agendamento"', async () => {
+    setup('manager')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Agenda' })).toBeTruthy()
+    expect(
+      screen.getByText('Alinhamentos, entregas e combinados da equipe sem cortar o fim de semana.'),
+    ).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '+ Novo agendamento' })).toBeTruthy()
+    expect(screen.queryByText('Somente leitura')).toBeNull()
+  })
+
+  it('colaborador vê o selo "Somente leitura" e não vê o botão de criar', async () => {
+    setup('collaborator')
+    expect(await screen.findByText('Somente leitura')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '+ Novo agendamento' })).toBeNull()
+  })
+})
+
 describe('Agenda: calendário', () => {
   it('mantém carregamento explícito e depois informa falha em vez de mostrar agenda vazia', async () => {
     const api = createFakeApi()
@@ -134,160 +156,134 @@ describe('Agenda: calendário', () => {
     expect(screen.getByRole('status', { name: 'Carregando agenda' })).toBeTruthy()
     rejectList(new Error('Sem conexão'))
     expect(await screen.findByText('Não foi possível carregar os agendamentos.')).toBeTruthy()
-    expect(screen.queryByRole('region', { name: 'Agenda semanal' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Agenda semanal' })).toBeNull()
   })
 
-  it('começa em semana seg–dom, consulta os dois meses e navega também por dia', async () => {
-    const { list, user } = setup('manager')
-    expect(await screen.findByRole('region', { name: 'Agenda semanal' })).toBeTruthy()
+  it('começa na semana seg–dom, consulta os dois meses e mostra a legenda', async () => {
+    const { list } = setup('manager')
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
     expect(screen.getByRole('button', { name: 'Semana' }).getAttribute('aria-pressed')).toBe('true')
+    expect(
+      screen.getByRole('heading', { name: '26 de outubro – 1 de novembro de 2026' }),
+    ).toBeTruthy()
+    expect(within(week).getAllByText('Livre')).toHaveLength(7)
     await waitFor(() =>
       expect(list).toHaveBeenCalledWith({ rangeStart: '2026-10-01', rangeEnd: '2026-10-31' }),
     )
     expect(list).toHaveBeenCalledWith({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' })
-    await user.click(screen.getByRole('button', { name: 'Dia' }))
-    expect(screen.getByRole('region', { name: 'Agenda diária' })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
-    expect(
-      screen
-        .getByRole('button', { name: /segunda-feira, 2 de novembro/i })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
+    const legend = screen.getByLabelText('Categorias de eventos')
+    for (const name of ['Daily', 'Planejamento', 'Retrospectiva', 'Entrega'])
+      expect(within(legend).getByText(name)).toBeTruthy()
   })
 
-  it('mostra o mês, marca hoje e carrega os agendamentos do mês', async () => {
-    const { list } = setup('manager')
-    await userEvent.click(screen.getByRole('button', { name: 'Mês' }))
-    expect(await screen.findByRole('heading', { name: /novembro de 2026/i })).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: /domingo, 1 de novembro/i }).getAttribute('aria-current'),
-    ).toBe('date')
-    await waitFor(() =>
-      expect(list).toHaveBeenCalledWith({ rangeStart: '2026-11-01', rangeEnd: '2026-11-30' }),
-    )
-    expect(
-      await screen.findByText('10:00 Planejamento da sprint', { selector: 'span' }),
-    ).toBeTruthy()
-  })
-
-  it('navega entre meses e vira o ano', async () => {
-    const { list, user } = setup('manager')
-    await user.click(screen.getByRole('button', { name: 'Mês' }))
-    await screen.findByRole('heading', { name: /novembro de 2026/i })
-    await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
-    await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
-    expect(await screen.findByRole('heading', { name: /janeiro de 2027/i })).toBeTruthy()
-    await waitFor(() =>
-      expect(list).toHaveBeenLastCalledWith({ rangeStart: '2027-01-01', rangeEnd: '2027-01-31' }),
-    )
-    await user.click(screen.getByRole('button', { name: 'Mês anterior' }))
-    expect(await screen.findByRole('heading', { name: /dezembro de 2026/i })).toBeTruthy()
-  })
-
-  it('seleciona o dia, move pelo teclado e não abre o formulário', async () => {
+  it('navega por período e volta com Hoje', async () => {
     const { user } = setup('manager')
-    await user.click(screen.getByRole('button', { name: 'Mês' }))
-    const day = await screen.findByRole('button', { name: /terça-feira, 10 de novembro/i })
-    await user.click(day)
-    expect(day.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.queryByRole('form')).toBeNull()
-    day.focus()
-    await user.keyboard('{ArrowRight}')
+    await user.click(await screen.findByRole('button', { name: 'Próximo período' }))
+    expect(screen.getByRole('heading', { name: '2 – 8 de novembro de 2026' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Hoje' }))
     expect(
-      screen
-        .getByRole('button', { name: /quarta-feira, 11 de novembro/i })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
-    await user.keyboard('{ArrowDown}')
-    expect(
-      screen
-        .getByRole('button', { name: /quarta-feira, 18 de novembro/i })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
+      screen.getByRole('heading', { name: '26 de outubro – 1 de novembro de 2026' }),
+    ).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Dia' }))
+    expect(screen.getByRole('heading', { name: 'Domingo, 1 de novembro de 2026' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Período anterior' }))
+    expect(screen.getByRole('heading', { name: 'Sábado, 31 de outubro de 2026' })).toBeTruthy()
   })
 
-  it('mostra até 2 eventos e "+N mais"', async () => {
-    setup('manager', [
-      meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M01', 'A', '2026-11-10', '08:00'),
-      meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M02', 'B', '2026-11-10', '09:00'),
-      meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M03', 'C', '2026-11-10', '10:00'),
-      meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M04', 'D', '2026-11-10', '11:00'),
-    ])
-    await userEvent.click(screen.getByRole('button', { name: 'Mês' }))
-    const day = await screen.findByRole('button', { name: /terça-feira, 10 de novembro/i })
-    expect(await within(day).findByText('+2 mais')).toBeTruthy()
-    expect(within(day).queryByText(/10:00 C/)).toBeNull()
+  it('mostra o evento na semana com horário e título', async () => {
+    setup('manager', [D1])
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
+    expect(within(week).queryByText('Daily da equipe')).toBeNull()
+    cleanup()
+    const { user } = setup('manager', [D1])
+    await user.click(await screen.findByRole('button', { name: 'Próximo período' }))
+    const next = await screen.findByRole('group', { name: 'Agenda semanal' })
+    const pill = await within(next).findByRole('button', { name: /Daily da equipe/ })
+    expect(pill.textContent).toContain('09:30')
   })
 
-  it('mostra uma série semanal em cada semana em que ela cai', async () => {
+  it('visão Dia mostra o estado vazio e a lista do dia', async () => {
+    const { user } = setup('manager', [D1])
+    await user.click(await screen.findByRole('button', { name: 'Dia' }))
+    expect(await screen.findByText('Nenhum agendamento em 1 de novembro')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    const row = (await screen.findAllByRole('button', { name: /Daily da equipe/ }))[0]!
+    expect(row.textContent).toContain('09:30')
+    expect(row.textContent).toContain('Daily')
+  })
+
+  it('visão Mês mostra "HH:MM Título", até 2 chips e "+N mais"', async () => {
+    const { user } = setup('manager', [D1, D2, D3])
+    await user.click(await screen.findByRole('button', { name: 'Mês' }))
+    expect(screen.getByRole('heading', { name: 'Novembro de 2026' })).toBeTruthy()
+    const month = await screen.findByRole('group', { name: 'Agenda mensal' })
+    expect(within(month).getByRole('button', { name: '09:30 Daily da equipe' })).toBeTruthy()
+    expect(within(month).getByRole('button', { name: '14:00 Alinhamento de entrega' })).toBeTruthy()
+    expect(within(month).queryByRole('button', { name: /Revisão geral/ })).toBeNull()
+    expect(within(month).getByText('+1 mais')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    expect(screen.getByRole('heading', { name: 'Dezembro de 2026' })).toBeTruthy()
+  })
+
+  it('mostra a série semanal em cada semana em que ela cai', async () => {
     const { user } = setup('manager', weeklyIn)
-    // Semana de 26 de outubro a 1 de novembro: a série cai na segunda 26.
-    const firstWeek = await screen.findByRole('button', {
-      name: 'Alinhamento, Reunião, 09:00 às 10:00, repete toda semana',
-    })
-    expect(firstWeek).toBeTruthy()
-    // Próxima semana: 2 a 8 de novembro, a mesma série aparece de novo na segunda 2.
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
+    expect(within(week).getAllByRole('button', { name: /Alinhamento/ })).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Próximo período' }))
     expect(
-      await screen.findByRole('button', {
-        name: 'Alinhamento, Reunião, 09:00 às 10:00, repete toda semana',
+      within(await screen.findByRole('group', { name: 'Agenda semanal' })).getAllByRole('button', {
+        name: /Alinhamento/,
       }),
-    ).toBeTruthy()
-  })
-
-  it('mostra a série semanal em dois meses no mês', async () => {
-    const { user } = setup('manager', weeklyIn)
-    await user.click(screen.getByRole('button', { name: 'Mês' }))
-    const monday9 = await screen.findByRole('button', { name: /segunda-feira, 9 de novembro/i })
-    expect(await within(monday9).findByText('09:00 Alinhamento', { selector: 'span' })).toBeTruthy()
-    expect(within(monday9).getByRole('img', { name: 'Repete toda semana' })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Próximo mês' }))
-    const monday7 = await screen.findByRole('button', { name: /segunda-feira, 7 de dezembro/i })
-    expect(await within(monday7).findByText('09:00 Alinhamento', { selector: 'span' })).toBeTruthy()
-  })
-
-  it('lista os Próximos com dia, horário em mono, tipo e recorrência', async () => {
-    const review = {
-      ...meeting('01J8Y4G2XK8Z1S6M3Q9W0A5R01', 'Revisão da entrega', '2026-11-10', '10:00'),
-      kind: 'review' as const,
-      endTime: '11:30',
-      occurrenceEndTime: '11:30',
-    }
-    const weekly = { ...SERIES, occurrenceDate: '2026-11-02', occurrenceIndex: 1 }
-    setup('manager', [review], [weekly, review])
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
-    const weeklyCard = within(upcoming).getByRole('button', { name: /Alinhamento/ })
-    expect(within(weeklyCard).getByText('SEG')).toBeTruthy()
-    expect(within(weeklyCard).getByText('02')).toBeTruthy()
-    expect(within(weeklyCard).getByText('09:00')).toBeTruthy()
-    expect(within(weeklyCard).getByText('Toda semana')).toBeTruthy()
-    const reviewCard = within(upcoming).getByRole('button', { name: /Revisão da entrega/ })
-    expect(within(reviewCard).getByText('10:00 – 11:30').className).toContain('mono')
-    expect(within(reviewCard).getByText('Revisão')).toBeTruthy()
-    expect(within(reviewCard).queryByText('Toda semana')).toBeNull()
+    ).toHaveLength(1)
   })
 })
 
-describe('Agenda: gestor', () => {
-  it('cria um agendamento com tipo, fim e repetição semanal', async () => {
+describe('Agenda: Próximos 7 dias', () => {
+  it('lista dia, horário e categoria em mono e conta os eventos', async () => {
+    setup('manager', [D1], [D1, M1])
+    const section = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    expect(await within(section).findByText('1 evento')).toBeTruthy()
+    expect(within(section).getByText('3 de novembro')).toBeTruthy()
+    expect(within(section).getByText('09:30 · Daily')).toBeTruthy()
+    expect(within(section).queryByText(/Planejamento da sprint/)).toBeNull()
+  })
+
+  it('mostra Hoje e Amanhã e o estado vazio', async () => {
+    const today = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M21', 'Hoje cedo', '2026-11-01')
+    const tomorrow = meeting('01J8Y4G2XK8Z1S6M3Q9W0A5M22', 'Amanhã cedo', '2026-11-02')
+    setup('manager', [], [today, tomorrow])
+    const section = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    expect(await within(section).findByText('Hoje')).toBeTruthy()
+    expect(within(section).getByText('Amanhã')).toBeTruthy()
+    expect(within(section).getByText('2 eventos')).toBeTruthy()
+    cleanup()
+    setup('manager', [], [])
+    expect(await screen.findByText('Nenhum compromisso nos próximos 7 dias.')).toBeTruthy()
+  })
+})
+
+describe('Agenda: modal de agendamento', () => {
+  it('o gestor cria com categoria, fim e repetição semanal', async () => {
     const { api, user } = setup('manager')
     const create = vi.spyOn(api.meetings, 'create').mockResolvedValue(M1)
-    await user.click(screen.getByRole('button', { name: 'Mês' }))
-    await user.click(await screen.findByRole('button', { name: /sexta-feira, 20 de novembro/i }))
-    await user.click(screen.getByRole('button', { name: 'Novo agendamento' }))
-    await user.type(await screen.findByLabelText('Título'), 'Revisão de sprint')
-    expect(screen.getByLabelText<HTMLInputElement>('Data').value).toBe('2026-11-20')
-    await user.click(screen.getByRole('button', { name: 'Revisão' }))
-    fireEvent.change(screen.getByLabelText('Fim'), { target: { value: '11:00' } })
-    await user.click(screen.getByRole('checkbox', { name: 'Repetir toda semana' }))
-    fireEvent.change(screen.getByLabelText('Até'), { target: { value: '2026-12-31' } })
-    await user.click(await screen.findByRole('checkbox', { name: 'Ana Souza' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.click(await screen.findByRole('button', { name: '+ Novo agendamento' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Novo agendamento' })
+    await user.type(within(dialog).getByLabelText('Título do encontro'), 'Entrega de sprint')
+    expect(within(dialog).getByLabelText<HTMLInputElement>('Data').value).toBe('2026-11-01')
+    await user.selectOptions(within(dialog).getByLabelText('Categoria'), 'Entrega')
+    fireEvent.change(within(dialog).getByLabelText('Fim (opcional)'), {
+      target: { value: '11:00' },
+    })
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Repetir toda semana' }))
+    fireEvent.change(within(dialog).getByLabelText('Até'), { target: { value: '2026-12-31' } })
+    await user.click(await within(dialog).findByRole('checkbox', { name: 'Ana Souza' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar agendamento' }))
     await waitFor(() =>
       expect(create).toHaveBeenCalledWith({
-        title: 'Revisão de sprint',
-        date: '2026-11-20',
-        time: '09:00',
+        title: 'Entrega de sprint',
+        date: '2026-11-01',
+        time: '10:00',
         endTime: '11:00',
         kind: 'review',
         recurrence: 'weekly',
@@ -295,47 +291,45 @@ describe('Agenda: gestor', () => {
         participants: [ANA],
       }),
     )
-    await waitFor(() => expect(screen.queryByLabelText('Título')).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
-  it('não salva com fim antes do início e mostra a mensagem', async () => {
+  it('não salva com fim antes do início e valida a data final da repetição', async () => {
     const { user } = setup('manager')
-    await user.click(screen.getByRole('button', { name: 'Novo agendamento' }))
-    await user.type(await screen.findByLabelText('Título'), 'Retro')
-    fireEvent.change(screen.getByLabelText('Fim'), { target: { value: '08:30' } })
-    expect(screen.getByText('O fim precisa ser depois do início.')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled')).toBe(true)
-    fireEvent.change(screen.getByLabelText('Fim'), { target: { value: '10:00' } })
-    expect(screen.queryByText('O fim precisa ser depois do início.')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled')).toBe(false)
-  })
-
-  it('valida a data final da repetição e mostra a dica quando ela está vazia', async () => {
-    const { user } = setup('manager')
-    await user.click(screen.getByRole('button', { name: 'Novo agendamento' }))
-    await user.type(await screen.findByLabelText('Título'), 'Alinhamento')
-    await user.click(screen.getByRole('checkbox', { name: 'Repetir toda semana' }))
-    expect(screen.getByText('Sem data final, repete por até 52 semanas.')).toBeTruthy()
-    fireEvent.change(screen.getByLabelText('Até'), { target: { value: '2026-10-01' } })
-    expect(screen.getByText('A data final precisa ser depois do início.')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled')).toBe(true)
+    await user.click(await screen.findByRole('button', { name: '+ Novo agendamento' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Título do encontro'), 'X')
+    fireEvent.change(within(dialog).getByLabelText('Fim (opcional)'), {
+      target: { value: '09:00' },
+    })
+    expect(within(dialog).getByText('O fim precisa ser depois do início.')).toBeTruthy()
+    expect(
+      within(dialog).getByRole<HTMLButtonElement>('button', { name: 'Salvar agendamento' })
+        .disabled,
+    ).toBe(true)
+    fireEvent.change(within(dialog).getByLabelText('Fim (opcional)'), { target: { value: '' } })
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Repetir toda semana' }))
+    expect(within(dialog).getByText('Sem data final, repete por até 52 semanas.')).toBeTruthy()
+    fireEvent.change(within(dialog).getByLabelText('Até'), { target: { value: '2026-10-01' } })
+    expect(within(dialog).getByText('A data final precisa ser depois do início.')).toBeTruthy()
   })
 
   it('edita uma ocorrência de série abrindo a série inteira, com o aviso', async () => {
     const { api, user } = setup('manager', weeklyIn)
-    const update = vi.spyOn(api.meetings, 'update').mockResolvedValue(M1)
-    await user.click(await screen.findByRole('button', { name: /^Alinhamento, Reunião/ }))
-    expect(await screen.findByText('Isso altera todas as repetições.')).toBeTruthy()
-    const title = await screen.findByLabelText<HTMLInputElement>('Título')
-    expect(title.value).toBe('Alinhamento')
-    await user.clear(title)
-    await user.type(title, 'Alinhamento de equipe')
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    const update = vi.spyOn(api.meetings, 'update').mockResolvedValue(SERIES)
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
+    await user.click(within(week).getByRole('button', { name: /Alinhamento/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Detalhes do agendamento' })
+    expect(within(dialog).getByText('Isso altera todas as repetições.')).toBeTruthy()
+    expect(within(dialog).getByLabelText<HTMLInputElement>('Data').value).toBe('2026-10-26')
+    await user.clear(within(dialog).getByLabelText('Título do encontro'))
+    await user.type(within(dialog).getByLabelText('Título do encontro'), 'Alinhamento semanal')
+    await user.click(within(dialog).getByRole('button', { name: 'Salvar agendamento' }))
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith({
-        meetingId: SERIES.seriesId,
+        meetingId: SERIES.id,
         changes: {
-          title: 'Alinhamento de equipe',
+          title: 'Alinhamento semanal',
           date: '2026-10-26',
           time: '09:00',
           endTime: null,
@@ -348,45 +342,42 @@ describe('Agenda: gestor', () => {
     )
   })
 
-  it('exclui uma série só depois da confirmação inline com o aviso', async () => {
+  it('exclui uma série só depois da confirmação inline', async () => {
     const { api, user } = setup('manager', weeklyIn)
-    const remove = vi.spyOn(api.meetings, 'delete').mockResolvedValue(undefined)
-    await user.click(await screen.findByRole('button', { name: /^Alinhamento, Reunião/ }))
-    await user.click(await screen.findByRole('button', { name: 'Excluir' }))
-    expect(screen.getByText('Excluir esta série? Isso altera todas as repetições.')).toBeTruthy()
-    expect(remove).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Manter' }))
-    expect(screen.queryByText('Excluir esta série? Isso altera todas as repetições.')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
-    await user.click(screen.getByRole('button', { name: 'Excluir série' }))
-    await waitFor(() => expect(remove).toHaveBeenCalledWith({ meetingId: SERIES.seriesId }))
+    const del = vi.spyOn(api.meetings, 'delete').mockResolvedValue(undefined)
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
+    await user.click(within(week).getByRole('button', { name: /Alinhamento/ }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Excluir' }))
+    expect(del).not.toHaveBeenCalled()
+    await user.click(within(dialog).getByRole('button', { name: 'Excluir série' }))
+    await waitFor(() => expect(del).toHaveBeenCalledWith({ meetingId: SERIES.id }))
   })
 
-  it('exclui um agendamento avulso direto pelo item da lista', async () => {
-    const { api, user } = setup('manager')
-    const remove = vi.spyOn(api.meetings, 'delete').mockResolvedValue(undefined)
-    await user.click(await screen.findByRole('button', { name: /Planejamento da sprint/ }))
-    await user.click(await screen.findByRole('button', { name: 'Excluir' }))
-    await waitFor(() => expect(remove).toHaveBeenCalledWith({ meetingId: M1.id }))
+  it('exclui um agendamento avulso direto pelo botão Excluir', async () => {
+    const { api, user } = setup('manager', [D1], [D1])
+    const del = vi.spyOn(api.meetings, 'delete').mockResolvedValue(undefined)
+    const section = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    await user.click(await within(section).findByRole('button', { name: /Daily da equipe/ }))
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Excluir' }),
+    )
+    await waitFor(() => expect(del).toHaveBeenCalledWith({ meetingId: D1.id }))
   })
 
-  it('mostra "Nada marcado." sem agendamentos', async () => {
-    setup('manager', [])
-    expect(await screen.findByText('Nada marcado.')).toBeTruthy()
-  })
-})
-
-describe('Agenda: colaborador', () => {
-  it('vê todos os agendamentos da organização, mas não cria nem edita', async () => {
-    setup('collaborator', weeklyIn)
-    expect(await screen.findByText('Só o gestor cria e edita agendamentos.')).toBeTruthy()
-    expect(
-      screen.getByRole<HTMLButtonElement>('button', { name: 'Novo agendamento' }).disabled,
-    ).toBe(true)
-    const item = await screen.findByRole<HTMLButtonElement>('button', {
-      name: 'Alinhamento, Reunião, 09:00 às 10:00, repete toda semana',
-    })
-    expect(item.disabled).toBe(true)
+  it('o colaborador só visualiza: campos desabilitados, sem salvar nem excluir', async () => {
+    const { user } = setup('collaborator', [D1], [D1])
+    const section = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    await user.click(await within(section).findByRole('button', { name: /Daily da equipe/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Visualizar agendamento' })
+    expect(within(dialog).getByLabelText<HTMLInputElement>('Título do encontro').disabled).toBe(
+      true,
+    )
+    expect(within(dialog).getByLabelText<HTMLSelectElement>('Categoria').value).toBe('Daily')
+    expect(within(dialog).queryByRole('button', { name: 'Salvar agendamento' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Excluir' })).toBeNull()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })
 

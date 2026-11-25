@@ -1,8 +1,10 @@
 import { useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { AcceptanceCriterionDto, GetTaskDto } from '@agilebox/contract'
-import { AddButton, IconButton, ProgressBar, TextField, Toast } from '@agilebox/ui'
+import { Toast } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { ProgressTrack } from './ProgressTrack'
+import { taskCopy } from './task-detail-copy'
 import {
   useAddCriterion,
   useMoveCriterion,
@@ -72,27 +74,20 @@ export function CriteriaCard({ task, readOnly, windingDown }: CriteriaCardProps)
   }
 
   return (
-    <section aria-labelledby={headingId} className={styles.card}>
-      <header className={styles.checklistHeader}>
-        <h3 id={headingId} className={styles.cardTitle}>
+    <section aria-labelledby={headingId} className={styles.topicSection}>
+      <div className={styles.topicSectionHead}>
+        <h2 id={headingId} className={styles.topicSectionTitle}>
           {panelCopy.criteriaCard}
-        </h3>
-        <span className={styles.checklistCount}>
-          {done}/{total}
-        </span>
-      </header>
+        </h2>
+        <span className={styles.topicSectionMeta}>{taskCopy.subtasksCounter(done, total)}</span>
+      </div>
       {total > 0 ? (
-        <ProgressBar
-          className={styles.checklistBar}
-          done={done}
-          total={total}
-          label={panelCopy.criteriaProgressLabel}
-        />
+        <ProgressTrack done={done} total={total} label={panelCopy.criteriaProgressLabel} />
       ) : null}
 
-      {items.length === 0 ? <p className={styles.helper}>{panelCopy.criteriaEmpty}</p> : null}
+      {items.length === 0 ? <p className={styles.emptyNote}>{panelCopy.criteriaEmpty}</p> : null}
       {items.length > 0 ? (
-        <ul aria-label={panelCopy.criteriaList} className={styles.checklistList}>
+        <ul aria-label={panelCopy.criteriaList} className={styles.checklistStack}>
           {items.map((item, index) => (
             <CriterionRow
               key={item.id}
@@ -117,24 +112,27 @@ export function CriteriaCard({ task, readOnly, windingDown }: CriteriaCardProps)
       ) : null}
 
       {busy ? (
-        <p role="status" className={styles.helper}>
+        <p role="status" className={styles.kvHint}>
           {panelCopy.criteriaSaving}
         </p>
       ) : null}
 
-      {readOnly ? <p className={styles.helper}>{panelCopy.criteriaReadOnly}</p> : null}
+      {readOnly ? <p className={styles.kvHint}>{panelCopy.criteriaReadOnly}</p> : null}
       {!readOnly && windingDown ? (
-        <p className={styles.helper}>{panelCopy.criteriaWindingDown}</p>
+        <p className={styles.kvHint}>{panelCopy.criteriaWindingDown}</p>
       ) : null}
       {!readOnly && !windingDown && limitReached ? (
-        <p className={styles.helper}>{panelCopy.criteriaLimit}</p>
+        <p className={styles.kvHint}>{panelCopy.criteriaLimit}</p>
       ) : null}
       {creating ? (
-        <form noValidate onSubmit={submitAdd}>
-          <div className={styles.addRow}>
-            <TextField
+        <form noValidate className={styles.addColumn} onSubmit={submitAdd}>
+          <div className={styles.inlineAddRow}>
+            <input
               id={addFieldId}
-              label={panelCopy.criteriaAddLabel}
+              type="text"
+              className={styles.input}
+              aria-label={panelCopy.criteriaAddLabel}
+              placeholder={`+ ${panelCopy.criteriaAddLabel}...`}
               value={draft}
               aria-invalid={addError !== null}
               aria-describedby={addError ? `${addFieldId}-error` : undefined}
@@ -143,10 +141,12 @@ export function CriteriaCard({ task, readOnly, windingDown }: CriteriaCardProps)
                 if (addError) setAddError(validateCriterionText(event.currentTarget.value))
               }}
             />
-            <AddButton type="submit">{panelCopy.criteriaAddLabel}</AddButton>
+            <button type="submit" className={`${styles.btn} ${styles.btnSecondary}`}>
+              {taskCopy.subtaskAdd}
+            </button>
           </div>
           {addError ? (
-            <p id={`${addFieldId}-error`} role="alert" className={styles.blockError}>
+            <p id={`${addFieldId}-error`} role="alert" className={styles.errorNote}>
               {addError}
             </p>
           ) : null}
@@ -216,8 +216,8 @@ function CriterionRow({
   }
 
   return (
-    <li className={styles.checklistItem}>
-      <label className={styles.checklistCheck}>
+    <li className={styles.checkboxRow}>
+      <label className={styles.checkboxLabel}>
         <input
           type="checkbox"
           checked={item.done}
@@ -256,7 +256,7 @@ function CriterionRow({
             }}
           />
           {error ? (
-            <span id={errorId} role="alert" className={styles.blockError}>
+            <span id={errorId} role="alert" className={styles.errorNote}>
               {error}
             </span>
           ) : null}
@@ -279,43 +279,36 @@ function CriterionRow({
       )}
 
       {readOnly ? null : (
-        <span className={styles.checklistActions}>
-          <IconButton
+        <span className={styles.rowActions}>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.criteriaMoveUp(item.text)}
             title="Mover para cima"
             disabled={isFirst}
             onClick={() => onMove(index - 1)}
           >
             <span aria-hidden="true">↑</span>
-          </IconButton>
-          <IconButton
+          </button>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.criteriaMoveDown(item.text)}
             title="Mover para baixo"
             disabled={isLast}
             onClick={() => onMove(index + 1)}
           >
             <span aria-hidden="true">↓</span>
-          </IconButton>
-          <IconButton
+          </button>
+          <button
             type="button"
+            className={styles.rowAction}
             aria-label={panelCopy.criteriaRemove(item.text)}
             title="Remover"
             onClick={onRemove}
           >
-            <svg
-              aria-hidden="true"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </IconButton>
+            ×
+          </button>
         </span>
       )}
     </li>

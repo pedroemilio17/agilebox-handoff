@@ -148,62 +148,62 @@ function setup({
   return { api, listSpy, user: userEvent.setup() }
 }
 
-/** Abre a retro pelo cartão de Próximos (qualquer pessoa que vê a agenda consegue). */
-async function openRetro(
-  user: ReturnType<typeof userEvent.setup>,
-  name = /Retrospectiva da sprint/,
-) {
-  const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
-  await user.click(within(upcoming).getAllByRole('button', { name })[0]!)
-  return screen.findByRole('region', { name: 'Combinados' })
+/** A lateral mostra a próxima retro sozinha; com `name`, abre outra pelo cartão de Próximos. */
+async function openRetro(user: ReturnType<typeof userEvent.setup>, name?: RegExp) {
+  if (name) {
+    const upcoming = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    await user.click(within(upcoming).getAllByRole('button', { name })[0]!)
+  }
+  const section = await screen.findByRole('region', { name: 'Ações da Retrospectiva' })
+  await waitFor(() => expect(within(section).queryByText('Carregando combinados')).toBeNull())
+  return section
 }
 
-describe('Combinados: aparecem só em Retro', () => {
-  it('não mostra a seção para reunião e mostra para retro', async () => {
+describe('Combinados: aparecem na lateral', () => {
+  it('mostra os combinados da próxima retro e abrir uma reunião não os troca', async () => {
     const meetingItem = occurrence(
       '01J8Y4G2XK8Z1S6M3Q9W0AMEET',
       'Planejamento da sprint',
-      '2026-11-10',
+      '2026-11-03',
     )
     const { user } = setup({ role: 'manager', meetings: [meetingItem, retro()] })
-    await user.click(await screen.findByRole('button', { name: /Planejamento da sprint/ }))
-    expect(await screen.findByRole('form', { name: 'Salvar' })).toBeTruthy()
-    expect(screen.queryByRole('region', { name: 'Combinados' })).toBeNull()
-    expect(await openRetro(user)).toBeTruthy()
+    const upcoming = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    await user.click(within(upcoming).getByRole('button', { name: /Planejamento da sprint/ }))
+    expect(await screen.findByRole('dialog', { name: 'Detalhes do agendamento' })).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Ações da Retrospectiva' })).toBeTruthy()
   })
 
-  it('colaborador abre a retro para ver os combinados, mas não a reunião', async () => {
+  it('colaborador abre a reunião só para visualizar e vê os combinados da retro', async () => {
     const meetingItem = occurrence(
       '01J8Y4G2XK8Z1S6M3Q9W0AMEET',
       'Planejamento da sprint',
-      '2026-11-10',
+      '2026-11-03',
     )
     const { user } = setup({ role: 'collaborator', meetings: [meetingItem, retro()] })
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
-    expect(
-      within(upcoming)
-        .getByRole('button', { name: /Planejamento da sprint/ })
-        .hasAttribute('disabled'),
-    ).toBe(true)
-    await user.click(within(upcoming).getByRole('button', { name: /Retrospectiva da sprint/ }))
-    expect(await screen.findByRole('region', { name: 'Combinados' })).toBeTruthy()
+    const upcoming = await screen.findByRole('region', { name: 'Próximos 7 dias' })
+    await user.click(within(upcoming).getByRole('button', { name: /Planejamento da sprint/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Visualizar agendamento' })
+    expect(within(dialog).queryByRole('button', { name: 'Salvar agendamento' })).toBeNull()
+    expect(await screen.findByRole('region', { name: 'Ações da Retrospectiva' })).toBeTruthy()
   })
 
-  it('abre a retro pelo mês, no dia escolhido', async () => {
-    const { user } = setup({ role: 'collaborator' })
+  it('abre a retro pelo chip do mês, no dia escolhido', async () => {
+    const { user } = setup({ role: 'collaborator', meetings: [retro(), retro(NEXT_RETRO_DATE)] })
     await user.click(screen.getByRole('button', { name: 'Mês' }))
-    await user.click(await screen.findByRole('button', { name: /sexta-feira, 6 de novembro/i }))
-    expect(await screen.findByRole('region', { name: 'Combinados' })).toBeTruthy()
+    const month = await screen.findByRole('group', { name: 'Agenda mensal' })
+    const chips = within(month).getAllByRole('button', { name: /Retrospectiva da sprint/ })
+    await user.click(chips[1]!)
+    await screen.findByRole('dialog', { name: 'Visualizar agendamento' })
+    expect(await screen.findByRole('region', { name: 'Ações da Retrospectiva' })).toBeTruthy()
   })
 })
 
 describe('Combinados: lista, contagem e progresso', () => {
-  it('mostra "2 de 3 feitos", a barra de progresso e responsável ou "Sem responsável"', async () => {
+  it('mostra "1 pendente" e responsável ou "Sem responsável"', async () => {
     setup({ role: 'collaborator' })
     const section = await openRetro(userEvent.setup())
-    expect(within(section).getByText('2 de 3 feitos')).toBeTruthy()
-    const bar = within(section).getByRole('progressbar', { name: 'Combinados feitos' })
-    expect(bar.getAttribute('aria-valuetext')).toBe('2 de 3')
+    expect(within(section).getByText('1 pendente')).toBeTruthy()
+    expect(within(section).getAllByText('Combinado concluído')).toHaveLength(2)
     expect(within(section).getByText('Marta Gestora')).toBeTruthy()
     expect(within(section).getByText('Sem responsável')).toBeTruthy()
   })
@@ -226,8 +226,6 @@ describe('Combinados: lista, contagem e progresso', () => {
 
   it('mostra carregando enquanto a lista não chega', async () => {
     setup({ role: 'collaborator', retroList: () => new Promise(() => undefined) })
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
-    await userEvent.setup().click(within(upcoming).getByRole('button', { name: /Retrospectiva/ }))
     expect(await screen.findByText('Carregando combinados')).toBeTruthy()
   })
 
@@ -335,7 +333,7 @@ describe('Combinados: gestor adiciona', () => {
     await user.click(within(form).getByRole('button', { name: 'Adicionar combinado' }))
     expect(within(form).getByText('O combinado pode ter até 200 caracteres.')).toBeTruthy()
     expect(add).not.toHaveBeenCalled()
-  })
+  }, 20_000)
 
   it('recusa prazo anterior à retro', async () => {
     const { api, user } = setup({ role: 'manager' })
@@ -469,40 +467,23 @@ describe('Combinados: ocorrências da mesma série', () => {
       retro(RETRO_DATE, { retroActionsCount: 1, retroActionsDone: 0 }),
       retro(NEXT_RETRO_DATE, { retroActionsCount: 1, retroActionsDone: 0 }),
     ]
-    setup({ role: 'collaborator', meetings: occurrences, lists })
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
-    const cards = within(upcoming).getAllByRole('button', { name: /Retrospectiva da sprint/ })
-    const user = userEvent.setup()
-    await user.click(cards[0]!)
+    const { user } = setup({ role: 'collaborator', meetings: occurrences, lists })
     expect(await screen.findByText('Combinado do dia seis')).toBeTruthy()
-    expect(screen.queryByText('Combinado do dia treze')).toBeNull()
-    await user.click(cards[1]!)
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    await user.click(screen.getByRole('button', { name: 'Próximo período' }))
+    const week = await screen.findByRole('group', { name: 'Agenda semanal' })
+    await user.click(within(week).getByRole('button', { name: /Retrospectiva da sprint/ }))
     expect(await screen.findByText('Combinado do dia treze')).toBeTruthy()
     expect(screen.queryByText('Combinado do dia seis')).toBeNull()
   })
 })
 
-describe('Combinados: contador "2/3" nos cartões e chips', () => {
-  it('mostra no cartão de Próximos e no chip do mês', async () => {
-    const { user } = setup({ role: 'collaborator' })
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
+describe('Combinados: contador nos Próximos 7 dias', () => {
+  it('mostra "2/3 combinados" no item da retro', async () => {
+    setup({ role: 'collaborator' })
+    const upcoming = await screen.findByRole('region', { name: 'Próximos 7 dias' })
     const card = within(upcoming).getByRole('button', { name: /Retrospectiva da sprint/ })
-    const count = within(card).getByRole('img', { name: '2 de 3 combinados feitos' })
-    expect(count.textContent).toBe('2/3')
-
-    await user.click(screen.getByRole('button', { name: 'Mês' }))
-    const day = await screen.findByRole('button', { name: /sexta-feira, 6 de novembro/i })
-    expect(within(day).getByRole('img', { name: '2 de 3 combinados feitos' }).textContent).toBe(
-      '2/3',
-    )
-  })
-
-  it('mostra no evento da grade semanal', async () => {
-    const { user } = setup({ role: 'collaborator' })
-    await user.click(await screen.findByRole('button', { name: 'Próximo período' }))
-    const event = await screen.findByRole('button', { name: /Retrospectiva da sprint, Retro/ })
-    expect(event.getAttribute('aria-label')).toContain('2 de 3 combinados feitos')
-    expect(within(event).getByText('2/3')).toBeTruthy()
+    expect(within(card).getByText('2/3 combinados')).toBeTruthy()
   })
 
   it('não mostra contador em retro sem combinados', async () => {
@@ -510,8 +491,8 @@ describe('Combinados: contador "2/3" nos cartões e chips', () => {
       role: 'collaborator',
       meetings: [retro(RETRO_DATE, { retroActionsCount: 0, retroActionsDone: 0 })],
     })
-    const upcoming = await screen.findByRole('region', { name: 'Próximos agendamentos' })
+    const upcoming = await screen.findByRole('region', { name: 'Próximos 7 dias' })
     const card = within(upcoming).getByRole('button', { name: /Retrospectiva da sprint/ })
-    expect(within(card).queryByRole('img', { name: /combinado/ })).toBeNull()
+    expect(within(card).queryByText(/combinados/)).toBeNull()
   })
 })

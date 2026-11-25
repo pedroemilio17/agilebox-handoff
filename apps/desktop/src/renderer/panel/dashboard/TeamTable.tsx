@@ -1,11 +1,11 @@
-import { Avatar, ProjectSwatch } from '@agilebox/ui'
-import { swatchIndexOf } from '../../shared/lib/project-swatch'
 import { panelCopy } from '../copy'
+import { dashboardCopy } from './dashboard-copy'
+import { brl } from './dashboard-format'
 import type { DashboardInsights } from './dashboard-format'
 import styles from './Dashboard.module.css'
 
 type TeamMember = DashboardInsights['team'][number]
-/** Exceções que abrem o quadro filtrado (como antes das exceções virarem selos da equipe). */
+/** Exceções que abrem o quadro filtrado (selos de parada, vencida e bloqueada). */
 export type DashboardException = 'aging' | 'overdue' | 'blocked'
 
 export interface TeamTableProps {
@@ -17,22 +17,22 @@ export interface TeamTableProps {
     readonly done: ReadonlyMap<string, boolean>
   }
   readonly blockedVisible: boolean
-  /** Carga em horas e a legenda: só com a ferramenta de estimativa de horas ligada (o Básico não tem). */
+  /** Carga em horas: só com a ferramenta de estimativa de horas ligada (o Básico não tem). */
   readonly loadVisible: boolean
+  /**
+   * Valor/hora padrão por pessoa, em reais. O servidor só entrega o de todos ao gestor; sem
+   * permissão vem `null` e a célula mostra "—". Ausente enquanto carrega.
+   */
+  readonly rates?: ReadonlyMap<string, number | null> | undefined
   readonly onOpenProjects: (member: TeamMember['user']) => void
   readonly onOpenDaily: (userId: string, name: string) => void
   /** Selo de parada, vencida ou bloqueada abre o quadro com esse filtro. */
   readonly onOpenException?: ((exception: DashboardException) => void) | undefined
 }
 
-/** Sinais da pessoa, em selos de atenção (dias de parada, vencida, aceite pendente, bloqueio). */
-function signalsOf(member: TeamMember, blockedVisible: boolean) {
-  // Desenho: todos os sinais da equipe usam o mesmo tom de atenção (`.warn`).
-  const signals: {
-    key: string
-    text: string
-    exception?: DashboardException
-  }[] = []
+/** Sinais da pessoa em selos de atenção: dias de parada, vencida e aceite pendente. */
+function signalsOf(member: TeamMember) {
+  const signals: { key: string; text: string; exception?: DashboardException }[] = []
   if (member.staleDays !== null)
     signals.push({ key: 'stale', text: `Parada ${member.staleDays}d`, exception: 'aging' })
   if (member.overdueDays !== null)
@@ -49,142 +49,189 @@ function signalsOf(member: TeamMember, blockedVisible: boolean) {
           ? 'Aceite pendente'
           : `${member.acceptancePendingCount} aceites pendentes`,
     })
-  if (blockedVisible && member.blockedCount > 0)
-    signals.push({
-      key: 'blocked',
-      text: `${member.blockedCount} ${member.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}`,
-      exception: 'blocked',
-    })
   return signals
 }
 
-/** "Equipe em todos os projetos": uma linha por pessoa, abre os projetos dela ao clicar. */
+/**
+ * "Colaboradores": tabela aberta (cabeçalho mono em caixa alta, sem borda externa). Pessoa com os
+ * projetos dela, em andamento, bloqueadas, sinais, diária, carga, valor/hora e "Abrir quadro →".
+ * O contrato ainda não traz tempo médio, horas lançadas nem custo por pessoa (pendência).
+ */
 export function TeamTable({
   team,
   daily,
   blockedVisible,
   loadVisible,
+  rates,
   onOpenProjects,
   onOpenDaily,
   onOpenException,
 }: TeamTableProps) {
-  const gridColumns = [
-    '1.2fr',
-    '2fr',
-    '0.8fr',
-    '1.4fr',
-    ...(daily.visible ? ['1fr'] : []),
-    ...(loadVisible ? ['1.3fr'] : []),
-  ].join(' ')
+  const ratesVisible = rates !== undefined && [...rates.values()].some((rate) => rate !== null)
   return (
-    <section className={styles.team} aria-labelledby="team-title">
-      <div className={styles.teamHead}>
-        <h2 id="team-title" className={styles.sectionTitle}>
-          Equipe em todos os projetos
+    <section aria-labelledby="team-title">
+      <div className={styles.secHead}>
+        <h2 id="team-title" className={styles.secTitle}>
+          {dashboardCopy.teamTitle}
         </h2>
-        <span className={styles.spacer} />
-        {loadVisible ? (
-          <span className={styles.caption}>
-            Carga soma as estimativas de todos os projetos da pessoa
-          </span>
-        ) : null}
+        <span className={styles.secMeta}>{dashboardCopy.teamMeta}</span>
       </div>
-      <div className={styles.teamTable}>
-        <div className={styles.teamColumns} style={{ gridTemplateColumns: gridColumns }}>
-          <span>Pessoa</span>
-          <span>Projetos</span>
-          <span>Em andamento</span>
-          <span>Sinais</span>
-          {daily.visible ? <span>Diária de hoje</span> : null}
-          {loadVisible ? <span>Carga da semana</span> : null}
-        </div>
-        {team.length === 0 ? (
-          <p className={styles.emptyLine}>{panelCopy.dashboardEmpty}</p>
-        ) : (
-          team.map((member) => {
-            const name = member.user.name
-            const done = daily.done.get(member.user.id)
-            const signals = signalsOf(member, blockedVisible)
-            return (
-              <div
-                className={`${styles.teamRowItem} ${styles.teamRow}`}
-                style={{ gridTemplateColumns: gridColumns }}
-                key={member.user.id}
-              >
-                <button
-                  type="button"
-                  className={styles.teamRowLink}
-                  aria-label={panelCopy.openProjectsOf(name)}
-                  onClick={() => onOpenProjects(member.user)}
-                />
-                <span className={styles.person}>
-                  <Avatar name={name} />
-                  {name}
-                </span>
-                <span className={styles.personChips}>
-                  {member.projects.map((project) => (
-                    <span className={styles.projectChip} key={project.id}>
-                      <ProjectSwatch index={swatchIndexOf(project.id)} name={project.name} />
-                      {project.name}
-                    </span>
-                  ))}
-                </span>
-                <span className={styles.figure}>{member.inProgress}</span>
-                <span className={styles.signals}>
-                  {signals.length === 0 ? (
-                    <span className={styles.noSignal}>—</span>
-                  ) : (
-                    signals.map((signal) =>
-                      signal.exception && onOpenException ? (
-                        <button
-                          type="button"
-                          className={`${styles.signal} ${styles.signalButton}`}
-                          key={signal.key}
-                          onClick={() => onOpenException(signal.exception!)}
-                        >
-                          {signal.text}
-                        </button>
-                      ) : (
-                        <span className={styles.signal} key={signal.key}>
-                          {signal.text}
-                        </span>
-                      ),
-                    )
-                  )}
-                </span>
-                {daily.visible ? (
-                  <span className={styles.dailyCell}>
-                    {daily.loading ? (
-                      <span className={styles.muted}>{panelCopy.dailyLoading}</span>
-                    ) : done === undefined ? (
-                      <span className={styles.muted}>—</span>
-                    ) : done ? (
-                      <>
-                        <span className={styles.dailyDone}>✓ respondida</span>
-                        <button
-                          type="button"
-                          className={styles.inlineButton}
-                          aria-label={panelCopy.dailyViewOf(name)}
-                          onClick={() => onOpenDaily(member.user.id, name)}
-                        >
-                          {panelCopy.dailyView}
-                        </button>
-                      </>
-                    ) : (
-                      <span className={styles.dailyPending}>pendente</span>
-                    )}
-                  </span>
+      {team.length === 0 ? (
+        <p className={styles.emptyLine}>{panelCopy.dashboardEmpty}</p>
+      ) : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table} aria-label={dashboardCopy.teamTableLabel}>
+            <thead>
+              <tr>
+                <th scope="col">Pessoa</th>
+                <th scope="col" className={styles.num}>
+                  Em andamento
+                </th>
+                {blockedVisible ? (
+                  <th scope="col" className={styles.num}>
+                    Bloqueadas
+                  </th>
                 ) : null}
+                <th scope="col">Sinais</th>
+                {daily.visible ? <th scope="col">Diária de hoje</th> : null}
                 {loadVisible ? (
-                  <span className={styles.figure}>
-                    {member.loadHours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h
-                  </span>
+                  <th scope="col" className={styles.num}>
+                    Carga (h)
+                  </th>
                 ) : null}
-              </div>
-            )
-          })
-        )}
-      </div>
+                {ratesVisible ? (
+                  <th scope="col" className={styles.num}>
+                    Valor/h (R$)
+                  </th>
+                ) : null}
+                <th scope="col">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.map((member) => {
+                const name = member.user.name
+                const done = daily.done.get(member.user.id)
+                const signals = signalsOf(member)
+                const rate = rates?.get(member.user.id) ?? null
+                return (
+                  <tr key={member.user.id}>
+                    <td>
+                      <div className={styles.personCell}>
+                        <span className={styles.avatar} aria-hidden="true">
+                          {member.user.initials}
+                        </span>
+                        <div>
+                          <div className={styles.personName}>{name}</div>
+                          <div className={styles.personRole}>
+                            {member.projects.map((project) => project.name).join(', ') || '—'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.num}>{member.inProgress}</td>
+                    {blockedVisible ? (
+                      <td className={styles.num}>
+                        {member.blockedCount > 0 ? (
+                          onOpenException ? (
+                            <button
+                              type="button"
+                              className={`${styles.blockedCell} ${styles.rowActionInline}`}
+                              aria-label={`${member.blockedCount} ${member.blockedCount === 1 ? 'bloqueada' : 'bloqueadas'}`}
+                              onClick={() => onOpenException('blocked')}
+                            >
+                              <span
+                                className={`${styles.dot} ${styles.dotDanger}`}
+                                aria-hidden="true"
+                              />
+                              {member.blockedCount}
+                            </button>
+                          ) : (
+                            <span className={styles.blockedCell}>
+                              <span
+                                className={`${styles.dot} ${styles.dotDanger}`}
+                                aria-hidden="true"
+                              />
+                              {member.blockedCount}
+                            </span>
+                          )
+                        ) : (
+                          <span className={styles.zero}>0</span>
+                        )}
+                      </td>
+                    ) : null}
+                    <td>
+                      <span className={styles.signals}>
+                        {signals.length === 0 ? (
+                          <span className={styles.zero}>—</span>
+                        ) : (
+                          signals.map((signal) =>
+                            signal.exception && onOpenException ? (
+                              <button
+                                type="button"
+                                className={`${styles.signal} ${styles.signalButton}`}
+                                key={signal.key}
+                                onClick={() => onOpenException(signal.exception!)}
+                              >
+                                {signal.text}
+                              </button>
+                            ) : (
+                              <span className={styles.signal} key={signal.key}>
+                                {signal.text}
+                              </span>
+                            ),
+                          )
+                        )}
+                      </span>
+                    </td>
+                    {daily.visible ? (
+                      <td>
+                        {daily.loading ? (
+                          <span className={styles.muted}>{panelCopy.dailyLoading}</span>
+                        ) : done === undefined ? (
+                          <span className={styles.muted}>—</span>
+                        ) : done ? (
+                          <>
+                            <span className={styles.dailyDone}>✓ respondida</span>
+                            <button
+                              type="button"
+                              className={styles.inlineButton}
+                              aria-label={panelCopy.dailyViewOf(name)}
+                              onClick={() => onOpenDaily(member.user.id, name)}
+                            >
+                              {panelCopy.dailyView}
+                            </button>
+                          </>
+                        ) : (
+                          <span className={styles.dailyPending}>pendente</span>
+                        )}
+                      </td>
+                    ) : null}
+                    {loadVisible ? (
+                      <td className={styles.num}>
+                        {member.loadHours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h
+                      </td>
+                    ) : null}
+                    {ratesVisible ? (
+                      <td className={styles.num}>{rate === null ? '—' : brl(rate)}</td>
+                    ) : null}
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.rowActionInline}
+                        aria-label={panelCopy.openProjectsOf(name)}
+                        onClick={() => onOpenProjects(member.user)}
+                      >
+                        {dashboardCopy.openBoard}
+                        <span aria-hidden="true"> →</span>
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }

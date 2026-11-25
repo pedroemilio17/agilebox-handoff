@@ -21,6 +21,22 @@ import { TaskDetailView } from './TaskDetailView'
 
 afterEach(cleanup)
 
+const TOPIC_NAMES = {
+  geral: /^Visão geral/,
+  dod: /^Checklist & Pronto/,
+  pessoas: /^Pessoas & Prazo/,
+  horas: /^Horas & Custo/,
+  historico: /^Bloqueios & Histórico/,
+} as const
+
+/** Cada tópico mostra só o seu painel: abre o tópico pelo menu lateral. */
+async function openTopic(
+  user: ReturnType<typeof userEvent.setup>,
+  topic: keyof typeof TOPIC_NAMES,
+) {
+  await user.click(await screen.findByRole('button', { name: TOPIC_NAMES[topic] }))
+}
+
 function setup(
   overrides: {
     detail?: ReturnType<typeof makeDetail>
@@ -50,16 +66,17 @@ function setup(
 describe('Detalhe da tarefa', () => {
   it('mostra o alerta de parada e confirma andamento pela API', async () => {
     const { update, user } = setup({ detail: makeDetail({ agingDays: 5 }) })
-    expect(
-      await screen.findByText('Parada há 5 dias em Desenvolvendo. Algo está travando?'),
-    ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Segue em andamento' }))
+    const banner = await screen.findByRole('alert', { name: 'Tarefa parada' })
+    expect(banner.textContent).toContain(
+      'Esta tarefa está há 5 dias em Desenvolvendo — precisa de ajuda?',
+    )
+    await user.click(screen.getByRole('button', { name: 'Ainda trabalhando' }))
     expect(update).toHaveBeenCalledWith({ taskId: TASK_ID, changes: { progressConfirmed: true } })
   })
   it('desabilita confirmação para somente leitura', async () => {
     setup({ detail: makeDetail({ agingDays: 5, readOnly: true, canEdit: false }) })
     expect(
-      (await screen.findByRole('button', { name: 'Segue em andamento' })).hasAttribute('disabled'),
+      (await screen.findByRole('button', { name: 'Ainda trabalhando' })).hasAttribute('disabled'),
     ).toBe(true)
   })
 
@@ -72,7 +89,7 @@ describe('Detalhe da tarefa', () => {
 
   it('grava a descrição uma única vez ao sair do campo', async () => {
     const { update, user } = setup()
-    const field = await screen.findByLabelText('Descrição')
+    const field = await screen.findByLabelText('Descrição da tarefa')
     await user.clear(field)
     await user.type(field, 'Nova descrição')
     expect(update).not.toHaveBeenCalled()
@@ -86,7 +103,7 @@ describe('Detalhe da tarefa', () => {
 
   it('não grava quando o campo é editado e volta ao mesmo valor', async () => {
     const { update, user } = setup()
-    const field = await screen.findByLabelText('Descrição')
+    const field = await screen.findByLabelText('Descrição da tarefa')
     await user.click(field)
     await user.tab()
     expect(update).not.toHaveBeenCalled()
@@ -109,8 +126,10 @@ describe('Detalhe da tarefa', () => {
 
   it('muda o estado pelo menu', async () => {
     const { move, user } = setup()
-    await user.click(await screen.findByRole('button', { name: 'Status' }))
-    await user.click(screen.getByRole('menuitemradio', { name: 'Revisar' }))
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Estado da tarefa' }),
+      'Revisar',
+    )
     expect(move).toHaveBeenCalledWith({ taskId: TASK_ID, status: 'review' })
   })
 
@@ -122,7 +141,9 @@ describe('Detalhe da tarefa', () => {
 
   it('esconde Concluir tarefa em tarefa já concluída e no modo somente leitura', async () => {
     setup({ detail: makeDetail({ status: 'done' }) })
-    await screen.findByRole('button', { name: 'Status' })
+    expect(
+      (await screen.findByRole<HTMLButtonElement>('button', { name: 'Concluída' })).disabled,
+    ).toBe(true)
     expect(screen.queryByRole('button', { name: 'Concluir tarefa' })).toBeNull()
   })
 
@@ -134,6 +155,7 @@ describe('Detalhe da tarefa', () => {
 
   it('grava o chamado: número, link e limpeza', async () => {
     const { update, user } = setup()
+    await openTopic(user, 'pessoas')
     const id = await screen.findByLabelText('Número do chamado')
     await user.type(id, '12a3')
     await user.tab()
@@ -143,7 +165,8 @@ describe('Detalhe da tarefa', () => {
   })
 
   it('mostra o responsável', async () => {
-    setup()
+    const { user } = setup()
+    await openTopic(user, 'pessoas')
     const row = await screen.findByRole('group', { name: 'Responsável' })
     expect(row.textContent).toContain('Ana Souza')
   })
@@ -152,13 +175,16 @@ describe('Detalhe da tarefa', () => {
     setup({ detail: makeDetail({ canEdit: false, readOnly: true }) })
     expect(await screen.findByText('Somente leitura')).toBeTruthy()
     expect(screen.getByLabelText<HTMLInputElement>('Título da tarefa').disabled).toBe(true)
-    expect(screen.getByLabelText<HTMLTextAreaElement>('Descrição').disabled).toBe(true)
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Status' }).disabled).toBe(true)
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Descrição da tarefa').disabled).toBe(true)
+    expect(
+      screen.getByRole<HTMLSelectElement>('combobox', { name: 'Estado da tarefa' }).disabled,
+    ).toBe(true)
   })
 
   it('volta ao quadro', async () => {
     const { onBack, user } = setup()
-    await user.click(await screen.findByRole('button', { name: /Voltar ao quadro/ }))
+    await screen.findByDisplayValue('Revisar integração')
+    await user.click(screen.getByRole('button', { name: /Voltar ao Quadro/ }))
     expect(onBack).toHaveBeenCalled()
   })
 
@@ -194,6 +220,7 @@ describe('Card Prazo', () => {
 
   it('grava a data ao sair do campo e limpa o prazo', async () => {
     const { update, user } = setup()
+    await openTopic(user, 'pessoas')
     const field = await screen.findByLabelText('Data de entrega')
     await user.clear(field)
     await user.tab()
@@ -272,6 +299,7 @@ describe('Card Linha do tempo', () => {
         </QueryProvider>
       </ApiProvider>,
     )
+    await userEvent.click(await screen.findByRole('button', { name: TOPIC_NAMES.historico }))
     await screen.findByText('Recente')
     const texts = screen.getAllByRole('listitem').map((item) => item.textContent ?? '')
     const recent = texts.findIndex((text) => text.includes('Recente'))
@@ -292,7 +320,9 @@ describe('Card Linha do tempo', () => {
 describe('Card Custo', () => {
   it('recalcula subtotal e total na hora, com vírgula decimal', async () => {
     const { user } = setup()
-    const hours = await screen.findByLabelText('Horas de Ana Souza')
+    await openTopic(user, 'horas')
+    await user.click(await screen.findByRole('button', { name: 'Horas de Ana Souza' }))
+    const hours = screen.getByRole('textbox', { name: 'Horas de Ana Souza' })
     expect(screen.getByLabelText('Total').textContent).toBe('R$ 100,00')
     await user.clear(hours)
     await user.type(hours, '3,5')
@@ -302,7 +332,9 @@ describe('Card Custo', () => {
   it('grava horas ao sair do campo como texto', async () => {
     const { api, user } = setup()
     const setHours = vi.spyOn(api.participations, 'setHours').mockResolvedValue(makeParticipation())
-    const hours = await screen.findByLabelText('Horas de Ana Souza')
+    await openTopic(user, 'horas')
+    await user.click(await screen.findByRole('button', { name: 'Horas de Ana Souza' }))
+    const hours = screen.getByRole('textbox', { name: 'Horas de Ana Souza' })
     await user.clear(hours)
     await user.type(hours, '3,5')
     await user.tab()
@@ -326,7 +358,9 @@ describe('Card Custo', () => {
       role: 'collaborator',
       defaultRate: 50,
     })
-    const rate = await screen.findByLabelText('Valor/hora de Ana Souza')
+    await openTopic(user, 'horas')
+    await user.click(await screen.findByRole('button', { name: 'Valor/hora de Ana Souza' }))
+    const rate = screen.getByRole('textbox', { name: 'Valor/hora de Ana Souza' })
     await user.clear(rate)
     await user.type(rate, '50,50')
     await user.tab()
@@ -341,17 +375,20 @@ describe('Card Custo', () => {
   })
 
   it('não mostra valores em R$ nem total quando o DTO vem com null', async () => {
-    setup({
+    const { user } = setup({
       detail: makeDetail({ total: null, participations: [makeParticipation({ rate: null })] }),
     })
+    await openTopic(user, 'horas')
     expect(await screen.findByLabelText('Horas de Ana Souza')).toBeTruthy()
     expect(screen.queryByLabelText('Total')).toBeNull()
     expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
-    expect(document.body.textContent).not.toMatch(/R\$/)
+    expect(document.body.textContent).not.toMatch(/R\$\s*\d/)
+    expect(screen.getAllByTitle('Visível apenas para o Gestor').length).toBeGreaterThan(0)
+    expect(screen.getByText('Restrito ao gestor')).toBeTruthy()
   })
 
   it('com o módulo cost desligado no projeto da tarefa, o cartão fica só com as horas', async () => {
-    setup({
+    const { user } = setup({
       detail: makeDetail({
         costEnabled: false,
         total: null,
@@ -359,8 +396,10 @@ describe('Card Custo', () => {
         participations: [makeParticipation({ rate: null })],
       }),
     })
+    await openTopic(user, 'horas')
     expect(await screen.findByLabelText('Horas de Ana Souza')).toBeTruthy()
-    expect(screen.queryByText('Horas e custo')).toBeNull()
+    expect(screen.queryByText('Valor/h (R$)')).toBeNull()
+    expect(screen.queryByText('Restrito ao gestor')).toBeNull()
     expect(screen.queryByLabelText('Valor/hora de Ana Souza')).toBeNull()
     expect(screen.queryByLabelText('Total')).toBeNull()
     expect(screen.queryByLabelText('Custo estimado')).toBeNull()
@@ -368,7 +407,7 @@ describe('Card Custo', () => {
   })
 
   it('colaborador vê só o próprio valor e nenhum total', async () => {
-    setup({
+    const { user } = setup({
       detail: makeDetail({
         total: null,
         participations: [
@@ -383,6 +422,7 @@ describe('Card Custo', () => {
         ],
       }),
     })
+    await openTopic(user, 'horas')
     expect(await screen.findByLabelText('Valor/hora de Ana Souza')).toBeTruthy()
     expect(screen.queryByLabelText('Valor/hora de Bruno Lima')).toBeNull()
     expect(screen.queryByLabelText('Total')).toBeNull()
@@ -393,6 +433,7 @@ describe('Card Envolvidos', () => {
   it('remove um envolvido', async () => {
     const { api, user } = setup()
     const remove = vi.spyOn(api.participations, 'remove').mockResolvedValue(undefined)
+    await openTopic(user, 'pessoas')
     await user.click(await screen.findByRole('button', { name: 'Remover Ana Souza' }))
     expect(remove).toHaveBeenCalledWith({
       taskId: TASK_ID,
@@ -421,12 +462,10 @@ describe('Card Envolvidos', () => {
         </QueryProvider>
       </ApiProvider>,
     )
-    await screen.findByRole('option', { name: 'Fornecedor X' })
-    await user.selectOptions(screen.getByLabelText('Pessoa ou entidade'), 'Fornecedor X')
-    expect(screen.getByRole<HTMLOptionElement>('option', { name: 'Responsável' }).disabled).toBe(
-      true,
-    )
-    await user.click(screen.getByRole('button', { name: 'Adicionar envolvido' }))
+    await user.click(await screen.findByRole('button', { name: TOPIC_NAMES.pessoas }))
+    const field = screen.getByLabelText('Nome da pessoa externa')
+    await user.type(field, 'Fornecedor X')
+    await user.click(screen.getByRole('button', { name: '+ Pessoa externa' }))
     await waitFor(() =>
       expect(add).toHaveBeenCalledWith({
         taskId: TASK_ID,
@@ -434,9 +473,17 @@ describe('Card Envolvidos', () => {
         role: 'support',
       }),
     )
-    await user.type(screen.getByLabelText('Nome da nova entidade'), 'Nova')
-    await user.click(screen.getByRole('button', { name: 'Criar entidade' }))
+    expect(create).not.toHaveBeenCalled()
+    await user.type(field, 'Nova')
+    await user.click(screen.getByRole('button', { name: '+ Pessoa externa' }))
     await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Nova' }))
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith({
+        taskId: TASK_ID,
+        participant: { kind: 'contributor', contributorId: '01J8Y4G2XK8Z1S6M3Q9W0A5C02' },
+        role: 'support',
+      }),
+    )
   })
 
   it('esconde adicionar e remover no modo somente leitura', async () => {
@@ -446,12 +493,13 @@ describe('Card Envolvidos', () => {
     expect(screen.queryByLabelText('Pessoa ou entidade')).toBeNull()
   })
 
-  it('mostra o ID no cabeçalho e copia pelo botão com aviso', async () => {
+  it('mostra o ID no cabeçalho e copia pelo menu com aviso', async () => {
     const { user } = setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     expect(await screen.findByText('AB-118')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Copiar ID AB-118' }))
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Copiar link' }))
     expect(writeText).toHaveBeenCalledWith('AB-118')
     expect(await screen.findByText('ID copiado')).toBeTruthy()
   })
@@ -460,7 +508,8 @@ describe('Card Envolvidos', () => {
     const { user } = setup()
     const writeText = vi.fn().mockRejectedValue(new Error('negado'))
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
-    await user.click(await screen.findByRole('button', { name: 'Copiar ID AB-118' }))
+    await user.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Copiar link' }))
     expect(await screen.findByText('Não foi possível copiar o ID.')).toBeTruthy()
   })
 })
@@ -514,62 +563,62 @@ describe('Bloqueio no detalhe', () => {
   it('valida o motivo vazio e não chama a API', async () => {
     const { api, user } = setup()
     const block = vi.spyOn(api.tasks, 'block')
-    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    await openTopic(user, 'historico')
+    await user.click(await screen.findByRole('button', { name: 'Registrar bloqueio' }))
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByText('Informe o motivo do bloqueio.')).toBeTruthy()
     expect(block).not.toHaveBeenCalled()
   })
 
-  it('mostra o contador e recusa motivo com 281 caracteres', async () => {
+  it('recusa motivo com 281 caracteres', async () => {
     const { api, user } = setup()
     const block = vi.spyOn(api.tasks, 'block')
-    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
-    fireEvent.change(screen.getByLabelText('Motivo do bloqueio'), {
+    await openTopic(user, 'historico')
+    fireEvent.change(await screen.findByLabelText('Motivo do bloqueio'), {
       target: { value: 'a'.repeat(281) },
     })
-    expect(screen.getByText('281/280')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar bloqueio' }))
     expect(screen.getByText('O motivo deve ter até 280 caracteres.')).toBeTruthy()
     expect(block).not.toHaveBeenCalled()
   })
 
-  it('bloqueia com o motivo pela API e fecha o formulário', async () => {
+  it('bloqueia com o motivo pela API e mostra o indicador Bloqueada', async () => {
     const { api, user } = setup()
     const blocked = makeDetail({ blockedReason: REASON, blockedAt: '2026-11-01T12:00:00Z' })
     const block = vi.spyOn(api.tasks, 'block').mockResolvedValue(blocked)
     // Depois de gravar, a busca do detalhe volta com a tarefa já bloqueada.
     vi.spyOn(api.tasks, 'get').mockResolvedValue(blocked)
-    await user.click(await screen.findByRole('button', { name: 'Bloquear' }))
-    await user.type(screen.getByLabelText('Motivo do bloqueio'), REASON)
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    await openTopic(user, 'historico')
+    await user.type(await screen.findByLabelText('Motivo do bloqueio'), REASON)
+    await user.click(screen.getByRole('button', { name: 'Registrar bloqueio' }))
     expect(block).toHaveBeenCalledWith({ taskId: TASK_ID, reason: REASON })
     expect(await screen.findByText(REASON)).toBeTruthy()
-    expect(screen.queryByLabelText('Motivo do bloqueio')).toBeNull()
+    expect(await screen.findByText('Bloqueada')).toBeTruthy()
   })
 
-  it('mostra a faixa com o motivo e desbloqueia pela API', async () => {
+  it('mostra o motivo na lista e desbloqueia pela API', async () => {
     const { api, user } = setup({
       detail: makeDetail({ blockedReason: REASON, blockedAt: '2026-11-01T12:00:00Z' }),
     })
     const unblock = vi.spyOn(api.tasks, 'unblock').mockResolvedValue(makeDetail())
-    expect(await screen.findByRole('region', { name: 'Bloqueio' })).toBeTruthy()
-    expect(screen.getByText(REASON)).toBeTruthy()
+    await openTopic(user, 'historico')
+    expect(await screen.findByText(REASON)).toBeTruthy()
     // Resolver abre a nota (opcional); confirmar é que desbloqueia.
-    await user.click(screen.getByRole('button', { name: 'Resolver impedimento' }))
     await user.click(screen.getByRole('button', { name: 'Resolver' }))
+    await user.click(screen.getAllByRole('button', { name: 'Resolver' })[1]!)
     expect(unblock).toHaveBeenCalledWith({ taskId: TASK_ID })
   })
 
-  it('desabilita bloquear e desbloquear para somente leitura', async () => {
-    setup({ detail: makeDetail({ canEdit: false, readOnly: true }) })
-    expect((await screen.findByRole('button', { name: 'Bloquear' })).hasAttribute('disabled')).toBe(
-      true,
-    )
+  it('desabilita registrar bloqueio para somente leitura', async () => {
+    const { user } = setup({ detail: makeDetail({ canEdit: false, readOnly: true }) })
+    await openTopic(user, 'historico')
+    expect(
+      (await screen.findByRole('button', { name: 'Registrar bloqueio' })).hasAttribute('disabled'),
+    ).toBe(true)
   })
 
-  it('desabilita desbloquear para somente leitura', async () => {
-    setup({
+  it('desabilita resolver para somente leitura', async () => {
+    const { user } = setup({
       detail: makeDetail({
         canEdit: false,
         readOnly: true,
@@ -577,17 +626,16 @@ describe('Bloqueio no detalhe', () => {
         blockedAt: '2026-11-01T12:00:00Z',
       }),
     })
-    expect(
-      (await screen.findByRole('button', { name: 'Resolver impedimento' })).hasAttribute(
-        'disabled',
-      ),
-    ).toBe(true)
+    await openTopic(user, 'historico')
+    expect((await screen.findByRole('button', { name: 'Resolver' })).hasAttribute('disabled')).toBe(
+      true,
+    )
   })
 
   it('tarefa concluída não oferece bloquear', async () => {
     setup({ detail: makeDetail({ status: 'done' }) })
     expect(await screen.findByDisplayValue('Revisar integração')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+    expect(screen.queryByLabelText('Motivo do bloqueio')).toBeNull()
   })
 
   it('mostra os eventos de bloqueio na linha do tempo com a frase do servidor', async () => {
@@ -630,7 +678,7 @@ describe('Subtarefas no detalhe', () => {
   it('mostra cabeçalho com contagem, barra de progresso e os itens', async () => {
     setup({ detail: WITH_ITEMS() })
     const section = await screen.findByRole('region', { name: 'Subtarefas' })
-    expect(section.textContent).toContain('1/3')
+    expect(section.textContent).toContain('1 de 3')
     expect(
       screen
         .getByRole('progressbar', { name: 'Progresso das subtarefas' })
@@ -655,7 +703,7 @@ describe('Subtarefas no detalhe', () => {
   it('adiciona pelo Enter, limpa o campo e mantém o foco nele', async () => {
     const { api, user } = setup({ detail: WITH_ITEMS() })
     const add = vi.spyOn(api.tasks.checklist, 'add').mockResolvedValue(WITH_ITEMS())
-    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    const field = await screen.findByLabelText<HTMLInputElement>('Nova subtarefa')
     await user.click(field)
     await user.type(field, '  Testar em homologação  {Enter}')
     await waitFor(() =>
@@ -665,12 +713,12 @@ describe('Subtarefas no detalhe', () => {
     expect(document.activeElement).toBe(field)
   })
 
-  it('botão "Adicionar subtarefa" inclui a subtarefa, sem precisar de Enter', async () => {
+  it('botão "Adicionar" inclui a subtarefa, sem precisar de Enter', async () => {
     const { api, user } = setup({ detail: WITH_ITEMS() })
     const add = vi.spyOn(api.tasks.checklist, 'add').mockResolvedValue(WITH_ITEMS())
-    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    const field = await screen.findByLabelText<HTMLInputElement>('Nova subtarefa')
     await user.type(field, 'Revisar com o time')
-    await user.click(screen.getByRole('button', { name: 'Adicionar subtarefa' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
     await waitFor(() =>
       expect(add).toHaveBeenCalledWith({ taskId: TASK_ID, title: 'Revisar com o time' }),
     )
@@ -679,7 +727,7 @@ describe('Subtarefas no detalhe', () => {
   it('não adiciona título vazio nem com 201 caracteres', async () => {
     const { api, user } = setup({ detail: WITH_ITEMS() })
     const add = vi.spyOn(api.tasks.checklist, 'add')
-    const field = await screen.findByLabelText<HTMLInputElement>('Adicionar subtarefa')
+    const field = await screen.findByLabelText<HTMLInputElement>('Nova subtarefa')
     await user.type(field, '   {Enter}')
     expect(screen.getByText('Informe o título da subtarefa.')).toBeTruthy()
     fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
@@ -705,7 +753,7 @@ describe('Subtarefas no detalhe', () => {
     expect(
       screen.getByRole<HTMLInputElement>('checkbox', { name: 'Concluir subtarefa Criar endpoint' }),
     ).toHaveProperty('checked', true)
-    expect(screen.getByRole('region', { name: 'Subtarefas' }).textContent).toContain('2/3')
+    expect(screen.getByRole('region', { name: 'Subtarefas' }).textContent).toContain('2 de 3')
     resolve(WITH_ITEMS())
   })
 
@@ -815,13 +863,13 @@ describe('Subtarefas no detalhe', () => {
       }).disabled,
     ).toBe(true)
     expect(screen.queryByRole('button', { name: 'Remover subtarefa Criar endpoint' })).toBeNull()
-    expect(screen.getByLabelText<HTMLInputElement>('Adicionar subtarefa').disabled).toBe(true)
+    expect(screen.getByLabelText<HTMLInputElement>('Nova subtarefa').disabled).toBe(true)
   })
 
   it('tarefa concluída não mostra campo de adicionar', async () => {
     setup({ detail: { ...WITH_ITEMS(), status: 'done' } })
     expect(await screen.findByText('Tarefas concluídas não aceitam novas subtarefas.')).toBeTruthy()
-    expect(screen.queryByLabelText('Adicionar subtarefa')).toBeNull()
+    expect(screen.queryByLabelText('Nova subtarefa')).toBeNull()
   })
 
   it('ao atingir 50 itens mostra o limite no lugar do campo', async () => {
@@ -839,7 +887,7 @@ describe('Subtarefas no detalhe', () => {
       }),
     })
     expect(await screen.findByText('Limite de 50 subtarefas.')).toBeTruthy()
-    expect(screen.queryByLabelText('Adicionar subtarefa')).toBeNull()
+    expect(screen.queryByLabelText('Nova subtarefa')).toBeNull()
   })
 
   it('mostra os quatro eventos de subtarefa na linha do tempo com a frase do servidor', async () => {
@@ -959,7 +1007,6 @@ describe('Comentários no detalhe', () => {
     await user.type(field, '   ')
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Comentar' }).disabled).toBe(true)
     fireEvent.change(field, { target: { value: 'a'.repeat(2001) } })
-    expect(screen.getByText('2001/2000')).toBeTruthy()
     expect(screen.getByText('O comentário deve ter até 2000 caracteres.')).toBeTruthy()
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Comentar' }).disabled).toBe(true)
     expect(add).not.toHaveBeenCalled()

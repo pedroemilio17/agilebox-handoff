@@ -88,38 +88,38 @@ function renderTray(teamTools: TeamToolsViewDto) {
 }
 
 describe('Bandeja adaptativa (M2.1)', () => {
-  it('Kanban simples no Básico: sem cartão de daily, sem pedido de daily e sem marcadores de módulos', async () => {
+  it('Kanban simples no Básico: sem barra de daily, sem pedido de daily e sem marcadores de módulos', async () => {
     const { getToday } = renderTray(
       teamToolsView({ modules: presetModules('kanban'), level: 'basic' }),
     )
 
     expect(await screen.findByText('Integração com API')).toBeTruthy()
     await waitFor(() => expect(screen.getByText('Integração com API')).toBeTruthy())
-    expect(screen.queryByRole('button', { name: 'Atualizar agora' })).toBeNull()
-    expect(screen.queryByText('Vamos registrar o que foi feito hoje?')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agora' })).toBeNull()
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
     expect(screen.queryByText('Bloqueada')).toBeNull()
     expect(getToday).not.toHaveBeenCalled()
   })
 
-  it('Scrum com check-ins no Intermediário: cartão de daily e marcador de bloqueio aparecem', async () => {
+  it('Scrum com check-ins no Intermediário: barra de daily e marcador de bloqueio aparecem', async () => {
     const { getToday } = renderTray(
       teamToolsView({ modules: presetModules('scrum'), level: 'intermediate' }),
     )
 
-    expect(await screen.findByText('Vamos registrar o que foi feito hoje?')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Atualizar agora' })).toBeTruthy()
+    expect(await screen.findByText('Registrar o dia?')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Agora' })).toBeTruthy()
     expect(screen.getByText('Bloqueada')).toBeTruthy()
     expect(getToday).toHaveBeenCalled()
   })
 
-  it('Scrum no Básico: o marcador de bloqueio continua, mas o cartão de daily não aparece', async () => {
+  it('Scrum no Básico: o marcador de bloqueio continua, mas o barra de daily não aparece', async () => {
     const { getToday } = renderTray(
       teamToolsView({ modules: presetModules('scrum'), level: 'basic' }),
     )
 
     expect(await screen.findByText('Bloqueada')).toBeTruthy()
-    expect(screen.queryByText('Vamos registrar o que foi feito hoje?')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Atualizar agora' })).toBeNull()
+    expect(screen.queryByText('Registrar o dia?')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agora' })).toBeNull()
     expect(getToday).not.toHaveBeenCalled()
   })
 })

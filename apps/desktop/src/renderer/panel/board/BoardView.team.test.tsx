@@ -115,14 +115,14 @@ describe('visão Equipe no quadro', () => {
     expect(screen.queryByRole('img', { name: /comentário/ })).toBeNull()
     expect(screen.queryByText('3')).toBeNull()
     expect(document.body.textContent ?? '').not.toMatch(/R\$/)
-    expect(screen.getByText('1/4')).toBeTruthy()
+    expect(screen.getByText('☑ 1/4')).toBeTruthy()
   })
 
   it('mostra os sinais de alta prioridade, bloqueio e parada', () => {
     renderTeam({
       tasks: [bruno, carla, { ...ana, agingDays: 6 }],
     })
-    expect(screen.getByText('Alta')).toBeTruthy()
+    expect(screen.getAllByText('Alta').filter((el) => el.tagName === 'SPAN')).toHaveLength(1)
     expect(screen.getByText('Bloqueada')).toBeTruthy()
     expect(screen.getByText('parada 6d')).toBeTruthy()
   })
@@ -149,7 +149,7 @@ describe('visão Equipe no quadro', () => {
     expect(screen.getByRole('status', { name: 'Carregando quadro' })).toBeTruthy()
   })
 
-  it('o filtro Paradas e o medidor de WIP valem sobre as tarefas da equipe', async () => {
+  it('o filtro Bloqueadas e o medidor de WIP valem sobre as tarefas da equipe', async () => {
     const wipColumns: WipColumnDto[] = [
       { status: 'in_progress', count: 1, limit: 1, state: 'at_limit' },
       { status: 'review', count: 1, limit: null, state: 'none' },
@@ -160,9 +160,9 @@ describe('visão Equipe no quadro', () => {
       wipColumns,
     })
     expect(screen.getByRole('img', { name: 'Desenvolvendo: 1 de 1, no limite' })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Paradas · 1' }))
-    expect(screen.getByRole('button', { name: /AB-B01 Tarefa B01/ })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /AB-B02 Tarefa B02/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Alta' }))
+    expect(screen.getByRole('button', { name: /AB-B02 Tarefa B02/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /AB-B01 Tarefa B01/ })).toBeNull()
   })
 
   it('o editor de limite não aparece na Equipe, mesmo para quem pode editar', () => {

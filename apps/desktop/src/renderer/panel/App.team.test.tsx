@@ -170,16 +170,16 @@ describe('seletor Minhas tarefas | Equipe', () => {
   it('é um grupo rotulado com o estado selecionado em cada opção', async () => {
     const { user } = setup()
     const group = await scopeGroup()
-    expect(within(group).getByRole('button', { name: 'Minhas' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    )
+    expect(
+      within(group).getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-pressed'),
+    ).toBe('true')
     await user.click(within(group).getByRole('button', { name: 'Equipe' }))
     expect(within(group).getByRole('button', { name: 'Equipe' }).getAttribute('aria-pressed')).toBe(
       'true',
     )
-    expect(within(group).getByRole('button', { name: 'Minhas' }).getAttribute('aria-pressed')).toBe(
-      'false',
-    )
+    expect(
+      within(group).getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-pressed'),
+    ).toBe('false')
   })
 
   it('Equipe chama a API da equipe e mostra as tarefas dos outros em somente leitura', async () => {
@@ -222,7 +222,7 @@ describe('seletor Minhas tarefas | Equipe', () => {
     const group = await scopeGroup()
     await user.click(within(group).getByRole('button', { name: 'Equipe' }))
     await screen.findByRole('button', { name: /AB-119 Relatório mensal/ })
-    await user.click(within(group).getByRole('button', { name: 'Minhas' }))
+    await user.click(within(group).getByRole('button', { name: 'Minhas tarefas' }))
 
     expect(await screen.findByRole('button', { name: 'AB-118 · Revisar integração' })).toBeTruthy()
     expect(screen.queryByText(panelCopy.teamViewBanner)).toBeNull()
@@ -236,7 +236,7 @@ describe('seletor Minhas tarefas | Equipe', () => {
     await user.click(within(group).getByRole('button', { name: 'Equipe' }))
     await waitFor(() => expect(liveRegionText()).toBe(panelCopy.teamViewAnnouncement))
 
-    await user.click(within(group).getByRole('button', { name: 'Minhas' }))
+    await user.click(within(group).getByRole('button', { name: 'Minhas tarefas' }))
     await waitFor(() => expect(liveRegionText()).toBe(panelCopy.myTasksAnnouncement))
   })
 })
@@ -316,7 +316,10 @@ describe('visão Equipe na tela', () => {
     expect(
       await screen.findByRole('img', { name: 'Desenvolvendo: 2 de 1, acima do limite' }),
     ).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Paradas · 1' }))
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Buscar tarefas no quadro' }),
+      'Relatório',
+    )
     expect(screen.getByRole('button', { name: /AB-119 Relatório mensal/ })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /AB-120 Revisão de contrato/ })).toBeNull()
   })

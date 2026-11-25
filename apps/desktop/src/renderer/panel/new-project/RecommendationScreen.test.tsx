@@ -22,7 +22,6 @@ function setup(overrides: Partial<RecommendationScreenProps> = {}) {
     name: 'App de Chamados',
     answers: AGIL_ANSWERS,
     onBack: vi.fn(),
-    onCancel: vi.fn(),
     onCreate: vi.fn(),
     ...overrides,
   }
@@ -38,10 +37,10 @@ describe('RecommendationScreen', () => {
   it('abre no preset recomendado, com os módulos e os motivos visíveis', () => {
     setup()
 
-    expect(screen.getByRole('heading', { name: 'Ágil (Scrum)' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'App de Chamados' })).toBeTruthy()
+    expect(screen.getByText('Ágil (Scrum)')).toBeTruthy()
     expect(chip('Ágil').getAttribute('aria-pressed')).toBe('true')
     expect(chip('Ágil').textContent).toContain('recomendado')
-    expect(document.activeElement).toBe(chip('Ágil'))
 
     for (const name of [
       'Backlog',
@@ -112,19 +111,19 @@ describe('RecommendationScreen', () => {
 
   it('a pergunta 6 cita o preset escolhido', async () => {
     const { user } = setup()
-    expect(screen.getByRole('group', { name: 'A equipe já trabalhou com Scrum?' })).toBeTruthy()
+    expect(screen.getByRole('group', { name: /A equipe já trabalhou com Scrum\?/ })).toBeTruthy()
 
     await user.click(chip('Simples'))
 
     expect(
-      screen.getByRole('group', { name: 'A equipe já organizou projetos assim?' }),
+      screen.getByRole('group', { name: /A equipe já organizou projetos assim\?/ }),
     ).toBeTruthy()
   })
 
   it('Criar entrega o payload com módulos sem núcleo, preset e respostas', async () => {
     const { user, props } = setup()
 
-    await user.click(screen.getByRole('button', { name: 'Criar projeto' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
 
     expect(props.onCreate).toHaveBeenCalledWith({
       modules: [
@@ -144,9 +143,9 @@ describe('RecommendationScreen', () => {
 
   it('submitting desabilita Criar', () => {
     setup({ submitting: true })
-    expect(screen.getByRole('button', { name: 'Criar projeto' }).hasAttribute('disabled')).toBe(
-      true,
-    )
+    expect(
+      screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }).hasAttribute('disabled'),
+    ).toBe(true)
   })
 
   it('erro aparece em role=alert', () => {
@@ -156,38 +155,36 @@ describe('RecommendationScreen', () => {
     ).toBeTruthy()
   })
 
-  it('Voltar chama onBack e Esc cancela', async () => {
+  it('o rodapé volta às perguntas', async () => {
     const { user, props } = setup()
 
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
+    await user.click(screen.getByRole('button', { name: '← Voltar às perguntas' }))
     expect(props.onBack).toHaveBeenCalledTimes(1)
-
-    await user.keyboard('{Escape}')
-    expect(props.onCancel).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('RecommendationScreen: fidelidade ao design (tela 02)', () => {
-  it('o título traz o método em destaque, e o chip mostra só o nome do preset', () => {
+describe('RecommendationScreen: fidelidade ao desenho (passo 3)', () => {
+  it('cabeçalho: revisão final, nome do projeto, resumo e o formato sugerido', () => {
     setup()
-    const title = screen.getByRole('heading', { level: 1 })
-    expect(title.textContent).toBe('Ágil (Scrum)')
-    expect(within(title).getByText('(Scrum)').className).toContain('method')
-    expect(chip('Ágil').textContent).toContain('recomendado')
-    expect(chip('Ágil').textContent).not.toContain('(Scrum)')
+    expect(screen.getByText('Revisão final')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('App de Chamados')
+    expect(screen.getByText('Ágil (Scrum)')).toBeTruthy()
+    expect(
+      screen.getByText(
+        '✓ Você pode ligar ou desligar recursos depois em Configurações sem perder dados.',
+      ),
+    ).toBeTruthy()
   })
 
-  it('mostra "Pergunta 6 de 6" no cartão da experiência', () => {
+  it('mostra "Pergunta 6 de 6" na pergunta de experiência', () => {
     setup()
     expect(screen.getByText('Pergunta 6 de 6')).toBeTruthy()
   })
 
-  it('o rodapé traz só Voltar e Criar projeto; Esc continua cancelando', async () => {
-    const { user, props } = setup()
+  it('o rodapé traz só voltar e criar', () => {
+    setup()
     expect(screen.queryByRole('button', { name: 'Cancelar' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Criar projeto' })).toBeTruthy()
-    await user.keyboard('{Escape}')
-    expect(props.onCancel).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' })).toBeTruthy()
   })
 
   it('a nota de módulos ocultos segue o texto do design', () => {
@@ -232,7 +229,7 @@ describe('RecommendationScreen: exemplo do design (Algumas vezes)', () => {
 
   it('o título e o chip de Scrum seguem o preset recomendado', () => {
     setup({ answers: DESIGN_ANSWERS })
-    expect(screen.getByRole('heading', { name: 'Ágil (Scrum)' })).toBeTruthy()
+    expect(screen.getByText('Ágil (Scrum)')).toBeTruthy()
     expect(screen.getByText('Pergunta 6 de 6')).toBeTruthy()
   })
 })

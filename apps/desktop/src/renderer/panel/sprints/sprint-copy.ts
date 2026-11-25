@@ -69,7 +69,9 @@ export const sprintCopy = {
   hoursEstimatedActual: (estimated: string, actual: string) =>
     `Estimado ${estimated} × realizado ${actual}`,
   startedOn: (date: string) => `Iniciada em ${date}`,
-  close: 'Encerrar sprint',
+  close: 'Encerrar Sprint',
+  progressLabel: 'Progresso da sprint',
+  openBoard: 'Abrir Quadro completo →',
   columnCount: (count: number) => `${count} ${count === 1 ? 'item' : 'itens'}`,
   noColumnItems: 'Nada aqui.',
 

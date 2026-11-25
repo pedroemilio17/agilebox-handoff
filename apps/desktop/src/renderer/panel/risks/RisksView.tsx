@@ -208,38 +208,43 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
         </ModuleEmptyState>
       ) : null}
 
-      {!empty ? <RiskMatrix risks={view.risks} selected={cell} onSelect={setCell} /> : null}
+      {!empty ? (
+        <div className={styles.risksLayout}>
+          <RiskMatrix risks={view.risks} selected={cell} onSelect={setCell} />
+          <div className={styles.risksColumn}>
+            {shownRisks.length === 0 ? (
+              <p className={styles.muted}>Nenhum risco neste quadrante.</p>
+            ) : null}
 
-      {!empty && shownRisks.length === 0 ? (
-        <p className={styles.muted}>Nenhum risco neste quadrante.</p>
-      ) : null}
-
-      {!empty && shownRisks.length > 0 ? (
-        <ol className={styles.list} aria-label={riskCopy.listLabel}>
-          {shownRisks.map((risk) =>
-            canEdit && editingId === risk.id ? (
-              <li key={risk.id} className={styles.item}>
-                <RiskForm
-                  heading={riskCopy.formTitleEdit}
-                  wbsOn={wbsOn}
-                  deliverables={deliverables}
-                  owners={ownerOptions}
-                  initial={risk}
-                  onSubmit={(values) => submit(values, risk.id)}
-                  onCancel={() => setEditingId(null)}
-                />
-              </li>
-            ) : (
-              <RiskRow
-                key={risk.id}
-                risk={risk}
-                canEdit={canEdit}
-                onEdit={() => setEditingId(risk.id)}
-                onRemove={() => removeRisk(risk.id)}
-              />
-            ),
-          )}
-        </ol>
+            {shownRisks.length > 0 ? (
+              <ol className={styles.list} aria-label={riskCopy.listLabel}>
+                {shownRisks.map((risk) =>
+                  canEdit && editingId === risk.id ? (
+                    <li key={risk.id} className={styles.item}>
+                      <RiskForm
+                        heading={riskCopy.formTitleEdit}
+                        wbsOn={wbsOn}
+                        deliverables={deliverables}
+                        owners={ownerOptions}
+                        initial={risk}
+                        onSubmit={(values) => submit(values, risk.id)}
+                        onCancel={() => setEditingId(null)}
+                      />
+                    </li>
+                  ) : (
+                    <RiskRow
+                      key={risk.id}
+                      risk={risk}
+                      canEdit={canEdit}
+                      onEdit={() => setEditingId(risk.id)}
+                      onRemove={() => removeRisk(risk.id)}
+                    />
+                  ),
+                )}
+              </ol>
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </section>
   )

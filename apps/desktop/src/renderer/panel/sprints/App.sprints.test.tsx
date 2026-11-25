@@ -208,7 +208,8 @@ describe('Marcador "Sprint N" nas superfícies', () => {
     await settleCapabilities(api)
 
     await user.click(await screen.findByRole('button', { name: 'Sprints' }))
-    await user.click(await screen.findByRole('button', { name: sprintCopy.tabActive }))
+    // A sprint ativa já é o primeiro tópico do rail; clicar nele confirma o tópico.
+    await user.click(await screen.findByRole('button', { name: 'Sprint ativa' }))
     await user.selectOptions(
       await screen.findByRole('combobox', {
         name: `Mover ${IN_SPRINT.title} para outro estado`,

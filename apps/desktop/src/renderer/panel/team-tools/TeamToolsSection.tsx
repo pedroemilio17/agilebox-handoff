@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Button, GlassSurface, ReadOnlyBadge, SegmentedControl } from '@agilebox/ui'
+import { Button, ReadOnlyBadge } from '@agilebox/ui'
 import { ApiError } from '@agilebox/contract'
 import type {
   TeamPresetDto,
@@ -8,24 +8,68 @@ import type {
   TeamToolsViewDto,
 } from '@agilebox/contract'
 import type { ExperienceLevel } from '@agilebox/core'
-import type { SegmentedOption } from '@agilebox/ui'
 import { useTeamTools } from '../../shared/capabilities/use-team-tools'
 import { panelCopy } from '../copy'
+import { CleanList, CleanRow, QuietToggle, Section, Switch } from '../settings/clean-ui'
+import type { QuietOption } from '../settings/clean-ui'
+import { settingsCopy } from '../settings/settings-copy'
 import { ToolsImpactDialog, type PendingChange } from './ToolsImpactDialog'
 import { SprintLimitField, sprintLimitOf } from './SprintLimitField'
 import { useTeamToolsActions } from './use-team-tools-actions'
 import { COMING_SOON_TOOLS, highestLevel, joinPt, levelLabel, uniqueIds } from './team-tools-rules'
 import styles from './TeamToolsSection.module.css'
 
-const LEVEL_OPTIONS: [
-  SegmentedOption<ExperienceLevel>,
-  SegmentedOption<ExperienceLevel>,
-  SegmentedOption<ExperienceLevel>,
-] = [
+const LEVEL_OPTIONS: readonly QuietOption<ExperienceLevel>[] = [
   { value: 'basic', label: levelLabel('basic') },
   { value: 'intermediate', label: levelLabel('intermediate') },
   { value: 'advanced', label: levelLabel('advanced') },
 ]
+
+/** Três grupos do desenho; ids fora do mapa caem em "Essenciais". */
+const TOOL_GROUPS: readonly { readonly title: string; readonly ids: readonly string[] }[] = [
+  {
+    title: settingsCopy.toolsGroupEssential,
+    ids: [
+      'core',
+      'agenda',
+      'wip',
+      'definitionOfDone',
+      'acceptance',
+      'impediments',
+      'checkins',
+      'subtasks',
+      'integrations',
+    ],
+  },
+  {
+    title: settingsCopy.toolsGroupAgile,
+    ids: [
+      'backlog',
+      'sprints',
+      'reviewRetro',
+      'estimates.hours',
+      'estimates.points',
+      'cost',
+      'flowMetrics',
+      'burndown',
+    ],
+  },
+  {
+    title: settingsCopy.toolsGroupPredictive,
+    ids: ['wbs', 'schedule', 'milestones', 'baseline', 'risks'],
+  },
+]
+
+function groupTools(modules: readonly TeamToolDto[]) {
+  const known = new Set(TOOL_GROUPS.flatMap((group) => group.ids))
+  return TOOL_GROUPS.map((group, index) => ({
+    title: group.title,
+    tools: [
+      ...group.ids.flatMap((id) => modules.filter((tool) => tool.id === id)),
+      ...(index === 0 ? modules.filter((tool) => !known.has(tool.id)) : []),
+    ],
+  })).filter((group) => group.tools.length > 0)
+}
 
 const STATE_LABEL = {
   active: panelCopy.teamToolStateActive,
@@ -65,7 +109,6 @@ function summaryOf(result: TeamToolsChangeResultDto): string {
 export function TeamToolsSection() {
   const view = useTeamTools()
   const actions = useTeamToolsActions()
-  const headingId = useId()
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [windDown, setWindDown] = useState<WindDownAction | null>(null)
   const [notice, setNotice] = useState('')
@@ -73,28 +116,24 @@ export function TeamToolsSection() {
 
   if (view.isPending) {
     return (
-      <section className={styles.root} aria-labelledby={headingId}>
-        <h2 id={headingId} className={styles.title}>
-          {panelCopy.teamToolsTitle}
-        </h2>
+      <Section title={panelCopy.teamToolsTitle}>
         <p role="status" className={styles.muted}>
           {panelCopy.teamToolsLoading}
         </p>
-      </section>
+      </Section>
     )
   }
 
   if (view.isError || !view.data) {
     return (
-      <section className={styles.root} aria-labelledby={headingId}>
-        <h2 id={headingId} className={styles.title}>
-          {panelCopy.teamToolsTitle}
-        </h2>
+      <Section title={panelCopy.teamToolsTitle}>
         <p role="alert">{panelCopy.teamToolsLoadError}</p>
-        <Button type="button" onClick={() => void view.refetch()}>
-          {panelCopy.retry}
-        </Button>
-      </section>
+        <div>
+          <Button type="button" onClick={() => void view.refetch()}>
+            {panelCopy.retry}
+          </Button>
+        </div>
+      </Section>
     )
   }
 
@@ -174,43 +213,44 @@ export function TeamToolsSection() {
 
   const raiseTo = highestLevel(data.levelWarnings.map((warning) => warning.requiredLevel))
 
+  const counted = data.modules.filter((tool) => tool.id !== 'core')
+  const activeCount = counted.filter((tool) => tool.state === 'active').length
+
   return (
-    <section className={styles.root} aria-labelledby={headingId}>
-      <header className={styles.header}>
-        <h2 id={headingId} className={styles.title}>
-          {panelCopy.teamToolsTitle}
-        </h2>
-        <p className={styles.intro}>{panelCopy.teamToolsIntro}</p>
-        {canManage ? null : (
-          <div className={styles.readOnly}>
-            <ReadOnlyBadge />
-            <span className={styles.muted}>{panelCopy.teamToolsReadOnly}</span>
-          </div>
-        )}
-      </header>
-
-      <p role="status" aria-live="polite" className={styles.notice}>
-        {notice}
-      </p>
-      {error && !pending ? (
-        <p role="alert" className={styles.error}>
-          {error}
+    <>
+      <Section
+        title={settingsCopy.toolsCounter(activeCount, counted.length)}
+        ariaLabel={panelCopy.teamToolsTitle}
+        meta={canManage ? undefined : <ReadOnlyBadge />}
+        helper={settingsCopy.toolsHelper}
+      >
+        <p role="status" aria-live="polite" className={styles.notice}>
+          {notice}
         </p>
-      ) : null}
+        {error && !pending ? (
+          <p role="alert" className={styles.error}>
+            {error}
+          </p>
+        ) : null}
+      </Section>
 
-      <GlassSurface variant="group" className={styles.group}>
-        <h3 className={styles.sectionLabel}>{panelCopy.teamToolsLevelTitle}</h3>
-        <p className={styles.muted}>{panelCopy.teamToolsLevelHint}</p>
-        {canManage ? (
-          <SegmentedControl<ExperienceLevel>
-            aria-label={panelCopy.teamToolsLevelGroup}
-            value={data.level}
-            onChange={changeLevel}
-            options={LEVEL_OPTIONS}
-          />
-        ) : (
-          <p className={styles.label}>{panelCopy.teamToolsLevelCurrent(levelLabel(data.level))}</p>
-        )}
+      <Section title={panelCopy.teamToolsLevelTitle} helper={panelCopy.teamToolsLevelHint}>
+        <CleanList>
+          <CleanRow name={settingsCopy.levelRow}>
+            {canManage ? (
+              <QuietToggle<ExperienceLevel>
+                ariaLabel={panelCopy.teamToolsLevelGroup}
+                value={data.level}
+                onChange={changeLevel}
+                options={LEVEL_OPTIONS}
+              />
+            ) : (
+              <span className={styles.label}>
+                {panelCopy.teamToolsLevelCurrent(levelLabel(data.level))}
+              </span>
+            )}
+          </CleanRow>
+        </CleanList>
         {data.levelWarnings.map((warning) => (
           <p key={warning.module} role="note" className={styles.levelWarning}>
             {panelCopy.teamToolsLevelWarning(warning.label, levelLabel(warning.requiredLevel))}
@@ -223,14 +263,12 @@ export function TeamToolsSection() {
             </Button>
           </div>
         ) : null}
-      </GlassSurface>
+      </Section>
 
-      <GlassSurface variant="group" className={styles.group}>
-        <h3 className={styles.sectionLabel}>{panelCopy.teamToolsPresetsTitle}</h3>
-        <p className={styles.muted}>{panelCopy.teamToolsPresetsHint}</p>
-        <ul className={styles.presets}>
+      <Section title={settingsCopy.presetsTitle} helper={panelCopy.teamToolsPresetsHint}>
+        <CleanList>
           {data.presets.map((preset) => (
-            <PresetCard
+            <PresetRow
               key={preset.id}
               preset={preset}
               canManage={canManage}
@@ -248,47 +286,48 @@ export function TeamToolsSection() {
               }}
             />
           ))}
-        </ul>
-      </GlassSurface>
+        </CleanList>
+      </Section>
 
-      <GlassSurface variant="group" className={styles.group}>
-        <h3 className={styles.sectionLabel}>{panelCopy.teamToolsListTitle}</h3>
-        <ul className={styles.toolList}>
-          {data.modules.map((tool) => (
-            <ToolRow
-              key={tool.id}
-              tool={tool}
-              canManage={canManage}
-              busy={busy}
-              windDown={windDown?.moduleId === tool.id ? windDown : null}
-              onToggle={(on) => askToggle(tool, on)}
-              onAskWindDown={(kind) => {
-                clearMessages()
-                setWindDown({ moduleId: tool.id, kind })
-              }}
-              onCancelWindDown={() => setWindDown(null)}
-              onConfirmWindDown={() => {
-                if (!windDown) return
-                if (windDown.kind === 'complete') {
+      {groupTools(data.modules).map((group) => (
+        <Section key={group.title} title={group.title}>
+          <CleanList>
+            {group.tools.map((tool) => (
+              <ToolRow
+                key={tool.id}
+                tool={tool}
+                canManage={canManage}
+                busy={busy}
+                windDown={windDown?.moduleId === tool.id ? windDown : null}
+                onToggle={(on) => askToggle(tool, on)}
+                onAskWindDown={(kind) => {
                   clearMessages()
-                  actions.completeWindDown.mutate(
-                    { moduleId: tool.id },
-                    {
-                      onSuccess: (result) => {
-                        setWindDown(null)
-                        setNotice(summaryOf(result))
+                  setWindDown({ moduleId: tool.id, kind })
+                }}
+                onCancelWindDown={() => setWindDown(null)}
+                onConfirmWindDown={() => {
+                  if (!windDown) return
+                  if (windDown.kind === 'complete') {
+                    clearMessages()
+                    actions.completeWindDown.mutate(
+                      { moduleId: tool.id },
+                      {
+                        onSuccess: (result) => {
+                          setWindDown(null)
+                          setNotice(summaryOf(result))
+                        },
+                        onError: (failure) => setError(errorText(failure)),
                       },
-                      onError: (failure) => setError(errorText(failure)),
-                    },
-                  )
-                  return
-                }
-                runChange({ disable: [tool.id], finalize: [tool.id] }, () => setWindDown(null))
-              }}
-            />
-          ))}
-        </ul>
-      </GlassSurface>
+                    )
+                    return
+                  }
+                  runChange({ disable: [tool.id], finalize: [tool.id] }, () => setWindDown(null))
+                }}
+              />
+            ))}
+          </CleanList>
+        </Section>
+      ))}
 
       <ToolsImpactDialog
         pending={pending}
@@ -313,7 +352,7 @@ export function TeamToolsSection() {
           )
         }
       />
-    </section>
+    </>
   )
 }
 
@@ -324,20 +363,16 @@ interface PresetCardProps {
   readonly onApply: () => void
 }
 
-function PresetCard({ preset, canManage, disabled, onApply }: PresetCardProps) {
-  const titleId = useId()
+function PresetRow({ preset, canManage, disabled, onApply }: PresetCardProps) {
   return (
-    <li className={styles.preset} aria-labelledby={titleId}>
-      <h4 id={titleId} className={styles.presetTitle}>
-        {preset.label}
-      </h4>
-      <p className={styles.muted}>{panelCopy.teamPresetDescription[preset.id]}</p>
-      <p className={styles.label}>
-        {panelCopy.teamPresetSuggested(levelLabel(preset.suggestedLevel))}
-      </p>
+    <CleanRow
+      name={preset.label}
+      description={`${panelCopy.teamPresetDescription[preset.id]} ${panelCopy.teamPresetSuggested(levelLabel(preset.suggestedLevel))}`}
+    >
       {canManage ? (
         <Button
           type="button"
+          size="sm"
           aria-label={panelCopy.teamPresetApply(preset.label)}
           disabled={disabled}
           onClick={onApply}
@@ -345,7 +380,7 @@ function PresetCard({ preset, canManage, disabled, onApply }: PresetCardProps) {
           {panelCopy.teamPresetApplyLabel}
         </Button>
       ) : null}
-    </li>
+    </CleanRow>
   )
 }
 
@@ -373,65 +408,61 @@ function ToolRow({
   const soon = COMING_SOON_TOOLS.has(tool.id)
   const core = tool.id === 'core'
   const winding = tool.state === 'winding_down'
+  const description = [
+    settingsCopy.toolDescriptions[tool.id] ?? panelCopy.teamToolMinLevel(levelLabel(tool.minLevel)),
+    soon ? panelCopy.teamToolSoon : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <li className={styles.toolRow}>
-      <div className={styles.toolText}>
-        <span className={styles.toolName}>{tool.label}</span>
-        <span className={styles.muted}>
-          {panelCopy.teamToolMinLevel(levelLabel(tool.minLevel))}
-        </span>
-      </div>
-      <div className={styles.toolControl}>
-        <span className={styles.state}>
-          <span className={styles.dot} data-state={tool.state} aria-hidden="true" />
-          {STATE_LABEL[tool.state]}
-          {soon ? <span className={styles.muted}> · {panelCopy.teamToolSoon}</span> : null}
-        </span>
-        {!canManage ? null : core ? (
+    <CleanRow
+      name={tool.label}
+      description={description}
+      extra={
+        <>
+          {tool.id === 'sprints' && tool.state === 'active' ? (
+            <SprintLimitField value={sprintLimitOf(tool.config)} canManage={canManage} />
+          ) : null}
+          {windDown ? (
+            <WindDownConfirm
+              text={
+                windDown.kind === 'now'
+                  ? panelCopy.teamToolWindDownNowConfirm(tool.label)
+                  : panelCopy.teamToolWindDownCompleteConfirm(tool.label)
+              }
+              onCancel={onCancelWindDown}
+              onConfirm={onConfirmWindDown}
+            />
+          ) : null}
+        </>
+      }
+    >
+      {winding ? <span className={styles.state}>{STATE_LABEL.winding_down}</span> : null}
+      {core ? (
+        canManage ? (
           <span className={styles.muted}>{panelCopy.teamToolAlwaysOn}</span>
-        ) : winding ? (
-          <div className={styles.actions}>
-            <Button type="button" disabled={busy} onClick={() => onToggle(true)}>
-              {panelCopy.teamToolReactivate}
-            </Button>
-            <Button type="button" disabled={busy} onClick={() => onAskWindDown('now')}>
-              {panelCopy.teamToolWindDownNow}
-            </Button>
-            <Button type="button" disabled={busy} onClick={() => onAskWindDown('complete')}>
-              {panelCopy.teamToolWindDownComplete}
-            </Button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={tool.state === 'active'}
-            aria-label={panelCopy.teamToolSwitch(tool.label)}
-            className={styles.switch}
-            disabled={busy || soon}
-            onClick={() => onToggle(tool.state !== 'active')}
-          >
-            <span className={styles.track} aria-hidden="true">
-              <span className={styles.thumb} />
-            </span>
-          </button>
-        )}
-      </div>
-      {tool.id === 'sprints' && tool.state === 'active' ? (
-        <SprintLimitField value={sprintLimitOf(tool.config)} canManage={canManage} />
-      ) : null}
-      {windDown ? (
-        <WindDownConfirm
-          text={
-            windDown.kind === 'now'
-              ? panelCopy.teamToolWindDownNowConfirm(tool.label)
-              : panelCopy.teamToolWindDownCompleteConfirm(tool.label)
-          }
-          onCancel={onCancelWindDown}
-          onConfirm={onConfirmWindDown}
+        ) : null
+      ) : winding && canManage ? (
+        <div className={styles.actions}>
+          <Button type="button" size="sm" disabled={busy} onClick={() => onToggle(true)}>
+            {panelCopy.teamToolReactivate}
+          </Button>
+          <Button type="button" size="sm" disabled={busy} onClick={() => onAskWindDown('now')}>
+            {panelCopy.teamToolWindDownNow}
+          </Button>
+          <Button type="button" size="sm" disabled={busy} onClick={() => onAskWindDown('complete')}>
+            {panelCopy.teamToolWindDownComplete}
+          </Button>
+        </div>
+      ) : (
+        <Switch
+          checked={tool.state === 'active'}
+          label={panelCopy.teamToolSwitch(tool.label)}
+          disabled={!canManage || busy || soon || winding}
+          onChange={(on) => onToggle(on)}
         />
-      ) : null}
-    </li>
+      )}
+    </CleanRow>
   )
 }
 

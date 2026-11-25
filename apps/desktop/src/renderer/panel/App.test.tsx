@@ -66,7 +66,7 @@ describe('Painel', () => {
     )
     expect(
       await within(await screen.findByRole('region', { name: 'Concluído, tarefas' })).findByText(
-        'Ciclo médio desta semana: 4,2d',
+        'Ciclo: 4,2d',
       ),
     ).toBeTruthy()
     expect(flow).toHaveBeenCalledWith({})
@@ -155,7 +155,7 @@ describe('Painel', () => {
     )
   })
 
-  it('filtra sinais derivados sem perder as contagens do quadro e permite limpar o filtro', async () => {
+  it('mostra o sinal de parada no card e mantém todas as tarefas sem filtro', async () => {
     const api = createFakeApi()
     vi.spyOn(api.tasks, 'listBoard').mockResolvedValue(
       boardResponse([
@@ -171,15 +171,9 @@ describe('Painel', () => {
         </QueryProvider>
       </ApiProvider>,
     )
-    const aging = await screen.findByRole('button', { name: 'Paradas · 1' })
-    expect(screen.getByText('parada 5d')).toBeTruthy()
-    await userEvent.click(aging)
-    expect(screen.queryByRole('button', { name: 'AB-118 · Tarefa vencida' })).toBeNull()
+    expect(await screen.findByText('parada 5d')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'AB-118 · Tarefa parada' })).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Vencidas · 1' }))
-    expect(screen.queryByRole('button', { name: 'AB-118 · Tarefa parada' })).toBeNull()
     expect(screen.getByRole('button', { name: 'AB-118 · Tarefa vencida' })).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Vencidas · 1' }))
     expect(screen.getByRole('button', { name: 'AB-118 · Tarefa em dia' })).toBeTruthy()
   })
 
@@ -334,7 +328,7 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    expect(await screen.findAllByText('Nada aqui.')).toHaveLength(5)
+    expect(await screen.findAllByText('Nenhuma tarefa')).toHaveLength(5)
   })
 
   it('navega entre visões e mantém os rótulos acessíveis', async () => {
@@ -444,7 +438,7 @@ describe('Painel', () => {
     const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
     await user.click(await nav.findByRole('button', { name: 'Novo projeto' }))
     await user.type(screen.getByRole('textbox', { name: 'Nome do projeto' }), 'Projeto Novo')
-    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto simples agora' }))
     expect(create).toHaveBeenCalledWith({ name: 'Projeto Novo', startedFromPreset: 'simples' })
     await waitFor(() => expect(within(titleBar()).getByText('Projeto Novo')).toBeTruthy())
   })
@@ -518,12 +512,12 @@ describe('Painel', () => {
     const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
     await user.click(await nav.findByRole('button', { name: 'Novo projeto' }))
     await user.type(screen.getByRole('textbox', { name: 'Nome do projeto' }), '  projeto aurora  ')
-    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto simples agora' }))
     expect(create).not.toHaveBeenCalled()
     expect(within(titleBar()).getByText('Projeto Aurora')).toBeTruthy()
   })
 
-  it('fecha o assistente de novo projeto com Escape e devolve o foco ao botão Novo projeto', async () => {
+  it('fecha a página de novo projeto com Escape e devolve o foco ao botão Novo projeto', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     const user = userEvent.setup()
@@ -537,9 +531,9 @@ describe('Painel', () => {
 
     const newProjectBtn = await screen.findByRole('button', { name: 'Novo projeto' })
     await user.click(newProjectBtn)
-    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Criar novo projeto' })).toBeTruthy()
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Criar novo projeto' })).toBeNull()
     expect(document.activeElement).toBe(newProjectBtn)
   })
 

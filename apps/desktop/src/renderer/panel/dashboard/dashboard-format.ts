@@ -33,6 +33,11 @@ export function reais(value: number): string {
   return `R$ ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
 }
 
+/** Valor em reais com centavos ("R$ 9.840,00"). */
+export function brl(value: number): string {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 /** Dia e mês curtos ("12/11"), como nos prazos do painel. */
 export function shortDate(value: string): string {
   return format(parseISO(value), 'dd/MM')

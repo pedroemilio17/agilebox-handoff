@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import type { GetTaskDto, Participant } from '@agilebox/contract'
-import { AddButton, Avatar } from '@agilebox/ui'
 import { useSessionUsers } from '../hooks/use-session-users'
 import { panelCopy } from '../copy'
 import { PropertyRow } from './PropertyRow'
 import { SaveError } from './SaveError'
+import { taskCopy } from './task-detail-copy'
 import {
   useAddParticipation,
   useContributors,
@@ -24,72 +24,47 @@ function encode(participant: Participant): string {
     : `contributor:${participant.contributorId}`
 }
 
-function decode(value: string): Participant | null {
-  const [kind, id] = value.split(':')
-  if (!id) return null
-  if (kind === 'user') return { kind: 'user', userId: id }
-  if (kind === 'contributor') return { kind: 'contributor', contributorId: id }
-  return null
-}
-
+/** Usuários da tarefa (Responsável e Apoio): quem participa, com papel; adicionar e remover. */
 export function ParticipantsCard({ task, readOnly }: ParticipantsCardProps) {
   const users = useSessionUsers()
-  const contributors = useContributors()
   const add = useAddParticipation(task.id)
   const remove = useRemoveParticipation(task.id)
-  const createContributor = useCreateContributor()
   const [selected, setSelected] = useState('')
   const [role, setRole] = useState<'responsible' | 'support'>('support')
-  const [entityName, setEntityName] = useState('')
 
+  const people = task.participations.filter(
+    (participation) => participation.participant.kind === 'user',
+  )
   const taken = new Set(
     task.participations.map((participation) => encode(participation.participant)),
   )
   const availableUsers = (users.data ?? []).filter((user) => !taken.has(`user:${user.id}`))
-  const availableContributors = (contributors.data ?? []).filter(
-    (contributor) => !taken.has(`contributor:${contributor.id}`),
-  )
-  const participant = decode(selected)
-  const roleAllowed = participant?.kind === 'user' || role === 'support'
 
   function submitAdd() {
-    if (!participant) return
+    if (!selected) return
     add.mutate(
-      { participant, role: roleAllowed ? role : 'support' },
+      { participant: { kind: 'user', userId: selected }, role },
       { onSuccess: () => setSelected('') },
     )
   }
 
-  function submitEntity() {
-    const name = entityName.trim()
-    if (!name) return
-    createContributor.mutate(name, {
-      onSuccess: (contributor) => {
-        setEntityName('')
-        setSelected(`contributor:${contributor.id}`)
-        setRole('support')
-      },
-    })
-  }
-
   return (
     <PropertyRow label={panelCopy.participantsCard}>
-      <div className={styles.propertyContent}>
-        {task.participations.length === 0 ? (
-          <p className={styles.helper}>{panelCopy.noParticipants}</p>
+      <div className={styles.kvStack}>
+        {people.length === 0 ? (
+          <p className={styles.kvHint}>{panelCopy.noParticipants}</p>
         ) : (
-          <ul className={styles.list}>
-            {task.participations.map((participation) => (
-              <li key={participation.id} className={styles.participant}>
-                <Avatar name={participation.participantName} />
-                <span className={styles.grow}>{participation.participantName}</span>
-                <span className={styles.helper}>
+          <ul className={styles.extChips} aria-label={panelCopy.participantsCard}>
+            {people.map((participation) => (
+              <li key={participation.id} className={styles.extChip}>
+                <span>{participation.participantName}</span>
+                <span className={styles.chipRole}>
                   {participation.role === 'responsible' ? panelCopy.responsible : panelCopy.support}
                 </span>
                 {readOnly ? null : (
                   <button
                     type="button"
-                    className={styles.iconButton}
+                    className={styles.extChipRemove}
                     aria-label={panelCopy.removeParticipant(participation.participantName)}
                     disabled={remove.isPending}
                     onClick={() => remove.mutate(participation.id)}
@@ -102,61 +77,148 @@ export function ParticipantsCard({ task, readOnly }: ParticipantsCardProps) {
           </ul>
         )}
         {readOnly ? null : (
-          <div className={styles.addForm}>
+          <div className={styles.kvValue}>
             <select
               aria-label={panelCopy.participantToAdd}
-              className={styles.select}
+              className={styles.kvSelect}
               value={selected}
               onChange={(event) => setSelected(event.currentTarget.value)}
             >
-              <option value="">{panelCopy.addParticipant}</option>
-              <optgroup label={panelCopy.users}>
-                {availableUsers.map((user) => (
-                  <option key={user.id} value={`user:${user.id}`}>
-                    {user.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label={panelCopy.entities}>
-                {availableContributors.map((contributor) => (
-                  <option key={contributor.id} value={`contributor:${contributor.id}`}>
-                    {contributor.name}
-                  </option>
-                ))}
-              </optgroup>
+              <option value="">{taskCopy.addPersonPlaceholder}</option>
+              {availableUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
             </select>
             <select
               aria-label={panelCopy.participantRole}
-              className={styles.select}
-              value={roleAllowed ? role : 'support'}
+              className={styles.kvSelect}
+              style={{ maxWidth: 140 }}
+              value={role}
               onChange={(event) => setRole(event.currentTarget.value as 'responsible' | 'support')}
             >
               <option value="support">{panelCopy.support}</option>
-              <option value="responsible" disabled={participant?.kind === 'contributor'}>
-                {panelCopy.responsible}
-              </option>
+              <option value="responsible">{panelCopy.responsible}</option>
             </select>
-            <AddButton type="button" disabled={!participant || add.isPending} onClick={submitAdd}>
-              {panelCopy.addParticipant}
-            </AddButton>
-            <input
-              aria-label={panelCopy.newEntityName}
-              className={styles.select}
-              placeholder={panelCopy.newEntityName}
-              value={entityName}
-              onChange={(event) => setEntityName(event.currentTarget.value)}
-            />
-            <AddButton
+            <button
               type="button"
-              disabled={!entityName.trim() || createContributor.isPending}
-              onClick={submitEntity}
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              disabled={!selected || add.isPending}
+              onClick={submitAdd}
             >
-              {panelCopy.createEntity}
-            </AddButton>
-            <SaveError error={add.error ?? remove.error ?? createContributor.error} />
+              {panelCopy.addParticipant}
+            </button>
           </div>
         )}
+        <SaveError error={add.error ?? remove.error} />
       </div>
     </PropertyRow>
+  )
+}
+
+/**
+ * Pessoas externas (entidades): só identificação, nunca dão acesso nem recebem avisos.
+ * Escrever um nome novo cria a entidade e a vincula como Apoio.
+ */
+export function ExternalPeopleSection({ task, readOnly }: ParticipantsCardProps) {
+  const contributors = useContributors()
+  const add = useAddParticipation(task.id)
+  const remove = useRemoveParticipation(task.id)
+  const createContributor = useCreateContributor()
+  const [name, setName] = useState('')
+
+  const externals = task.participations.filter(
+    (participation) => participation.participant.kind === 'contributor',
+  )
+  const taken = new Set(
+    task.participations.map((participation) => encode(participation.participant)),
+  )
+  const available = (contributors.data ?? []).filter(
+    (contributor) => !taken.has(`contributor:${contributor.id}`),
+  )
+
+  function link(contributorId: string) {
+    add.mutate(
+      { participant: { kind: 'contributor', contributorId }, role: 'support' },
+      { onSuccess: () => setName('') },
+    )
+  }
+
+  function submit() {
+    const text = name.trim()
+    if (!text) return
+    const existing = available.find(
+      (contributor) =>
+        contributor.name.toLocaleLowerCase('pt-BR') === text.toLocaleLowerCase('pt-BR'),
+    )
+    if (existing) return link(existing.id)
+    createContributor.mutate(text, { onSuccess: (contributor) => link(contributor.id) })
+  }
+
+  return (
+    <section className={styles.topicSection} aria-labelledby="task-section-ext">
+      <div className={styles.topicSectionHead}>
+        <h2 className={styles.topicSectionTitle} id="task-section-ext">
+          {taskCopy.externalTitle}
+        </h2>
+      </div>
+      <p className={styles.topicHelper}>{taskCopy.externalHelper}</p>
+      <div className={styles.extChips}>
+        {externals.length === 0 ? (
+          <span className={styles.emptyNote}>{taskCopy.externalNone}</span>
+        ) : (
+          externals.map((participation) => (
+            <span key={participation.id} className={styles.extChip}>
+              <span>{participation.participantName}</span>
+              {readOnly ? null : (
+                <button
+                  type="button"
+                  className={styles.extChipRemove}
+                  aria-label={taskCopy.externalRemove(participation.participantName)}
+                  disabled={remove.isPending}
+                  onClick={() => remove.mutate(participation.id)}
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          ))
+        )}
+      </div>
+      {readOnly ? null : (
+        <form
+          className={styles.inlineAddRow}
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault()
+            submit()
+          }}
+        >
+          <input
+            type="text"
+            className={styles.input}
+            list="task-externals-list"
+            placeholder={taskCopy.externalPlaceholder}
+            aria-label={taskCopy.externalAria}
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+          />
+          <datalist id="task-externals-list">
+            {available.map((contributor) => (
+              <option key={contributor.id} value={contributor.name} />
+            ))}
+          </datalist>
+          <button
+            type="submit"
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            disabled={!name.trim() || add.isPending || createContributor.isPending}
+          >
+            {taskCopy.externalAdd}
+          </button>
+        </form>
+      )}
+      <SaveError error={add.error ?? remove.error ?? createContributor.error} />
+    </section>
   )
 }

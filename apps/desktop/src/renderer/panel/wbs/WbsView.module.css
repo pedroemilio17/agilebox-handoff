@@ -7,7 +7,6 @@
   align-content: start;
   gap: var(--space-4);
   min-width: 0;
-  padding: var(--space-4) var(--space-6) var(--space-6);
 }
 
 .header {
@@ -23,14 +22,16 @@
 }
 
 .title {
-  margin: 0;
-  font-size: var(--font-size-heading);
-  font-weight: 620;
-  letter-spacing: var(--letter-spacing-display);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .tag {
-  display: inline-flex;
+  display: none;
   align-items: center;
   height: 24px;
   padding: 0 9px;
@@ -88,15 +89,27 @@
   border: 0;
 }
 
-/* Resumo: quatro medidas em linha, a última com a barra. Cartão sólido, como no design. */
+/* Resumo: indicadores sem caixa, separados por divisória de 1px (preditivo.html .kpi-strip). */
 .summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  padding: 14px 18px;
-  border: 1px solid var(--color-hairline);
-  border-radius: 14px;
-  background: var(--surface-panel);
+  gap: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.summary > .metric {
+  padding: 0 18px;
+  border-right: 1px solid var(--color-divider);
+}
+
+.summary > .metric:first-child {
+  padding-left: 0;
+}
+
+.summary > .metric:last-child {
+  padding-right: 0;
+  border-right: 0;
 }
 
 .metric {
@@ -120,8 +133,10 @@
 
 .metricValue {
   font-family: var(--font-family-display);
-  font-size: 22px;
-  font-weight: 620;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
 }
 
 .progressLine {
@@ -137,13 +152,13 @@
   height: 8px;
   min-width: 80px;
   border-radius: 4px;
-  background: var(--glass-control);
+  background: var(--color-hairline);
   overflow: hidden;
 }
 
 .trackSummary {
-  height: 8px;
-  border-radius: 4px;
+  height: 4px;
+  border-radius: 999px;
 }
 
 .fill {
@@ -154,21 +169,15 @@
   transition: width var(--motion-duration-control) var(--ease-ios);
 }
 
-/* Em andamento: azul do estado Desenvolvendo. Concluído: verde. Resumo: sempre verde (design). */
-.fill[data-tone='started'] {
-  background: var(--color-status-desenvolvendo);
-}
-
+/* Barras monocromáticas (preditivo.html .eap-prog-fill): o estado não ganha cor aqui. */
+.fill[data-tone='started'],
 .fill[data-tone='done'],
 .fill.fillSummary {
-  background: var(--color-status-concluido);
+  background: var(--color-text-muted);
 }
 
 .card {
   min-width: 0;
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-group);
-  background: var(--surface-panel);
 }
 
 .tableWrap {
@@ -185,7 +194,7 @@
 .table th,
 .table td {
   padding: 0 12px;
-  border-top: 1px solid var(--color-hairline);
+  border-top: 1px solid var(--color-divider);
   text-align: left;
   vertical-align: middle;
 }
@@ -282,7 +291,7 @@
 
 /* Entregas de topo ganham um tom sutil; subentregas e tarefas ficam no fundo do cartão. */
 .deliverableRow[data-level='1'] {
-  background: rgba(255, 255, 255, 0.025);
+  background: transparent;
 }
 
 .code {
@@ -316,7 +325,8 @@
 }
 
 .deliverableRow[data-level='1'] .deliverableTitle {
-  font-size: 14.5px;
+  font-family: var(--font-family-display);
+  font-size: 15px;
 }
 
 .taskTitle {

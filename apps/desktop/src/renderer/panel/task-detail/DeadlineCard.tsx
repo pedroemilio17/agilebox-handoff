@@ -21,21 +21,19 @@ export function DeadlineCard({ task, readOnly, today, onUpdate }: DeadlineCardPr
 
   return (
     <PropertyRow label={panelCopy.deadlineCard}>
-      <div className={styles.propertyContent}>
-        <input
-          type="date"
-          className={styles.propertyInput}
-          aria-label={panelCopy.deadline}
-          disabled={readOnly}
-          value={deadline.value}
-          onChange={(event) => deadline.onChange(event.currentTarget.value)}
-          onFocus={deadline.onFocus}
-          onBlur={deadline.onBlur}
-        />
-        <p className={styles.helper} data-testid="deadline-label">
-          {deadlineLabel(task.status, current, today)}
-        </p>
-      </div>
+      <input
+        type="date"
+        className={styles.kvInput}
+        aria-label={panelCopy.deadline}
+        disabled={readOnly}
+        value={deadline.value}
+        onChange={(event) => deadline.onChange(event.currentTarget.value)}
+        onFocus={deadline.onFocus}
+        onBlur={deadline.onBlur}
+      />
+      <span className={styles.kvHint} data-testid="deadline-label">
+        {deadlineLabel(task.status, current, today)}
+      </span>
     </PropertyRow>
   )
 }

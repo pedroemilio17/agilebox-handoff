@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { AiChatTurn, AiContextSnapshot, TaskDto } from '@agilebox/contract'
+import {
+  AI_MODELS,
+  DEFAULT_AI_MODEL,
+  type AiChatTurn,
+  type AiConfigStatus,
+  type AiContextSnapshot,
+  type AiModel,
+  type TaskDto,
+} from '@agilebox/contract'
+import kanOpenUrl from '../../shared/assets/kan-open.png'
 import { useApi } from '../../shared/api/ApiProvider'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { isDefinitionOfDoneNotConfirmed } from '../../shared/definition-of-done/definition-of-done'
@@ -11,6 +20,7 @@ import { useActor } from '../../shared/session/useActor'
 import { useProjects } from '../../panel/hooks/use-projects'
 import { useSessionUsers } from '../../panel/hooks/use-session-users'
 import { trayCopy } from '../copy'
+import { BackButton, CollapseButton, OpenPanelButton, TrayHeader } from '../TrayHeader'
 import {
   describeKanError,
   executeKanActions,
@@ -18,6 +28,7 @@ import {
   type PromptDefinitionOfDone,
 } from '../kan/kan-executor'
 import { parseLocalKanPrompt } from '../kan/kan-local-parser'
+import trayStyles from '../Tray.module.css'
 import styles from './KanChatScreen.module.css'
 
 interface ChatMessage {
@@ -37,7 +48,18 @@ function initialGreeting(): string {
   return 'Oi! Posso listar suas tarefas em foco, criar novas tarefas, mudar estados, comentar ou lançar horas.'
 }
 
-export function KanChatScreen() {
+export interface KanChatScreenProps {
+  readonly onBack: () => void
+  readonly onCollapse: () => void
+}
+
+const MODEL_LABELS: Record<AiModel, string> = {
+  'gemini-2.5-flash': 'gemini-2.5-flash (Recomendado · Grátis)',
+  'gemini-2.0-flash': 'gemini-2.0-flash',
+  'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite (Mais rápido)',
+}
+
+export function KanChatScreen({ onBack, onCollapse }: KanChatScreenProps) {
   const api = useApi()
   const queryClient = useQueryClient()
   const actor = useActor()
@@ -50,6 +72,11 @@ export function KanChatScreen() {
   const listRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const [aiConfig, setAiConfig] = useState<AiConfigStatus | null>(null)
+  const [keyPanelOpen, setKeyPanelOpen] = useState(false)
+  const [keyDraft, setKeyDraft] = useState('')
+  const [modelDraft, setModelDraft] = useState<AiModel>(DEFAULT_AI_MODEL)
+  const [keyStatus, setKeyStatus] = useState<string>(trayCopy.kanKeyStatusIdle)
   const [messages, setMessages] = useState<readonly ChatMessage[]>(() => [
     { id: nextMessageId(), role: 'assistant', text: initialGreeting(), receipts: [] },
   ])
@@ -99,6 +126,72 @@ export function KanChatScreen() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    let active = true
+    const bridge = window.agilebox?.ai
+    if (!bridge) return
+    void bridge
+      .getConfig()
+      .then((config) => {
+        if (!active) return
+        setAiConfig(config)
+        setModelDraft(config.model)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const keyConnected = aiConfig?.configured === true
+
+  const saveKey = async () => {
+    const bridge = window.agilebox?.ai
+    if (!bridge) return
+    try {
+      const value = keyDraft.trim()
+      const config = await bridge.saveConfig({
+        model: modelDraft,
+        ...(value ? { apiKey: value } : {}),
+      })
+      setAiConfig(config)
+      setKeyDraft('')
+      setKeyStatus(config.configured ? trayCopy.kanKeyStatusSaved : trayCopy.kanKeyStatusRemoved)
+      if (config.configured && value) setKeyPanelOpen(false)
+    } catch {
+      setKeyStatus(trayCopy.kanKeyStatusError)
+    }
+  }
+
+  const clearKey = async () => {
+    const bridge = window.agilebox?.ai
+    if (!bridge) return
+    try {
+      setAiConfig(await bridge.clearKey())
+      setKeyDraft('')
+      setKeyStatus(trayCopy.kanKeyStatusRemoved)
+    } catch {
+      setKeyStatus(trayCopy.kanKeyStatusError)
+    }
+  }
+
+  const testKey = async () => {
+    const bridge = window.agilebox?.ai
+    if (!bridge) return
+    setKeyStatus(trayCopy.kanKeyStatusTesting)
+    try {
+      const value = keyDraft.trim()
+      if (value || modelDraft !== aiConfig?.model)
+        setAiConfig(
+          await bridge.saveConfig({ model: modelDraft, ...(value ? { apiKey: value } : {}) }),
+        )
+      const result = await bridge.testConnection()
+      setKeyStatus(result.ok ? `Conexão ok · ${result.model}` : result.message)
+    } catch {
+      setKeyStatus(trayCopy.kanKeyStatusError)
+    }
+  }
 
   useEffect(() => {
     if (listRef.current) {
@@ -277,130 +370,213 @@ export function KanChatScreen() {
   const checkinsEnabled = capabilities.can('checkins:screen')
 
   return (
-    <div className={styles.shell}>
-      <div
-        ref={listRef}
-        className={styles.messages}
-        role="log"
-        aria-live="polite"
-        aria-label="Conversa com o Kan"
-      >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`${styles.msg} ${message.role === 'user' ? styles.msgUser : styles.msgAssistant}`}
-          >
-            <div className={styles.bubble}>{message.text}</div>
-            {message.receipts.map((receipt) => (
-              <div
-                key={receipt.id}
-                className={`${styles.receipt} ${receipt.undone ? styles.receiptUndone : ''}`}
-              >
-                <div className={styles.receiptInfo}>
-                  <span className={styles.receiptTitle}>{receipt.summary}</span>
-                  {receipt.detail ? (
-                    <span className={styles.receiptDetail}>{receipt.detail}</span>
-                  ) : null}
-                </div>
-                {receipt.undo ? (
-                  <button
-                    type="button"
-                    className={styles.undoBtn}
-                    disabled={receipt.undone}
-                    onClick={() => void handleUndo(message.id, receipt.id, receipt.undo!)}
-                  >
-                    {receipt.undone ? trayCopy.kanUndone : trayCopy.kanUndo}
-                  </button>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ))}
-        {busy ? (
-          <div className={`${styles.msg} ${styles.msgAssistant}`}>
-            <div className={`${styles.bubble} ${styles.thinking}`}>{trayCopy.kanThinking}</div>
-          </div>
-        ) : null}
-      </div>
-
-      <div className={styles.suggestions} role="group" aria-label="Sugestões rápidas">
-        <button
-          type="button"
-          className={styles.chip}
-          disabled={busy}
-          onClick={() => void submitPrompt('Quais são minhas tarefas em foco?')}
-        >
-          Em foco
-        </button>
-        <button
-          type="button"
-          className={styles.chip}
-          disabled={busy}
-          onClick={() => {
-            setDraft('Criar tarefa ')
-            inputRef.current?.focus()
-          }}
-        >
-          + Nova tarefa
-        </button>
-        {firstOpenTask ? (
+    <>
+      <TrayHeader
+        left={
+          <>
+            <BackButton iconOnly label={trayCopy.kanBack} onClick={onBack} />
+            <img src={kanOpenUrl} alt="" className={styles.kanAvatar} aria-hidden="true" />
+            <div className={styles.kanTitleWrap}>
+              <h1 className={trayStyles.headerTitle}>{trayCopy.kanTitle}</h1>
+              <span className={styles.kanSubtitle}>
+                {keyConnected
+                  ? trayCopy.headerKanSubtitleGemini(aiConfig.model)
+                  : trayCopy.headerKanSubtitleLocal}
+              </span>
+            </div>
+          </>
+        }
+        actions={
           <>
             <button
               type="button"
-              className={styles.chip}
-              disabled={busy}
-              onClick={() => void submitPrompt(`Mover ${firstOpenTask.key} para Revisar`)}
+              className={`${styles.keyBtn} ${keyPanelOpen ? styles.keyBtnActive : ''} ${keyConnected ? styles.keyBtnConnected : ''}`}
+              aria-expanded={keyPanelOpen}
+              title={trayCopy.kanKeyTitle}
+              onClick={() => setKeyPanelOpen((open) => !open)}
             >
-              {firstOpenTask.key} → Revisar
+              {keyConnected ? trayCopy.kanKeyButtonOn : trayCopy.kanKeyButton}
+            </button>
+            <CollapseButton onClick={onCollapse} />
+            <OpenPanelButton />
+          </>
+        }
+      />
+
+      {keyPanelOpen ? (
+        <div className={styles.apiPanel}>
+          <div className={styles.apiRow}>
+            <input
+              type="password"
+              className={styles.input}
+              placeholder={trayCopy.kanKeyPlaceholder}
+              aria-label={trayCopy.kanKeyAria}
+              value={keyDraft}
+              autoComplete="off"
+              onChange={(event) => setKeyDraft(event.currentTarget.value)}
+            />
+            <button
+              type="button"
+              className={`${trayStyles.btn} ${trayStyles.btnSm} ${trayStyles.btnPrimary}`}
+              onClick={() => void saveKey()}
+            >
+              {trayCopy.kanKeySave}
+            </button>
+          </div>
+          <div className={styles.apiRow}>
+            <select
+              className={styles.apiModel}
+              aria-label={trayCopy.kanModelAria}
+              value={modelDraft}
+              onChange={(event) => setModelDraft(event.currentTarget.value as AiModel)}
+            >
+              {AI_MODELS.map((model) => (
+                <option key={model} value={model}>
+                  {MODEL_LABELS[model]}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={`${trayStyles.btn} ${trayStyles.btnSm} ${trayStyles.btnSecondary}`}
+              onClick={() => void testKey()}
+            >
+              {trayCopy.kanKeyTest}
             </button>
             <button
               type="button"
-              className={styles.chip}
-              disabled={busy}
-              onClick={() => void submitPrompt(`Lançar 1h em ${firstOpenTask.key}`)}
+              className={`${trayStyles.btn} ${trayStyles.btnSm}`}
+              onClick={() => void clearKey()}
             >
-              +1h em {firstOpenTask.key}
+              {trayCopy.kanKeyClear}
             </button>
-          </>
-        ) : null}
-        {checkinsEnabled ? (
+          </div>
+          <div className={styles.apiMeta}>
+            <span role="status">{keyStatus}</span>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
+              {trayCopy.kanKeyGet}
+            </a>
+          </div>
+        </div>
+      ) : null}
+
+      <div className={styles.shell}>
+        <div
+          ref={listRef}
+          className={styles.messages}
+          role="log"
+          aria-live="polite"
+          aria-label={trayCopy.kanLog}
+        >
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`${styles.msg} ${message.role === 'user' ? styles.msgUser : styles.msgAssistant}`}
+            >
+              <div className={styles.bubble}>{message.text}</div>
+              {message.receipts.map((receipt) => (
+                <div
+                  key={receipt.id}
+                  className={`${styles.receipt} ${receipt.undone ? styles.receiptUndone : ''}`}
+                >
+                  <div className={styles.receiptInfo}>
+                    <span className={styles.receiptTitle}>{receipt.summary}</span>
+                    {receipt.detail ? (
+                      <span className={styles.receiptDetail}>{receipt.detail}</span>
+                    ) : null}
+                  </div>
+                  {receipt.undo ? (
+                    <button
+                      type="button"
+                      className={styles.undoBtn}
+                      disabled={receipt.undone}
+                      onClick={() => void handleUndo(message.id, receipt.id, receipt.undo!)}
+                    >
+                      {receipt.undone ? trayCopy.kanUndone : trayCopy.kanUndo}
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ))}
+          {busy ? (
+            <div className={`${styles.msg} ${styles.msgAssistant}`}>
+              <div className={`${styles.bubble} ${styles.thinking}`}>{trayCopy.kanThinking}</div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className={styles.suggestions} role="group" aria-label={trayCopy.kanSuggestionsLabel}>
           <button
             type="button"
             className={styles.chip}
             disabled={busy}
             onClick={() => {
-              setDraft('Registrar daily: ')
+              setDraft('Criar tarefa ')
               inputRef.current?.focus()
             }}
           >
-            Daily
+            {trayCopy.kanNewTaskChip}
           </button>
-        ) : null}
-      </div>
+          {firstOpenTask ? (
+            <>
+              <button
+                type="button"
+                className={styles.chip}
+                disabled={busy}
+                onClick={() => void submitPrompt(`Mover ${firstOpenTask.key} para Revisar`)}
+              >
+                {firstOpenTask.key} → Revisar
+              </button>
+              <button
+                type="button"
+                className={styles.chip}
+                disabled={busy}
+                onClick={() => void submitPrompt(`Lançar 1h em ${firstOpenTask.key}`)}
+              >
+                +1h em {firstOpenTask.key}
+              </button>
+            </>
+          ) : null}
+          {checkinsEnabled ? (
+            <button
+              type="button"
+              className={styles.chip}
+              disabled={busy}
+              onClick={() => {
+                setDraft('Registrar daily: ')
+                inputRef.current?.focus()
+              }}
+            >
+              Daily
+            </button>
+          ) : null}
+        </div>
 
-      <form
-        className={styles.composer}
-        onSubmit={(event) => {
-          event.preventDefault()
-          void submitPrompt(draft)
-        }}
-      >
-        <input
-          ref={inputRef}
-          className={styles.input}
-          type="text"
-          aria-label="Mensagem para o Kan"
-          placeholder={trayCopy.kanPlaceholder}
-          value={draft}
-          disabled={busy}
-          autoComplete="off"
-          onChange={(event) => setDraft(event.currentTarget.value)}
-        />
-        <button type="submit" className={styles.sendBtn} disabled={busy || !draft.trim()}>
-          {trayCopy.kanSend}
-        </button>
-      </form>
+        <form
+          className={styles.composer}
+          onSubmit={(event) => {
+            event.preventDefault()
+            void submitPrompt(draft)
+          }}
+        >
+          <input
+            ref={inputRef}
+            className={styles.input}
+            type="text"
+            aria-label={trayCopy.kanMessageAria}
+            placeholder={trayCopy.kanPlaceholder}
+            value={draft}
+            disabled={busy}
+            autoComplete="off"
+            onChange={(event) => setDraft(event.currentTarget.value)}
+          />
+          <button type="submit" className={styles.sendBtn} disabled={busy}>
+            {trayCopy.kanSend}
+          </button>
+        </form>
+      </div>
       {definitionGate.dialog}
-    </div>
+    </>
   )
 }

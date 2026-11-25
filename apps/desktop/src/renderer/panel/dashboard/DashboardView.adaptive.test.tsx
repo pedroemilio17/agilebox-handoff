@@ -73,7 +73,7 @@ describe('Dashboard adaptativo (M2.1), no layout do desenho', () => {
   it('módulo desligado não deixa nenhum efeito: sem WIP, sem coluna de daily, e a daily não é pedida', async () => {
     const { listForDate } = setup(['core'], 'advanced')
 
-    await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
+    await screen.findByRole('region', { name: 'Colaboradores' })
     expect(screen.queryByText('Desenvolvendo está com 4 de 3.')).toBeNull()
     expect(screen.queryByText('Diária de hoje')).toBeNull()
     expect(screen.queryByText('✓ respondida')).toBeNull()
@@ -83,8 +83,9 @@ describe('Dashboard adaptativo (M2.1), no layout do desenho', () => {
   it('Scrum no Básico: o bloqueio segue como sinal (passivo); daily e WIP não aparecem', async () => {
     const { listForDate } = setup(presetModules('scrum'), 'basic')
 
-    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
-    expect(within(team).getByText('1 bloqueada')).toBeTruthy()
+    const team = await screen.findByRole('region', { name: 'Colaboradores' })
+    expect(within(team).getByText('Bloqueadas')).toBeTruthy()
+    expect(within(within(team).getByText('Bruno Lima').closest('tr')!).getByText('1')).toBeTruthy()
     expect(screen.queryByText('Desenvolvendo está com 4 de 3.')).toBeNull()
     expect(screen.queryByText('Diária de hoje')).toBeNull()
     expect(listForDate).not.toHaveBeenCalled()
@@ -93,7 +94,7 @@ describe('Dashboard adaptativo (M2.1), no layout do desenho', () => {
   it('sem fluxo no DTO: o cartão Kanban some do fluxo e o cartão com progresso segue, sem erro', async () => {
     setup(ALL_MODULES, 'advanced', dashboardWithoutFlow)
 
-    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
+    const team = await screen.findByRole('region', { name: 'Colaboradores' })
     expect(within(team).getByText('Bruno Lima')).toBeTruthy()
     expect(screen.getByRole('article', { name: 'Implantação ERP' })).toBeTruthy()
     expect(screen.queryByText(/Lead time médio/)).toBeNull()

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { UpdateInfo, UpdateRun, UpdateStatus, UpdateStep } from '@agilebox/contract'
-import { Button, GlassSurface } from '@agilebox/ui'
+import { Button } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { CleanList, CleanRow, Section } from './clean-ui'
+import cleanStyles from './clean-ui.module.css'
+import { settingsCopy } from './settings-copy'
 import styles from './SettingsView.module.css'
 
 function describe(status: UpdateStatus): string {
@@ -9,21 +12,25 @@ function describe(status: UpdateStatus): string {
     case 'unsupported':
       return status.reason
     case 'dirty':
-      return panelCopy.updateDirty(status.files)
+      return settingsCopy.updateDirty
     case 'up-to-date':
-      return panelCopy.updateUpToDate(status.commit)
+      return settingsCopy.upToDate
     case 'available':
-      return panelCopy.updateAvailable(status.behind)
+      return settingsCopy.updateAvailable
     case 'ready':
-      return panelCopy.updateReady
+      return settingsCopy.updateReady
     case 'started':
-      return panelCopy.updateStarted
+      return settingsCopy.updateRestarting
     case 'done-dev':
-      return panelCopy.updateDoneDev
+      return settingsCopy.updateDoneDev
     case 'error':
-      return panelCopy.updateError(status.message)
+      return settingsCopy.updateFailed
   }
 }
+
+/** Etapas em linguagem comum: nada de git, pnpm ou compilação na tela. */
+const stepText = (step: UpdateStep) =>
+  step === 'download' || step === 'pull' ? 'Baixando a atualização…' : 'Preparando a atualização…'
 
 const formatWhen = (iso: string) =>
   new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso))
@@ -66,75 +73,72 @@ export function UpdatesSection() {
   const finished = status?.state === 'started'
   const working = busy === 'apply'
 
+  const statusText = working
+    ? step
+      ? stepText(step)
+      : settingsCopy.updateInstalling
+    : status
+      ? describe(status)
+      : settingsCopy.autoCheck
+  const title = info ? `AgileBox Desktop ${info.version}` : settingsCopy.updatesTitle
+
   return (
-    <GlassSurface variant="group" className={styles.section} aria-label={panelCopy.updates}>
-      <h2 className={styles.sectionTitle}>{panelCopy.updates}</h2>
-      {info ? (
-        <p className={styles.label}>{panelCopy.installedVersion(info.version, info.mode)}</p>
-      ) : null}
-      <p className={styles.hint}>
-        {info?.mode === 'release' ? panelCopy.updatesHintRelease : panelCopy.updatesHint}
-      </p>
-      <div role="status" className={styles.updateStatus}>
-        {working ? (
-          <p className={styles.label}>
-            {step ? panelCopy.updateSteps[step] : panelCopy.applyingUpdate}
-          </p>
-        ) : status ? (
+    <Section
+      title={settingsCopy.updatesTitle}
+      ariaLabel={panelCopy.updates}
+      meta={
+        info?.mode === 'release' ? (
           <>
-            <p className={styles.label}>{describe(status)}</p>
-            {status.state === 'available' ? (
-              <ul className={styles.commits}>
-                {status.commits.map((commit, index) => (
-                  <li key={`${index}-${commit}`}>{commit}</li>
-                ))}
-              </ul>
-            ) : null}
+            <span className={cleanStyles.dotOk} aria-hidden="true" />
+            <span>{settingsCopy.stableChannel}</span>
           </>
-        ) : null}
-      </div>
-      <div className={styles.actions}>
-        {status?.state === 'ready' ? (
-          <Button
-            type="button"
-            variant="primary"
-            disabled={busy !== null}
-            onClick={() => void act('restart')}
-          >
-            {panelCopy.restartNow}
-          </Button>
-        ) : (
-          <>
+        ) : undefined
+      }
+    >
+      <CleanList>
+        <CleanRow
+          name={title}
+          description={<span role="status">{statusText}</span>}
+          extra={
+            lastRun ? (
+              <p className={styles.hint}>
+                {panelCopy.lastUpdate(formatWhen(lastRun.at), lastRun.ok)}
+              </p>
+            ) : null
+          }
+        >
+          {status?.state === 'ready' ? (
             <Button
               type="button"
-              disabled={busy !== null || finished}
-              onClick={() => void act('check')}
+              variant="primary"
+              disabled={busy !== null}
+              onClick={() => void act('restart')}
             >
-              {busy === 'check' ? panelCopy.checkingUpdates : panelCopy.checkUpdates}
+              {panelCopy.restartNow}
             </Button>
-            {status?.state === 'available' || working ? (
+          ) : (
+            <>
               <Button
                 type="button"
-                variant="primary"
-                disabled={busy !== null}
-                onClick={() => void act('apply')}
+                disabled={busy !== null || finished}
+                onClick={() => void act('check')}
               >
-                {working ? panelCopy.applyingUpdate : panelCopy.applyUpdate}
+                {busy === 'check' ? settingsCopy.checking : settingsCopy.checkUpdates}
               </Button>
-            ) : null}
-          </>
-        )}
-      </div>
-      {lastRun ? (
-        <p className={styles.hint}>
-          {panelCopy.lastUpdate(formatWhen(lastRun.at), lastRun.ok)}{' '}
-          {lastRun.ok ? null : (
-            <>
-              {lastRun.message}. {panelCopy.updateLog} <code>{lastRun.logPath}</code>
+              {status?.state === 'available' || working ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={busy !== null}
+                  onClick={() => void act('apply')}
+                >
+                  {working ? panelCopy.applyingUpdate : panelCopy.applyUpdate}
+                </Button>
+              ) : null}
             </>
           )}
-        </p>
-      ) : null}
-    </GlassSurface>
+        </CleanRow>
+      </CleanList>
+    </Section>
   )
 }

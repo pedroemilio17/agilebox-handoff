@@ -1,11 +1,13 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, GlassSurface } from '@agilebox/ui'
+import { Button } from '@agilebox/ui'
 import { useApi } from '../../shared/api/ApiProvider'
 import { queryKeys } from '../../shared/query/keys'
 import { useActor } from '../../shared/session/useActor'
 import { panelCopy } from '../copy'
 import { useSessionUsers } from '../hooks/use-session-users'
+import { CleanRow } from './clean-ui'
+import { settingsCopy } from './settings-copy'
 import styles from './SettingsView.module.css'
 
 /**
@@ -51,45 +53,44 @@ export function MyRateSection() {
   }
 
   return (
-    <GlassSurface variant="group" className={styles.section} aria-label={panelCopy.myRateTitle}>
-      <h2 className={styles.sectionTitle}>{panelCopy.myRateTitle}</h2>
-      <form className={styles.rateForm} onSubmit={onSubmit}>
-        <label htmlFor={inputId} className={styles.label}>
-          {panelCopy.myRateLabel}
-        </label>
-        <div className={styles.rateControls}>
-          <input
-            id={inputId}
-            className={styles.rateInput}
-            type="number"
-            min={0}
-            step={5}
-            value={value}
-            disabled={!me}
-            aria-describedby={`${inputId}-hint`}
-            onChange={(event) => {
-              setValue(event.currentTarget.value)
-              setSaved(false)
-            }}
-          />
-          <Button type="submit" variant="primary" disabled={!me || save.isPending}>
-            {panelCopy.myRateSave}
-          </Button>
-        </div>
-        <p id={`${inputId}-hint`} className={styles.hint}>
-          {panelCopy.myRateHint}
-        </p>
-        {saved ? (
-          <p role="status" className={styles.hint}>
-            {panelCopy.myRateSaved}
-          </p>
-        ) : null}
-        {error ? (
-          <p role="alert" className={styles.hint}>
-            {error}
-          </p>
-        ) : null}
+    <CleanRow
+      name={<label htmlFor={inputId}>{settingsCopy.rateName}</label>}
+      description={<span id={`${inputId}-hint`}>{panelCopy.myRateHint}</span>}
+      extra={
+        <>
+          {saved ? (
+            <p role="status" className={styles.hint}>
+              {panelCopy.myRateSaved}
+            </p>
+          ) : null}
+          {error ? (
+            <p role="alert" className={styles.hint}>
+              {error}
+            </p>
+          ) : null}
+        </>
+      }
+    >
+      <form className={styles.stack} onSubmit={onSubmit}>
+        <input
+          id={inputId}
+          className={`${styles.fieldInput} ${styles.rateInput}`}
+          type="number"
+          min={0}
+          step={5}
+          value={value}
+          disabled={!me}
+          aria-label={panelCopy.myRateLabel}
+          aria-describedby={`${inputId}-hint`}
+          onChange={(event) => {
+            setValue(event.currentTarget.value)
+            setSaved(false)
+          }}
+        />
+        <Button type="submit" variant="primary" size="sm" disabled={!me || save.isPending}>
+          {panelCopy.myRateSave}
+        </Button>
       </form>
-    </GlassSurface>
+    </CleanRow>
   )
 }

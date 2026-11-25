@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { EmptyState, WindowControls, ProjectSwatch, Kbd, SegmentedControl } from '@agilebox/ui'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { EmptyState, WindowControls, ProjectSwatch } from '@agilebox/ui'
 import type { ProjectPresetKey } from '@agilebox/core'
 import type { SessionUserDto } from '@agilebox/contract'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import type { TaskScope } from '../board/task-scope'
+import { BoardChromeContext, type BoardChrome } from '../board/board-chrome'
 import { panelCopy } from '../copy'
 import { AccountMenu } from './AccountMenu'
 import { methodologyLabel } from './methodology-label'
@@ -158,6 +159,8 @@ interface TopNavEntry {
   readonly id: PanelView
   readonly label: string
   readonly icon: string
+  /** Nome acessível quando difere do texto visível (os testes e leitores seguem o nome estável). */
+  readonly accessibleName?: string
 }
 
 export function PanelShell({
@@ -215,7 +218,14 @@ export function PanelShell({
 
   const topEntries: readonly TopNavEntry[] = [
     ...(isManager
-      ? [{ id: 'dashboard' as const, label: panelCopy.dashboard, icon: 'dashboard' }]
+      ? [
+          {
+            id: 'dashboard' as const,
+            label: 'Dashboard Gestor',
+            accessibleName: panelCopy.dashboard,
+            icon: 'dashboard',
+          },
+        ]
       : []),
     ...(capabilities.showScreen('agenda')
       ? [{ id: 'agenda' as const, label: panelCopy.agenda, icon: 'agenda' }]
@@ -231,6 +241,23 @@ export function PanelShell({
   const effectiveSelected = visibleView === 'updates' ? 'dashboard' : visibleView
 
   const projectContextLabel = selectedProject?.name ?? panelCopy.allProjects
+  const boardChrome = useMemo<BoardChrome>(
+    () => ({
+      projectName: selectedProject?.name ?? null,
+      taskScope,
+      onTaskScopeChange,
+      managerContext,
+    }),
+    [selectedProject?.name, taskScope, onTaskScopeChange, managerContext],
+  )
+  const myTasksActive = visibleView === 'projects' && !hasProject && taskScope === 'mine'
+  function openMyTasks() {
+    onTaskScopeChange?.('mine')
+    if (hasProject || visibleView !== 'projects') {
+      if (onProjectSelect) onProjectSelect(null)
+      else onViewChange('projects')
+    }
+  }
   // Entregas e Cronograma compartilham a casca do Fluxo Preditivo (rail + subtítulo + indicadores).
   const predictiveGroup =
     activeProjectGroup?.predictive === true && visibleView !== 'planSprint'
@@ -238,7 +265,7 @@ export function PanelShell({
       : null
   const viewBody =
     visibleView === 'projects' ? (
-      children
+      <BoardChromeContext.Provider value={boardChrome}>{children}</BoardChromeContext.Provider>
     ) : visibleView === 'dashboard' && dashboard ? (
       dashboard
     ) : visibleView === 'updates' && updates ? (
@@ -301,23 +328,21 @@ export function PanelShell({
         showArchivedProjects={showArchivedProjects}
         onShowArchivedProjectsChange={onShowArchivedProjectsChange}
         onOpenTray={onOpenTray}
-        onSearch={onSearch}
+        myTasksActive={myTasksActive}
+        onOpenMyTasks={openMyTasks}
       />
       <section className={styles.main}>
         <TitleBar
           title={viewTitles[visibleView]}
           projectContext={isProjectScopedView(visibleView) ? projectContextLabel : null}
-          board={visibleView === 'projects'}
           canGoBack={canGoBack}
           onBack={onBack}
-          managerContext={managerContext}
+          onSearch={onSearch}
           onMinimize={onMinimize}
           onToggleExpand={onToggleExpand}
           onClose={onClose}
           onNewTask={onNewTask}
           newTaskBlockedReason={newTaskBlockedReason}
-          taskScope={taskScope}
-          onTaskScopeChange={onTaskScopeChange}
         />
         <div className={styles.content} key={visibleView}>
           {guide}
@@ -366,9 +391,10 @@ interface RailProps {
   readonly onNewProject: PanelShellProps['onNewProject']
   readonly showArchivedProjects: boolean
   readonly onShowArchivedProjectsChange: PanelShellProps['onShowArchivedProjectsChange']
-  readonly onSearch: PanelShellProps['onSearch']
   readonly onOpenTray: PanelShellProps['onOpenTray']
   readonly account: PanelShellProps['account']
+  readonly myTasksActive: boolean
+  readonly onOpenMyTasks: () => void
 }
 
 const ALL_PROJECTS_KEY = '__all__'
@@ -389,7 +415,8 @@ function Rail({
   showArchivedProjects,
   onShowArchivedProjectsChange,
   onOpenTray,
-  onSearch,
+  myTasksActive,
+  onOpenMyTasks,
 }: RailProps) {
   const [collapsedSelectedKey, setCollapsedSelectedKey] = useState<string | null>(null)
 
@@ -412,8 +439,8 @@ function Rail({
         <div className={styles.brand}>
           <span className={styles.mark} aria-hidden="true">
             <svg
-              width="15"
-              height="15"
+              width="14"
+              height="14"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -436,47 +463,56 @@ function Rail({
           onClick={() => onExpandChange(!expanded)}
           title={expanded ? panelCopy.collapseRail : panelCopy.expandRail}
         >
-          <span aria-hidden="true">☰</span>
+          <svg
+            aria-hidden="true"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+          </svg>
         </button>
       </div>
 
-      <button
-        type="button"
-        className={styles.search}
-        aria-label="Buscar ou criar"
-        title="Buscar ou criar · Ctrl K"
-        onClick={onSearch}
-      >
-        <NavIcon kind="search" />
-        <span className={styles.railLabel}>Buscar ou criar</span>
-        <Kbd className={styles.kbd}>Ctrl K</Kbd>
-      </button>
-
-      {topEntries.length > 0 ? (
-        <div className={styles.topGroup}>
-          <span className={styles.sectionLabel}>Global</span>
-          {topEntries.map((entry) => {
-            const isSelected = selectedView === entry.id
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                aria-current={isSelected ? 'page' : undefined}
-                aria-label={entry.label}
-                data-tip={entry.label}
-                title={entry.label}
-                className={`${styles.railItem} ${styles.navItem} ${isSelected ? styles.selected : ''}`}
-                onClick={() => onSelect(entry.id)}
-              >
-                <NavIcon kind={entry.icon} />
-                <span className={styles.railLabel}>{entry.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-
       <div className={styles.scroll}>
+        <span className={`${styles.sectionLabel} ${styles.sectionLabelFirst}`}>Global</span>
+        <button
+          type="button"
+          aria-current={myTasksActive ? 'page' : undefined}
+          aria-label={panelCopy.myTasks}
+          data-tip={panelCopy.myTasks}
+          title={panelCopy.myTasks}
+          className={`${styles.railItem} ${styles.navItem} ${myTasksActive ? styles.selected : ''}`}
+          onClick={onOpenMyTasks}
+        >
+          <NavIcon kind="myTasks" />
+          <span className={styles.railLabel}>{panelCopy.myTasks}</span>
+        </button>
+        {topEntries.map((entry) => {
+          const isSelected = selectedView === entry.id
+          const name = entry.accessibleName ?? entry.label
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              aria-current={isSelected ? 'page' : undefined}
+              aria-label={name}
+              data-tip={entry.label}
+              title={entry.label}
+              className={`${styles.railItem} ${styles.navItem} ${isSelected ? styles.selected : ''}`}
+              onClick={() => onSelect(entry.id)}
+            >
+              <NavIcon kind={entry.icon} />
+              <span className={styles.railLabel}>{entry.label}</span>
+            </button>
+          )
+        })}
+
         <div className={styles.sectionHead}>
           <span className={styles.sectionLabel}>Projetos</span>
           {onNewProject ? (
@@ -589,18 +625,18 @@ function Rail({
       </div>
 
       <div className={styles.footer}>
-        <span className={styles.sectionLabel}>Sistema</span>
+        <span className={`${styles.sectionLabel} ${styles.sectionLabelFirst}`}>Sistema</span>
         <button
           type="button"
           className={`${styles.railItem} ${styles.navItem} ${selectedView === 'settings' ? styles.selected : ''}`}
-          aria-label="Ajustes"
+          aria-label={panelCopy.settings}
           aria-current={selectedView === 'settings' ? 'page' : undefined}
-          data-tip="Ajustes"
-          title="Ajustes"
+          data-tip="Ajustes do App"
+          title="Ajustes do App"
           onClick={() => onSelect('settings')}
         >
           <NavIcon kind="settings" />
-          <span className={styles.railLabel}>Ajustes</span>
+          <span className={styles.railLabel}>Ajustes do App</span>
         </button>
         <button
           type="button"
@@ -679,35 +715,29 @@ function ProjectSubItems({
 }
 
 interface TitleBarProps {
-  readonly board: boolean
   readonly projectContext: string | null
-  readonly managerContext: ReactNode
   readonly title: string
   readonly canGoBack: boolean
   readonly onBack: (() => void) | undefined
+  readonly onSearch: (() => void) | undefined
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
   readonly onNewTask: () => void
   readonly newTaskBlockedReason: string | undefined
-  readonly taskScope: TaskScope
-  readonly onTaskScopeChange: ((scope: TaskScope) => void) | undefined
 }
 
 function TitleBar({
   title,
   projectContext,
-  board,
   canGoBack,
   onBack,
-  managerContext,
+  onSearch,
   onMinimize,
   onToggleExpand,
   onClose,
   onNewTask,
   newTaskBlockedReason,
-  taskScope,
-  onTaskScopeChange,
 }: TitleBarProps) {
   return (
     <header className={styles.titleBar}>
@@ -733,35 +763,39 @@ function TitleBar({
           ) : null}
           <h1 className={styles.title}>{title}</h1>
         </div>
-        {board && onTaskScopeChange && (
-          <SegmentedControl<TaskScope>
-            aria-label={panelCopy.taskScope}
-            className={styles.segmented ?? ''}
-            onChange={onTaskScopeChange}
-            options={[
-              { value: 'mine', label: 'Minhas' },
-              { value: 'team', label: panelCopy.team },
-            ]}
-            value={taskScope}
-          />
-        )}
       </div>
       <div className={styles.titleActions}>
-        {board && managerContext}
-        {board && (
-          <button
-            className={styles.newTask}
-            aria-label={panelCopy.newTask}
-            aria-keyshortcuts="N"
-            disabled={newTaskBlockedReason !== undefined}
-            title={newTaskBlockedReason}
-            onClick={onNewTask}
-            type="button"
-          >
-            <span aria-hidden="true">＋</span> {panelCopy.newTask} <Kbd>N</Kbd>
-          </button>
-        )}
+        <button
+          type="button"
+          className={styles.searchTrigger}
+          aria-label="Buscar ou criar"
+          aria-keyshortcuts="Control+K"
+          title="Abrir busca, comandos ou ? ajuda"
+          onClick={onSearch}
+        >
+          <NavIcon kind="search" />
+          <span className={styles.searchLabelFull}>Buscar, comandos ou ? ajuda</span>
+          <span className={styles.searchLabelShort}>Buscar / ?</span>
+          <kbd className={styles.kbd}>Ctrl+K</kbd>
+        </button>
+        <button
+          type="button"
+          className={styles.newTask}
+          aria-keyshortcuts="N"
+          disabled={newTaskBlockedReason !== undefined}
+          title={newTaskBlockedReason}
+          onClick={onNewTask}
+        >
+          <span aria-hidden="true">+</span>
+          <span>{panelCopy.newTask}</span>
+        </button>
+        {/* Só visual por enquanto: a ajuda (Kan) ainda não existe no painel. */}
+        <span className={styles.helpPill}>
+          <span>? Ajuda</span>
+          <kbd className={styles.kbd}>F1</kbd>
+        </span>
         <WindowControls
+          compact
           expanded
           onClose={onClose}
           onMinimize={onMinimize}
@@ -772,6 +806,108 @@ function TitleBar({
   )
 }
 
+const ICON_STROKE: Record<string, string> = {
+  plus: '2',
+  search: '2',
+  back: '2',
+  chevron: '2.2',
+}
+
+const ICON_SIZE: Record<string, string> = {
+  plus: '15',
+  back: '15',
+  search: '14',
+  chevron: '12',
+}
+
+function iconShapes(kind: string): ReactNode {
+  switch (kind) {
+    case 'myTasks':
+      return (
+        <>
+          <rect x="3" y="4" width="5" height="16" rx="1" />
+          <rect x="10" y="4" width="5" height="11" rx="1" />
+          <rect x="17" y="4" width="4" height="8" rx="1" />
+        </>
+      )
+    case 'dashboard':
+      return <path d="M4 20V11M10 20V5M16 20v-7M2 20h20" />
+    case 'agenda':
+      return (
+        <>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M3 10h18M8 3v4M16 3v4" />
+        </>
+      )
+    case 'backlog':
+      return <path d="M4 6h16M4 12h16M4 18h10" />
+    case 'sprints':
+      return (
+        <>
+          <path d="M12 3a9 9 0 1 0 9 9" />
+          <path d="M12 7v5l3 2" />
+        </>
+      )
+    case 'plugins':
+      return <path d="M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4" />
+    case 'tray':
+      return (
+        <>
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M4 14h5l1.5 2h3L15 14h5" />
+        </>
+      )
+    case 'settings':
+      return (
+        <>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />
+        </>
+      )
+    case 'search':
+      return (
+        <>
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </>
+      )
+    case 'projects':
+      return <path d="M4 5h4v14H4zM10 5h4v10h-4zM16 5h4v7h-4z" />
+    case 'wbs':
+    case 'plan':
+      return <path d="M4 6h16M7 12h13M10 18h10" />
+    case 'schedule':
+      return <path d="M4 7h8M9 12h11M5 17h7" />
+    case 'back':
+      return (
+        <>
+          <path d="M19 12H5" />
+          <path d="m12 19-7-7 7-7" />
+        </>
+      )
+    case 'plus':
+      return <path d="M12 5v14M5 12h14" />
+    case 'chevron':
+      return <path d="M9 6l6 6-6 6" />
+    default:
+      return <path d={EXTRA_ICON_PATHS[kind] ?? EXTRA_ICON_PATHS.projects} />
+  }
+}
+
+/** Ícones sem equivalente no design: mantidos como estavam. */
+const EXTRA_ICON_PATHS: Record<string, string> = {
+  home: 'M3 13l3-8h12l3 8v7H3v-7Z M3 13h5l1 2h6l1-2h5',
+  impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
+  modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+  milestones: 'M12 3l8 9-8 9-8-9z',
+  tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
+  baseline: 'M4 20h16M6 16V10M12 16V6M18 16v-4',
+  burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
+  flowMetrics: 'M6 19v-6M12 19V8M18 19V4',
+  risks: 'M4 4h12l4 4v12H4Z M8 12h8M8 16h5',
+  projects: 'M4 5h4v14H4zM10 5h4v10h-4zM16 5h4v7h-4z',
+}
+
 function NavIcon({
   kind,
   className,
@@ -779,34 +915,7 @@ function NavIcon({
   readonly kind: string
   readonly className?: string | undefined
 }) {
-  const paths: Record<string, string> = {
-    search: 'M21 21l-5-5M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14',
-    home: 'M3 13l3-8h12l3 8v7H3v-7Z M3 13h5l1 2h6l1-2h5',
-    tray: 'M4 4h16v16H4z M4 14h5l1.5 2h3L15 14h5',
-    projects: 'M3 4h5v16H3ZM10 4h5v11h-5ZM17 4h4v8h-4Z',
-    dashboard: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
-    agenda: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
-    backlog: 'M4 6h10M4 12h10M4 18h6M16 16l3 3 3-3M19 19V9',
-    sprints: 'M12 3a9 9 0 1 0 9 9M12 7v5l3 2',
-    impediments: 'M12 3 2 20h20L12 3ZM12 10v4m0 3h.01',
-    plugins: 'M8 3v5m8-5v5M6 8h12v4a6 6 0 0 1-12 0ZM12 18v4',
-    settings:
-      'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1',
-    plus: 'M12 5v14M5 12h14',
-    modules: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
-    milestones: 'M12 3l8 9-8 9-8-9z',
-    schedule: 'M4 6h9M9 12h11M4 18h6M13 6v12',
-    tracking: 'M4 19h16M7 15l4-4 3 3 5-6',
-    baseline: 'M4 20h16M6 16V10M12 16V6M18 16v-4',
-    burndown: 'M4 5v14h16M7 9c3 6 6 8 12 8',
-    flowMetrics: 'M6 19v-6M12 19V8M18 19V4',
-    risks: 'M4 4h12l4 4v12H4Z M8 12h8M8 16h5',
-    wbs: 'M4 6h16M4 12h10M4 18h7',
-    plan: 'M4 5h16v4H4zM7 11h10v4H7zM10 17h10v3H10z',
-    back: 'M19 12H5M12 19l-7-7 7-7',
-    chevron: 'M9 6l6 6-6 6',
-  }
-  const size = kind === 'chevron' ? '12' : kind === 'back' || kind === 'plus' ? '15' : '16'
+  const size = ICON_SIZE[kind] ?? '16'
   return (
     <span aria-hidden="true" className={className}>
       <svg
@@ -815,11 +924,11 @@ function NavIcon({
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth={kind === 'chevron' || kind === 'back' ? '2.1' : '1.8'}
+        strokeWidth={ICON_STROKE[kind] ?? '1.8'}
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d={paths[kind] ?? paths.projects} />
+        {iconShapes(kind)}
       </svg>
     </span>
   )

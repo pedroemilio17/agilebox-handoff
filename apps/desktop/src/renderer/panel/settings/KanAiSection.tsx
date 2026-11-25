@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react'
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiConfigStatus, type AiModel } from '@agilebox/contract'
-import { Button, GlassSurface } from '@agilebox/ui'
+import { Button } from '@agilebox/ui'
 import { panelCopy } from '../copy'
+import { CleanList, CleanRow, Section } from './clean-ui'
 import styles from './SettingsView.module.css'
 
 export function KanAiSection() {
@@ -85,85 +86,100 @@ export function KanAiSection() {
     }
   }
 
+  const statusLabel = status.configured
+    ? panelCopy.aiStatusConnected(status.model)
+    : panelCopy.aiStatusLocal
+
   return (
-    <GlassSurface variant="group" className={styles.section} aria-label={panelCopy.aiSectionTitle}>
-      <div className={styles.statusRow}>
-        <h2 className={styles.sectionTitle}>{panelCopy.aiSectionTitle}</h2>
-        <span
-          className={`${styles.statusBadge} ${status.configured ? styles.statusBadgeConnected : ''}`}
-          role="status"
-        >
-          {status.configured ? panelCopy.aiStatusConnected(status.model) : panelCopy.aiStatusLocal}
+    <Section
+      title={panelCopy.aiSectionTitle}
+      ariaLabel={panelCopy.aiSectionTitle}
+      meta={
+        <span role="status" className={status.configured ? undefined : styles.statusBadge}>
+          {statusLabel}
         </span>
-      </div>
+      }
+    >
       <p id={hintId} className={styles.hint}>
         {panelCopy.aiSectionHint}
       </p>
       {aiBridge ? (
-        <form className={styles.fieldGrid} onSubmit={(event) => void handleSave(event)}>
-          <div className={styles.fieldGrid}>
-            <label htmlFor={keyId} className={styles.label}>
-              {panelCopy.aiApiKeyLabel}
-            </label>
-            <input
-              id={keyId}
-              className={styles.textField}
-              type="password"
-              autoComplete="off"
-              value={apiKeyInput}
-              disabled={busy !== null}
-              aria-describedby={hintId}
-              placeholder={
-                status.configured
-                  ? panelCopy.aiApiKeyReplacePlaceholder
-                  : panelCopy.aiApiKeyPlaceholder
+        <form onSubmit={(event) => void handleSave(event)}>
+          <CleanList>
+            <CleanRow name={<label htmlFor={keyId}>{panelCopy.aiApiKeyLabel}</label>}>
+              <input
+                id={keyId}
+                className={`${styles.fieldInput} ${styles.wideInput}`}
+                type="password"
+                autoComplete="off"
+                value={apiKeyInput}
+                disabled={busy !== null}
+                aria-describedby={hintId}
+                placeholder={
+                  status.configured
+                    ? panelCopy.aiApiKeyReplacePlaceholder
+                    : panelCopy.aiApiKeyPlaceholder
+                }
+                onChange={(event) => setApiKeyInput(event.currentTarget.value)}
+              />
+            </CleanRow>
+            <CleanRow name={<label htmlFor={modelId}>{panelCopy.aiModelLabel}</label>}>
+              <select
+                id={modelId}
+                className={`${styles.fieldInput} ${styles.wideInput}`}
+                value={model}
+                disabled={busy !== null}
+                onChange={(event) => setModel(event.currentTarget.value as AiModel)}
+              >
+                {AI_MODELS.map((option) => (
+                  <option key={option} value={option}>
+                    {panelCopy.aiModelLabels[option]}
+                  </option>
+                ))}
+              </select>
+            </CleanRow>
+            <CleanRow
+              name=""
+              extra={
+                <>
+                  {feedback ? (
+                    <p role="status" className={styles.hint}>
+                      {feedback}
+                    </p>
+                  ) : null}
+                  <p className={styles.hint}>{panelCopy.aiPrivacyHint(status.encrypted)}</p>
+                </>
               }
-              onChange={(event) => setApiKeyInput(event.currentTarget.value)}
-            />
-          </div>
-          <div className={styles.fieldGrid}>
-            <label htmlFor={modelId} className={styles.label}>
-              {panelCopy.aiModelLabel}
-            </label>
-            <select
-              id={modelId}
-              className={styles.selectField}
-              value={model}
-              disabled={busy !== null}
-              onChange={(event) => setModel(event.currentTarget.value as AiModel)}
             >
-              {AI_MODELS.map((option) => (
-                <option key={option} value={option}>
-                  {panelCopy.aiModelLabels[option]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.actions}>
-            <Button type="submit" variant="primary" disabled={busy !== null}>
-              {busy === 'save' ? panelCopy.aiSavingConfig : panelCopy.aiSaveConfig}
-            </Button>
-            {status.configured ? (
-              <>
-                <Button type="button" disabled={busy !== null} onClick={() => void handleTest()}>
-                  {busy === 'test' ? panelCopy.aiTestingConnection : panelCopy.aiTestConnection}
-                </Button>
-                <Button type="button" disabled={busy !== null} onClick={() => void handleClear()}>
-                  {panelCopy.aiClearKey}
-                </Button>
-              </>
-            ) : null}
-          </div>
-          {feedback ? (
-            <p role="status" className={styles.hint}>
-              {feedback}
-            </p>
-          ) : null}
-          <p className={styles.hint}>{panelCopy.aiPrivacyHint(status.encrypted)}</p>
+              <Button type="submit" variant="primary" size="sm" disabled={busy !== null}>
+                {busy === 'save' ? panelCopy.aiSavingConfig : panelCopy.aiSaveConfig}
+              </Button>
+              {status.configured ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => void handleTest()}
+                  >
+                    {busy === 'test' ? panelCopy.aiTestingConnection : panelCopy.aiTestConnection}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => void handleClear()}
+                  >
+                    {panelCopy.aiClearKey}
+                  </Button>
+                </>
+              ) : null}
+            </CleanRow>
+          </CleanList>
         </form>
       ) : (
         <p className={styles.hint}>{panelCopy.aiUnavailable}</p>
       )}
-    </GlassSurface>
+    </Section>
   )
 }

@@ -5,21 +5,28 @@
 }
 
 .trigger {
-  min-height: 26px;
-  padding: 0 var(--space-2);
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   color: var(--color-text-subtle);
-  font: inherit;
-  font-size: 11px;
-  white-space: nowrap;
+  font-size: 12px;
   cursor: pointer;
 }
 
 .trigger:hover {
   color: var(--color-text-primary);
-  background: var(--surface-raised);
+  background: var(--color-tint-soft);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 
 .panel {

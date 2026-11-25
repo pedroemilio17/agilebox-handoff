@@ -89,7 +89,7 @@ describe('Arquivadas no quadro', () => {
       showArchived: true,
       onShowArchivedChange: () => undefined,
     })
-    expect(screen.getByRole('button', { name: /Bloqueadas · 1/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
   })
 
   it('desabilita "+" das colunas com a dica do motivo', () => {
