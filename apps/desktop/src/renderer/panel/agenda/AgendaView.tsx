@@ -9,7 +9,6 @@ import { queryKeys } from '../../shared/query/keys'
 import { useActor } from '../../shared/session/useActor'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { panelCopy } from '../copy'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import { useSessionUsers } from '../hooks/use-session-users'
 import type { PanelView } from '../layout/PanelShell'
 import { AGENDA_CATEGORIES, agendaCopy } from './agenda-copy'
@@ -50,14 +49,16 @@ export interface AgendaViewProps {
   readonly onNavigate?: (view: PanelView) => void
 }
 
-export function AgendaView({
-  today = todayDateOnly(),
-  onOpenTask,
-  selectedProjectId = null,
-  onNavigate,
-}: AgendaViewProps) {
+export function AgendaView({ today = todayDateOnly(), onOpenTask }: AgendaViewProps) {
   // Combinados da retro só com a ferramenta de review e retro; o restante da agenda segue.
-  const retroVisible = useCapabilities().can('reviewRetro:screen')
+  const capabilities = useCapabilities()
+  const retroVisible = capabilities.can('reviewRetro:screen')
+  const dailyVisible = capabilities.can('checkins:screen')
+  const visibleCategories = AGENDA_CATEGORIES.filter((category) => {
+    if (category === 'Daily' && !dailyVisible) return false
+    if (category === 'Retrospectiva' && !retroVisible) return false
+    return true
+  })
   const [mode, setMode] = useState<AgendaMode>('week')
   const api = useApi()
   const queryClient = useQueryClient()
@@ -164,14 +165,11 @@ export function AgendaView({
       <header className={styles.pageHead}>
         <div className={styles.pageHeadMain}>
           <h1 className={styles.pageTitle}>{agendaCopy.title}</h1>
-          <p className={styles.pageSub}>{agendaCopy.subtitle}</p>
+          <p className={styles.pageSub}>
+            {retroVisible ? agendaCopy.subtitle : agendaCopy.subtitleBasic}
+          </p>
         </div>
         <div className={styles.pageHeadActions}>
-          <ModuleHelpButton
-            moduleId="agenda"
-            projectId={selectedProjectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           {canManage ? (
             <button
               type="button"
@@ -230,7 +228,7 @@ export function AgendaView({
           </div>
 
           <div className={styles.catLegend} aria-label={agendaCopy.legendLabel}>
-            {AGENDA_CATEGORIES.map((category) => (
+            {visibleCategories.map((category) => (
               <span key={category} className={styles.catLegendItem}>
                 <i className={`${styles.catDot} ${styles[dotClass(category)]}`} />
                 {category}

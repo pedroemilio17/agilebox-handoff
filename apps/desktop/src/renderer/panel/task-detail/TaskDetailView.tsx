@@ -184,7 +184,7 @@ export function TaskDetailView({
   const readOnly = current.readOnly || readOnlyScope
   const done = current.status === 'done'
   const archived = current.archivedAt !== null && current.archivedAt !== undefined
-  const blocked = isBlockedTask(current)
+  const blocked = capabilities.can('impediments:passive') && isBlockedTask(current)
   const acceptance = capabilities.showScreen('acceptance')
   const canBlock =
     capabilities.can('impediments:screen') &&
@@ -495,7 +495,13 @@ export function TaskDetailView({
                 aria-current={topic === id ? 'true' : undefined}
                 onClick={() => selectTopic(id)}
               >
-                <span>{taskCopy.topics[id]}</span>
+                <span>
+                  {id === 'historico' &&
+                  !capabilities.can('impediments:passive') &&
+                  !capabilities.showScreen('impediments')
+                    ? 'Histórico'
+                    : taskCopy.topics[id]}
+                </span>
                 <span className={styles.topicCount}>{counts[id]}</span>
               </button>
             ))}

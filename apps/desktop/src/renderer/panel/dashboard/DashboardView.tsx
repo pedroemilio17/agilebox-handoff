@@ -139,15 +139,15 @@ export function DashboardView({
               onSelect={(format) => saveSummary.mutate({ format, period: data.weekStart })}
             />
           ) : null}
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            disabled={!dailyVisible}
-            title={dailyVisible ? undefined : dashboardCopy.dailySummaryOff}
-            onClick={() => setTeamDailyOpen(true)}
-          >
-            {dashboardCopy.dailySummary}
-          </button>
+          {dailyVisible ? (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              onClick={() => setTeamDailyOpen(true)}
+            >
+              {dashboardCopy.dailySummary}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </header>

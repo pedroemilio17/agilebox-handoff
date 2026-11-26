@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
 import styles from './NewProject.module.css'
 import { newProjectCopy, STATES } from './new-project-copy'
-import { visibleSteps, withAnswer, type WizardDraft } from './wizard-steps'
+import { WIZARD_QUESTIONS, withAnswer, type WizardDraft } from './wizard-steps'
 
 export type WizardPhase = 'name' | 'questions'
 
@@ -29,9 +29,8 @@ export interface NewProjectWizardProps {
 }
 
 /**
- * Passos 1 e 2 do novo projeto, como no desenho: nome e descrição com os dois caminhos, depois as
- * perguntas (ADR-10) em cartões de opção. Perguntas que não se aplicam ao trabalho contínuo não
- * aparecem. Todas são opcionais: sem resposta vale "Não sei".
+ * Passos 1 e 2 do novo projeto, fiéis ao desenho (`revisao-ux/novo-projeto.html`):
+ * nome e descrição com os dois caminhos, depois as 3 perguntas em cartões monocromáticos.
  */
 export function NewProjectWizard({
   phase,
@@ -56,16 +55,12 @@ export function NewProjectWizard({
   const nameErrorId = useId()
   const groupId = useId()
 
-  // Foco no nome ao abrir; nas perguntas, na primeira opção.
   useEffect(() => {
-    const target =
-      phase === 'name'
-        ? nameRef.current
-        : rootRef.current?.querySelector<HTMLInputElement>('input[type="radio"]')
-    target?.focus()
+    if (phase === 'name') {
+      nameRef.current?.focus()
+    }
   }, [phase])
 
-  // Erro do nome devolve o foco ao campo.
   useEffect(() => {
     if (nameFocusTick > 0) nameRef.current?.focus()
   }, [nameFocusTick])
@@ -162,7 +157,6 @@ export function NewProjectWizard({
     )
   }
 
-  const questions = visibleSteps(draft)
   return (
     <div ref={rootRef} className={styles.section}>
       <div className={styles.step2Head}>
@@ -170,43 +164,44 @@ export function NewProjectWizard({
           <span className={styles.eyebrow}>{newProjectCopy.questionsProject}</span>
           <div className={styles.projectName}>{name.trim()}</div>
         </div>
-        <span className={styles.sectionMeta}>{newProjectCopy.questionsMeta(questions.length)}</span>
+        <span className={styles.sectionMeta}>
+          {newProjectCopy.questionsMeta(WIZARD_QUESTIONS.length)}
+        </span>
       </div>
 
-      {questions.map((question, index) => {
-        const current = question
-        const two = current.options.length === 2 || current.options.length === 4
-        return (
-          <fieldset className={styles.questionBlock} key={current.id}>
-            <legend className={styles.questionTitle}>
-              {index + 1}. {current.question}
-            </legend>
-            <p className={styles.questionHint}>{current.hint}</p>
-            <div className={`${styles.optionsGrid} ${two ? styles.optionsGridTwo : ''}`}>
-              {current.options.map((option) => {
-                const checked = draft[current.id] === option.value
-                return (
-                  <label
-                    key={option.value}
-                    className={`${styles.optionCard} ${checked ? styles.optionSelected : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      className={styles.radio}
-                      name={`${groupId}-${current.id}`}
-                      value={option.value}
-                      checked={checked}
-                      onChange={() => onDraftChange(withAnswer(draft, current.id, option.value))}
-                    />
-                    <strong>{option.label}</strong>
-                    {option.hint ? <span>{option.hint}</span> : null}
-                  </label>
-                )
-              })}
-            </div>
-          </fieldset>
-        )
-      })}
+      {WIZARD_QUESTIONS.map((question, index) => (
+        <fieldset className={styles.questionBlock} key={question.id}>
+          <legend className={styles.questionTitle}>
+            {index + 1}. {question.question}
+          </legend>
+          <div
+            className={`${styles.optionsGrid} ${
+              question.columns === 2 ? styles.optionsGridTwo : ''
+            }`}
+          >
+            {question.options.map((option) => {
+              const checked = draft[question.id] === option.value
+              return (
+                <label
+                  key={option.value}
+                  className={`${styles.optionCard} ${checked ? styles.optionSelected : ''}`}
+                >
+                  <input
+                    type="radio"
+                    className={styles.radio}
+                    name={`${groupId}-${question.id}`}
+                    value={option.value}
+                    checked={checked}
+                    onChange={() => onDraftChange(withAnswer(draft, question.id, option.value))}
+                  />
+                  <strong>{option.label}</strong>
+                  <span>{option.description}</span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      ))}
 
       <div className={styles.footerBar}>
         <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={onBackToName}>

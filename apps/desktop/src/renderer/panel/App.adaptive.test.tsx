@@ -143,8 +143,9 @@ describe('Painel adaptativo (M2.1)', () => {
 
     await expectEverythingVisible()
     const dialog = await openTask(user, BLOCKED)
-    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
     expect(within(dialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog).getByRole('button', { name: 'Resolver' })).toBeTruthy()
   })
 
   it('(b) Kanban simples no Básico: sem Subtarefas, Bloquear, medidor de WIP, fluxo nem daily', async () => {
@@ -293,8 +294,7 @@ describe('Painel adaptativo (M2.1)', () => {
     expect(cardButton(BLOCKED).getAttribute('aria-label')).toContain('1 de 3 subtarefas concluídas')
     const advancedDialog = await openTask(user, BLOCKED)
     expect(within(advancedDialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(
-      within(advancedDialog).getByRole('button', { name: 'Resolver impedimento' }),
-    ).toBeTruthy()
+    await user.click(within(advancedDialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(advancedDialog).getByRole('button', { name: 'Resolver' })).toBeTruthy()
   })
 })

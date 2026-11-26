@@ -121,7 +121,7 @@ describe('barra lateral pelo módulo do projeto selecionado', () => {
     expect(await within(railNav()).findByRole('button', { name: 'Sprints' })).toBeTruthy()
   })
 
-  it('sem projeto selecionado, vale a organização: Sprints aparece se algum projeto ativo liga', async () => {
+  it('sem projeto selecionado, nenhum subitem de projeto aparece expandido na barra', async () => {
     renderApp({
       organization: {
         modules: [
@@ -133,7 +133,8 @@ describe('barra lateral pelo módulo do projeto selecionado', () => {
     })
 
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
-    expect(await within(railNav()).findByRole('button', { name: 'Sprints' })).toBeTruthy()
+    expect(within(railNav()).queryByRole('button', { name: 'Sprints' })).toBeNull()
+    expect(within(railNav()).queryByRole('button', { name: 'Todos os projetos' })).toBeNull()
   })
 
   it('sem projeto ativo na organização, a barra cai na equipe (Kanban: sem Sprints)', async () => {

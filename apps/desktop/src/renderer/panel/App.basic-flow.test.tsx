@@ -2,7 +2,6 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { TASK_STATUS_LABELS } from '@agilebox/core'
 import type { GetTaskDto, TeamToolsViewDto } from '@agilebox/contract'
 import { ApiProvider } from '../shared/api/ApiProvider'
 import { createFakeApi } from '../shared/testing/fake-api'
@@ -86,11 +85,11 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
     expectNoScrumTerms()
   })
 
-  it('menu do time Básico: Quadro e Agenda, Plug-ins em breve, sem Dashboard', async () => {
+  it('menu do time Básico: Minhas tarefas e Agenda, Plug-ins em breve, sem Dashboard', async () => {
     renderPanel()
 
     const nav = within(await screen.findByRole('navigation', { name: 'Navegação principal' }))
-    expect(nav.getByRole('button', { name: 'Quadro' })).toBeTruthy()
+    expect(nav.getByRole('button', { name: 'Minhas tarefas' })).toBeTruthy()
     expect(nav.getByRole('button', { name: 'Agenda' })).toBeTruthy()
     expect(nav.getByRole('button', { name: /Plug-ins, Em breve/ }).hasAttribute('disabled')).toBe(
       true,
@@ -111,25 +110,19 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
     )
     expectNoScrumTerms(dialog)
 
-    await user.click(within(dialog).getByRole('button', { name: 'Status' }))
-    // A opção do estado atual leva ✓ no texto; a ordem é a dos estados do quadro.
-    const options = within(screen.getByRole('menu')).getAllByRole('menuitemradio')
-    expect(options.map((option) => option.textContent?.replace('✓', '').trim())).toEqual(
+    const stateSelect = within(dialog).getByRole<HTMLSelectElement>('combobox', {
+      name: 'Estado da tarefa',
+    })
+    expect(Array.from(stateSelect.options).map((option) => option.textContent?.trim())).toEqual(
       BOARD_STATES,
     )
-    // O menu já está aberto para a leitura acima. O estado atual leva ✓ no nome acessível, por isso
-    // a busca é pelo início do nome.
-    await user.click(screen.getByRole('menuitemradio', { name: /^Desenvolvendo/ }))
-    for (const state of ['Revisar', 'Concluído'] as const) {
-      await user.click(within(dialog).getByRole('button', { name: 'Status' }))
-      await user.click(screen.getByRole('menuitemradio', { name: new RegExp(`^${state}`) }))
+    await user.selectOptions(stateSelect, 'in_progress')
+    for (const state of ['review', 'done'] as const) {
+      await user.selectOptions(stateSelect, state)
     }
     expect(spies.move).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'done' }))
     // Reabrir: a tarefa concluída volta para A fazer.
-    await user.click(within(dialog).getByRole('button', { name: 'Status' }))
-    await user.click(
-      screen.getByRole('menuitemradio', { name: new RegExp(`^${TASK_STATUS_LABELS.todo}`) }),
-    )
+    await user.selectOptions(stateSelect, 'todo')
     expect(spies.move).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'todo' }))
     expectNoScrumTerms(dialog)
   })
@@ -138,7 +131,7 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
     const { user, spies } = renderPanel()
 
     const dialog = await openTask(user)
-    const description = within(dialog).getByLabelText<HTMLTextAreaElement>('Descrição')
+    const description = within(dialog).getByLabelText<HTMLTextAreaElement>('Descrição da tarefa')
     await user.clear(description)
     await user.type(description, 'Trocar o endpoint de pagamento')
     await user.tab()
@@ -147,6 +140,7 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
       changes: { description: 'Trocar o endpoint de pagamento' },
     })
 
+    await user.click(within(dialog).getByRole('button', { name: /^Pessoas & Prazo/ }))
     const deadline = within(dialog).getByLabelText('Data de entrega')
     await user.clear(deadline)
     await user.tab()
@@ -155,12 +149,15 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
       changes: { deadline: null },
     })
 
-    const hours = within(dialog).getByLabelText('Horas de Ana Souza')
+    await user.click(within(dialog).getByRole('button', { name: /^Horas & Custo/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Horas de Ana Souza' }))
+    const hours = within(dialog).getByRole('textbox', { name: 'Horas de Ana Souza' })
     await user.clear(hours)
     await user.type(hours, '3')
     await user.tab()
     expect(spies.setHours).toHaveBeenLastCalledWith(expect.objectContaining({ hours: '3' }))
 
+    await user.click(within(dialog).getByRole('button', { name: /^Visão geral/ }))
     await user.type(
       within(dialog).getByRole('textbox', { name: 'Escrever comentário' }),
       'Revisado',
@@ -175,7 +172,8 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
     const { user, spies } = renderPanel()
 
     const dialog = await openTask(user)
-    await user.click(within(dialog).getByRole('button', { name: 'Arquivar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Mais ações' }))
+    await user.click(within(dialog).getByRole('menuitem', { name: 'Arquivar tarefa' }))
     const confirm = within(dialog).getByRole('group', { name: 'Arquivar' })
     await user.click(within(confirm).getByRole('button', { name: 'Confirmar' }))
 
@@ -185,8 +183,7 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
 
     await user.click(within(dialog).getByRole('button', { name: 'Desarquivar' }))
     expect(spies.unarchive).toHaveBeenCalledWith({ taskId: FLOW_TASK.id })
-    expect(await within(dialog).findByRole('button', { name: 'Arquivar' })).toBeTruthy()
-    expect(within(dialog).getByLabelText('Descrição')).toBeTruthy()
+    expect(await within(dialog).findByLabelText('Descrição da tarefa')).toBeTruthy()
     expectNoScrumTerms(dialog)
   })
 
@@ -194,15 +191,17 @@ describe('Fluxo diário do colaborador · Kanban simples · Básico', () => {
     const { user } = renderPanel()
 
     await user.click(await screen.findByRole('button', { name: 'Agenda' }))
-    expect(screen.getByRole('heading', { name: 'Agenda' })).toBeTruthy()
+    expect(screen.getAllByRole('heading', { name: 'Agenda' }).length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByRole('button', { name: /combinado/i })).toBeNull()
     expectNoScrumTerms()
 
     await user.click(screen.getByRole('button', { name: 'Ajustes' }))
     const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
     expect(within(team).getByText(panelCopy.teamToolsLevelCurrent('Básico'))).toBeTruthy()
-    expect(within(team).getByText(panelCopy.teamToolsReadOnly)).toBeTruthy()
-    expect(within(team).queryByRole('switch')).toBeNull()
+    expect(within(team).getByText('Somente leitura')).toBeTruthy()
+    const switches = within(team).getAllByRole<HTMLInputElement>('switch')
+    expect(switches.length).toBeGreaterThan(0)
+    expect(switches.every((item) => item.disabled)).toBe(true)
     expect(within(team).queryByRole('button', { name: /Aplicar/ })).toBeNull()
     // Exceção registrada: o catálogo de Ajustes lista também as ferramentas desligadas (ex.: Backlog).
     // Essa seção fica fora da varredura até o Pedro decidir (ver relatório, pendência).
@@ -215,7 +214,7 @@ describe('Fluxo diário do gestor · Kanban simples · Básico', () => {
     const { user } = renderPanel({ role: 'manager', dashboard: managerDashboard() })
 
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
+    const team = await screen.findByRole('region', { name: 'Colaboradores' })
     // Sem a ferramenta de impedimentos, o sinal de bloqueio da equipe não aparece.
     expect(within(team).queryByText(/bloqueada/)).toBeNull()
     expect(screen.queryByText(/está com \d+ de \d+\./)).toBeNull()
@@ -237,7 +236,7 @@ describe('Fluxo diário do gestor · Kanban simples · Básico', () => {
     await user.click(screen.getByRole('button', { name: 'Ajustes' }))
     const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
     expect(
-      within(team).getByRole('button', { name: panelCopy.teamPresetApply('Scrum') }),
+      await within(team).findByRole('button', { name: panelCopy.teamPresetApply('Scrum') }),
     ).toBeTruthy()
     expect(within(team).queryByText(panelCopy.teamToolsReadOnly)).toBeNull()
   })

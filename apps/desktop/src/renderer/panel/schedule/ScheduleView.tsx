@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { Button, EmptyState } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useWbs } from '../hooks/use-wbs'
 import { useBaseline } from '../hooks/use-baseline'
@@ -119,11 +117,6 @@ export function ScheduleView({ projectId, onNavigate }: ScheduleViewProps) {
               {fullDate(view.range.start)} → {fullDate(view.range.end)}
             </span>
           ) : null}
-          <ModuleHelpButton
-            moduleId="schedule"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           <span className={styles.spacer} />
           <div role="group" aria-label={scheduleCopy.scale} className={styles.segmented}>
             {(Object.keys(SCALE_LABELS) as ScheduleScale[]).map((option) => (
@@ -183,11 +176,7 @@ export function ScheduleView({ projectId, onNavigate }: ScheduleViewProps) {
       </ul>
 
       {view.range === null ? (
-        <ModuleEmptyState
-          moduleId="schedule"
-          projectId={projectId}
-          fallbackTitle={scheduleCopy.emptyFallback}
-        />
+        <EmptyState title={scheduleCopy.emptyFallback} />
       ) : (
         <ScheduleGantt
           range={view.range}

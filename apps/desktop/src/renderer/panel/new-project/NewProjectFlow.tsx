@@ -1,15 +1,14 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
-import type { WizardAnswers } from '@agilebox/core'
 import { NewProjectWizard } from './NewProjectWizard'
 import { RecommendationScreen } from './RecommendationScreen'
 import type { RecommendationResult } from './recommendation-state'
 import { newProjectCopy } from './new-project-copy'
-import { toWizardAnswers, type WizardDraft } from './wizard-steps'
+import { DEFAULT_WIZARD_DRAFT, type WizardDraft } from './wizard-steps'
 import styles from './NewProject.module.css'
 
 /**
  * Payload de criação. "Criar projeto simples agora" cria o projeto Simples, sem respostas nem
- * módulos (ADR-10). Pelas perguntas e pela revisão, vem tudo o que a recomendação decidiu.
+ * módulos. Pelas 3 perguntas e pela revisão, vem tudo o que a recomendação decidiu.
  */
 export type NewProjectPayload =
   | { readonly name: string; readonly startedFromPreset: 'simples' }
@@ -27,9 +26,8 @@ type Phase = 'name' | 'questions' | 'review'
 const PHASE_INDEX: Record<Phase, number> = { name: 0, questions: 1, review: 2 }
 
 /**
- * Novo projeto como página da área principal (design `novo-projeto.html`): cabeçalho com o
- * stepper "1. Nome · 2. Perguntas · 3. Revisão", e os três passos numa coluna de até 820px. Não
- * fala com o main: quem chama decide como criar. Esc cancela (volta ao que estava aberto).
+ * Novo projeto como página da área principal (design `revisao-ux/novo-projeto.html`): cabeçalho
+ * com stepper "1. Nome · 2. Perguntas · 3. Revisão" e os três passos numa coluna de até 820px.
  */
 export function NewProjectFlow({
   initialName = '',
@@ -40,17 +38,14 @@ export function NewProjectFlow({
 }: NewProjectFlowProps) {
   const [phase, setPhase] = useState<Phase>('name')
   const [name, setName] = useState(initialName)
-  // A descrição é só rascunho de tela: o contrato de criação ainda não a guarda (pendência).
+  // A descrição é só rascunho de tela: o contrato de criação ainda não a guarda.
   const [description, setDescription] = useState('')
-  const [draft, setDraft] = useState<WizardDraft>({})
-  const [answers, setAnswers] = useState<WizardAnswers>({})
+  const [draft, setDraft] = useState<WizardDraft>(DEFAULT_WIZARD_DRAFT)
   const [nameError, setNameError] = useState(false)
   /** Sobe a cada tentativa sem nome: devolve o foco ao campo mesmo com o erro já aberto. */
   const [nameFocusTick, setNameFocusTick] = useState(0)
   const trimmedName = name.trim()
 
-  // Ao sair, o foco volta a quem abriu a página (o botão Novo projeto). O elemento é lido na
-  // montagem, antes de o passo 1 levar o foco ao campo do nome.
   const [opener] = useState(() => document.activeElement)
   useEffect(
     () => () => {
@@ -59,7 +54,6 @@ export function NewProjectFlow({
     [opener],
   )
 
-  /** Só segue com nome. Sem ele, mostra o erro e devolve o foco ao campo. */
   function requireName(): boolean {
     if (trimmedName) return true
     setNameError(true)
@@ -118,7 +112,7 @@ export function NewProjectFlow({
         {phase === 'review' ? (
           <RecommendationScreen
             name={trimmedName}
-            answers={answers}
+            draft={draft}
             submitting={submitting}
             error={error}
             onBack={() => setPhase('questions')}
@@ -149,10 +143,7 @@ export function NewProjectFlow({
               if (requireName()) setPhase('questions')
             }}
             onBackToName={() => setPhase('name')}
-            onToReview={() => {
-              setAnswers(toWizardAnswers(draft))
-              setPhase('review')
-            }}
+            onToReview={() => setPhase('review')}
           />
         )}
       </div>

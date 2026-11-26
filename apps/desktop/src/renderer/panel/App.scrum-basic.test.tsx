@@ -89,12 +89,15 @@ describe('Scrum no Básico · telas aparecem, ações e medidores do nível fica
 
     await user.click(await screen.findByRole('button', { name: CARD }))
     const dialog = await screen.findByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })
-    expect(within(dialog).getByText('Aguardando API')).toBeTruthy()
-    expect(within(dialog).queryByRole('button', { name: 'Bloquear' })).toBeNull()
-    expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
+    await user.click(within(dialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog).getByText('Aguardando API')).toBeTruthy()
+    expect(within(dialog).queryByRole('button', { name: 'Registrar bloqueio' })).toBeNull()
+    expect(within(dialog).queryByRole('button', { name: 'Resolver' })).toBeNull()
     // Critérios e estimativa: a tela aparece no Básico (ADR-10); só o marcador no card é passivo.
+    await user.click(within(dialog).getByRole('button', { name: /^Checklist & Pronto/ }))
     expect(within(dialog).getByRole('region', { name: 'Critérios de aceitação' })).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: /^Pessoas & Prazo/ }))
     expect(within(dialog).getByRole('group', { name: 'Estimativa (h)' })).toBeTruthy()
     expectOnlyPassiveTerms(dialog)
   })
@@ -104,12 +107,10 @@ describe('Scrum no Básico · telas aparecem, ações e medidores do nível fica
 
     await user.click(await screen.findByRole('button', { name: 'Ajustes' }))
     const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
-    const notes = within(team)
-      .getAllByRole('note')
-      .map((note) => note.textContent)
+    const notes = (await within(team).findAllByRole('note')).map((note) => note.textContent)
     expect(notes).toContain(panelCopy.teamToolsLevelWarning('Sprints', 'Intermediário'))
     expect(notes).toContain(panelCopy.teamToolsLevelWarning('Backlog', 'Intermediário'))
-    expect(within(team).getByText(panelCopy.teamToolsReadOnly)).toBeTruthy()
+    expect(within(team).getByText('Somente leitura')).toBeTruthy()
     expect(within(team).queryByRole('button', { name: /Subir para/ })).toBeNull()
   })
 
@@ -119,7 +120,9 @@ describe('Scrum no Básico · telas aparecem, ações e medidores do nível fica
     await user.click(await screen.findByRole('button', { name: 'Ajustes' }))
     const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
     expect(
-      within(team).getByRole('button', { name: panelCopy.teamToolsLevelRaise('Intermediário') }),
+      await within(team).findByRole('button', {
+        name: panelCopy.teamToolsLevelRaise('Intermediário'),
+      }),
     ).toBeTruthy()
   })
 
@@ -127,8 +130,8 @@ describe('Scrum no Básico · telas aparecem, ações e medidores do nível fica
     const { user } = renderScrumBasic('manager')
 
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
-    expect(await within(team).findByText('1 bloqueada')).toBeTruthy()
+    const team = await screen.findByRole('region', { name: 'Colaboradores' })
+    expect(await within(team).findByRole('button', { name: '1 bloqueada' })).toBeTruthy()
     expect(screen.queryByText(/está com \d+ de \d+\./)).toBeNull()
     expect(screen.queryByText('Lead time médio')).toBeNull()
     expect(within(team).queryByText('Diária de hoje')).toBeNull()

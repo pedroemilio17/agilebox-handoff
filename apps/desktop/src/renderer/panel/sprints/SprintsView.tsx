@@ -11,7 +11,6 @@ import { useBurndown } from '../hooks/use-burndown'
 import { ActiveTab } from './ActiveTab'
 import { ClosedTab } from './ClosedTab'
 import { DraftsTab } from './DraftsTab'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { sprintCopy } from './sprint-copy'
 import { useSprintList } from './use-sprints'
@@ -101,37 +100,36 @@ export function SprintsView({
 
   return (
     <section aria-label={sprintCopy.title} className={styles.view}>
-      <div className={styles.toolbar}>
-        <label className={styles.projectField} htmlFor={selectId}>
-          <span className={styles.label}>{sprintCopy.project}</span>
-          <select
-            id={selectId}
-            className={styles.select}
-            value={projectId ?? ''}
-            disabled={visible.projects.length === 0}
-            onChange={(event) => setChosenProjectId(event.currentTarget.value)}
-          >
-            {visible.projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <ModuleHelpButton
-          moduleId="sprints"
-          projectId={projectId}
-          {...(onNavigate ? { onNavigate } : {})}
-        />
-        {projectId === null || topic !== null ? null : (
-          <SegmentedControl<SprintTab>
-            aria-label={sprintCopy.tabsLabel}
-            options={TAB_OPTIONS}
-            value={tab}
-            onChange={setTab}
-          />
-        )}
-      </div>
+      {initialProjectId === null || topic === null ? (
+        <div className={styles.toolbar}>
+          {initialProjectId === null ? (
+            <label className={styles.projectField} htmlFor={selectId}>
+              <span className={styles.label}>{sprintCopy.project}</span>
+              <select
+                id={selectId}
+                className={styles.select}
+                value={projectId ?? ''}
+                disabled={visible.projects.length === 0}
+                onChange={(event) => setChosenProjectId(event.currentTarget.value)}
+              >
+                {visible.projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {projectId === null || topic !== null ? null : (
+            <SegmentedControl<SprintTab>
+              aria-label={sprintCopy.tabsLabel}
+              options={TAB_OPTIONS}
+              value={tab}
+              onChange={setTab}
+            />
+          )}
+        </div>
+      ) : null}
 
       {projectId === null ? (
         visible.pending ? (

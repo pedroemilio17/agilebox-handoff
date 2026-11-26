@@ -2,8 +2,6 @@ import { useId, useState, type FormEvent } from 'react'
 import type { RiskListItemDto } from '@agilebox/contract'
 import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useWbs } from '../hooks/use-wbs'
 import {
@@ -54,7 +52,7 @@ interface RiskSubmit {
  * Riscos do projeto, do maior para o menor (probabilidade × impacto). Criar, editar e remover é do
  * gestor ou de quem criou o projeto; os outros veem a lista em leitura. Toda ação espera o servidor.
  */
-export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps) {
+export function RisksView({ projectId, projectName }: RisksViewProps) {
   const capabilities = useCapabilities()
   // A entrega só aparece (e só se consulta) quando o módulo `wbs` está ligado no projeto selecionado.
   const wbsOn = capabilities.showScreen('wbs')
@@ -158,11 +156,6 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{riskCopy.title}</h2>
           {projectName ? <span className={styles.project}>{projectName}</span> : null}
-          <ModuleHelpButton
-            moduleId="risks"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           <span className={styles.spacer} />
           {canEdit && !empty && !adding ? (
             <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
@@ -195,17 +188,14 @@ export function RisksView({ projectId, projectName, onNavigate }: RisksViewProps
       ) : null}
 
       {empty && !adding ? (
-        <ModuleEmptyState
-          moduleId="risks"
-          projectId={projectId}
-          fallbackTitle="Nenhum risco registrado."
-        >
+        <>
+          <EmptyState title="Nenhum risco registrado." />
           {canEdit ? (
             <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {riskCopy.newRisk}
             </AddButton>
           ) : null}
-        </ModuleEmptyState>
+        </>
       ) : null}
 
       {!empty ? (

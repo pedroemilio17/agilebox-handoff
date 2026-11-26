@@ -31,11 +31,11 @@ function renderBoard(props: Partial<ComponentProps<typeof BoardView>> = {}) {
 }
 
 describe('Cabeçalho e estado vazio do quadro', () => {
-  it('mostra o estado global vazio com ação de nova tarefa', async () => {
+  it('mostra as 5 colunas vazias com ação de nova tarefa', async () => {
     const onNewTask = vi.fn()
     renderBoard({ onNewTask })
 
-    expect(screen.getByRole('status', { name: 'Nenhuma tarefa ainda' })).toBeTruthy()
+    expect(screen.getAllByText('Nenhuma tarefa')).toHaveLength(5)
     await userEvent.setup().click(screen.getByRole('button', { name: /Nova tarefa/ }))
     expect(onNewTask).toHaveBeenCalledTimes(1)
   })

@@ -2,6 +2,7 @@
 export const agendaCopy = {
   title: 'Agenda',
   subtitle: 'Alinhamentos, entregas e combinados da equipe sem cortar o fim de semana.',
+  subtitleBasic: 'Alinhamentos e entregas da equipe sem cortar o fim de semana.',
   readOnlyBadge: 'Somente leitura',
   readOnlyHint: 'Agendamentos são gerenciados pelo gestor',
   newEvent: '+ Novo agendamento',

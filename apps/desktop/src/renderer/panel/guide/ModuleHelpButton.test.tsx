@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ProjectModuleDto, ProjectModulesViewDto } from '@agilebox/contract'
 import { renderPanel } from '../../shared/testing/render-panel'
 import { createFakeApi, hiddenGuide } from '../../shared/testing/fake-api'
-import { ImpedimentsView } from '../impediments/ImpedimentsView'
 import { ModuleHelpButton } from './ModuleHelpButton'
 import { GUIDE_PROJECT_ID } from './guide-fixtures'
 
@@ -187,16 +186,5 @@ describe('ModuleHelpPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Rever os primeiros passos de Backlog' }))
     expect(onNavigate).toHaveBeenCalledWith('projects')
     expect(screen.queryByRole('dialog')).toBeNull()
-  })
-})
-
-describe('encaixe nas telas de módulo', () => {
-  it('Impedimentos mostra o botão com o projeto selecionado e não sem ele', () => {
-    renderPanel(<ImpedimentsView onOpenTask={vi.fn()} selectedProjectId={GUIDE_PROJECT_ID} />)
-    expect(screen.getByRole('button', { name: 'Como funciona: Impedimentos' })).toBeTruthy()
-    cleanup()
-
-    renderPanel(<ImpedimentsView onOpenTask={vi.fn()} />)
-    expect(screen.queryByRole('button', { name: /como funciona/i })).toBeNull()
   })
 })

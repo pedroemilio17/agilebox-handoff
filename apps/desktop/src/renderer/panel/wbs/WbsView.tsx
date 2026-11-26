@@ -7,7 +7,6 @@ import {
   useRenameDeliverable,
   useWbs,
 } from '../hooks/use-wbs'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { todayDateOnly } from '../../shared/lib/today'
 import { GuidedExample, GuidedStart, NewDeliverableForm, wbsCopy } from './WbsForms'
@@ -55,7 +54,7 @@ export interface WbsViewProps {
  * Entregas (EAP) do projeto: estrutura em árvore, totais por entrega e criação direta. Quem não
  * pode editar vê tudo em leitura. Toda ação espera o servidor: nada é alterado só na tela.
  */
-export function WbsView({ projectId, onNavigate }: WbsViewProps) {
+export function WbsView({ projectId }: WbsViewProps) {
   const query = useWbs(projectId)
   const create = useCreateDeliverable()
   const rename = useRenameDeliverable()
@@ -159,11 +158,6 @@ export function WbsView({ projectId, onNavigate }: WbsViewProps) {
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{copy.title}</h2>
           <span className={styles.tag}>EAP</span>
-          <ModuleHelpButton
-            moduleId="wbs"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           <span className={styles.spacer} />
           {hasExpandable && !empty ? (
             <Button type="button" onClick={toggleCollapse}>

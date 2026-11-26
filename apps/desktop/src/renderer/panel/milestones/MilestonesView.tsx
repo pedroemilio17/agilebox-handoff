@@ -3,8 +3,6 @@ import type { MilestoneListItemDto } from '@agilebox/contract'
 import { AddButton, Button, EmptyState } from '@agilebox/ui'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
 import { todayDateOnly } from '../../shared/lib/today'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useWbs } from '../hooks/use-wbs'
 import {
@@ -71,7 +69,7 @@ interface MilestoneSubmit {
  * Marcos do projeto: lista por data, com criação, edição e remoção para quem pode editar a
  * estrutura. Quem não pode vê tudo em leitura. Toda ação espera o servidor.
  */
-export function MilestonesView({ projectId, projectName, onNavigate }: MilestonesViewProps) {
+export function MilestonesView({ projectId, projectName }: MilestonesViewProps) {
   const capabilities = useCapabilities()
   // A EAP só aparece (e só se consulta) quando o módulo `wbs` está ligado no projeto selecionado.
   const wbsOn = capabilities.showScreen('wbs')
@@ -157,11 +155,6 @@ export function MilestonesView({ projectId, projectName, onNavigate }: Milestone
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{copy.title}</h2>
           {projectName ? <span className={styles.project}>{projectName}</span> : null}
-          <ModuleHelpButton
-            moduleId="milestones"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           <span className={styles.spacer} />
           {canEdit && !empty && !adding ? (
             <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
@@ -193,17 +186,14 @@ export function MilestonesView({ projectId, projectName, onNavigate }: Milestone
       ) : null}
 
       {empty && !adding ? (
-        <ModuleEmptyState
-          moduleId="milestones"
-          projectId={projectId}
-          fallbackTitle="Nenhum marco ainda."
-        >
+        <>
+          <EmptyState title="Nenhum marco ainda." />
           {canEdit ? (
             <AddButton type="button" variant="primary" onClick={() => setAdding(true)}>
               {copy.newMilestone}
             </AddButton>
           ) : null}
-        </ModuleEmptyState>
+        </>
       ) : null}
 
       {!empty ? (

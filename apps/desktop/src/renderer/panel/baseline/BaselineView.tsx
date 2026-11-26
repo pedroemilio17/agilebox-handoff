@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { Button, EmptyState } from '@agilebox/ui'
 import type { BaselineTaskDto, BaselineViewDto } from '@agilebox/contract'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useBaseline, useTakeBaseline } from '../hooks/use-baseline'
 import {
@@ -33,7 +31,7 @@ export interface BaselineViewProps {
  * Linha de base: a foto do cronograma e do custo, com o desvio de cada tarefa e o resumo do projeto.
  * Só mostra o que o servidor calcula. Só o gestor tira a foto, e custo aparece só para ele.
  */
-export function BaselineView({ projectId, projectName, onNavigate }: BaselineViewProps) {
+export function BaselineView({ projectId, projectName }: BaselineViewProps) {
   const query = useBaseline(projectId)
 
   if (projectId === null) {
@@ -69,7 +67,7 @@ export function BaselineView({ projectId, projectName, onNavigate }: BaselineVie
 
   const data = query.data
   if (data.baseline === null || data.summary === null) {
-    return <NoBaseline data={data} projectId={projectId} onNavigate={onNavigate} />
+    return <NoBaseline data={data} projectId={projectId} />
   }
 
   const { baseline, summary, tasks } = data
@@ -81,11 +79,6 @@ export function BaselineView({ projectId, projectName, onNavigate }: BaselineVie
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{baselineCopy.title}</h2>
           {projectName ? <span className={styles.subtitle}>{projectName}</span> : null}
-          <ModuleHelpButton
-            moduleId="baseline"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
           <span className={styles.spacer} />
           {data.canTake ? <TakeControl projectId={projectId} label={baselineCopy.takeNew} /> : null}
         </div>
@@ -173,35 +166,20 @@ export function BaselineView({ projectId, projectName, onNavigate }: BaselineVie
 function NoBaseline({
   data,
   projectId,
-  onNavigate,
 }: {
   readonly data: BaselineViewDto
   readonly projectId: string
-  readonly onNavigate?: ((view: PanelView) => void) | undefined
 }) {
   return (
     <section aria-label={baselineCopy.title} className={styles.view}>
       <header className={styles.header}>
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{baselineCopy.title}</h2>
-          <ModuleHelpButton
-            moduleId="baseline"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
         </div>
       </header>
       <section aria-label={baselineCopy.title} className={styles.panel}>
-        <ModuleEmptyState
-          moduleId="baseline"
-          projectId={projectId}
-          fallbackTitle={baselineCopy.emptyTitle}
-          fallbackDescription={baselineCopy.emptyDescription}
-        >
-          {data.canTake ? (
-            <TakeControl projectId={projectId} label={baselineCopy.takeFirst} />
-          ) : null}
-        </ModuleEmptyState>
+        <EmptyState title={baselineCopy.emptyTitle} description={baselineCopy.emptyDescription} />
+        {data.canTake ? <TakeControl projectId={projectId} label={baselineCopy.takeFirst} /> : null}
       </section>
     </section>
   )

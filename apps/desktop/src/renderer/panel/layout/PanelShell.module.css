@@ -219,6 +219,7 @@
   flex-direction: column;
   gap: 1px;
   min-height: 0;
+  padding-bottom: 8px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -397,6 +398,14 @@
   color: var(--color-text-subtle);
 }
 
+.archivedToggle > span:first-child {
+  display: block;
+  flex: 1 1 auto;
+  max-width: none;
+  place-items: unset;
+  text-align: left;
+}
+
 .archivedToggle[aria-pressed='true'] {
   color: var(--color-text-primary);
   background: var(--color-rail-hover);
@@ -409,15 +418,6 @@
   font-family: var(--font-family-mono);
   font-size: 10.5px;
   color: var(--color-text-subtle);
-}
-
-.allProjectsMark {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  margin: 0 4px;
-  border: 1px solid var(--color-text-subtle);
-  border-radius: 2px;
 }
 
 .soon {

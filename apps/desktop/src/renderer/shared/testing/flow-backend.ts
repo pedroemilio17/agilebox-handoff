@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import type { ModuleId } from '@agilebox/core'
 import type {
   AgileBoxApi,
   DashboardDto,
@@ -14,6 +15,7 @@ import type {
 } from '@agilebox/contract'
 import { makeDetail, makeParticipation, USER_ID } from '../../panel/task-detail/fixtures'
 import { boardResponse } from './fake-api'
+import { projectModulesView } from './project-modules-fixture'
 
 /**
  * Backend em memória para os testes de fluxo do painel e da bandeja. As gravações mudam o mesmo
@@ -353,6 +355,18 @@ export function installFlowApi(api: AgileBoxApi, options: FlowOptions) {
     getBoardFlow: vi.spyOn(api.tasks, 'getBoardFlow'),
     boardSettings: vi.spyOn(api.boardSettings, 'get'),
     teamToolsGet: vi.spyOn(api.teamTools, 'get').mockImplementation(() => Promise.resolve(tools)),
+    projectModulesGet: vi.spyOn(api.projectModules, 'get').mockImplementation(({ projectId }) =>
+      Promise.resolve(
+        projectModulesView({
+          projectId,
+          canManage: tools.canManage,
+          enabled: tools.modules.filter((m) => m.state === 'active').map((m) => m.id as ModuleId),
+          winding: tools.modules
+            .filter((m) => m.state === 'winding_down')
+            .map((m) => m.id as ModuleId),
+        }),
+      ),
+    ),
     previewChange: vi.spyOn(api.teamTools, 'previewChange'),
     applyChange: vi.spyOn(api.teamTools, 'applyChange'),
     applyPreset: vi.spyOn(api.teamTools, 'applyPreset'),

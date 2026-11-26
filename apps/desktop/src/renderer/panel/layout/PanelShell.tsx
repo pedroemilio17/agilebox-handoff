@@ -397,8 +397,6 @@ interface RailProps {
   readonly onOpenMyTasks: () => void
 }
 
-const ALL_PROJECTS_KEY = '__all__'
-
 function Rail({
   expanded,
   topEntries,
@@ -426,8 +424,6 @@ function Rail({
   }, [selectedProjectId])
 
   const railClass = `${styles.rail} ${expanded ? styles.expanded : ''}`
-  const allSelected = selectedProjectId === null
-  const allExpanded = allSelected && collapsedSelectedKey !== ALL_PROJECTS_KEY
 
   function toggleSelectedAccordion(key: string) {
     setCollapsedSelectedKey((current) => (current === key ? null : key))
@@ -530,39 +526,6 @@ function Rail({
         </div>
 
         <div className={styles.projectsTree}>
-          <div
-            className={`${styles.projectGroup} ${allExpanded ? styles.projectGroupOpen : ''} ${allSelected ? styles.projectGroupCurrent : ''}`}
-          >
-            <button
-              type="button"
-              className={`${styles.railItem} ${styles.navItem} ${styles.projectToggle} ${allSelected ? styles.projectPressed : ''}`}
-              aria-pressed={allSelected}
-              aria-expanded={allExpanded}
-              title={panelCopy.allProjects}
-              data-tip={panelCopy.allProjects}
-              onClick={() => {
-                if (allSelected) {
-                  toggleSelectedAccordion(ALL_PROJECTS_KEY)
-                } else {
-                  onProjectSelect?.(null)
-                }
-              }}
-            >
-              <span className={styles.allProjectsMark} aria-hidden="true" />
-              <span className={`${styles.railLabel} ${styles.projectName}`}>
-                {panelCopy.allProjects}
-              </span>
-              <NavIcon kind="chevron" className={styles.projectChevron} />
-            </button>
-            {allExpanded ? (
-              <ProjectSubItems
-                groups={projectGroups}
-                activeGroupId={activeGroupId}
-                onSelect={onSelect}
-              />
-            ) : null}
-          </div>
-
           {projects.map((project) => {
             const isSelected = selectedProjectId === project.id
             const isExpanded = isSelected && collapsedSelectedKey !== project.id

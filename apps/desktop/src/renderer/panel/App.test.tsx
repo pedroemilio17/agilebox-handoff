@@ -106,7 +106,7 @@ describe('Painel', () => {
     )
     const user = userEvent.setup()
     await user.keyboard('ga')
-    expect(screen.getByRole('heading', { name: 'Agenda' })).toBeTruthy()
+    expect(screen.getAllByRole('heading', { name: 'Agenda' }).length).toBeGreaterThanOrEqual(1)
     await user.keyboard('n')
     expect(await screen.findByRole('dialog', { name: 'Nova tarefa' })).toBeTruthy()
     await user.type(screen.getByRole('textbox', { name: 'Título' }), 'ga n')
@@ -344,12 +344,16 @@ describe('Painel', () => {
 
     const navigation = screen.getByRole('navigation', { name: 'Navegação principal' })
     expect(navigation).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Quadro' }).getAttribute('aria-current')).toBe('page')
+    expect(
+      within(navigation)
+        .getByRole('button', { name: 'Minhas tarefas' })
+        .getAttribute('aria-current'),
+    ).toBe('page')
     expect(screen.getByRole('button', { name: 'Nova tarefa' })).toBeTruthy()
     expect(screen.getByRole('group', { name: 'Controles da janela' })).toBeTruthy()
 
     await userEvent.click(screen.getByRole('button', { name: 'Agenda' }))
-    expect(screen.getByRole('heading', { name: 'Agenda' })).toBeTruthy()
+    expect(screen.getAllByRole('heading', { name: 'Agenda' }).length).toBeGreaterThanOrEqual(1)
   })
 
   it('oculta Dashboard para colaborador', async () => {
@@ -372,7 +376,7 @@ describe('Painel', () => {
     expect(screen.queryByRole('button', { name: 'Dashboard' })).toBeNull()
   })
 
-  it('lista Todos os projetos primeiro e destaca o projeto atual na barra lateral', async () => {
+  it('lista os projetos sem Todos os projetos e deixa Minhas tarefas ativa inicialmente', async () => {
     const api = createFakeApi()
     vi.spyOn(api.projects, 'list').mockResolvedValue(projects)
     render(
@@ -384,8 +388,10 @@ describe('Painel', () => {
     )
 
     const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
-    const allButton = await nav.findByRole('button', { name: 'Todos os projetos' })
-    expect(allButton.getAttribute('aria-pressed')).toBe('true')
+    expect(nav.queryByRole('button', { name: 'Todos os projetos' })).toBeNull()
+    expect(nav.getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
     const aurora = await nav.findByRole('button', { name: /Projeto Aurora/ })
     const boreal = nav.getByRole('button', { name: /Projeto Boreal/ })
     expect(aurora.getAttribute('aria-pressed')).toBe('false')
@@ -550,7 +556,7 @@ describe('Painel', () => {
       </ApiProvider>,
     )
 
-    const titleBar = () => screen.getByRole('heading', { level: 1 }).closest('header')!
+    const titleBar = () => screen.getAllByRole('heading', { level: 1 })[0]!.closest('header')!
     const back = within(titleBar()).getByRole<HTMLButtonElement>('button', {
       name: 'Voltar',
     })
@@ -559,7 +565,9 @@ describe('Painel', () => {
     const nav = within(screen.getByRole('navigation', { name: 'Navegação principal' }))
     await user.click(await nav.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(screen.getByRole('button', { name: 'Agenda' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Agenda' })).toBeTruthy()
+    expect(
+      screen.getAllByRole('heading', { level: 1, name: 'Agenda' }).length,
+    ).toBeGreaterThanOrEqual(1)
     expect(back.disabled).toBe(false)
 
     await user.click(back)

@@ -6,8 +6,6 @@ import { presetModules, teamToolsView } from '../../shared/testing/team-tools-fi
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import {
-  previewOk,
-  changeResult,
   FLOW_TASK_WITH_PLANNING,
   installFlowApi,
   stubDesktopBridge,
@@ -66,6 +64,7 @@ describe('Backlog no menu e nos atalhos, por ferramenta e nível', () => {
       teamToolsView({ modules: KANBAN, level: 'basic', role: 'manager' }),
     )
     await settleCapabilities(api)
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(screen.queryByRole('button', { name: 'Backlog' })).toBeNull()
     await user.keyboard('gb')
     expect(screen.queryByRole('region', { name: 'Backlog' })).toBeNull()
@@ -76,6 +75,7 @@ describe('Backlog no menu e nos atalhos, por ferramenta e nível', () => {
     const { user } = renderApp(
       teamToolsView({ modules: SCRUM, level: 'intermediate', role: 'manager' }),
     )
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(await screen.findByRole('button', { name: 'Backlog' }))
     expect(await screen.findByRole('region', { name: 'Backlog' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Quadro' }))
@@ -84,8 +84,11 @@ describe('Backlog no menu e nos atalhos, por ferramenta e nível', () => {
   })
 
   it('Scrum no Básico: o item de menu aparece (o nível não esconde tela), e o marcador de critérios no card segue', async () => {
-    const { api } = renderApp(teamToolsView({ modules: SCRUM, level: 'basic', role: 'manager' }))
+    const { api, user } = renderApp(
+      teamToolsView({ modules: SCRUM, level: 'basic', role: 'manager' }),
+    )
     await settleCapabilities(api)
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(screen.getByRole('button', { name: 'Backlog' })).toBeTruthy()
     expect(await screen.findByRole('button', { name: /^AB-118 · .*1\/2 critérios/ })).toBeTruthy()
   })
@@ -108,7 +111,9 @@ describe('Critérios e estimativa no detalhe e no card, por nível', () => {
     expect(card.getAttribute('aria-label')).toMatch(/1\/2 critérios/)
     expect(card.getAttribute('aria-label')).toMatch(/Estimativa 2 h/)
     const dialog = await openCard()
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Checklist & Pronto/ }))
     expect(within(dialog).getByRole('region', { name: 'Critérios de aceitação' })).toBeTruthy()
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Pessoas & Prazo/ }))
     expect(within(dialog).getByRole('group', { name: 'Estimativa (h)' })).toBeTruthy()
   })
 })
@@ -122,17 +127,19 @@ describe('Ligar Backlog pela tela de ferramentas', () => {
       role: 'manager',
     })
     const { user, flow } = renderApp(off, (api) => {
-      vi.spyOn(api.teamTools, 'previewChange').mockResolvedValue(previewOk())
-      vi.spyOn(api.teamTools, 'applyChange').mockImplementation(() => {
+      vi.spyOn(api.projectModules, 'change').mockImplementation(() => {
         flow.serve(on)
-        return Promise.resolve(changeResult(on))
+        return Promise.resolve({
+          modules: [],
+          autoEnabled: [],
+          cascadeDisabled: [],
+          scheduled: [],
+        })
       })
     })
-    await user.click(await screen.findByRole('button', { name: 'Ajustes' }))
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
+    await user.click(await screen.findByRole('button', { name: 'Configurações' }))
     await user.click(await screen.findByRole('switch', { name: 'Ligar Backlog' }))
-    if (screen.queryByRole('dialog')) {
-      await user.click(screen.getByRole('button', { name: 'Confirmar' }))
-    }
     await waitFor(() => expect(screen.getByRole('button', { name: 'Backlog' })).toBeTruthy())
   })
 })

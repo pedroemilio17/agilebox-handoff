@@ -1,35 +1,71 @@
 /*
- * Tela "Módulos" do projeto, medidas de design/Modulos.dc.html: cabeçalho com h1 em display,
- * três grupos de cartões (grade de 270 px), interruptor de 44 px e painel lateral de 360 px.
- * Cores por token; valores de vidro e sombra do protótipo ficam literais (fora da escala).
+ * Tela "Módulos" em coluna única limpa (design `revisao-ux/configuracoes.html`):
+ * linhas separadas por 1px solid var(--color-divider), interruptor monocromático à direita
+ * e diálogo central apenas para conflitos ou desligamento em cascata.
  */
 
 .view {
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
 }
 
-.layout {
+.stage {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  min-height: 100%;
-}
-
-.main {
-  display: grid;
-  flex: 999 1 560px;
-  align-content: start;
-  gap: var(--space-6);
+  flex-direction: column;
+  gap: 20px;
   min-width: 0;
-  box-sizing: border-box;
-  padding: 20px 28px 32px;
 }
 
 .header {
-  display: grid;
-  gap: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.headerTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.counterHeading {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.started {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 5px;
+  background: var(--color-tint-soft);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.intro {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
 }
 
 .eyebrow {
@@ -40,65 +76,15 @@
   text-transform: uppercase;
 }
 
-.title {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-family: var(--font-family-display);
-  font-size: 32px;
-  font-weight: 620;
-  letter-spacing: -0.025em;
-}
-
-.intro {
-  max-width: 600px;
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-body);
-  line-height: 1.5;
-}
-
-.summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: var(--space-1);
-}
-
-.started {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 9px;
-  border-radius: 5px;
-  background: var(--glass-control);
-  color: var(--color-text-muted);
-  font-family: var(--font-family-mono);
-  font-size: 11.5px;
-  font-weight: 500;
-}
-
-.counter {
-  color: var(--color-text-muted);
-  font-family: var(--font-family-mono);
+.legend {
+  color: var(--color-text-subtle);
   font-size: 12px;
 }
 
-.divider {
-  width: 1px;
-  height: 16px;
-  background: var(--color-hairline-strong);
-}
-
-.legend {
-  color: var(--color-text-subtle);
-  font-size: var(--font-size-small);
-}
-
 .note {
-  margin: 0;
+  margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: var(--font-size-body-small);
+  font-size: 12.5px;
 }
 
 .muted {
@@ -109,8 +95,8 @@
 
 .error {
   margin: 0;
-  color: var(--color-danger);
-  font-size: var(--font-size-body-small);
+  color: var(--color-signal-danger-text);
+  font-size: 13px;
 }
 
 .errorBox {
@@ -126,60 +112,79 @@
 
 .saved {
   margin: 0;
-  color: var(--color-accent-text);
-  font-size: var(--font-size-body-small);
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-tint-soft);
+  color: var(--color-text-primary);
+  font-size: 12.5px;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .group {
-  display: grid;
-  gap: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .groupTitle {
   margin: 0;
-  color: var(--color-text-subtle);
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: var(--letter-spacing-eyebrow);
-  text-transform: uppercase;
+  color: var(--color-text-primary);
+  font-size: 13.5px;
+  font-weight: 600;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: var(--space-3);
-}
-
-/* Cartão de módulo: ligado com fundo e borda mais claros; desligado no fundo do painel. */
-.card {
+.cleanList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  min-height: 132px;
-  padding: 12px 12px 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  background: var(--surface-panel);
-  box-sizing: border-box;
 }
 
-.card[data-on='true'] {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: var(--surface-module-on);
-}
-
-.cardTop {
+.toolRow {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
+}
+
+.toolRow:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.toolInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toolTitleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
 }
 
 .dot {
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--color-status-desligado);
 }
@@ -196,67 +201,30 @@
   min-width: 0;
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
 .tag {
   flex: none;
   padding: 0 6px;
   border-radius: 5px;
-  background: var(--glass-control);
-  color: var(--color-text-muted);
-  font-family: var(--font-family-mono);
-  font-size: 10.5px;
-  line-height: 20px;
-}
-
-.spacer {
-  flex: 1;
-  min-width: 0;
-}
-
-.help {
-  display: inline-flex;
-  flex: none;
-}
-
-/* Botão "?" da tela: 36 px (o componente tem 44 px por padrão, usado em outras telas). */
-.help button {
-  width: 36px;
-  height: 36px;
-}
-
-.objective {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.cardBottom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: auto;
-}
-
-.dependency {
+  background: var(--color-tint-soft);
   color: var(--color-text-subtle);
   font-family: var(--font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
+  line-height: 18px;
 }
 
 .signal {
   display: inline-flex;
   align-items: center;
-  height: 24px;
-  padding: 0 9px;
-  border-radius: 7px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.07);
   color: var(--color-text-body);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -270,23 +238,56 @@
   color: var(--color-signal-advanced-text);
 }
 
-/* Interruptor: alvo de 44 px; trilho 36x20 e botão de 14 px posicionados dentro dele. */
+.objective {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.dependency {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.toolActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.help {
+  display: inline-flex;
+  flex: none;
+}
+
+.help button {
+  width: 34px;
+  height: 34px;
+}
+
+/* Interruptor monocromático 40×22 (design `configuracoes.html`, alvo >= 44×40 px) */
 .switch {
   position: relative;
+  display: inline-flex;
   flex: none;
-  width: var(--size-touch-target);
-  height: var(--size-touch-target);
-  margin: -4px -4px -4px 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   background: transparent;
   cursor: pointer;
 }
 
 .switch:disabled {
-  cursor: default;
-  opacity: 0.5;
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .switch:focus-visible {
@@ -295,64 +296,55 @@
 }
 
 .track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.track::after {
+  content: '';
   position: absolute;
-  top: 12px;
-  left: 4px;
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  background: var(--color-switch-off);
-  transition: background var(--motion-duration-control) var(--ease-ios);
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #757282;
+  transition:
+    transform 180ms var(--ease-ios),
+    background 180ms ease;
 }
 
 .switch[aria-checked='true'] .track {
-  background: var(--color-switch-on);
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.42);
 }
 
-.thumb {
-  position: absolute;
-  top: 15px;
-  left: 8px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  transition: left var(--motion-duration-control) var(--ease-ios);
+.switch[aria-checked='true'] .track::after {
+  transform: translateX(18px);
+  background: #f2f0f6;
 }
 
-.switch[aria-checked='true'] .thumb {
-  left: 24px;
-  background: var(--color-on-primary);
-}
-
-/* Painel lateral "Mudança em andamento": 360 px, vidro fosco. */
-.aside {
-  flex: 0 0 360px;
-  box-sizing: border-box;
-  padding: 20px 24px 32px 0;
-}
-
-.panel {
+/* Conteúdo do modal de confirmação / bloqueio */
+.dialogContent {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border-radius: 16px;
-  background: rgba(38, 37, 46, 0.78);
-  backdrop-filter: blur(20px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.09),
-    0 24px 50px rgba(0, 0, 0, 0.55);
 }
 
-.panelHead {
+.dialogHead {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
-.panelLabel {
+.dialogLabel {
   color: var(--color-text-muted);
   font-family: var(--font-family-mono);
   font-size: 11px;
@@ -360,11 +352,11 @@
   text-transform: uppercase;
 }
 
-.panelTitle {
+.dialogTitle {
   margin: 0;
   color: var(--color-text-primary);
   font-family: var(--font-family-display);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 620;
   letter-spacing: -0.015em;
 }
@@ -441,9 +433,9 @@
 .effects {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   padding-top: var(--space-3);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-divider);
 }
 
 .effect {
@@ -452,6 +444,7 @@
   gap: 10px;
   align-items: baseline;
   font-size: 13px;
+  color: var(--color-text-body);
 }
 
 .effectState {
@@ -462,7 +455,7 @@
 }
 
 .footnote {
-  margin: 0;
+  margin: 4px 0 0;
   color: var(--color-text-subtle);
   font-size: 12.5px;
   line-height: 1.45;
@@ -470,15 +463,16 @@
 
 .actions {
   display: flex;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: var(--space-2);
   padding-top: var(--space-3);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-divider);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .track,
-  .thumb {
+  .track::after {
     transition: none;
   }
 }

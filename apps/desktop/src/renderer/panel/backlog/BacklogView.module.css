@@ -2,8 +2,7 @@
   display: grid;
   align-content: start;
   gap: var(--space-4);
-  padding: var(--space-5);
-  overflow-y: auto;
+  min-width: 0;
 }
 
 .toolbar {

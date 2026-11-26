@@ -55,8 +55,8 @@ function renderDialog(projects: ProjectDto[] = [makeProject()]) {
   return { api, createWithSetup, onSelect, onClose, user: userEvent.setup() }
 }
 
-const continueButton = () => screen.getByRole('button', { name: /^Continuar/ })
-const radio = (name: string) => screen.getByRole<HTMLInputElement>('radio', { name })
+const toReview = () => screen.getByRole('button', { name: 'Ver sugestão de recursos →' })
+const radio = (name: string | RegExp) => screen.getByRole<HTMLInputElement>('radio', { name })
 
 /** Abre o assistente pelo diálogo, com o nome digitado. */
 async function openFlowWithName(user: ReturnType<typeof userEvent.setup>, name: string) {
@@ -65,19 +65,13 @@ async function openFlowWithName(user: ReturnType<typeof userEvent.setup>, name: 
   await user.click(screen.getByRole('button', { name: panelCopy.create }))
 }
 
-/** Responde as perguntas de um projeto ágil com custo e horas, até a recomendação. */
+/** Responde as 3 perguntas de um projeto com ciclos curtos, interno e iniciante, até a revisão. */
 async function answerToRecommendation(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(continueButton())
-  await user.click(radio('Tem fim'))
-  await user.click(continueButton())
-  await user.click(radio('Não'))
-  await user.click(continueButton())
-  await user.click(radio('Vai mudar no caminho'))
-  await user.click(continueButton())
-  await user.click(radio('Não'))
-  await user.click(continueButton())
-  await user.click(radio('Sim'))
-  await user.click(continueButton())
+  await user.click(screen.getByRole('button', { name: /^Me ajude a escolher/ }))
+  await user.click(radio(/^Ciclos curtos com metas/))
+  await user.click(radio(/^Não, é um projeto interno/))
+  await user.click(radio(/^Iniciante/))
+  await user.click(toReview())
 }
 
 describe('Criar projeto pelo assistente no diálogo de projetos', () => {
@@ -85,19 +79,19 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     const { user } = renderDialog()
     await openFlowWithName(user, 'Portal')
 
-    expect(screen.getByRole('heading', { name: 'Qual é o nome do projeto?' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Criar novo projeto' })).toBeTruthy()
     expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Nome do projeto' }).value).toBe(
       'Portal',
     )
     expect(screen.queryByRole('dialog', { name: panelCopy.projectDialogTitle })).toBeNull()
-    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.queryAllByRole('dialog')).toHaveLength(0)
   })
 
   it('pular cria o projeto Simples só com nome e seleciona o criado', async () => {
     const { user, createWithSetup, onSelect, onClose } = renderDialog()
     await openFlowWithName(user, 'Portal')
 
-    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto simples agora' }))
 
     expect(createWithSetup).toHaveBeenCalledWith({ name: 'Portal', startedFromPreset: 'simples' })
     await waitFor(() => expect(onSelect).toHaveBeenCalledWith(NOVO))
@@ -109,28 +103,19 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     await openFlowWithName(user, 'App de Chamados')
 
     await answerToRecommendation(user)
-    expect(screen.getByRole('heading', { name: 'Ágil (Scrum)' })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Criar projeto' }))
+    expect(screen.getByText('Ciclos Ágeis (Sprints)')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
 
     expect(createWithSetup).toHaveBeenCalledWith({
       name: 'App de Chamados',
       startedFromPreset: 'agil',
       guideLevel: 'never',
-      modules: [
-        'agenda',
-        'backlog',
-        'sprints',
-        'checkins',
-        'estimates.hours',
-        'reviewRetro',
-        'cost',
-      ],
+      modules: ['backlog', 'sprints', 'checkins', 'definitionOfDone'],
       answers: {
         workType: 'finite',
         fixedDate: 'no',
         scope: 'will_change',
         outsiderFollows: 'no',
-        controlsHoursAndCost: 'yes',
         experience: 'never',
       },
     })
@@ -144,11 +129,11 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     await openFlowWithName(user, 'App de Chamados')
     await answerToRecommendation(user)
 
-    await user.click(screen.getByRole('button', { name: 'Criar projeto' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
 
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.getByText('Não foi possível guardar a configuração do projeto.')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Ágil (Scrum)' })).toBeTruthy()
+    expect(screen.getByText('Ciclos Ágeis (Sprints)')).toBeTruthy()
     expect(onSelect).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })
@@ -159,7 +144,7 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     await openFlowWithName(user, 'App de Chamados')
     await answerToRecommendation(user)
 
-    await user.click(screen.getByRole('button', { name: 'Criar projeto' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
 
     expect(await screen.findByText(panelCopy.createProjectError)).toBeTruthy()
   })
@@ -168,9 +153,9 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     const { user, createWithSetup, onSelect } = renderDialog()
     await openFlowWithName(user, 'Portal')
 
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.keyboard('{Escape}')
 
-    expect(screen.queryByRole('heading', { name: 'Qual é o nome do projeto?' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Criar novo projeto' })).toBeNull()
     expect(screen.getByRole('dialog', { name: panelCopy.projectDialogTitle })).toBeTruthy()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: panelCopy.create }))
     expect(createWithSetup).not.toHaveBeenCalled()
@@ -188,7 +173,7 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
 
     expect(onSelect).toHaveBeenCalledWith(AURORA)
     expect(createWithSetup).not.toHaveBeenCalled()
-    expect(screen.queryByRole('heading', { name: 'Qual é o nome do projeto?' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Criar novo projeto' })).toBeNull()
   })
 
   it('nome repetido que a API devolve seleciona o projeto existente', async () => {
@@ -200,7 +185,7 @@ describe('Criar projeto pelo assistente no diálogo de projetos', () => {
     })
     await openFlowWithName(user, 'Projeto Aurora')
 
-    await user.click(screen.getByRole('button', { name: 'Pular e criar no modo Simples' }))
+    await user.click(screen.getByRole('button', { name: 'Criar projeto simples agora' }))
 
     await waitFor(() => expect(onSelect).toHaveBeenCalledWith(AURORA))
   })

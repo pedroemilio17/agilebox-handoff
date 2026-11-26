@@ -14,7 +14,7 @@ import {
   SCHEDULE_PROJECT,
   taskId,
 } from './schedule-fixtures'
-import { ScheduleView } from './ScheduleView'
+import { ScheduleView, scheduleCopy } from './ScheduleView'
 
 const TODAY = '2026-11-16'
 const CADASTRO = taskId('1')
@@ -282,7 +282,7 @@ describe('estados', () => {
       }),
     )
     // Texto do manifesto do módulo (o guia padrão dos testes é "Nunca", com a explicação curta).
-    expect(await screen.findByText('Nenhuma tarefa com datas.')).toBeTruthy()
+    expect(await screen.findByText(scheduleCopy.emptyFallback)).toBeTruthy()
     expect(screen.queryByRole('region', { name: /Linha do tempo/ })).toBeNull()
   })
 

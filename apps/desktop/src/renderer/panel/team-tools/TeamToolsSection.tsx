@@ -217,10 +217,9 @@ export function TeamToolsSection() {
   const activeCount = counted.filter((tool) => tool.state === 'active').length
 
   return (
-    <>
+    <section aria-label={panelCopy.teamToolsTitle}>
       <Section
         title={settingsCopy.toolsCounter(activeCount, counted.length)}
-        ariaLabel={panelCopy.teamToolsTitle}
         meta={canManage ? undefined : <ReadOnlyBadge />}
         helper={settingsCopy.toolsHelper}
       >
@@ -352,7 +351,7 @@ export function TeamToolsSection() {
           )
         }
       />
-    </>
+    </section>
   )
 }
 

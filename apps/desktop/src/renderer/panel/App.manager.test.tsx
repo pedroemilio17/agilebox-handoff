@@ -186,10 +186,12 @@ describe('Perfis e permissões na tela', () => {
 })
 
 describe('Dashboard do gestor', () => {
-  it('mostra a semana no cabeçalho, sem seletor de semana (desenho, tela 19)', async () => {
+  it('mostra o cabeçalho do dashboard, sem seletor de semana (desenho, tela 19)', async () => {
     const { user } = setup(MANAGER)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    expect(await screen.findByText('Semana 44 · 26–30 out')).toBeTruthy()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard do Gestor' }),
+    ).toBeTruthy()
     expect(screen.queryByRole('combobox', { name: 'Semana do dashboard' })).toBeNull()
   })
 
@@ -209,8 +211,9 @@ describe('Dashboard do gestor', () => {
       blockedDashboard,
     )
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
-      .parentElement as HTMLElement
+    const row = (
+      await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    ).closest('tr') as HTMLElement
     await user.click(within(row).getByRole('button', { name: '1 bloqueada' }))
     const filter = await screen.findByRole('button', { name: 'Bloqueadas' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
@@ -230,8 +233,9 @@ describe('Dashboard do gestor', () => {
     }
     const { user } = setup(MANAGER, [{ ...task, agingDays: 5, overdue: false }], agingDashboard)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const row = (await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' }))
-      .parentElement as HTMLElement
+    const row = (
+      await screen.findByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+    ).closest('tr') as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Parada 5d' }))
     const filter = await screen.findByRole('button', { name: 'Paradas' })
     expect(filter.getAttribute('aria-pressed')).toBe('true')
@@ -241,9 +245,10 @@ describe('Dashboard do gestor', () => {
   it('mostra a equipe com em andamento e carga, e abre os projetos de um colaborador', async () => {
     const { listBoard, user } = setup(MANAGER)
     await user.click(await screen.findByRole('button', { name: 'Dashboard' }))
-    const team = await screen.findByRole('region', { name: 'Equipe em todos os projetos' })
-    const row = within(team).getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
-      .parentElement as HTMLElement
+    const team = await screen.findByRole('region', { name: 'Colaboradores' })
+    const row = within(team)
+      .getByRole('button', { name: 'Abrir projetos de Bruno Lima' })
+      .closest('tr') as HTMLElement
     expect(within(row).getByText('2')).toBeTruthy()
     expect(within(row).getByText('0 h')).toBeTruthy()
 
@@ -303,7 +308,7 @@ describe('Erros de permissão', () => {
     vi.spyOn(api.tasks, 'get').mockResolvedValue(makeDetail({ id: task.id }))
     vi.spyOn(api.tasks, 'update').mockRejectedValue(new ApiError('FORBIDDEN', 'Sem permissão'))
     await user.click(await screen.findByRole('button', { name: 'AB-118 · Revisar integração' }))
-    const description = await screen.findByLabelText('Descrição')
+    const description = await screen.findByLabelText('Descrição da tarefa')
     await user.type(description, ' mais')
     await user.tab()
     expect(

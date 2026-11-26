@@ -195,11 +195,9 @@ describe('Backlog: lista e criação rápida', () => {
     expect(screen.getByText(/Adicione ideias e pedidos acima/)).toBeTruthy()
   })
 
-  it('estado vazio com guia carregado mostra o texto do manifesto do backlog', async () => {
+  it('estado vazio mostra o texto padrão do backlog', async () => {
     setup({ items: [] })
-    expect(await screen.findByText('O backlog está vazio.')).toBeTruthy()
-    expect(screen.getByText(/O backlog são as tarefas em Planejamento/)).toBeTruthy()
-    expect(screen.queryByText('O backlog deste projeto está vazio.')).toBeNull()
+    expect(await screen.findByText('O backlog deste projeto está vazio.')).toBeTruthy()
   })
 
   it('erro ao carregar mostra alerta e tenta de novo', async () => {

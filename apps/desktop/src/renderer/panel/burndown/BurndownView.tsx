@@ -1,8 +1,6 @@
 import { useId } from 'react'
 import { Button, EmptyState } from '@agilebox/ui'
 import type { BurndownViewDto, VelocitySprintDto } from '@agilebox/contract'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useBurndown } from '../hooks/use-burndown'
 import {
@@ -32,7 +30,7 @@ export interface BurndownViewProps {
  * Burndown e velocidade (ADR-10, módulo `burndown`): horas restantes da sprint por dia, contra a
  * linha ideal, e a velocidade das últimas sprints encerradas. Só mostra o que o servidor calcula.
  */
-export function BurndownView({ projectId, onNavigate }: BurndownViewProps) {
+export function BurndownView({ projectId }: BurndownViewProps) {
   const query = useBurndown(projectId)
 
   if (projectId === null) {
@@ -74,21 +72,11 @@ export function BurndownView({ projectId, onNavigate }: BurndownViewProps) {
       <header className={styles.header}>
         <h2 className={styles.title}>{burndownCopy.title}</h2>
         {subtitle ? <span className={styles.subtitle}>{subtitle}</span> : null}
-        <span className={styles.spacer} />
-        <ModuleHelpButton
-          moduleId="burndown"
-          projectId={projectId}
-          {...(onNavigate ? { onNavigate } : {})}
-        />
       </header>
 
       {view.sprint === null ? (
         <section aria-label={burndownCopy.title} className={styles.panel}>
-          <ModuleEmptyState
-            moduleId="burndown"
-            projectId={projectId}
-            fallbackTitle={burndownCopy.noSprint}
-          />
+          <EmptyState title={burndownCopy.noSprint} />
         </section>
       ) : (
         <>

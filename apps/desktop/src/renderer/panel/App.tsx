@@ -42,8 +42,6 @@ import { NewProjectFlow, type NewProjectPayload } from './new-project/NewProject
 import { refusalMessage } from './backlog/refusal-message'
 import { NewTaskDialog } from './board/NewTaskDialog'
 import { BoardView } from './board/BoardView'
-import { GuideDock } from './guide/GuideDock'
-import { WelcomeDialog } from './guide/WelcomeDialog'
 import type { WipStatus } from './board/wip-limit'
 import type { TaskScope } from './board/task-scope'
 import { teamWipColumns } from './board/team-board'
@@ -152,8 +150,6 @@ function PanelContent({
   const [taskScope, setTaskScope] = useState<TaskScope>('mine')
   const [scopeAnnouncement, setScopeAnnouncement] = useState('')
   const createProject = useCreateProjectWithSetup()
-  // Contador: cada "Ver a trilha" da janela de boas-vindas abre o cartão "Primeiros passos".
-  const [trailRequest, setTrailRequest] = useState(0)
   // Arquivados ficam ocultos por padrão; cada tela pede só quando o usuário liga o filtro.
   const [showArchived, setShowArchived] = useState(false)
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
@@ -174,7 +170,6 @@ function PanelContent({
   const selectedArchived = selectedProject?.archivedAt != null
   const newTaskBlockedReason = selectedArchived ? panelCopy.archivedProjectNewTask : undefined
   const sessionUsers = useSessionUsers()
-  const personName = sessionUsers.data?.find((user) => user.id === actor.actor?.userId)?.name
   const tasks = useQuery({
     queryKey: queryKeys.tasks.board(selectedProjectId ?? undefined, viewingUser?.id, showArchived),
     queryFn: () =>
@@ -545,18 +540,6 @@ function PanelContent({
           if (!show && selectedArchived) navigate('projects', null)
         }}
         onOpenTray={openTray}
-        // O guia vai no topo de cada tela do projeto (ver GuideDock). Na tarefa em tela cheia, não.
-        guide={
-          activeTaskId && taskFullScreen ? null : (
-            <GuideDock
-              projectId={selectedProjectId}
-              view={currentView}
-              onNavigate={(next) => navigate(next)}
-              onOpenTray={openTray}
-              openRequest={trailRequest}
-            />
-          )
-        }
         account={{
           users: sessionUsers.data ?? [],
           currentUserId: actor.actor?.userId,
@@ -803,13 +786,6 @@ function PanelContent({
               />
             ) : (
               <>
-                {selectedProjectId ? (
-                  <WelcomeDialog
-                    projectId={selectedProjectId}
-                    personName={personName}
-                    onSeeTrail={() => setTrailRequest((count) => count + 1)}
-                  />
-                ) : null}
                 <ScopeAnnouncement message={scopeAnnouncement} />
                 {teamView ? <ScopeBanner>{panelCopy.teamViewBanner}</ScopeBanner> : null}
                 <BoardView

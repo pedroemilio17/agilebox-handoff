@@ -58,6 +58,7 @@ export const PASSIVE_TOOL_TERMS: readonly RegExp[] = [
 export const SCREEN_NAME_TERMS: readonly RegExp[] = [
   startsWord('Backlog'),
   startsWord('Sprint'),
+  startsWord('Bloqueio'),
   startsWord('Impedimento'),
   startsWord('Impedimentos'),
   startsWord('Histórico de impedimentos'),

@@ -111,10 +111,9 @@ describe('tela Marcos: leitura', () => {
     expect(screen.queryByRole('button', { name: 'Remover' })).toBeNull()
   })
 
-  it('estado vazio ensina com o manifesto do módulo', async () => {
+  it('estado vazio mostra mensagem sem marcos', async () => {
     setup({ milestones: [], canEdit: false })
     expect(await screen.findByText('Nenhum marco ainda.')).toBeTruthy()
-    expect(await screen.findByText(/Um marco tem nome, data/)).toBeTruthy()
   })
 
   it('carregando e erro da leitura', async () => {

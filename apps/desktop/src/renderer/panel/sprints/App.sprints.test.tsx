@@ -2,7 +2,6 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { TaskDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { presetModules, teamToolsView } from '../../shared/testing/team-tools-fixture'
@@ -82,45 +81,23 @@ describe('Sprints no menu e nos atalhos, por ferramenta e nível', () => {
   })
 
   it('Scrum · Básico: o item de menu aparece, sem o filtro Sprint ativa, e o marcador "Sprint 4" no card', async () => {
-    const { api } = renderApp(SCRUM, 'basic')
+    const { api, user } = renderApp(SCRUM, 'basic')
     await settleCapabilities(api)
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(screen.getByRole('button', { name: 'Sprints' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^Sprint ativa/ })).toBeNull()
     expect(await cardLabel()).toMatch(/Sprint 4/)
     expect(screen.getByText('Sprint 4')).toBeTruthy()
   })
 
-  it('Scrum · Intermediário: item de menu, atalho G S e o filtro Sprint ativa', async () => {
+  it('Scrum · Intermediário: item de menu e atalho G S', async () => {
     const { user } = renderApp(SCRUM, 'intermediate')
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(await screen.findByRole('button', { name: 'Sprints' }))
     expect(await screen.findByRole('region', { name: sprintCopy.title })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Quadro' }))
     await user.keyboard('gs')
     expect(await screen.findByRole('region', { name: sprintCopy.title })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Quadro' }))
-    expect(await screen.findByRole('button', { name: /^Sprint ativa · 1$/ })).toBeTruthy()
-  })
-
-  it('o filtro Sprint ativa deixa só os cartões dessa sprint', async () => {
-    const other: TaskDto = {
-      ...toTaskDto(FLOW_TASK_WITH_PLANNING),
-      id: '01J8Y4G2XK8Z1S6M3Q9W0BKZZ',
-      key: 'AB-777',
-      number: 777,
-      title: 'Sem sprint',
-      sprint: null,
-    }
-    const { user, api } = renderApp(SCRUM, 'intermediate', (api) => {
-      vi.spyOn(api.tasks, 'listBoard').mockResolvedValue({
-        tasks: [toTaskDto(IN_SPRINT), other],
-        wipLimits: {},
-        wipColumns: [],
-      })
-    })
-    await settleCapabilities(api)
-    await user.click(await screen.findByRole('button', { name: /^Sprint ativa · 1$/ }))
-    expect(await screen.findByRole('button', { name: /^AB-118 · / })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^AB-777 · / })).toBeNull()
   })
 })
 
@@ -130,6 +107,7 @@ describe('Marcador "Sprint N" nas superfícies', () => {
     await settleCapabilities(api)
     await user.click(await screen.findByRole('button', { name: /^AB-118 · / }))
     const dialog = await screen.findByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })
+    await user.click(within(dialog).getByRole('button', { name: /^Pessoas & Prazo/ }))
     const row = within(dialog).getByRole('group', { name: sprintCopy.sprintProperty })
     expect(within(row).getByText('Sprint 4')).toBeTruthy()
   })
@@ -141,6 +119,7 @@ describe('Marcador "Sprint N" nas superfícies', () => {
       ])
     })
     await settleCapabilities(api)
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(await screen.findByRole('button', { name: 'Backlog' }))
     expect(await screen.findByText('Sprint 4')).toBeTruthy()
   })
@@ -206,7 +185,7 @@ describe('Marcador "Sprint N" nas superfícies', () => {
       .spyOn(api.tasks, 'move')
       .mockResolvedValue(toTaskDto({ ...IN_SPRINT, status: 'done' }))
     await settleCapabilities(api)
-
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(await screen.findByRole('button', { name: 'Sprints' }))
     // A sprint ativa já é o primeiro tópico do rail; clicar nele confirma o tópico.
     await user.click(await screen.findByRole('button', { name: 'Sprint ativa' }))

@@ -101,6 +101,7 @@ describe('Impedimentos por time e nível', () => {
   it('Scrum · Básico: a tela abre dentro de Sprints, e o card mostra o marcador com o responsável', async () => {
     const { user } = renderApp({ modules: SCRUM, level: 'basic' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(railNames()).toContain('Sprints')
 
     const card = screen.getByRole('button', { name: /^AB-121 · / })
@@ -112,7 +113,7 @@ describe('Impedimentos por time e nível', () => {
     await user.click(
       within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
         'button',
-        { name: 'Impedimentos' },
+        { name: 'Bloqueios' },
       ),
     )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
@@ -121,12 +122,13 @@ describe('Impedimentos por time e nível', () => {
   it('Scrum · Intermediário: aba dentro de Sprints e atalho G I abrem a tela', async () => {
     const { user } = renderApp({ modules: SCRUM, level: 'intermediate' })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(railNames()).toContain('Sprints')
     await user.click(screen.getByRole('button', { name: 'Sprints' }))
     await user.click(
       within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
         'button',
-        { name: 'Impedimentos' },
+        { name: 'Bloqueios' },
       ),
     )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
@@ -146,12 +148,13 @@ describe('Impedimentos por time e nível', () => {
   it('Encerrando: a tela e a aba seguem (só o abrir some, testado no detalhe)', async () => {
     const { user } = renderApp({ modules: ENDING, level: 'intermediate', winding: ['impediments'] })
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     expect(railNames()).toContain('Sprints')
     await user.click(screen.getByRole('button', { name: 'Sprints' }))
     await user.click(
       within(await screen.findByRole('navigation', { name: 'Seções de Sprints' })).getByRole(
         'button',
-        { name: 'Impedimentos' },
+        { name: 'Bloqueios' },
       ),
     )
     expect(await screen.findByRole('region', { name: impedimentCopy.title })).toBeTruthy()
@@ -180,6 +183,7 @@ describe('Impedimentos por time e nível', () => {
       } as never,
     ])
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
+    await user.click(await screen.findByRole('button', { name: /Projeto Aurora/ }))
     await user.click(screen.getByRole('button', { name: 'Backlog' }))
     const marker = await screen.findByText('Bloqueada')
     expect(marker.parentElement?.getAttribute('title')).toBe(

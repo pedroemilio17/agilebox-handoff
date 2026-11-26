@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, type WbsViewDto } from '@agilebox/contract'
 import { ApiProvider } from '../../shared/api/ApiProvider'
 import { createFakeApi } from '../../shared/testing/fake-api'
-import { projectModulesView } from '../../shared/testing/project-modules-fixture'
 import { WbsView, type WbsViewProps } from './WbsView'
 import { deliverableRow, taskRow, WBS_PROJECT_ID, wbsId, wbsView } from './wbs-fixtures'
 
@@ -486,34 +485,5 @@ describe('estado vazio (passo 1)', () => {
     renderWbs({ view: wbsView([], { canEdit: false }) })
     expect(await screen.findByText('Nenhuma entrega cadastrada.')).toBeTruthy()
     expect(screen.queryByLabelText('Entrega 1')).toBeNull()
-  })
-})
-
-describe('ajuda do módulo', () => {
-  it('o botão "?" abre o painel Como funciona da EAP', async () => {
-    const api = createFakeApi({
-      projectModules: {
-        get: () =>
-          Promise.resolve(projectModulesView({ enabled: ['wbs'], projectId: WBS_PROJECT_ID })),
-        getOrganization: () => Promise.resolve({ modules: [], hasActiveProjects: false }),
-        history: (input) => Promise.resolve({ projectId: input.projectId, events: [] }),
-        change: () =>
-          Promise.resolve({ modules: [], autoEnabled: [], cascadeDisabled: [], scheduled: [] }),
-        setConfig: () =>
-          Promise.resolve({ projectId: WBS_PROJECT_ID, modules: [], canManage: true }),
-      },
-    })
-    vi.spyOn(api.wbs, 'get').mockResolvedValue(sampleView())
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    render(
-      <ApiProvider api={api}>
-        <QueryClientProvider client={queryClient}>
-          <WbsView projectId={WBS_PROJECT_ID} projectName="Projeto Aurora" />
-        </QueryClientProvider>
-      </ApiProvider>,
-    )
-    const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: /Como funciona/ }))
-    expect(await screen.findByRole('dialog')).toBeTruthy()
   })
 })

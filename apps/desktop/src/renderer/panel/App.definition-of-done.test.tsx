@@ -392,14 +392,18 @@ describe('Conferência ao concluir pelo detalhe e pela criação', () => {
     const move = vi.spyOn(api.tasks, 'move').mockResolvedValue({ ...reviewTask, status: 'done' })
 
     await user.click(await screen.findByRole('button', { name: 'AB-118 · Revisar integração' }))
-    await user.click(await screen.findByRole('button', { name: 'Status' }))
-    await user.click(screen.getByRole('menuitemradio', { name: 'Concluído' }))
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Estado da tarefa' }),
+      'done',
+    )
 
-    const dialog = await screen.findByRole('dialog', { name: DIALOG_NAME })
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Antes de concluir: Checklist pendente',
+    })
     expect(move).not.toHaveBeenCalled()
     await user.click(within(dialog).getByRole('checkbox', { name: 'Testes passando' }))
     await user.click(within(dialog).getByRole('checkbox', { name: 'Revisado por par' }))
-    await user.click(within(dialog).getByRole('button', { name: 'Concluir' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Concluir mesmo assim' }))
 
     await waitFor(() =>
       expect(move).toHaveBeenCalledWith({

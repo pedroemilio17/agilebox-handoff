@@ -6,8 +6,7 @@ import { panelCopy } from '../copy'
 import { DefinitionOfDoneEditor } from '../board/DefinitionOfDoneEditor'
 import { ModulesView } from '../modules/ModulesView'
 import type { PanelView } from '../layout/PanelShell'
-import { TopicTabs } from '../layout/TopicTabs'
-import type { TopicTabItem } from '../layout/project-nav'
+import { Badge, PageHead, TopicLayout, type RailGroup } from '../settings/clean-ui'
 import { ProjectMembersSection } from './ProjectMembersSection'
 import { ProjectGeneralSection } from './ProjectGeneralSection'
 import styles from './ProjectConfigView.module.css'
@@ -54,49 +53,56 @@ export function ProjectConfigView({
     )
   }
 
-  const tabs: readonly TopicTabItem<ProjectConfigTab>[] = [
-    { id: 'modules', label: 'Módulos' },
-    { id: 'members', label: panelCopy.members },
-    ...(definitionVisible
-      ? [{ id: 'definitionOfDone' as const, label: panelCopy.definitionTitle }]
-      : []),
-    { id: 'general', label: 'Geral' },
+  const groups: readonly RailGroup<ProjectConfigTab>[] = [
+    {
+      label: 'Projeto',
+      items: [
+        { id: 'modules', label: 'Módulos' },
+        { id: 'members', label: panelCopy.members },
+        ...(definitionVisible
+          ? [{ id: 'definitionOfDone' as const, label: panelCopy.definitionTitle }]
+          : []),
+        { id: 'general', label: 'Geral' },
+      ],
+    },
   ]
   const activeTab: ProjectConfigTab =
     tab === 'definitionOfDone' && !definitionVisible ? 'modules' : tab
 
   return (
     <div className={styles.view}>
-      <TopicTabs
+      <PageHead
+        title="Configurações do projeto"
+        subtitle={`${project.name} · Ferramentas ativas, membros da equipe, checklist de conclusão e dados gerais.`}
+        actions={<Badge>Salvo na hora</Badge>}
+      />
+      <TopicLayout<ProjectConfigTab>
         ariaLabel="Seções de Configurações do projeto"
-        items={tabs}
+        groups={groups}
         activeId={activeTab}
         onSelect={setTab}
-      />
-      {activeTab === 'modules' ? (
-        <ModulesView
-          projectId={project.id}
-          projectName={project.name}
-          startedFromPreset={project.startedFromPreset ?? null}
-          archived={project.archivedAt != null}
-          {...(onNavigate ? { onNavigate } : {})}
-        />
-      ) : (
-        <div className={styles.scrollStage}>
-          {activeTab === 'members' ? (
-            <ProjectMembersSection key={project.id} project={project} canManage={canManage} />
-          ) : activeTab === 'definitionOfDone' ? (
-            <DefinitionOfDoneEditor key={project.id} projectId={project.id} canEdit={canManage} />
-          ) : (
-            <ProjectGeneralSection
-              key={project.id}
-              project={project}
-              projects={projects}
-              canManage={canManage}
-            />
-          )}
-        </div>
-      )}
+      >
+        {activeTab === 'modules' ? (
+          <ModulesView
+            projectId={project.id}
+            projectName={project.name}
+            startedFromPreset={project.startedFromPreset ?? null}
+            archived={project.archivedAt != null}
+            {...(onNavigate ? { onNavigate } : {})}
+          />
+        ) : activeTab === 'members' ? (
+          <ProjectMembersSection key={project.id} project={project} canManage={canManage} />
+        ) : activeTab === 'definitionOfDone' ? (
+          <DefinitionOfDoneEditor key={project.id} projectId={project.id} canEdit={canManage} />
+        ) : (
+          <ProjectGeneralSection
+            key={project.id}
+            project={project}
+            projects={projects}
+            canManage={canManage}
+          />
+        )}
+      </TopicLayout>
     </div>
   )
 }

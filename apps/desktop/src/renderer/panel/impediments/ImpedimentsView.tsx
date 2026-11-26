@@ -3,7 +3,6 @@ import type { ImpedimentListItemDto } from '@agilebox/contract'
 import { Button, EmptyState, SegmentedControl, TaskKey, Toast } from '@agilebox/ui'
 import type { SegmentedOption } from '@agilebox/ui'
 import { useActor } from '../../shared/session/useActor'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { formatDate, formatRelativeDate } from '../../shared/lib/format-date'
 import { useProjects } from '../hooks/use-projects'
@@ -33,11 +32,7 @@ export interface ImpedimentsViewProps {
  * Tela de Impedimentos (Intermediário em diante, com o módulo ligado ou encerrando). Lista os
  * abertos (o padrão do servidor); "Mostrar resolvidos" traz também os resolvidos, com nota.
  */
-export function ImpedimentsView({
-  onOpenTask,
-  selectedProjectId = null,
-  onNavigate,
-}: ImpedimentsViewProps) {
+export function ImpedimentsView({ onOpenTask }: ImpedimentsViewProps) {
   const actor = useActor()
   const userId = actor.actor?.userId
   const projects = useProjects(false)
@@ -85,11 +80,6 @@ export function ImpedimentsView({
             ))}
           </select>
         </label>
-        <ModuleHelpButton
-          moduleId="impediments"
-          projectId={selectedProjectId}
-          {...(onNavigate ? { onNavigate } : {})}
-        />
         <SegmentedControl<OwnerScope>
           aria-label={impedimentCopy.owner}
           options={OWNER_OPTIONS}

@@ -2,10 +2,8 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RiskListItemDto, TrackingViewDto } from '@agilebox/contract'
-import { getManifest } from '@agilebox/core'
 import { createFakeApi } from '../../shared/testing/fake-api'
 import { renderPanel } from '../../shared/testing/render-panel'
-import { moduleHelpCopy } from '../guide/module-help-copy'
 import type { PanelView } from '../layout/PanelShell'
 import { TrackingView } from './TrackingView'
 
@@ -182,13 +180,6 @@ describe('TrackingView', () => {
     expect(await screen.findByText('Nenhum marco ainda.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Abrir os marcos' }))
     expect(onNavigate).toHaveBeenCalledWith('milestones')
-  })
-
-  it('o botão de ajuda do módulo do cronograma está no cabeçalho', async () => {
-    renderTracking()
-    await screen.findByRole('region', { name: 'Concluído' })
-    const name = getManifest('schedule').name
-    expect(screen.getByRole('button', { name: moduleHelpCopy.buttonLabel(name) })).toBeTruthy()
   })
 
   it('sem projeto selecionado pede para escolher um e não consulta', () => {

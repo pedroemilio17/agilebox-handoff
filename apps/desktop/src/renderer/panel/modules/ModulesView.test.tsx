@@ -75,7 +75,7 @@ function renderView({
 }
 
 const statusText = () => screen.getByRole('status').textContent ?? ''
-const panel = () => screen.getByRole('complementary', { name: 'Mudança em andamento' })
+const dialog = () => screen.getByRole('dialog')
 
 const HISTORY_ROW_BASE = {
   at: '2026-11-16T12:00:00.000Z',
@@ -118,7 +118,6 @@ describe('ModulesView: lista e contagem', () => {
     expect(await screen.findByText('3 de 15 ligados')).toBeTruthy()
     expect(screen.getByText('N1 essencial · N2 intermediário · N3 avançado')).toBeTruthy()
     expect(screen.getByText('Projeto · Projeto Aurora')).toBeTruthy()
-    expect(screen.getByRole('heading', { level: 1, name: 'Módulos' })).toBeTruthy()
   })
 
   it('mostra o selo "Começou como" com o nome completo da metodologia', async () => {
@@ -132,30 +131,30 @@ describe('ModulesView: lista e contagem', () => {
     expect(screen.queryByText(/Começou como/)).toBeNull()
   })
 
-  it('usa o objetivo, a dependência e o sinal de cada cartão', async () => {
+  it('usa o objetivo, a dependência e o sinal de cada linha', async () => {
     renderView({ view: projectModulesView({ enabled: ['sprints'] }) })
-    const card = (await screen.findByRole('heading', { name: 'Sprints' })).closest('article')!
-    expect(within(card).getByText('Ciclos curtos com meta e capacidade.')).toBeTruthy()
-    expect(within(card).getByText('Requer Backlog')).toBeTruthy()
-    expect(within(card).getByText('N2')).toBeTruthy()
+    const row = (await screen.findByRole('heading', { name: 'Sprints' })).closest('article')!
+    expect(within(row).getByText('Ciclos curtos com meta e capacidade.')).toBeTruthy()
+    expect(within(row).getByText('Requer Backlog')).toBeTruthy()
+    expect(within(row).getByText('N2')).toBeTruthy()
   })
 
-  it('mostra o selo "Avançado" (N3) com o tom do design, e não há painel lateral sem mudança', async () => {
+  it('mostra o selo "Avançado" (N3) e não há diálogo aberto sem conflito/cascata', async () => {
     renderView()
     const risks = (await screen.findByRole('heading', { name: 'Riscos' })).closest('article')!
     expect(within(risks).getByText('Avançado').getAttribute('data-tone')).toBe('adv')
-    expect(screen.queryByRole('complementary', { name: 'Mudança em andamento' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('põe o botão "Como funciona" em cada cartão', async () => {
+  it('põe o botão "Como funciona" em cada linha', async () => {
     renderView()
     await screen.findByRole('switch', { name: 'Desligar Backlog' })
     expect(document.querySelectorAll('button[aria-haspopup="dialog"]')).toHaveLength(20)
   })
 })
 
-describe('ModulesView: ligar e desligar com prévia', () => {
-  it('gestor liga Sprints: mostra o aviso e só grava no Confirmar', async () => {
+describe('ModulesView: alternância direta e diálogo só para cascata/bloqueio (Opção A)', () => {
+  it('gestor liga Sprints: salva na hora sem diálogo e avisa o que ligou junto', async () => {
     const { changeMock } = renderView({
       view: projectModulesView(),
       change: () => Promise.resolve({ ...NO_CHANGE, autoEnabled: ['backlog'] }),
@@ -163,61 +162,70 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Sprints' }))
 
-    expect(within(panel()).getByRole('heading', { name: 'Ligar Sprints' })).toBeTruthy()
-    expect(within(panel()).getByText('Liga junto, porque Sprints precisa:')).toBeTruthy()
-    // "Backlog" aparece no chip de "Liga junto" e na linha de "O que acontece".
-    expect(within(panel()).getAllByText('Backlog')).toHaveLength(2)
-    expect(within(panel()).getByText('ligado junto')).toBeTruthy()
-    expect(changeMock).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
     await waitFor(() => expect(changeMock).toHaveBeenCalledTimes(1))
     expect(changeMock).toHaveBeenCalledWith({ projectId: PROJECT_ID, enable: ['sprints'] })
     await waitFor(() => expect(statusText()).toBe('Módulos atualizados. Ligado junto: Backlog.'))
   })
 
-  it('desligar Backlog avisa que Sprints e Burndown saem junto, e só grava no Confirmar', async () => {
+  it('desligar módulo sem dependentes salva na hora sem diálogo', async () => {
+    const { changeMock } = renderView({
+      view: projectModulesView({ enabled: ['wip'] }),
+    })
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('switch', { name: 'Desligar Limites WIP' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(changeMock).toHaveBeenCalledTimes(1))
+    expect(changeMock).toHaveBeenCalledWith({ projectId: PROJECT_ID, disable: ['wip'] })
+    await waitFor(() => expect(statusText()).toBe('Módulos atualizados.'))
+  })
+
+  it('desligar Backlog com Sprints e Burndown ativos abre diálogo central e só grava no Confirmar', async () => {
     const { changeMock } = renderView({
       view: projectModulesView({ enabled: ['backlog', 'sprints', 'estimates.hours', 'burndown'] }),
     })
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Desligar Backlog' }))
 
-    expect(within(panel()).getByText('Sai junto, porque depende de Backlog:')).toBeTruthy()
-    expect(within(panel()).getAllByText('Sprints')).toHaveLength(2)
-    expect(within(panel()).getAllByText('Burndown e velocidade')).toHaveLength(2)
-    expect(within(panel()).getByText('Nada é apagado. Religar restaura os dados.')).toBeTruthy()
+    expect(within(dialog()).getByText('Sai junto, porque depende de Backlog:')).toBeTruthy()
+    expect(within(dialog()).getAllByText('Sprints')).toHaveLength(2)
+    expect(within(dialog()).getAllByText('Burndown e velocidade')).toHaveLength(2)
+    expect(within(dialog()).getByText('Nada é apagado. Religar restaura os dados.')).toBeTruthy()
     expect(changeMock).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Confirmar' }))
     await waitFor(() => expect(changeMock).toHaveBeenCalledTimes(1))
     expect(changeMock).toHaveBeenCalledWith({ projectId: PROJECT_ID, disable: ['backlog'] })
   })
 
-  it('Cancelar não grava e devolve o foco ao interruptor', async () => {
-    const { changeMock } = renderView()
+  it('Cancelar no diálogo de cascata não grava e devolve o foco ao interruptor', async () => {
+    const { changeMock } = renderView({
+      view: projectModulesView({ enabled: ['backlog', 'sprints'] }),
+    })
     const user = userEvent.setup()
-    await user.click(await screen.findByRole('switch', { name: 'Ligar Sprints' }))
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    const backlogSwitch = await screen.findByRole('switch', { name: 'Desligar Backlog' })
+    await user.click(backlogSwitch)
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancelar' }))
 
     expect(changeMock).not.toHaveBeenCalled()
-    expect(screen.queryByRole('complementary', { name: 'Mudança em andamento' })).toBeNull()
-    expect(document.activeElement).toBe(screen.getByRole('switch', { name: 'Ligar Sprints' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(backlogSwitch)
   })
 
-  it('recusa ligar Estimativa em pontos com horas ligadas e não oferece Confirmar', async () => {
+  it('recusa ligar Estimativa em pontos com horas ligadas num diálogo central sem Confirmar', async () => {
     renderView({ view: projectModulesView({ enabled: ['estimates.hours'] }) })
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Estimativa em pontos' }))
 
     expect(
-      within(panel()).getByText(/Não dá para ligar Estimativa em pontos junto com Estimativa/),
+      within(dialog()).getByText(/Não dá para ligar Estimativa em pontos junto com Estimativa/),
     ).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeTruthy()
+    expect(within(dialog()).queryByRole('button', { name: 'Confirmar' })).toBeNull()
+    expect(within(dialog()).getByRole('button', { name: 'Fechar' })).toBeTruthy()
   })
 
-  it('resposta com sprint ativa mostra o aviso e não diz que agendou', async () => {
+  it('resposta com sprint ativa abre diálogo de aviso e não diz que agendou', async () => {
     const { changeMock } = renderView({
       view: projectModulesView({ enabled: ['backlog', 'sprints'] }),
       change: () =>
@@ -228,21 +236,20 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     })
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Desligar Sprints' }))
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     await waitFor(() =>
       expect(
-        within(panel()).getByText(
+        within(dialog()).getByText(
           'Não dá para desligar Sprints agora: há uma sprint ativa. Termine a sprint antes.',
         ),
       ).toBeTruthy(),
     )
-    expect(panel().textContent).not.toMatch(/agendad/i)
-    expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
+    expect(dialog().textContent).not.toMatch(/agendad/i)
+    expect(within(dialog()).queryByRole('button', { name: 'Confirmar' })).toBeNull()
     expect(changeMock).toHaveBeenCalledWith({ projectId: PROJECT_ID, disable: ['sprints'] })
   })
 
-  it('erro da API aparece em alerta e fecha a prévia', async () => {
+  it('erro da API aparece em alerta', async () => {
     renderView({
       change: () =>
         Promise.reject(
@@ -251,12 +258,11 @@ describe('ModulesView: ligar e desligar com prévia', () => {
     })
     const user = userEvent.setup()
     await user.click(await screen.findByRole('switch', { name: 'Ligar Limites WIP' }))
-    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Projeto arquivado: as ferramentas não podem ser alteradas',
     )
-    expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
 
@@ -274,7 +280,7 @@ describe('ModulesView: permissões e estados', () => {
       'Só o gestor muda os módulos do projeto.',
     )
     await user.click(sprints)
-    expect(screen.queryByRole('button', { name: 'Confirmar' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('projeto arquivado não deixa mudar, mesmo para o gestor', async () => {

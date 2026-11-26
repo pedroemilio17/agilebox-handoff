@@ -10,8 +10,6 @@ import type {
 } from '@agilebox/contract'
 import { getManifest, riskScore, type RiskLevel } from '@agilebox/core'
 import { useCapabilities } from '../../shared/capabilities/capabilities-context'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useBaseline } from '../hooks/use-baseline'
 import { useRisks } from '../hooks/use-risks'
@@ -105,11 +103,6 @@ export function TrackingView({ projectId, projectName, onNavigate }: TrackingVie
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{trackingCopy.title}</h2>
           {subtitle ? <span className={styles.subtitle}>{subtitle}</span> : null}
-          <ModuleHelpButton
-            moduleId="schedule"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
         </div>
       </header>
 
@@ -161,11 +154,8 @@ export function TrackingView({ projectId, projectName, onNavigate }: TrackingVie
               {trackingCopy.milestones}
             </h3>
             {milestones.length === 0 ? (
-              <ModuleEmptyState
-                moduleId="milestones"
-                projectId={projectId}
-                fallbackTitle={trackingCopy.noMilestones}
-              >
+              <>
+                <EmptyState title={trackingCopy.noMilestones} />
                 {onNavigate ? (
                   <button
                     type="button"
@@ -175,7 +165,7 @@ export function TrackingView({ projectId, projectName, onNavigate }: TrackingVie
                     {trackingCopy.openMilestones}
                   </button>
                 ) : null}
-              </ModuleEmptyState>
+              </>
             ) : (
               <ol className={styles.list} aria-label={trackingCopy.milestonesLabel}>
                 {milestones.map((milestone) => (

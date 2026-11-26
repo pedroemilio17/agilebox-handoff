@@ -74,7 +74,7 @@ async function openTaskDetail(user: ReturnType<typeof userEvent.setup>) {
 function toolRow(name: string) {
   // Escopo em Ajustes: o nome também aparece no menu (ex.: "Sprints").
   const team = screen.getByRole('region', { name: panelCopy.teamToolsTitle })
-  return within(team).getByText(name, { selector: 'span' }).closest('li') as HTMLElement
+  return within(team).getByText(name, { selector: 'strong' }).closest('li') as HTMLElement
 }
 
 describe('Trocar nível não perde dados', () => {
@@ -89,7 +89,8 @@ describe('Trocar nível não perde dados', () => {
     expect(screen.getByRole('img', { name: /: 1 de 3/ })).toBeTruthy()
     let dialog = await openTaskDetail(user)
     expect(within(dialog).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog).getByRole('button', { name: 'Resolver' })).toBeTruthy()
     await user.keyboard('{Escape}')
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: FLOW_TASK_WITH_PLANNING.title })).toBeNull(),
@@ -106,13 +107,18 @@ describe('Trocar nível não perde dados', () => {
     await user.click(within(team).getByRole('button', { name: panelCopy.levelBasic }))
     expect(spies.setLevel).toHaveBeenCalledWith({ level: 'basic' })
 
-    await user.click(screen.getByRole('button', { name: 'Quadro' }))
+    await user.click(
+      within(screen.getByRole('navigation', { name: 'Navegação principal' })).getByRole('button', {
+        name: 'Minhas tarefas',
+      }),
+    )
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     expect(screen.queryByRole('img', { name: /: \d+ de \d+/ })).toBeNull()
     expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
     dialog = await openTaskDetail(user)
     expect(within(dialog).queryByRole('region', { name: 'Subtarefas' })).toBeNull()
-    expect(within(dialog).queryByRole('button', { name: 'Resolver impedimento' })).toBeNull()
+    await user.click(within(dialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog).queryByRole('button', { name: 'Resolver' })).toBeNull()
     expect(within(dialog).getByText('Aguardando API')).toBeTruthy()
     await user.keyboard('{Escape}')
     await waitFor(() =>
@@ -136,13 +142,18 @@ describe('Trocar nível não perde dados', () => {
         name: panelCopy.levelAdvanced,
       }),
     )
-    await user.click(screen.getByRole('button', { name: 'Quadro' }))
+    await user.click(
+      within(screen.getByRole('navigation', { name: 'Navegação principal' })).getByRole('button', {
+        name: 'Minhas tarefas',
+      }),
+    )
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     expect(screen.getByRole('img', { name: /: 1 de 3/ })).toBeTruthy()
     dialog = await openTaskDetail(user)
     expect(within(dialog).getByText('Mapear rotas')).toBeTruthy()
     expect(within(dialog).getByText('Testar com o sandbox')).toBeTruthy()
-    expect(within(dialog).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog).getByRole('button', { name: 'Resolver' })).toBeTruthy()
     expect(backend.get(TASK_ID)).toEqual(before)
   })
 })
@@ -179,13 +190,18 @@ describe('Aplicar preset que desliga módulos não apaga nada', () => {
       expect(within(toolRow(name)).getByText('Encerrando')).toBeTruthy()
     }
     // Ferramenta em encerramento ainda existe: o que já está nela segue visível e editável.
-    await user.click(screen.getByRole('button', { name: 'Quadro' }))
+    await user.click(
+      within(screen.getByRole('navigation', { name: 'Navegação principal' })).getByRole('button', {
+        name: 'Minhas tarefas',
+      }),
+    )
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     expect(screen.getByRole('img', { name: /: 1 de 3/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Bloqueadas' })).toBeTruthy()
     const dialog2 = await openTaskDetail(user)
     expect(within(dialog2).getByRole('region', { name: 'Subtarefas' })).toBeTruthy()
-    expect(within(dialog2).getByRole('button', { name: 'Resolver impedimento' })).toBeTruthy()
+    await user.click(within(dialog2).getByRole('button', { name: /^Bloqueios & Histórico/ }))
+    expect(within(dialog2).getByRole('button', { name: 'Resolver' })).toBeTruthy()
     expect(backend.get(TASK_ID)).toEqual(before)
     await user.keyboard('{Escape}')
     await waitFor(() =>
@@ -211,9 +227,15 @@ describe('Aplicar preset que desliga módulos não apaga nada', () => {
     )
     await user.click(within(subtasksRow).getByRole('button', { name: 'Confirmar' }))
     expect(spies.completeWindDown).toHaveBeenCalledWith({ moduleId: 'subtasks' })
-    expect(within(toolRow('Subtarefas e dependências')).getByText('Desativada')).toBeTruthy()
+    expect(
+      within(toolRow('Subtarefas e dependências')).getByRole('switch').getAttribute('aria-checked'),
+    ).toBe('false')
 
-    await user.click(screen.getByRole('button', { name: 'Quadro' }))
+    await user.click(
+      within(screen.getByRole('navigation', { name: 'Navegação principal' })).getByRole('button', {
+        name: 'Minhas tarefas',
+      }),
+    )
     await screen.findByRole('region', { name: 'Concluído, tarefas' })
     const dialog3 = await openTaskDetail(user)
     expect(within(dialog3).queryByRole('region', { name: 'Subtarefas' })).toBeNull()

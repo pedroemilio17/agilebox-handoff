@@ -26,25 +26,13 @@ const toReview = () => screen.getByRole('button', { name: 'Ver sugestão de recu
 const radio = (name: string | RegExp) => screen.getByRole<HTMLInputElement>('radio', { name })
 const nameField = () => screen.getByRole('textbox', { name: 'Nome do projeto' })
 
-/** Responde as perguntas de um projeto ágil com custo e horas, até a revisão. */
+/** Responde as 3 perguntas de um projeto com ciclos curtos, interno e intermediário, até a revisão. */
 async function answerToReview(user: ReturnType<typeof userEvent.setup>) {
   await user.type(nameField(), 'App de Chamados')
   await user.click(screen.getByRole('button', { name: /^Me ajude a escolher/ }))
-  await user.click(radio('Tem fim'))
-  await user.click(
-    within(screen.getByRole('group', { name: /data final/ })).getByRole('radio', { name: 'Não' }),
-  )
-  await user.click(radio(/^Vai mudar no caminho/))
-  await user.click(
-    within(screen.getByRole('group', { name: /Alguém de fora/ })).getByRole('radio', {
-      name: 'Não',
-    }),
-  )
-  await user.click(
-    within(screen.getByRole('group', { name: /controlar horas/ })).getByRole('radio', {
-      name: 'Sim',
-    }),
-  )
+  await user.click(radio(/^Ciclos curtos com metas/))
+  await user.click(radio(/^Não, é um projeto interno/))
+  await user.click(radio(/^Intermediário/))
   await user.click(toReview())
 }
 
@@ -121,34 +109,25 @@ describe('NewProjectFlow: caminho rápido', () => {
 })
 
 describe('NewProjectFlow: perguntas e revisão', () => {
-  it('termina as perguntas, mostra a revisão e cria com o payload completo', async () => {
+  it('termina as 3 perguntas, mostra a revisão e cria com o payload completo', async () => {
     const { user, onCreate } = setup()
 
     await answerToReview(user)
     expect(screen.getByRole('heading', { level: 2, name: 'App de Chamados' })).toBeTruthy()
-    expect(screen.getByText('Ágil (Scrum)')).toBeTruthy()
+    expect(screen.getByText('Ciclos Ágeis (Sprints)')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
 
     expect(onCreate).toHaveBeenCalledWith({
       name: 'App de Chamados',
       startedFromPreset: 'agil',
-      guideLevel: 'never',
-      modules: [
-        'agenda',
-        'backlog',
-        'sprints',
-        'checkins',
-        'estimates.hours',
-        'reviewRetro',
-        'cost',
-      ],
+      guideLevel: 'sometimes',
+      modules: ['backlog', 'sprints', 'checkins', 'definitionOfDone'],
       answers: {
         workType: 'finite',
         fixedDate: 'no',
         scope: 'will_change',
         outsiderFollows: 'no',
-        controlsHoursAndCost: 'yes',
-        experience: 'never',
+        experience: 'sometimes',
       },
     })
   })
@@ -166,8 +145,8 @@ describe('NewProjectFlow: perguntas e revisão', () => {
 
     await user.click(screen.getByRole('button', { name: '← Voltar às perguntas' }))
 
-    expect(radio('Tem fim').checked).toBe(true)
-    expect(radio(/^Vai mudar no caminho/).checked).toBe(true)
+    expect(radio(/^Ciclos curtos com metas/).checked).toBe(true)
+    expect(radio(/^Intermediário/).checked).toBe(true)
 
     await user.click(toReview())
     await user.click(screen.getByRole('button', { name: 'Criar projeto e ir ao Quadro' }))
@@ -177,8 +156,7 @@ describe('NewProjectFlow: perguntas e revisão', () => {
       fixedDate: 'no',
       scope: 'will_change',
       outsiderFollows: 'no',
-      controlsHoursAndCost: 'yes',
-      experience: 'never',
+      experience: 'sometimes',
     })
   })
 

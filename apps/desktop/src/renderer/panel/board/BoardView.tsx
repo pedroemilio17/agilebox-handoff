@@ -350,7 +350,7 @@ export function BoardView({
           <div
             className={styles.pillGroup}
             role="group"
-            aria-label="Filtrar prioridade ou bloqueio"
+            aria-label={blockedVisible ? 'Filtrar prioridade ou bloqueio' : 'Filtrar prioridade'}
           >
             <button
               type="button"
@@ -417,18 +417,9 @@ export function BoardView({
       {chrome?.managerContext}
       {loadingBody ?? errorBody ?? (
         <>
-          {noTasks && (
-            <EmptyState
-              className={styles.emptyBoard}
-              title={readOnlyScope ? panelCopy.teamEmpty : 'Nenhuma tarefa ainda'}
-              {...(readOnlyScope
-                ? {}
-                : {
-                    description:
-                      'Crie a primeira tarefa para começar a acompanhar o trabalho do time.',
-                  })}
-            />
-          )}
+          {noTasks && readOnlyScope ? (
+            <EmptyState className={styles.emptyBoard} title={panelCopy.teamEmpty} />
+          ) : null}
           {readOnlyScope ? (
             <div ref={boardRef} aria-label={panelCopy.boardLabel} className={styles.board}>
               {columns()}

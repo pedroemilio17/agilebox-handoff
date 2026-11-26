@@ -1,8 +1,6 @@
 import { useId } from 'react'
-import { Button } from '@agilebox/ui'
+import { Button, EmptyState } from '@agilebox/ui'
 import type { FlowMetricsViewDto } from '@agilebox/contract'
-import { ModuleEmptyState } from '../guide/ModuleEmptyState'
-import { ModuleHelpButton } from '../guide/ModuleHelpButton'
 import type { PanelView } from '../layout/PanelShell'
 import { useFlowMetrics } from '../hooks/use-flow-metrics'
 import {
@@ -31,7 +29,7 @@ export interface FlowMetricsViewProps {
  * Métricas de fluxo do projeto (ADR-10, módulo `flowMetrics`): lead time, cycle time e vazão das
  * últimas oito semanas. Só mostra o que o servidor calcula; sem valores de custo.
  */
-export function FlowMetricsView({ projectId, projectName, onNavigate }: FlowMetricsViewProps) {
+export function FlowMetricsView({ projectId, projectName }: FlowMetricsViewProps) {
   const query = useFlowMetrics(projectId)
 
   if (projectId === null) {
@@ -74,11 +72,6 @@ export function FlowMetricsView({ projectId, projectName, onNavigate }: FlowMetr
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{flowMetricsCopy.title}</h2>
           <span className={styles.subtitle}>{subtitle}</span>
-          <ModuleHelpButton
-            moduleId="flowMetrics"
-            projectId={projectId}
-            {...(onNavigate ? { onNavigate } : {})}
-          />
         </div>
       </header>
 
@@ -113,11 +106,7 @@ export function FlowMetricsView({ projectId, projectName, onNavigate }: FlowMetr
           {flowMetricsCopy.chartLabel}
         </h3>
         {view.completed === 0 ? (
-          <ModuleEmptyState
-            moduleId="flowMetrics"
-            projectId={projectId}
-            fallbackTitle={flowMetricsCopy.emptyTitle}
-          />
+          <EmptyState title={flowMetricsCopy.emptyTitle} />
         ) : (
           <FlowBarChart view={view} />
         )}

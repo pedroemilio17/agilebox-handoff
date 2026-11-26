@@ -156,21 +156,25 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     const { nav, props } = renderShell({ view: 'burndown', burndown: <p>Burndown tela</p> })
     expect(nav.getByRole('button', { name: 'Sprints' }).getAttribute('aria-current')).toBe('page')
     const tabs = within(screen.getByRole('navigation', { name: 'Seções de Sprints' }))
-    expect(tabs.getByRole('button', { name: 'Burndown' }).getAttribute('aria-current')).toBe('page')
+    expect(
+      tabs.getByRole('button', { name: 'Ritmo (Burndown)' }).getAttribute('aria-current'),
+    ).toBe('page')
     expect(screen.getByText('Burndown tela')).toBeTruthy()
 
-    await userEvent.click(tabs.getByRole('button', { name: 'Impedimentos' }))
+    await userEvent.click(tabs.getByRole('button', { name: 'Bloqueios' }))
     expect(props.onViewChange).toHaveBeenCalledWith('impediments')
   })
 
   it('Entregas mostra o rail do Fluxo Preditivo com o subtítulo do tópico ativo', async () => {
     const { props } = renderShell({ view: 'wbs', wbs: <p>EAP tela</p> })
     const rail = within(screen.getByRole('navigation', { name: 'Seções de Entregas' }))
-    expect(rail.getByRole('button', { name: 'Entregas (EAP)' }).getAttribute('aria-current')).toBe(
+    expect(rail.getByRole('button', { name: 'Estrutura (EAP)' }).getAttribute('aria-current')).toBe(
       'page',
     )
     expect(
-      screen.getByText('Divida o projeto em entregas claras antes de quebrar em tarefas.'),
+      screen.getByText(
+        'Divida o projeto em entregas claras e crie tarefas diretamente dentro de cada grupo.',
+      ),
     ).toBeTruthy()
     expect(screen.getByText('EAP tela')).toBeTruthy()
 
@@ -203,10 +207,9 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     expect(props.onProjectSelect).toHaveBeenCalledWith(traditional.id)
   })
 
-  it('clicar em Todos os projetos chama onProjectSelect(null)', async () => {
-    const { nav, props } = renderShell()
-    await userEvent.click(nav.getByRole('button', { name: 'Todos os projetos' }))
-    expect(props.onProjectSelect).toHaveBeenCalledWith(null)
+  it('não exibe Todos os projetos na seção Projetos', () => {
+    const { nav } = renderShell()
+    expect(nav.queryByRole('button', { name: 'Todos os projetos' })).toBeNull()
   })
 
   it('botão + de Novo projeto abre a criação', async () => {
@@ -215,15 +218,16 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     expect(props.onNewProject).toHaveBeenCalledTimes(1)
   })
 
-  it('sem projeto selecionado: Todos os projetos fica marcado e expandido sem Configurações', () => {
+  it('sem projeto selecionado: nenhum projeto fica expandido e Minhas tarefas fica ativa', () => {
     const { nav } = renderShell({ selectedProjectId: null })
-    const allBtn = nav.getByRole('button', { name: 'Todos os projetos' })
-    expect(allBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(allBtn.getAttribute('aria-expanded')).toBe('true')
+    expect(nav.queryByRole('button', { name: 'Todos os projetos' })).toBeNull()
+    expect(nav.getByRole('button', { name: 'Minhas tarefas' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
     expect(nav.getByRole('button', { name: /App de Chamados/ }).getAttribute('aria-pressed')).toBe(
       'false',
     )
-    expect(subitemNames()).toEqual(['Quadro', 'Backlog', 'Sprints'])
+    expect(nav.queryByRole('button', { name: 'Quadro' })).toBeNull()
   })
 
   it('TitleBar exibe Voltar e breadcrumb em telas do projeto e omite projeto em telas globais', async () => {
