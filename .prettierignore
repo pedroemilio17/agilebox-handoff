@@ -6,3 +6,4 @@ pnpm-lock.yaml
 test-results/
 playwright-report/
 blob-report/
+apps/desktop/src/renderer/panel/kan/kan-model-data.ts

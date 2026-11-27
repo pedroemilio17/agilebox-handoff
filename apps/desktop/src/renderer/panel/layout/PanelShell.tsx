@@ -25,6 +25,8 @@ import {
 } from './project-nav'
 import { TopicTabs } from './TopicTabs'
 import { PredictiveLayout } from '../predictive/PredictiveLayout'
+import kanClosedUrl from '../kan/assets/kan_fechado.png'
+import kanOpenUrl from '../kan/assets/kan_aberto.png'
 import styles from './PanelShell.module.css'
 
 export type PanelView =
@@ -84,6 +86,8 @@ export interface PanelShellProps {
   readonly projectModuleCount?: number | null
   readonly onSearch?: () => void
   readonly onOpenTray?: () => void
+  readonly kanOpen?: boolean
+  readonly onToggleKan?: () => void
   readonly account?: {
     readonly users: readonly SessionUserDto[]
     readonly currentUserId: string | undefined
@@ -186,6 +190,8 @@ export function PanelShell({
   projectModuleCount = null,
   onOpenTray,
   onSearch,
+  kanOpen = false,
+  onToggleKan,
   dashboard,
   updates,
   guide,
@@ -338,6 +344,8 @@ export function PanelShell({
           canGoBack={canGoBack}
           onBack={onBack}
           onSearch={onSearch}
+          kanOpen={kanOpen}
+          onToggleKan={onToggleKan}
           onMinimize={onMinimize}
           onToggleExpand={onToggleExpand}
           onClose={onClose}
@@ -683,6 +691,8 @@ interface TitleBarProps {
   readonly canGoBack: boolean
   readonly onBack: (() => void) | undefined
   readonly onSearch: (() => void) | undefined
+  readonly kanOpen: boolean
+  readonly onToggleKan: (() => void) | undefined
   readonly onMinimize: () => void
   readonly onToggleExpand: () => void
   readonly onClose: () => void
@@ -696,6 +706,8 @@ function TitleBar({
   canGoBack,
   onBack,
   onSearch,
+  kanOpen,
+  onToggleKan,
   onMinimize,
   onToggleExpand,
   onClose,
@@ -752,11 +764,23 @@ function TitleBar({
           <span aria-hidden="true">+</span>
           <span>{panelCopy.newTask}</span>
         </button>
-        {/* Só visual por enquanto: a ajuda (Kan) ainda não existe no painel. */}
-        <span className={styles.helpPill}>
-          <span>? Ajuda</span>
+        <button
+          type="button"
+          className={`${styles.helpPill} ${kanOpen ? styles.helpPillActive : ''}`}
+          aria-expanded={kanOpen}
+          aria-keyshortcuts="F1"
+          title="Abrir ou fechar Kan (F1)"
+          onClick={onToggleKan}
+        >
+          <img
+            className={styles.kanThumb}
+            src={kanOpen ? kanOpenUrl : kanClosedUrl}
+            alt=""
+            aria-hidden="true"
+          />
+          <span>Kan</span>
           <kbd className={styles.kbd}>F1</kbd>
-        </span>
+        </button>
         <WindowControls
           compact
           expanded

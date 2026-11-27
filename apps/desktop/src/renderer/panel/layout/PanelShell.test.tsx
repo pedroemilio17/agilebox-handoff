@@ -284,9 +284,10 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     ).toBeNull()
   })
 
-  it('a barra de título tem busca Ctrl+K, Nova tarefa sem atalho e a pílula Ajuda só visual', async () => {
+  it('a barra de título tem busca Ctrl+K, Nova tarefa sem atalho e a pílula Kan F1', async () => {
     const onSearch = vi.fn()
-    const { props } = renderShell({ onSearch })
+    const onToggleKan = vi.fn()
+    const { props } = renderShell({ onSearch, onToggleKan })
     const banner = within(screen.getByRole('banner'))
     const search = banner.getByRole('button', { name: 'Buscar ou criar' })
     expect(search.textContent).toContain('Buscar, comandos ou ? ajuda')
@@ -299,8 +300,10 @@ describe('barra lateral estilo Claude e cabeçalho revisado', () => {
     await userEvent.click(newTask)
     expect(props.onNewTask).toHaveBeenCalledTimes(1)
 
-    expect(banner.getByText('? Ajuda')).toBeTruthy()
+    const kanBtn = banner.getByRole('button', { name: /Kan/i })
     expect(banner.getByText('F1')).toBeTruthy()
+    await userEvent.click(kanBtn)
+    expect(onToggleKan).toHaveBeenCalledTimes(1)
   })
 
   it('Plug-ins, Ajustes e Abrir Bandeja ficam no rodapé', async () => {

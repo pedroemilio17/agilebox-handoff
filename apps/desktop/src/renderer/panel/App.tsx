@@ -50,6 +50,7 @@ import { TaskDetailView } from './task-detail/TaskDetailView'
 import { PanelShell, type PanelView } from './layout/PanelShell'
 import { popNavHistory, pushNavHistory, type NavEntry } from './layout/nav-history'
 import { PanelCommands } from './commands/PanelCommands'
+import { KanAssistant } from './kan/KanAssistant'
 import { useDefinitionOfDoneGate } from '../shared/definition-of-done/use-definition-of-done-gate'
 
 export function App() {
@@ -70,6 +71,7 @@ function PanelContent({
   readonly onSelectProject: (projectId: string | null) => void
 }) {
   const [commandsOpen, setCommandsOpen] = useState(false)
+  const [kanOpen, setKanOpen] = useState(false)
   const api = useApi()
   const capabilities = useCapabilities()
   // Agenda só aparece com o módulo ligado e o nível da pessoa; a view guardada cai no Quadro.
@@ -508,6 +510,8 @@ function PanelContent({
     <>
       <PanelShell
         onSearch={() => setCommandsOpen(true)}
+        kanOpen={kanOpen}
+        onToggleKan={() => setKanOpen((prev) => !prev)}
         managerContext={
           viewingUser ? (
             <ManagerBanner userName={viewingUser.name} onBack={() => setViewingUser(null)} />
@@ -869,6 +873,23 @@ function PanelContent({
           onNavigate={(next) => navigate(next)}
         />
       )}
+      <KanAssistant
+        open={kanOpen}
+        onOpenChange={setKanOpen}
+        currentView={currentView}
+        selectedProject={selectedProject ?? null}
+        activeProjects={activeProjects}
+        boardTasks={boardTasks ?? []}
+        users={sessionUsers.data ?? []}
+        actor={{
+          userId: actor.actor?.userId,
+          name:
+            sessionUsers.data?.find((u) => u.id === actor.actor?.userId)?.name ??
+            (isManager ? 'Gestor' : 'Colaborador'),
+          isManager,
+        }}
+        onNotice={(message) => showNotice(message)}
+      />
     </>
   )
 }
